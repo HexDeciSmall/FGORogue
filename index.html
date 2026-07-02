@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FGO Rogue</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a0a00;--parchment:#f5e6c8;--parchment-dark:#e8d5a3;
+  --red:#8b1a1a;--red-bright:#c0392b;--gold:#c9a227;--gold-dim:#8b6914;
+  --smoke:#2a1505;--mist:#f0e6d3;--white:#fff8f0;
+  --oni-purple:#4a0e6e;--oni-purple-light:#7b2d9e;
+  --hp-green:#2d6a2d;--np-blue:#1a3a6e;--np-light:#4a7ecf;
+  --shadow:rgba(0,0,0,0.7);
+}
+body{background:var(--smoke);color:var(--white);font-family:'Crimson Text',serif;min-height:100vh;overflow-x:hidden}
+h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--smoke)}
+::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:3px}
+
+/* ── Layout base ── */
+.screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
+.screen::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='1' fill='%23c9a22722'/%3E%3C/svg%3E");pointer-events:none}
+
+/* ── Painéis ── */
+.panel{background:linear-gradient(160deg,rgba(26,10,0,0.92),rgba(42,21,5,0.95));border:1px solid var(--gold-dim);border-radius:4px;padding:24px;max-width:900px;width:100%;position:relative;box-shadow:0 0 40px rgba(201,162,39,0.15),inset 0 0 20px rgba(0,0,0,0.3)}
+.panel::before,.panel::after{content:'✦';position:absolute;color:var(--gold-dim);font-size:10px}
+.panel::before{top:8px;left:12px}.panel::after{top:8px;right:12px}
+
+/* ── Título principal ── */
+.title-main{font-size:clamp(2rem,6vw,4rem);color:var(--gold);text-shadow:0 0 30px rgba(201,162,39,0.5),2px 2px 0 var(--ink);letter-spacing:4px;text-align:center;margin-bottom:8px}
+.title-sub{color:var(--parchment-dark);font-style:italic;text-align:center;font-size:1.1rem;margin-bottom:32px;letter-spacing:2px}
+
+/* ── Botões ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 28px;border:1px solid var(--gold-dim);background:linear-gradient(135deg,rgba(139,105,20,0.3),rgba(201,162,39,0.15));color:var(--gold);font-family:'Cinzel',serif;font-size:0.85rem;letter-spacing:2px;cursor:pointer;border-radius:2px;transition:all .2s;text-transform:uppercase;position:relative;overflow:hidden}
+.btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,162,39,0.2),transparent);opacity:0;transition:opacity .2s}
+.btn:hover::before{opacity:1}
+.btn:hover{border-color:var(--gold);color:var(--white);box-shadow:0 0 20px rgba(201,162,39,0.3);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-red{border-color:var(--red);color:#ff8080;background:linear-gradient(135deg,rgba(139,26,26,0.3),rgba(192,57,43,0.15))}
+.btn-red:hover{border-color:var(--red-bright);color:#ffb0b0;box-shadow:0 0 20px rgba(192,57,43,0.3)}
+.btn-np{border-color:var(--np-light);color:var(--np-light);background:linear-gradient(135deg,rgba(26,58,110,0.4),rgba(74,126,207,0.2));font-size:0.75rem;padding:10px 20px}
+.btn-np:hover{box-shadow:0 0 25px rgba(74,126,207,0.5)}
+.btn-sm{padding:8px 16px;font-size:0.75rem}
+.btn-full{width:100%;margin-bottom:10px}
+
+/* ── Divisores ornamentais ── */
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,var(--gold-dim),transparent)}
+.divider-text{color:var(--gold-dim);font-size:.75rem;letter-spacing:3px;white-space:nowrap}
+
+/* ── Barras de HP / NP ── */
+.bar-container{margin:6px 0}
+.bar-label{font-size:.75rem;color:var(--parchment-dark);letter-spacing:1px;margin-bottom:3px;display:flex;justify-content:space-between}
+.bar-track{height:14px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;position:relative}
+.bar-fill{height:100%;transition:width .4s ease;border-radius:1px;position:relative}
+.bar-fill::after{content:'';position:absolute;top:0;left:0;right:0;height:40%;background:rgba(255,255,255,0.15)}
+.bar-hp{background:linear-gradient(90deg,#1a4a1a,var(--hp-green),#4aaa4a)}
+.bar-np{background:linear-gradient(90deg,#0a1a4a,var(--np-blue),var(--np-light))}
+.bar-hp.low{background:linear-gradient(90deg,#4a0000,#8b0000,#cc2222)}
+
+/* ── Cards de inimigo ── */
+.enemy-group{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
+.enemy-card{background:rgba(0,0,0,0.4);border:1px solid var(--red);border-radius:3px;padding:10px 14px;min-width:120px;text-align:center;transition:all .2s;cursor:pointer;position:relative}
+.enemy-card:hover{border-color:var(--red-bright);box-shadow:0 0 15px rgba(192,57,43,0.3)}
+.enemy-card.selected{border-color:#ff6060;box-shadow:0 0 20px rgba(255,96,96,0.4);background:rgba(139,26,26,0.3)}
+.enemy-card.stunned{opacity:.6}
+.enemy-card.dead{opacity:.25;border-color:#444;pointer-events:none}
+.enemy-card .enemy-name{font-family:'Cinzel',serif;font-size:.7rem;color:#ff9090;letter-spacing:1px}
+.enemy-card .enemy-hp{font-size:.65rem;color:var(--parchment-dark);margin-top:4px}
+.stun-badge{position:absolute;top:-8px;right:-8px;background:var(--oni-purple);color:#fff;font-size:.55rem;padding:2px 6px;border-radius:10px;letter-spacing:1px}
+
+/* ── Skills de batalha ── */
+.skills-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
+.skill-btn{padding:8px 14px;border:1px solid var(--gold-dim);background:rgba(26,10,0,0.6);color:var(--parchment);font-size:.7rem;cursor:pointer;border-radius:2px;text-align:center;transition:all .2s;min-width:100px;font-family:'Cinzel',serif}
+.skill-btn:hover:not(:disabled){border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(201,162,39,0.25)}
+.skill-btn:disabled{opacity:.4;cursor:not-allowed}
+.skill-cd{display:block;font-size:.6rem;color:var(--red-bright);margin-top:3px}
+
+/* ── Log de batalha ── */
+.battle-log{background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);border-radius:2px;padding:10px;height:160px;overflow-y:auto;margin:12px 0;font-size:.8rem;line-height:1.7}
+.log-entry{padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.log-entry.player{color:#ffd080}
+.log-entry.enemy{color:#ff8080}
+.log-entry.system{color:var(--parchment-dark);font-style:italic}
+.log-entry.heal{color:#80ff80}
+.log-entry.np{color:var(--np-light);font-weight:600}
+
+/* ── Diálogo de personagem ── */
+.dialogue-box{background:rgba(0,0,0,0.7);border:1px solid var(--gold-dim);border-radius:3px;padding:16px 20px;margin:12px 0;position:relative}
+.dialogue-speaker{font-family:'Cinzel',serif;font-size:.75rem;color:var(--gold);letter-spacing:2px;margin-bottom:8px}
+.dialogue-text{font-style:italic;color:var(--mist);line-height:1.6;font-size:.9rem}
+.portrait-placeholder{width:80px;height:100px;background:linear-gradient(160deg,rgba(74,14,110,0.4),rgba(139,26,26,0.3));border:1px solid var(--gold-dim);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--gold-dim);text-align:center;letter-spacing:1px;flex-shrink:0}
+.portrait-img{width:80px;height:100px;object-fit:cover;object-position:center 12%;border:1px solid var(--gold-dim);border-radius:2px;flex-shrink:0;background:rgba(0,0,0,.35)}
+
+/* ── Mapa / Caminhos ── */
+.path-choice{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.path-btn{padding:20px 10px;border:1px solid var(--gold-dim);background:rgba(0,0,0,0.4);color:var(--parchment);font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:1px;cursor:pointer;border-radius:3px;text-align:center;transition:all .25s}
+.path-btn:hover{border-color:var(--gold);background:rgba(201,162,39,0.1);box-shadow:0 0 20px rgba(201,162,39,0.2);transform:translateY(-2px)}
+.path-icon{font-size:1.5rem;display:block;margin-bottom:8px}
+.path-hint{font-size:.65rem;color:var(--parchment-dark);margin-top:4px}
+
+/* ── Perfil / Skills ── */
+.skill-row{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid rgba(201,162,39,0.2);border-radius:3px;margin-bottom:10px;background:rgba(0,0,0,0.3)}
+.skill-info{flex:1}
+.skill-name{font-family:'Cinzel',serif;font-size:.8rem;color:var(--gold);letter-spacing:1px}
+.skill-desc{font-size:.75rem;color:var(--parchment-dark);margin-top:4px;font-style:italic}
+.skill-level-pips{display:flex;gap:3px;margin-top:6px}
+.pip{width:14px;height:6px;border-radius:1px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15)}
+.pip.filled{background:var(--gold);border-color:var(--gold)}
+
+/* ── Bond ── */
+.bond-section{margin:16px 0}
+.bond-label{font-family:'Cinzel',serif;font-size:.7rem;color:var(--gold);letter-spacing:2px;margin-bottom:6px}
+.bond-bar-track{height:10px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow:hidden}
+.bond-bar-fill{height:100%;background:linear-gradient(90deg,var(--oni-purple),var(--oni-purple-light));border-radius:10px;transition:width .5s ease}
+
+/* ── Notificações ── */
+.notif{position:fixed;top:20px;right:20px;background:rgba(26,10,0,0.95);border:1px solid var(--gold);padding:12px 20px;border-radius:3px;font-family:'Cinzel',serif;font-size:.75rem;color:var(--gold);letter-spacing:1px;z-index:1000;animation:slideIn .3s ease;max-width:280px}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── Overlay de vitória/derrota ── */
+.result-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;padding:20px}
+.result-title{font-family:'Cinzel',serif;font-size:clamp(2rem,6vw,3.5rem);letter-spacing:6px;margin-bottom:16px}
+.result-win{color:var(--gold);text-shadow:0 0 40px rgba(201,162,39,0.6)}
+.result-lose{color:var(--red-bright);text-shadow:0 0 40px rgba(192,57,43,0.6)}
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  .path-choice{grid-template-columns:1fr}
+  .skills-row{gap:6px}
+  .skill-btn{min-width:80px;font-size:.65rem}
+  .enemy-group{gap:6px}
+}
+
+/* ── Animações de dano ── */
+@keyframes dmgPop{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-40px) scale(1.3)}}
+.dmg-float{position:absolute;pointer-events:none;font-family:'Cinzel',serif;font-weight:700;animation:dmgPop .8s ease forwards;z-index:100}
+/* ── Cut-in de Noble Phantasm (arte em tela cheia, estilo FGO) ── */
+.np-cutin{position:fixed;inset:0;z-index:800;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(60,20,0,.55),rgba(0,0,0,.88));animation:cutinFlash 1.9s ease forwards;pointer-events:none}
+.np-cutin img{max-width:min(92vw,760px);max-height:68vh;object-fit:contain;filter:drop-shadow(0 0 45px rgba(255,180,60,.55));animation:cutinZoom 1.9s ease forwards}
+.np-cutin .cutin-text{position:absolute;bottom:10%;left:0;right:0;text-align:center;padding:0 16px}
+.np-cutin .cutin-name{font-family:'Cinzel',serif;color:var(--gold);letter-spacing:5px;font-size:clamp(.9rem,3vw,1.3rem);text-shadow:0 0 24px rgba(0,0,0,.95),0 0 40px rgba(201,162,39,.4)}
+.np-cutin .cutin-quote{color:var(--mist);font-style:italic;font-size:.8rem;max-width:640px;margin:8px auto 0;line-height:1.5;text-shadow:0 1px 10px rgba(0,0,0,.95)}
+@keyframes cutinFlash{0%{opacity:0}8%{opacity:1}82%{opacity:1}100%{opacity:0}}
+@keyframes cutinZoom{0%{transform:scale(1.07)}100%{transform:scale(1)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback}=React;
+
+// ══════════════════════════════════════════════════════
+// DADOS E FÓRMULAS
+// ══════════════════════════════════════════════════════
+
+function rankToPoints(r){
+  const base={EX:120,A:50,B:40,C:30,D:20,E:10};
+  const m=r.match(/^(EX|A|B|C|D|E)(\+\+|\+|--|-)? *$/);
+  if(!m)return 30;
+  const pts=base[m[1]]||30;
+  const mod={'+':50,'++':100,'-':-20,'--':-40,'':0};
+  return pts+(mod[m[2]||'']||0);
+}
+function linear(lvl,v1,v10){return Math.round((v1+((v10-v1)/9)*(lvl-1))*100)/100}
+function stdCD(lvl,h=7,m=6,l=5){return lvl>=10?l:lvl>=6?m:h}
+function clamp(v,mn,mx){return Math.max(mn,Math.min(mx,v))}
+function rollChance(pct){return Math.random()*100<pct}
+function manaGain(rank){
+  const base={E:1.5,D:1.7,C:1.9,B:2.1,A:2.3,EX:2.5};
+  const m=rank.match(/^(EX|A|B|C|D|E)(\+\+|\+|--|-)? *$/);
+  if(!m)return 1.9;
+  const g=base[m[1]]||1.9;
+  const mod={'+':0.2,'++':0.4,'-':-0.2,'--':-0.4,'':0};
+  return g+(mod[m[2]||'']||0);
+}
+function bondToNP(bond){
+  if(bond>=13)return 5;if(bond>=10)return 4;
+  if(bond>=7)return 3;if(bond>=4)return 2;return 1;
+}
+function bondReq(lvl){
+  const table={1:600,2:1200,3:2400,4:4800};
+  if(table[lvl])return table[lvl];
+  let v=table[4];for(let i=4;i<lvl;i++)v*=2;return v;
+}
+
+// ── XP do Servo ──────────────────────────────────────
+// XP necessário para ir de Nv.N → Nv.N+1
+const SERVO_XP_TABLE={1:200,2:350,3:550,4:800,5:1100,6:1500,7:2000,8:2600,9:3300};
+// XP ganho por ação
+const XP_COMBAT_WIN=40;
+const XP_TRUST_EVENT=25;
+const XP_BOSS_WIN=120;
+const XP_CAMPAIGN_COMPLETE=50;
+
+function xpToNextLevel(lvl){return SERVO_XP_TABLE[lvl]||99999;}
+
+// Carrega XP do servo do save
+const XP_KEY=id=>`oni_tactics_xp_${id}`;
+function loadServoXP(id){
+  try{const r=localStorage.getItem(XP_KEY(id));return r?JSON.parse(r):{level:1,xp:0};}
+  catch{return{level:1,xp:0};}
+}
+function saveServoXP(id,state){try{localStorage.setItem(XP_KEY(id),JSON.stringify(state));}catch{}}
+function addServoXP(servoId,pts){
+  let s=loadServoXP(servoId);
+  s.xp+=pts;
+  while(s.level<10&&s.xp>=xpToNextLevel(s.level)){
+    s.xp-=xpToNextLevel(s.level);
+    s.level++;
+  }
+  if(s.level>=10)s.xp=0;
+  saveServoXP(servoId,s);
+  return s;
+}
+
+// ── IBARAKI DOUJI ────────────────────────────────────
+const IBARAKI={
+  id:'ibaraki_douji',name:'Ibaraki Douji',className:'Berserker',
+  getAtk:lvl=>Math.round(linear(lvl,1606,9636)),
+  getHp:lvl=>Math.round(linear(lvl,1752,10954)),
+  attributes:{
+    strength:{rank:'B',points:rankToPoints('B')},
+    agility:{rank:'C',points:rankToPoints('C')},
+    luck:{rank:'B',points:rankToPoints('B')},
+    endurance:{rank:'A+',points:rankToPoints('A+')},
+    mana:{rank:'C',points:rankToPoints('C'),gainPercent:manaGain('C')},
+    np:{rank:'C',points:rankToPoints('C')},
+  },
+  passiveSkills:[
+    {id:'mad_enhance',name:'Aprimoramento de Loucura B',effect:{type:'phys_atk',value:8}},
+    {id:'anti_saber',name:'Anti-Saber',effect:{type:'vs_class',cls:'Saber',value:50}},
+  ],
+  activeSkills:[
+    {id:'natureza',name:'Natureza Demoníaca',rank:'A',
+      desc:'Ataque+NP ↑ por 3 turnos',
+      getEffect:lvl=>({atkUp:linear(lvl,10,20),npDmgUp:linear(lvl,10,30),dur:3}),
+      getCD:lvl=>stdCD(lvl)},
+    {id:'rampage',name:'Rampage de Oni',rank:'A+',
+      desc:'Cura HP + remove debuffs + dano a 1 inimigo',
+      getEffect:lvl=>({healPct:linear(lvl,10,60),strDmgPct:linear(lvl,6,60)}),
+      getCD:lvl=>stdCD(lvl)},
+    {id:'forma',name:'Mudança de Forma',rank:'A',
+      desc:'Defesa ↑ por 3 turnos',
+      getEffect:lvl=>({defUp:linear(lvl,30,60),dur:3}),
+      getCD:lvl=>stdCD(lvl)},
+  ],
+  np:{
+    name:'Rashōmon Daiengi',type:'Anti-Army',isAoE:false,
+    levels:{
+      1:{dmgPct:600,defDown:20},2:{dmgPct:800,defDown:25},
+      3:{dmgPct:1000,defDown:30},4:{dmgPct:1200,defDown:35},5:{dmgPct:1400,defDown:40},
+    },
+    defDownDur:3,
+  },
+  dialogue:{
+    summon:'Meu nome é Ibaraki Douji, a líder do clã oni no Monte Ooe. Eu sou um oni. Você é um humano. Se acovarde diante de mim.',
+    battle:'Meu sangue está fervendo... Literalmente!',
+    lose:'Hei. Você aí. Acabou de zombar do meu tamanho, não é?',
+    win:'Hora de verificar os despojos de guerra. Não ouse soltar uma moeda sequer!',
+    np:'Kehehe... O braço direito que um dia perdi para esquemas diabólicos agora está de volta como uma monstruosidade. Vai, Sogen-bi! O Grande Rancor de Rashomon!',
+    skill:'Hora de falar sério, então...',
+    mapDone:'Que humano estranho você é. Os Oni devem comer os homens, destruí-los e tomar tudo o que têm.',
+  },
+  bondDialogue:{
+    1:'Suponho que há excêntricos até mesmo entre os humanos. Você me trata, um oni, como trataria um amigo. Você deve ser algum tipo de simplório... ou talvez...',
+    5:'Vou admitir, você me interessa. Deveríamos compartilhar uma bebida juntos... Não se atreva a me dizer que deseja fazer amizade com um oni, mas não pode segurar sua bebida!',
+    10:'Você pode ser humano, mas eu tomei gosto por você. Você se juntaria a mim e aos outros para uma vida de diversão e bebidas no Mt. Ooe?',
+    15:'Tentando me comandar como um servo... Acho que aqueles alheios ao conceito de morte existem sim. Mas sua bravura tola é o que gosto em você.',
+  },
+  assets:{
+    default:'assets/servos/ibaraki/ibaraki_default.png',
+    battle:'assets/servos/ibaraki/ibaraki_battle.png',
+    np:'assets/servos/ibaraki/ibaraki_np.png',
+    win:'assets/servos/ibaraki/ibaraki_win.png',
+    lose:'assets/servos/ibaraki/ibaraki_lose.png',
+  },
+};
+
+// ── QIN LIANGYU (BOSS) ───────────────────────────────
+const QIN={
+  id:'qin_liangyu',name:'Qin Liangyu',className:'Lancer',isBoss:true,level:7,
+  attack:5991,hp:9639,
+  attributes:{
+    strength:{rank:'C',points:rankToPoints('C')},
+    agility:{rank:'A',points:rankToPoints('A')},
+    luck:{rank:'A',points:rankToPoints('A')},
+    endurance:{rank:'B',points:rankToPoints('B')},
+    mana:{rank:'D',points:rankToPoints('D'),gainPercent:manaGain('D')},
+    np:{rank:'B',points:rankToPoints('B')},
+  },
+  passiveSkills:[
+    {id:'magic_res',name:'Resistência Mágica C',effect:{type:'magic_def',value:18,debuffRes:20}},
+    {id:'anti_berserker',name:'Anti-Berserker',effect:{type:'vs_class',cls:'Berserker',value:50}},
+  ],
+  activeSkills:[
+    {id:'lanca',name:'Lança de Eixo Branco',effect:{atkUp:16,critDmgUp:26,critChance:30,dur:3},cd:6},
+    {id:'soldado',name:'Aspecto do Soldado Fiel',effect:{npGain:50,healPct:17},cd:6},
+    {id:'abolidor',name:'Abolidor Ruffian',effect:{gutsCharges:2,gutsWindow:5,gutsRevive:30,defUp:30},cd:9},
+  ],
+  np:{
+    name:'Poema de Altruísmo e Lealdade',type:'Self Buff',isAoE:false,
+    effect:{atkUp:70,atkDur:1,defUp:40,defDur:3,debuffImmDur:3},
+  },
+  dialogue:{
+    intro:'Mumumu, eu sinto uma presença que vai perturbar esse sossego. Protegerei o sono do meu Mestre.',
+    defeated:'Ah, não...Mestre...por favor, esteja seguro...',
+    victory:'Vitória! Nada é melhor do que ver o Mestre sendo feliz!',
+    np:'Vossa Majestade Imperial. Fico honrado com seus poemas. É por causa desses poemas, oferecerei de bom grado a minha vida!',
+    skill:'É exatamente para isso que serve minha lança! Seiii!',
+  },
+  assets:{
+    default:'assets/servos/qin/qin_default.png',
+    battle:'assets/servos/qin/qin_battle.png',
+  },
+};
+
+// ── INIMIGOS COMUNS ──────────────────────────────────
+const ENEMIES_DATA={
+  morcego:{id:'morcego',name:'Morcego Gigante',hp:900,atk:480,agility:55,strPts:30},
+  ghoul:{id:'ghoul',name:'Ghoul',hp:1400,atk:720,agility:25,strPts:40},
+  urso:{id:'urso',name:'Urso Gigante Negro',hp:2200,atk:950,agility:15,strPts:40},
+  banshee:{id:'banshee',name:'Banshee',hp:1800,atk:1100,agility:45,strPts:50},
+};
+const ENEMY_IDS=Object.keys(ENEMIES_DATA);
+function phaseMult(p){return 1+0.12*(p-1)}
+function rollGroupSize(phase){
+  const tables={
+    early:[[1,55],[2,30],[3,12],[4,3]],
+    mid:[[1,25],[2,30],[3,25],[4,12],[5,6],[6,2]],
+    late:[[1,8],[2,20],[3,28],[4,22],[5,14],[6,6],[7,2]],
+    boss:[[1,3],[2,10],[3,20],[4,22],[5,18],[6,12],[7,8],[8,5],[9,2]],
+  };
+  const bracket=phase<=3?'early':phase<=6?'mid':phase<=9?'late':'boss';
+  const t=tables[bracket];
+  const total=t.reduce((s,[,w])=>s+w,0);
+  let r=Math.random()*total;
+  for(const[size,w]of t){r-=w;if(r<=0)return size;}
+  return t[t.length-1][0];
+}
+function genEncounter(phase){
+  const size=rollGroupSize(phase);
+  return Array.from({length:size},(_,i)=>{
+    const id=ENEMY_IDS[Math.floor(Math.random()*ENEMY_IDS.length)];
+    const base=ENEMIES_DATA[id];
+    const m=phaseMult(phase);
+    return{
+      ...base,instanceId:`${id}_${i}_${Date.now()+i}`,
+      maxHp:Math.round(base.hp*m),currentHp:Math.round(base.hp*m),
+      atkScaled:Math.round(base.atk*m),
+      damage:Math.round(base.atk*m*base.strPts/100),
+      activeDebuffs:[],stunned:0,
+    };
+  }).sort((a,b)=>b.agility-a.agility);
+}
+
+// ── SAVE SYSTEM ──────────────────────────────────────
+const SAVE_KEY='oni_tactics_profile';
+const BOND_KEY=id=>`oni_tactics_bond_${id}`;
+
+function loadProfile(){
+  try{
+    const r=localStorage.getItem(SAVE_KEY);
+    const def={nickname:'',sq:0,qp:0,skills:{manaBuster:1,transf:1,veneno:1},perks:{energizador:0,pocaoMana:0,pactoEscudo:0}};
+    return r?{...def,...JSON.parse(r)}:def;
+  }catch{return{nickname:'',sq:0,qp:0,skills:{manaBuster:1,transf:1,veneno:1},perks:{energizador:0,pocaoMana:0,pactoEscudo:0}};}
+}
+function saveProfile(p){try{localStorage.setItem(SAVE_KEY,JSON.stringify(p));}catch{}}
+
+// ─── BANCO DE SQ / QP (atômico) ──────────────────────
+// Read-modify-write ATÔMICO: sempre lê o valor mais recente do localStorage
+// antes de somar. Isso elimina o bug de "estado velho" onde um combate
+// sobrescrevia o QP ganho num evento anterior (o profile na memória do React
+// ficava desatualizado). Agora nenhuma tela consegue apagar ganho de outra.
+function depositSQ(amount){
+  const p=loadProfile();
+  const updated={...p,sq:(p.sq||0)+amount};
+  saveProfile(updated);
+  return updated;
+}
+function depositQP(amount){
+  const p=loadProfile();
+  const updated={...p,qp:(p.qp||0)+amount};
+  saveProfile(updated);
+  return updated;
+}
+
+// ─── PERKS ───────────────────────────────────────────
+const PERK_DEFS={
+  energizador:{
+    id:'energizador',name:'Energizador de Raiz',icon:'⚡',
+    desc:lvl=>`Aumenta o Ataque do Servo em +${lvl*5}% (passivo permanente)`,
+    effect:lvl=>({type:'perk_atk_up',value:lvl*5}),
+    costAtLevel:lvl=>800*(2**(lvl-1)), // custo pra comprar o lvl (já no lvl anterior)
+  },
+  pocaoMana:{
+    id:'pocaoMana',name:'Poção de Mana',icon:'🔮',
+    desc:lvl=>`Regenera +${(1+0.5*(lvl-1)).toFixed(1)}% de Barra de NP por turno`,
+    effect:lvl=>({type:'perk_np_regen',value:parseFloat((1+0.5*(lvl-1)).toFixed(1))}),
+    costAtLevel:lvl=>800*(2**(lvl-1)),
+  },
+  pactoEscudo:{
+    id:'pactoEscudo',name:'Pacto do Escudo',icon:'🛡️',
+    desc:lvl=>`Regenera +${400+50*(lvl-1)} HP por turno`,
+    effect:lvl=>({type:'perk_hp_regen',value:400+50*(lvl-1)}),
+    costAtLevel:lvl=>800*(2**(lvl-1)),
+  },
+};
+const PERK_IDS=Object.keys(PERK_DEFS);
+
+// Retorna os efeitos passivos ativos das Perks do perfil
+function getPerkEffects(perks={}){
+  const effects={atkUpPercent:0,npRegenPercent:0,hpRegenPerTurn:0};
+  for(const id of PERK_IDS){
+    const lvl=perks[id]||0;
+    if(lvl<=0)continue;
+    const eff=PERK_DEFS[id].effect(lvl);
+    if(eff.type==='perk_atk_up')effects.atkUpPercent+=eff.value;
+    if(eff.type==='perk_np_regen')effects.npRegenPercent+=eff.value;
+    if(eff.type==='perk_hp_regen')effects.hpRegenPerTurn+=eff.value;
+  }
+  return effects;
+}
+
+function loadBond(id){
+  try{const r=localStorage.getItem(BOND_KEY(id));return r?JSON.parse(r):{level:1,points:0};}
+  catch{return{level:1,points:0};}
+}
+function saveBond(id,b){try{localStorage.setItem(BOND_KEY(id),JSON.stringify(b));}catch{}}
+function addBond(servoId,pts){
+  let b=loadBond(servoId);b.points+=pts;
+  let req=bondReq(b.level);
+  while(b.points>=req){b.points-=req;b.level++;req=bondReq(b.level);}
+  saveBond(servoId,b);return b;
+}
+
+function profileSkillValues(skills){
+  const{manaBuster=1,transf=1,veneno=1}=skills;
+  return{
+    manaBuster:{lvl:manaBuster,atkBoost:linear(manaBuster,5,50),dur:1,cd:stdCD(manaBuster)},
+    transf:{lvl:transf,npGain:linear(transf,5,50),cd:stdCD(transf)},
+    veneno:{lvl:veneno,stunChance:linear(veneno,20,100),cd:stdCD(veneno)},
+  };
+}
+function sqCost(lvl){return lvl;}
+
+// ══════════════════════════════════════════════════════
+// COMPONENTES
+// ══════════════════════════════════════════════════════
+
+function Bar({label,current,max,type='hp',showNumbers=true}){
+  const pct=clamp((current/max)*100,0,100);
+  const low=type==='hp'&&pct<30;
+  return(
+    <div className="bar-container">
+      {showNumbers&&<div className="bar-label"><span>{label}</span><span>{Math.round(current)}/{Math.round(max)}</span></div>}
+      <div className="bar-track">
+        <div className={`bar-fill bar-${type}${low?' low':''}`} style={{width:`${pct}%`}}/>
+      </div>
+    </div>
+  );
+}
+
+function Portrait({src,alt,style={}}){
+  const[ok,setOk]=useState(true);
+  if(!src||!ok)return <div className="portrait-placeholder" style={style}>{alt||'PNG\nPENDENTE'}</div>;
+  return <img className="portrait-img" src={src} alt={alt} style={style} onError={()=>setOk(false)}/>;
+}
+
+function DialogueBox({speaker,text,portrait}){
+  if(!text)return null;
+  return(
+    <div className="dialogue-box">
+      <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
+        <Portrait src={portrait} alt={speaker} style={{width:70,height:90}}/>
+        <div style={{flex:1}}>
+          <div className="dialogue-speaker">{speaker}</div>
+          <div className="dialogue-text">"{text}"</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Notif({message,onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,2500);return()=>clearTimeout(t);},[]);
+  return <div className="notif">{message}</div>;
+}
+
+// ── Barra de XP mini ─────────────────────────────────
+function XPBar({xpState}){
+  if(!xpState)return null;
+  const{level,xp}=xpState;
+  if(level>=10)return(
+    <div style={{fontSize:'.7rem',color:'var(--gold)',fontFamily:'Cinzel,serif',letterSpacing:1}}>Servo Nv.10 — MAX</div>
+  );
+  const req=xpToNextLevel(level);
+  const pct=clamp((xp/req)*100,0,100);
+  return(
+    <div>
+      <div className="bar-label"><span>Servo Nv.{level}</span><span>{xp}/{req} XP</span></div>
+      <div className="bar-track" style={{height:8}}>
+        <div className="bar-fill" style={{width:`${pct}%`,background:'linear-gradient(90deg,#6a0dad,#b44fef)'}}/>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// MENU
+// ══════════════════════════════════════════════════════
+function MenuScreen({onNavigate,profile}){
+  return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2.5rem',marginBottom:8}}>⛩️</div>
+        <h1 className="title-main">FGO ROGUE</h1>
+        <p className="title-sub">Bosque dos Caminhos Cegos</p>
+        <div className="divider"><span className="divider-text">✦ MENU PRINCIPAL ✦</span></div>
+        {profile.nickname&&(
+          <p style={{color:'var(--parchment-dark)',fontSize:'.85rem',marginBottom:16,fontStyle:'italic'}}>
+            Mestre: <strong style={{color:'var(--gold)'}}>{profile.nickname}</strong>
+            &nbsp;·&nbsp; <strong style={{color:'var(--gold)'}}>{profile.sq}</strong> SQ
+            &nbsp;·&nbsp; <strong style={{color:'#4fc3f7'}}>{(profile.qp||0).toLocaleString()}</strong> QP
+          </p>
+        )}
+        <button className="btn btn-full" onClick={()=>onNavigate('campaign')}>⚔️ &nbsp; Iniciar Campanha</button>
+        <button className="btn btn-full" onClick={()=>onNavigate('profile')}>📜 &nbsp; Perfil</button>
+        <button className="btn btn-full" onClick={()=>onNavigate('shop')}>🏪 &nbsp; Loja de Perks</button>
+        <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.5</p>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// PERFIL
+// ══════════════════════════════════════════════════════
+function ProfileScreen({onNavigate,profile,setProfile}){
+  const[nick,setNick]=useState(profile.nickname);
+  const[notif,setNotif]=useState('');
+  const bond=loadBond('ibaraki_douji');
+  const xpState=loadServoXP('ibaraki_douji');
+  const npLvl=bondToNP(bond.level);
+  const sv=profileSkillValues(profile.skills);
+
+  function save(){
+    const p={...profile,nickname:nick.trim()||'Mestre'};
+    saveProfile(p);setProfile(p);setNotif('Perfil salvo!');
+  }
+  function upgrade(key){
+    const fresh=loadProfile(); // leitura fresca: nunca gasta em cima de saldo desatualizado
+    const cur=(fresh.skills&&fresh.skills[key])||1;
+    if(cur>=10)return;
+    const cost=sqCost(cur);
+    if((fresh.sq||0)<cost){setNotif(`SQ insuficiente! Precisa de ${cost} SQ.`);return;}
+    const p={...fresh,sq:fresh.sq-cost,skills:{...fresh.skills,[key]:cur+1}};
+    saveProfile(p);setProfile(p);
+    setNotif(`Skill evoluída para Nv.${cur+1}!`);
+  }
+
+  const skillDefs=[
+    {key:'manaBuster',name:'Mana Buster',
+     desc:lvl=>`Ataque +${linear(lvl,5,50)}% por 1 turno · Recarga ${stdCD(lvl)}t`},
+    {key:'transf',name:'Transferência de Mana',
+     desc:lvl=>`+${linear(lvl,5,50)}% Barra de NP · Recarga ${stdCD(lvl)}t`},
+    {key:'veneno',name:'Veneno de Brasilisco',
+     desc:lvl=>`Atordoar ${linear(lvl,20,100)}% chance · Recarga ${stdCD(lvl)}t`},
+  ];
+
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
+      <div className="panel" style={{maxWidth:600}}>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:16}}>✦ PERFIL ✦</h2>
+
+        <div style={{marginBottom:20}}>
+          <label style={{fontSize:'.75rem',color:'var(--parchment-dark)',letterSpacing:2}}>NICKNAME DO MESTRE</label>
+          <div style={{display:'flex',gap:8,marginTop:6}}>
+            <input value={nick} onChange={e=>setNick(e.target.value)}
+              style={{flex:1,background:'rgba(0,0,0,0.4)',border:'1px solid var(--gold-dim)',color:'var(--white)',padding:'8px 12px',borderRadius:2,fontFamily:'Crimson Text,serif',fontSize:'1rem'}}
+              placeholder="Digite seu nome..." maxLength={24}/>
+            <button className="btn btn-sm" onClick={save}>Salvar</button>
+          </div>
+        </div>
+
+        {/* Banco de Moedas */}
+        <div style={{background:'rgba(201,162,39,0.08)',border:'1px solid var(--gold-dim)',borderRadius:3,padding:14,marginBottom:16}}>
+          <div className="cinzel" style={{color:'var(--gold)',fontSize:'.8rem',letterSpacing:2,marginBottom:8}}>🏦 BANCO DO MESTRE</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            <div>
+              <div style={{fontSize:'.65rem',color:'var(--parchment-dark)',letterSpacing:1}}>SAINT QUARTZ</div>
+              <div style={{fontSize:'1.4rem',fontFamily:'Cinzel,serif',color:'var(--gold)',letterSpacing:2}}>{profile.sq} <span style={{fontSize:'.7rem',color:'var(--gold-dim)'}}>SQ</span></div>
+              <div style={{fontSize:'.65rem',color:'var(--parchment-dark)',marginTop:2}}>Usar para evoluir Skills</div>
+            </div>
+            <div>
+              <div style={{fontSize:'.65rem',color:'#4fc3f7',letterSpacing:1}}>QUANTUM PIECE</div>
+              <div style={{fontSize:'1.4rem',fontFamily:'Cinzel,serif',color:'#4fc3f7',letterSpacing:2}}>{(profile.qp||0).toLocaleString()} <span style={{fontSize:'.7rem',color:'#1e88e5'}}>QP</span></div>
+              <div style={{fontSize:'.65rem',color:'var(--parchment-dark)',marginTop:2}}>Usar para comprar Perks</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="divider"><span className="divider-text">SKILLS DO MESTRE</span></div>
+
+        {skillDefs.map(({key,name,desc})=>{
+          const lvl=profile.skills[key]||1;
+          return(
+            <div key={key} className="skill-row">
+              <div className="skill-info">
+                <div className="skill-name">{name} <span style={{color:'var(--parchment-dark)'}}>Nv.{lvl}</span></div>
+                <div className="skill-desc">{desc(lvl)}</div>
+                <div className="skill-level-pips">
+                  {Array.from({length:10},(_,i)=>(
+                    <div key={i} className={`pip${i<lvl?' filled':''}`}/>
+                  ))}
+                </div>
+              </div>
+              {lvl<10
+                ?<button className="btn btn-sm" onClick={()=>upgrade(key)}>↑ {sqCost(lvl)} SQ</button>
+                :<span style={{color:'var(--gold)',fontSize:'.7rem',fontFamily:'Cinzel,serif'}}>MAX</span>
+              }
+            </div>
+          );
+        })}
+
+        <div className="divider"><span className="divider-text">IBARAKI DOUJI</span></div>
+        {/* XP do Servo */}
+        <div style={{marginBottom:12}}>
+          <XPBar xpState={xpState}/>
+          <p style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:4,fontStyle:'italic'}}>
+            Combate +{XP_COMBAT_WIN} XP · Confiança +{XP_TRUST_EVENT} XP · Boss +{XP_BOSS_WIN} XP · Campanha completa +{XP_CAMPAIGN_COMPLETE} XP
+          </p>
+        </div>
+        {/* Bond */}
+        <div className="bond-section">
+          <div className="bond-label">Bond {bond.level} → {bond.level+1} &nbsp;|&nbsp; NP Nv.{npLvl}</div>
+          <Bar label="" current={bond.points} max={bondReq(bond.level)} type="np" showNumbers={true}/>
+          <p style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:4,fontStyle:'italic'}}>
+            Confiança +150 PB · Combate +30 PB
+          </p>
+        </div>
+
+        <button className="btn btn-full" style={{marginTop:20}} onClick={()=>onNavigate('menu')}>← Voltar</button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// LOJA DE PERKS
+// ══════════════════════════════════════════════════════
+function ShopScreen({onNavigate,profile,setProfile}){
+  const[notif,setNotif]=useState('');
+  const perks=profile.perks||{energizador:0,pocaoMana:0,pactoEscudo:0};
+
+  function buyPerk(id){
+    const fresh=loadProfile(); // leitura fresca: nunca gasta em cima de saldo desatualizado
+    const perksNow=fresh.perks||{energizador:0,pocaoMana:0,pactoEscudo:0};
+    const curLvl=perksNow[id]||0;
+    if(curLvl>=10){setNotif('Esta Perk já está no nível máximo!');return;}
+    const nextLvl=curLvl+1;
+    const cost=PERK_DEFS[id].costAtLevel(nextLvl);
+    if((fresh.qp||0)<cost){
+      setNotif(`QP insuficiente! Precisa de ${cost.toLocaleString()} QP.`);return;
+    }
+    const updated={...fresh,qp:(fresh.qp||0)-cost,perks:{...perksNow,[id]:nextLvl}};
+    saveProfile(updated);setProfile(updated);
+    setNotif(`✨ ${PERK_DEFS[id].name} evoluída para Nv.${nextLvl}!`);
+  }
+
+  const effects=getPerkEffects(perks);
+
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
+      <div className="panel" style={{maxWidth:620}}>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:4}}>🏪 LOJA DE PERKS</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:16,fontStyle:'italic'}}>
+          Perks são passivas permanentes do Mestre — ficam ativas o tempo todo durante a campanha.
+        </p>
+
+        {/* Saldo de QP */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',
+          background:'rgba(79,195,247,0.08)',border:'1px solid #1e88e5',
+          borderRadius:3,padding:'10px 14px',marginBottom:16}}>
+          <div>
+            <div style={{fontSize:'.65rem',color:'#4fc3f7',letterSpacing:2}}>QUANTUM PIECE DISPONÍVEL</div>
+            <div style={{fontSize:'1.5rem',fontFamily:'Cinzel,serif',color:'#4fc3f7'}}>
+              {(profile.qp||0).toLocaleString()} QP
+            </div>
+          </div>
+          <div style={{fontSize:'1.8rem'}}>🪙</div>
+        </div>
+
+        {/* Efeitos ativos resumidos */}
+        {(effects.atkUpPercent>0||effects.npRegenPercent>0||effects.hpRegenPerTurn>0)&&(
+          <div style={{background:'rgba(0,0,0,0.3)',border:'1px solid rgba(255,255,255,0.08)',
+            borderRadius:3,padding:'10px 14px',marginBottom:16,
+            display:'flex',gap:16,flexWrap:'wrap'}}>
+            <span style={{fontSize:'.7rem',color:'var(--gold-dim)',letterSpacing:1,width:'100%',fontFamily:'Cinzel,serif'}}>BÔNUS ATIVOS</span>
+            {effects.atkUpPercent>0&&<span style={{fontSize:'.8rem',color:'#ffd080'}}>⚡ ATK +{effects.atkUpPercent}%</span>}
+            {effects.npRegenPercent>0&&<span style={{fontSize:'.8rem',color:'#90caf9'}}>🔮 NP +{effects.npRegenPercent}%/turno</span>}
+            {effects.hpRegenPerTurn>0&&<span style={{fontSize:'.8rem',color:'#a5d6a7'}}>🛡️ HP +{effects.hpRegenPerTurn}/turno</span>}
+          </div>
+        )}
+
+        <div className="divider"><span className="divider-text">✦ PERKS DISPONÍVEIS ✦</span></div>
+
+        {PERK_IDS.map(id=>{
+          const def=PERK_DEFS[id];
+          const curLvl=perks[id]||0;
+          const nextLvl=curLvl+1;
+          const cost=curLvl<10?def.costAtLevel(nextLvl):null;
+          const canAfford=cost!==null&&(profile.qp||0)>=cost;
+          const isMax=curLvl>=10;
+
+          return(
+            <div key={id} style={{border:'1px solid rgba(79,195,247,0.2)',borderRadius:3,
+              padding:14,marginBottom:10,background:'rgba(0,0,0,0.25)',
+              transition:'border-color .2s',
+              ...(canAfford?{borderColor:'rgba(79,195,247,0.5)'}:{})}}>
+              <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
+                <div style={{fontSize:'2rem',lineHeight:1}}>{def.icon}</div>
+                <div style={{flex:1}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+                    <div className="cinzel" style={{color:'#4fc3f7',fontSize:'.85rem',letterSpacing:1}}>
+                      {def.name}
+                    </div>
+                    <div className="cinzel" style={{
+                      color:isMax?'var(--gold)':'var(--parchment-dark)',
+                      fontSize:'.75rem',letterSpacing:1}}>
+                      {isMax?'✦ MAX':'Nv.'+curLvl+(curLvl>0?'':' (inativo)')}
+                    </div>
+                  </div>
+
+                  {/* Descrição do nível atual e próximo */}
+                  <div style={{fontSize:'.75rem',color:'var(--parchment-dark)',marginBottom:6,lineHeight:1.5}}>
+                    {curLvl>0&&<div style={{color:'#a5d6a7'}}>✓ Ativo: {def.desc(curLvl)}</div>}
+                    {!isMax&&<div style={{color:'var(--parchment-dark)'}}>→ Nv.{nextLvl}: {def.desc(nextLvl)}</div>}
+                  </div>
+
+                  {/* Barra de nível */}
+                  <div style={{display:'flex',gap:3,marginBottom:8}}>
+                    {Array.from({length:10},(_,i)=>(
+                      <div key={i} style={{
+                        height:5,flex:1,borderRadius:1,
+                        background:i<curLvl?'#4fc3f7':'rgba(255,255,255,0.1)',
+                        border:`1px solid ${i<curLvl?'#1e88e5':'rgba(255,255,255,0.15)'}`,
+                        transition:'background .3s',
+                      }}/>
+                    ))}
+                  </div>
+
+                  {/* Botão de compra */}
+                  {!isMax&&(
+                    <button
+                      onClick={()=>buyPerk(id)}
+                      disabled={!canAfford}
+                      style={{
+                        padding:'7px 16px',border:`1px solid ${canAfford?'#4fc3f7':'rgba(79,195,247,0.25)'}`,
+                        background:canAfford?'rgba(79,195,247,0.15)':'rgba(0,0,0,0.3)',
+                        color:canAfford?'#4fc3f7':'rgba(79,195,247,0.4)',
+                        fontFamily:'Cinzel,serif',fontSize:'.7rem',letterSpacing:1,
+                        cursor:canAfford?'pointer':'not-allowed',
+                        borderRadius:2,transition:'all .2s',
+                      }}>
+                      {canAfford?'✦ ':''}Comprar Nv.{nextLvl} — {cost.toLocaleString()} QP
+                    </button>
+                  )}
+                  {isMax&&(
+                    <div style={{color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'.7rem',letterSpacing:2}}>
+                      ✦ PERK DOMINADA
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        <div className="divider"><span className="divider-text">COMO GANHAR QP</span></div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,fontSize:'.75rem',
+          color:'var(--parchment-dark)',marginBottom:16}}>
+          <div>⚔️ Vitória em Combate: <strong style={{color:'#4fc3f7'}}>+500 QP</strong></div>
+          <div>🤝 Qualquer Evento: <strong style={{color:'#4fc3f7'}}>+250 QP</strong></div>
+          <div>👹 Derrotar Boss: <strong style={{color:'#4fc3f7'}}>+1.500 QP</strong></div>
+          <div>🏆 Run Completa: <strong style={{color:'#4fc3f7'}}>+500 QP</strong></div>
+        </div>
+
+        <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar ao Menu</button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// CONFIGURAÇÕES
+// ══════════════════════════════════════════════════════
+function ConfigScreen({onNavigate}){
+  function clearSave(){
+    if(confirm('Apagar TODOS os dados (Perfil, Bond, XP, SQ)? Irreversível.'))
+      {localStorage.clear();window.location.reload();}
+  }
+  return(
+    <div className="screen">
+      <div className="panel" style={{maxWidth:480}}>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:20}}>⚙️ CONFIGURAÇÕES</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.85rem',marginBottom:20,lineHeight:1.7}}>
+          Seu progresso — Perfil, Bond, XP do Servo, Saint Quartz e Quantum Piece —
+          é salvo automaticamente neste navegador após cada batalha e evento.
+        </p>
+        <div className="divider"><span className="divider-text">DADOS SALVOS</span></div>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.75rem',marginBottom:12,fontStyle:'italic'}}>
+          Apagar o save remove todo o progresso de forma permanente. Use com cuidado.
+        </p>
+        <button className="btn btn-red btn-full" onClick={clearSave}>🗑️ Apagar Save Completo</button>
+        <button className="btn btn-full" style={{marginTop:8}} onClick={()=>onNavigate('menu')}>← Voltar</button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// SELEÇÃO DE SERVO
+// ══════════════════════════════════════════════════════
+function ServoSelectScreen({onNavigate,onStartCampaign}){
+  const bond=loadBond('ibaraki_douji');
+  const xpState=loadServoXP('ibaraki_douji');
+  const npLvl=bondToNP(bond.level);
+  return(
+    <div className="screen">
+      <div className="panel" style={{maxWidth:560}}>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:8}}>✦ INVOCAR SERVO ✦</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:20,fontStyle:'italic'}}>Bosque dos Caminhos Cegos — 12 fases</p>
+        <div style={{display:'flex',gap:16,alignItems:'flex-start',border:'1px solid var(--gold-dim)',borderRadius:3,padding:16,marginBottom:16}}>
+          <Portrait src={IBARAKI.assets.default} alt="Ibaraki Douji" style={{width:90,height:120}}/>
+          <div style={{flex:1}}>
+            <div className="cinzel" style={{color:'var(--gold)',fontSize:'1rem',letterSpacing:2}}>IBARAKI DOUJI</div>
+            <div style={{color:'var(--red-bright)',fontSize:'.75rem',letterSpacing:2,marginBottom:8}}>BERSERKER</div>
+            <div style={{fontSize:'.75rem',color:'var(--parchment-dark)',lineHeight:1.8}}>
+              <div>ATK Nv.{xpState.level}: {IBARAKI.getAtk(xpState.level)} &nbsp;·&nbsp; HP: {IBARAKI.getHp(xpState.level)}</div>
+              <div>Strength B &nbsp;·&nbsp; Endurance A+</div>
+              <div>Bond {bond.level} &nbsp;·&nbsp; NP Nv.{npLvl}</div>
+            </div>
+            <div style={{marginTop:8}}>
+              <XPBar xpState={xpState}/>
+            </div>
+          </div>
+        </div>
+        <button className="btn btn-full" onClick={()=>onStartCampaign(IBARAKI)}>⚔️ &nbsp; Invocar e Partir</button>
+        <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar</button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// MAPA
+// ══════════════════════════════════════════════════════
+function MapScreen({camp,onChoosePath,onNavigate}){
+  const{servo,phase,maxPhases}=camp;
+  const isBossPhase=phase>=11;
+  return(
+    <div className="screen">
+      <div className="panel" style={{maxWidth:600}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+          <h2 className="cinzel" style={{color:'var(--gold)',fontSize:'.9rem',letterSpacing:3}}>BOSQUE DOS CAMINHOS CEGOS</h2>
+          <span style={{color:'var(--parchment-dark)',fontSize:'.75rem'}}>Fase {phase}/{maxPhases}</span>
+        </div>
+        <Bar label="HP" current={servo.hp} max={servo.hpMax} type="hp"/>
+        <Bar label="NP" current={servo.npBar} max={100} type="np"/>
+        <div style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginBottom:8,textAlign:'right'}}>
+          SQ: <strong style={{color:'var(--gold)'}}>{camp.sqEarned||0}</strong>
+          &nbsp;·&nbsp; QP: <strong style={{color:'#4fc3f7'}}>{(camp.qpEarned||0).toLocaleString()}</strong>
+          &nbsp;·&nbsp; XP: <strong style={{color:'#b44fef'}}>{camp.xpEarned||0}</strong>
+        </div>
+        <div className="divider"><span className="divider-text">ESCOLHA SEU CAMINHO</span></div>
+        {isBossPhase?(
+          <div style={{textAlign:'center',padding:'20px 0'}}>
+            <div style={{fontSize:'2rem',marginBottom:12}}>⚔️👹⚔️</div>
+            <p className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,fontSize:'1rem',marginBottom:8}}>CONFRONTO FINAL</p>
+            <p style={{color:'var(--parchment-dark)',fontSize:'.85rem',marginBottom:20}}>Uma presença poderosa aguarda no centro do Bosque...</p>
+            <button className="btn btn-red btn-full" onClick={()=>onChoosePath('boss')}>⚔️ Enfrentar o Boss</button>
+          </div>
+        ):(
+          <div className="path-choice">
+            {[['left','🌲','Floresta Densa'],['center','🛤️','Caminho Largo'],['right','🌙','Clareira Sombria']].map(([dir,icon,label])=>(
+              <button key={dir} className="path-btn" onClick={()=>onChoosePath(dir)}>
+                <span className="path-icon">{icon}</span>
+                {dir==='left'?'⬅ Esquerda':dir==='center'?'⬆ Centro':'➡ Direita'}
+                <div className="path-hint">{label}</div>
+              </button>
+            ))}
+          </div>
+        )}
+        <div style={{marginTop:12,fontSize:'.7rem',color:'var(--parchment-dark)',textAlign:'center'}}>
+          Combate: +{XP_COMBAT_WIN} XP · +500 QP · +30 Bond &nbsp;|&nbsp; Evento: +250 QP &nbsp;|&nbsp; Boss: +{XP_BOSS_WIN} XP · +1500 QP
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// EVENTO
+// ══════════════════════════════════════════════════════
+function EventScreen({camp,type,onFinish,setCamp,setProfile}){
+  const{servo}=camp;
+  const[done,setDone]=useState(false);
+  const[result,setResult]=useState('');
+
+  function doEvent(){
+    let newCamp={...camp,servo:{...servo}};
+    let msg='';
+    // QP por evento: 250 QP — depositado imediatamente
+    const qpGain=250;
+
+    if(type==='trust'){
+      const newBond=addBond(servo.id,150);
+      const newXP=addServoXP(servo.id,XP_TRUST_EVENT);
+      newCamp={...newCamp,bond:newBond,
+        xpEarned:(camp.xpEarned||0)+XP_TRUST_EVENT,
+        qpEarned:(camp.qpEarned||0)+qpGain,
+        bondEarned:(camp.bondEarned||0)+150,
+        npLevel:bondToNP(newBond.level)};
+      newCamp.servo.npLevel=bondToNP(newBond.level);
+      msg=`+${XP_TRUST_EVENT} XP · +150 Bond · +${qpGain} QP · Bond ${newBond.level} (${newBond.points}/${bondReq(newBond.level)} PB)${newXP.level>camp.servo.level?` · ✨ SERVO Nv.${newXP.level}!`:''}`;
+    } else if(type==='rest'){
+      const heal=Math.round(servo.hpMax*0.25);
+      const npHeal=15;
+      newCamp.servo.hp=clamp(servo.hp+heal,0,servo.hpMax);
+      newCamp.servo.npBar=clamp(servo.npBar+npHeal,0,100);
+      newCamp.qpEarned=(camp.qpEarned||0)+qpGain;
+      msg=`Recuperou ${heal} HP e ${npHeal}% NP. +${qpGain} QP.`;
+    } else if(type==='plan'){
+      newCamp.planBonus={atkUp:10,defUp:10};
+      newCamp.qpEarned=(camp.qpEarned||0)+qpGain;
+      msg=`Rota planejada! +10% ATK/DEF no próximo combate. +${qpGain} QP.`;
+    }
+    // Deposita QP imediatamente (leitura fresca) e sincroniza o estado do App
+    const updatedProfile=depositQP(qpGain);
+    if(setProfile)setProfile(updatedProfile);
+    setResult(msg);setCamp(newCamp);setDone(true);
+  }
+
+  const bondLvl=camp.bond?.level||1;
+  const trustDialogue=
+    bondLvl>=13?IBARAKI.bondDialogue[15]:
+    bondLvl>=9?IBARAKI.bondDialogue[10]:
+    bondLvl>=4?IBARAKI.bondDialogue[5]:
+    IBARAKI.bondDialogue[1];
+
+  const evtTitles={trust:'🤝 Ganhar Confiança',rest:'🌙 Descansar',plan:'🗺️ Planejar Rota'};
+  const evtDescs={
+    trust:'Um momento de cumplicidade entre Mestre e Servo fortalece o vínculo.',
+    rest:'Um breve descanso para recuperar forças antes de continuar.',
+    plan:'Analisam os caminhos à frente para escolher a rota mais vantajosa.',
+  };
+
+  return(
+    <div className="screen">
+      <div className="panel" style={{maxWidth:560}}>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:4}}>{evtTitles[type]}</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.85rem',marginBottom:16,fontStyle:'italic'}}>{evtDescs[type]}</p>
+        {type==='trust'&&!done&&(
+          <DialogueBox speaker="Ibaraki Douji" text={trustDialogue} portrait={IBARAKI.assets.default}/>
+        )}
+        {!done
+          ?<button className="btn btn-full" onClick={doEvent}>✦ Continuar</button>
+          :(
+            <>
+              <div style={{background:'rgba(201,162,39,0.1)',border:'1px solid var(--gold-dim)',borderRadius:3,padding:12,margin:'12px 0',color:'var(--gold)',fontSize:'.85rem'}}>{result}</div>
+              <button className="btn btn-full" onClick={onFinish}>Seguir em Frente →</button>
+            </>
+          )
+        }
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// COMBATE
+// ══════════════════════════════════════════════════════
+function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfile}){
+  const xpState=loadServoXP(IBARAKI.id);
+  const servoLvl=xpState.level;
+  // Perks passivas do Mestre — carregadas do profile uma vez por combate
+  const perkEffects=getPerkEffects(profile.perks||{});
+
+  const initServo={
+    ...camp.servo,
+    level:servoLvl,
+    attackBase:IBARAKI.getAtk(servoLvl),
+    hpMax:camp.servo.hpMax||IBARAKI.getHp(servoLvl),
+    hp:camp.servo.hp,
+    // Cada combate começa "limpo": buffs/debuffs e recargas resetam.
+    // HP e Barra de NP persistem entre as fases (essência roguelike).
+    activeBuffs:[],activeDebuffs:[],
+    cooldowns:{natureza:0,rampage:0,forma:0},
+    profileCooldowns:{manaBuster:0,transf:0,veneno:0},
+  };
+
+  function createBossInstance(){
+    return{
+      ...QIN,instanceId:'qin_boss',
+      maxHp:QIN.hp,currentHp:QIN.hp,
+      atkScaled:QIN.attack,
+      damage:Math.round(QIN.attack*(QIN.attributes.strength.points/100)),
+      agility:QIN.attributes.agility.points,
+      npBar:0,activeBuffs:[],activeDebuffs:[],
+      cooldowns:{lanca:0,soldado:0,abolidor:0},
+      gutsState:null,isBoss:true,
+    };
+  }
+
+  const[servo,setServo]=useState(initServo);
+  const[enemies,setEnemies]=useState(isBoss?[createBossInstance()]:genEncounter(camp.phase));
+  const[selectedTarget,setSelectedTarget]=useState(0);
+  const[log,setLog]=useState([]);
+  const[turn,setTurn]=useState(1);
+  const[result,setResult]=useState(null);
+  const[dialogue,setDialogue]=useState({text:'',portrait:null});
+  const[notif,setNotif]=useState('');
+  const[introShown,setIntroShown]=useState(false);
+  const[npCutin,setNpCutin]=useState(null); // {src,name,quote} — arte em tela cheia ao usar NP
+
+  function fireNpCutin(src,name,quote){
+    setNpCutin({src,name,quote});
+    setTimeout(()=>setNpCutin(null),1900);
+  }
+
+  const sv=profileSkillValues(profile.skills);
+  const logRef=useRef();
+
+  function addLog(text,type='system'){
+    setLog(prev=>[...prev.slice(-40),{text,type,id:Date.now()+Math.random()}]);
+  }
+
+  useEffect(()=>{
+    if(!introShown){
+      setDialogue(isBoss
+        ?{text:QIN.dialogue.intro,portrait:QIN.assets.default}
+        :{text:IBARAKI.dialogue.battle,portrait:IBARAKI.assets.default}
+      );
+      addLog(`── Turno 1 · Fase ${camp.phase} ──`,'system');
+      setIntroShown(true);
+    }
+  },[]);
+
+  useEffect(()=>{if(logRef.current)logRef.current.scrollTop=logRef.current.scrollHeight;},[log]);
+
+  // ─── Fórmulas ────────────────────────────────────────
+  function getServoDmg(mult=1,target=null){
+    let dmg=servo.attackBase*(servo.attributes.strength.points/100);
+    if(servo.className==='Berserker')dmg*=1.08;
+    if(target?.className){
+      for(const p of servo.passiveSkills||[]){
+        if(p.effect.type==='vs_class'&&target.className===p.effect.cls)dmg*=1+p.effect.value/100;
+      }
+    }
+    let atkUp=0;
+    for(const b of servo.activeBuffs||[]){if(b.type==='attack_up')atkUp+=b.value;}
+    if(camp.planBonus?.atkUp)atkUp+=camp.planBonus.atkUp;
+    // Perk: Energizador de Raiz — bônus de ATK passivo permanente
+    if(perkEffects.atkUpPercent>0)atkUp+=perkEffects.atkUpPercent;
+    return Math.round(dmg*(1+atkUp/100)*mult);
+  }
+
+  function applyDmgToEnemy(raw,enemy){
+    let defDown=0;
+    for(const d of enemy.activeDebuffs||[]){if(d.type==='defense_down')defDown+=d.value;}
+    return Math.round(raw*(1+defDown/100));
+  }
+
+  // Aplica dano a um inimigo respeitando o Guts (2 cargas, janela de 5 turnos).
+  // Se o HP zerar com Guts ativo: consome 1 carga e revive com 30% do HP Base.
+  // Boss também ganha Barra de NP ao SER atingido (1.5× o ganho de ataque),
+  // igual ao FGO — isso faz o NP dela realmente acontecer em lutas longas.
+  function damageEnemy(e,dmg){
+    let out={...e,currentHp:Math.max(0,e.currentHp-dmg)};
+    if(out.currentHp<=0&&out.isBoss&&out.gutsState?.active&&out.gutsState.charges>0){
+      const g=out.gutsState;
+      const reviveHp=Math.round(out.maxHp*g.revivePercent/100);
+      out={...out,currentHp:reviveHp,
+        gutsState:{...g,charges:g.charges-1,active:g.charges-1>0}};
+      addLog(`💀 GUTS! ${e.name} recusa a morte e revive com ${reviveHp} HP! (${out.gutsState.charges} carga restante)`,'np');
+    }
+    if(out.currentHp>0&&out.isBoss){
+      out.npBar=clamp((out.npBar||0)+((out.attributes?.mana?.gainPercent||1.7)*1.5),0,100);
+    }
+    return out;
+  }
+
+  function applyDmgToServo(raw){
+    const passiveMit=servo.attributes.endurance.points/10;
+    let defUp=0,defDown=0;
+    for(const b of servo.activeBuffs||[]){if(b.type==='defense_up')defUp+=b.value;}
+    if(camp.planBonus?.defUp)defUp+=camp.planBonus.defUp;
+    for(const d of servo.activeDebuffs||[]){if(d.type==='defense_down')defDown+=d.value;}
+    return Math.round(raw*(1-clamp(passiveMit+defUp-defDown,0,95)/100));
+  }
+
+  function tickServoEffects(s){
+    let hp=s.hp;
+    let npBar=s.npBar;
+    // Perk: Pacto do Escudo — regen de HP por turno
+    if(perkEffects.hpRegenPerTurn>0)hp=clamp(hp+perkEffects.hpRegenPerTurn,0,s.hpMax);
+    // Perk: Poção de Mana — regen de NP por turno
+    if(perkEffects.npRegenPercent>0)npBar=clamp(npBar+perkEffects.npRegenPercent,0,100);
+    return{...s,
+      hp,npBar,
+      activeBuffs:(s.activeBuffs||[]).map(b=>({...b,turns:b.turns-1})).filter(b=>b.turns>0),
+      activeDebuffs:(s.activeDebuffs||[]).map(d=>({...d,turns:d.turns-1})).filter(d=>d.turns>0),
+      cooldowns:Object.fromEntries(Object.entries(s.cooldowns||{}).map(([k,v])=>[k,Math.max(0,v-1)])),
+      profileCooldowns:Object.fromEntries(Object.entries(s.profileCooldowns||{}).map(([k,v])=>[k,Math.max(0,v-1)])),
+    };
+  }
+  function tickEnemyEffects(e){
+    const g=e.gutsState;
+    let newGuts=g;
+    if(g?.active){const t=g.turnsRemaining-1;newGuts=t<=0?{...g,charges:0,turnsRemaining:0,active:false}:{...g,turnsRemaining:t};}
+    // NOTA: stun NÃO é decrementado aqui — ele é consumido no loop do turno
+    // inimigo, DEPOIS da checagem "está atordoado?". Decrementar aqui fazia
+    // o stun de 1 turno expirar antes de ter efeito (bug corrigido).
+    return{...e,
+      activeDebuffs:(e.activeDebuffs||[]).map(d=>({...d,turns:d.turns-1})).filter(d=>d.turns>0),
+      activeBuffs:(e.activeBuffs||[]).map(b=>({...b,turns:b.turns-1})).filter(b=>b.turns>0),
+      cooldowns:e.cooldowns?Object.fromEntries(Object.entries(e.cooldowns).map(([k,v])=>[k,Math.max(0,v-1)])):e.cooldowns,
+      gutsState:newGuts,
+    };
+  }
+  function checkWin(es){return es.every(e=>e.currentHp<=0);}
+
+  // ─── AÇÕES DO JOGADOR ─────────────────────────────
+  function doBasicAttack(){
+    if(result)return;
+    const tgt=enemies[selectedTarget];
+    if(!tgt||tgt.currentHp<=0){setNotif('Selecione um inimigo vivo!');return;}
+    // Ação de ataque gera NP mesmo se o alvo esquivar (a ação foi executada)
+    const newServo={...servo,npBar:clamp(servo.npBar+servo.attributes.mana.gainPercent,0,100)};
+    // Boss pode esquivar (Agility): 5% base + metade da diferença de Agility
+    if(tgt.isBoss){
+      const dodge=5+Math.max(0,(tgt.agility-servo.attributes.agility.points))/2;
+      if(rollChance(dodge)){
+        addLog(`💨 ${tgt.name} esquiva do ataque! (${dodge.toFixed(1)}% de chance)`,'enemy');
+        setServo(newServo);
+        doEnemyTurn(newServo,enemies);
+        return;
+      }
+    }
+    let dmg=getServoDmg(1,tgt);
+    const isCrit=rollChance(servo.attributes.luck.points);
+    if(isCrit)dmg=Math.round(dmg*1.5);
+    dmg=applyDmgToEnemy(dmg,tgt);
+    const newEnemies=enemies.map((e,i)=>i!==selectedTarget?e:damageEnemy(e,dmg));
+    addLog(`${isCrit?'🔥 CRÍTICO! ':''}Ibaraki ataca ${tgt.name}: ${dmg} dano`+(isCrit?' (×1.5)':''),'player');
+    setServo(newServo);setEnemies(newEnemies);
+    if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
+    doEnemyTurn(newServo,newEnemies);
+  }
+
+  function doSkill(skillId){
+    if(result)return;
+    if((servo.cooldowns[skillId]||0)>0){setNotif('Skill em recarga!');return;}
+    const skillDef=IBARAKI.activeSkills.find(s=>s.id===skillId);
+    if(!skillDef)return;
+    const lvl=1;
+    const eff=skillDef.getEffect(lvl);
+    const cd=skillDef.getCD(lvl);
+    let newServo={...servo,cooldowns:{...servo.cooldowns,[skillId]:cd}};
+    let newEnemies=[...enemies];
+
+    if(skillId==='natureza'){
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),
+        {type:'attack_up',value:eff.atkUp,turns:eff.dur,id:'nat_atk'},
+        {type:'np_damage_up',value:eff.npDmgUp,turns:eff.dur,id:'nat_np'},
+      ];
+      addLog(`Natureza Demoníaca: Ataque +${eff.atkUp}% e NP +${eff.npDmgUp}% por ${eff.dur}t`,'player');
+    } else if(skillId==='rampage'){
+      const healed=Math.round(newServo.hpMax*eff.healPct/100);
+      newServo.hp=clamp(newServo.hp+healed,0,newServo.hpMax);
+      newServo.activeDebuffs=[];
+      const tgt=newEnemies[selectedTarget];
+      if(tgt&&tgt.currentHp>0){
+        const strDmg=Math.round(servo.attackBase*(servo.attributes.strength.points/100)*(eff.strDmgPct/100));
+        const finalDmg=applyDmgToEnemy(strDmg,tgt);
+        newEnemies=newEnemies.map((e,i)=>i===selectedTarget?damageEnemy(e,finalDmg):e);
+        // Causou dano = ação de ataque → gera Barra de NP (regra da spec)
+        newServo.npBar=clamp(newServo.npBar+servo.attributes.mana.gainPercent,0,100);
+        addLog(`Rampage de Oni: cura ${healed} HP, remove debuffs, ${finalDmg} dano em ${tgt.name}`,'heal');
+      } else {
+        addLog(`Rampage de Oni: cura ${healed} HP e remove debuffs`,'heal');
+      }
+    } else if(skillId==='forma'){
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),
+        {type:'defense_up',value:eff.defUp,turns:eff.dur,id:'forma_def'},
+      ];
+      addLog(`Mudança de Forma: Defesa +${eff.defUp}% por ${eff.dur}t`,'player');
+    }
+
+    setDialogue({text:IBARAKI.dialogue.skill,portrait:IBARAKI.assets.default});
+    setServo(newServo);setEnemies(newEnemies);
+    if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
+    // Skills são AÇÕES LIVRES (estilo FGO): não passam o turno.
+    // Só Atacar, NP ou Fugir encerram o turno do jogador.
+  }
+
+  function doProfileSkill(skillKey){
+    if(result)return;
+    if((servo.profileCooldowns[skillKey]||0)>0){setNotif('Skill em recarga!');return;}
+    const sk=sv[skillKey];
+    let newServo={...servo,profileCooldowns:{...servo.profileCooldowns,[skillKey]:sk.cd}};
+    let newEnemies=[...enemies];
+
+    if(skillKey==='manaBuster'){
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'attack_up',value:sk.atkBoost,turns:sk.dur,id:'mana_b'}];
+      addLog(`Mana Buster Nv.${sk.lvl}: Ataque +${sk.atkBoost}% por ${sk.dur}t`,'player');
+    } else if(skillKey==='transf'){
+      newServo.npBar=clamp(newServo.npBar+sk.npGain,0,100);
+      addLog(`Transferência de Mana Nv.${sk.lvl}: +${sk.npGain}% Barra de NP`,'player');
+    } else if(skillKey==='veneno'){
+      const tgt=newEnemies[selectedTarget];
+      if(tgt&&tgt.currentHp>0){
+        const debuffRes=tgt.isBoss?20:0;
+        if(rollChance(clamp(sk.stunChance-debuffRes,0,100))){
+          newEnemies=newEnemies.map((e,i)=>i===selectedTarget?{...e,stunned:1}:e);
+          addLog(`Veneno de Brasilisco Nv.${sk.lvl}: ${tgt.name} Atordoado!`,'player');
+        } else {
+          addLog(`Veneno de Brasilisco Nv.${sk.lvl}: falhou (${Math.round(clamp(sk.stunChance-debuffRes,0,100))}% chance)`,'system');
+        }
+      }
+    }
+    setServo(newServo);setEnemies(newEnemies);
+    // Skills do Mestre também são ações livres: não passam o turno.
+  }
+
+  function doNP(){
+    if(result)return;
+    if(servo.npBar<100){setNotif('Barra de NP não está cheia!');return;}
+    const tgt=enemies[selectedTarget];
+    if(!tgt||tgt.currentHp<=0){setNotif('Selecione um inimigo vivo!');return;}
+    const npLvl=servo.npLevel||1;
+    const npDef=IBARAKI.np.levels[npLvl];
+    let dmg=servo.attackBase*(servo.attributes.strength.points/100);
+    if(servo.className==='Berserker')dmg*=1.08;
+    let npUp=0;
+    for(const b of servo.activeBuffs||[]){if(b.type==='np_damage_up')npUp+=b.value;}
+    dmg=Math.round(applyDmgToEnemy(dmg*(1+npUp/100)*(npDef.dmgPct/100),tgt));
+
+    const newEnemies=enemies.map((e,i)=>{
+      if(i!==selectedTarget)return e;
+      // NP não é esquivável — mas respeita o Guts do boss
+      let hit=damageEnemy(e,dmg);
+      hit={...hit,activeDebuffs:[...(hit.activeDebuffs||[]),{type:'defense_down',value:npDef.defDown,turns:IBARAKI.np.defDownDur}]};
+      return hit;
+    });
+    const newServo={...servo,npBar:0};
+    setDialogue({text:IBARAKI.dialogue.np,portrait:IBARAKI.assets.default});
+    fireNpCutin(IBARAKI.assets.np,'RASHŌMON DAIENGI',IBARAKI.dialogue.np);
+    addLog(`⚡ RASHŌMON DAIENGI (NP Lv.${npLvl})! ${dmg} dano em ${tgt.name} · DEF ↓${npDef.defDown}% por ${IBARAKI.np.defDownDur}t`,'np');
+    setServo(newServo);setEnemies(newEnemies);
+    if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
+    doEnemyTurn(newServo,newEnemies);
+  }
+
+  // ─── FUGIR (spec: Agility = esquiva + fuga) ─────────
+  // Chance = 40% base + diferença entre a Agility do Servo e a média dos
+  // inimigos vivos (mín. 5%, máx. 90%). Fugir pula a fase SEM recompensas.
+  // Impossível fugir do Boss. Falhar na fuga consome o turno.
+  function doFlee(){
+    if(result)return;
+    if(isBoss){setNotif('Impossível fugir do Boss!');return;}
+    const alive=enemies.filter(e=>e.currentHp>0);
+    const avgAgi=alive.length?alive.reduce((sum,e)=>sum+e.agility,0)/alive.length:0;
+    const chance=clamp(40+(servo.attributes.agility.points-avgAgi),5,90);
+    if(rollChance(chance)){
+      addLog(`💨 Fuga bem-sucedida! (${Math.round(chance)}% de chance)`,'system');
+      setResult('fled');
+      setTimeout(()=>onFlee(servo),1200);
+    }else{
+      addLog(`💨 A fuga falhou! (${Math.round(chance)}% de chance) Os inimigos avançam!`,'enemy');
+      doEnemyTurn(servo,enemies);
+    }
+  }
+
+  // ─── TURNO DOS INIMIGOS ─────────────────────────────
+  function doEnemyTurn(curServo,curEnemies){
+    let s=tickServoEffects({...curServo});
+    s.hp=clamp(s.hp,0,s.hpMax);
+    let es=curEnemies.map(e=>e.currentHp>0?tickEnemyEffects(e):e);
+
+    for(let i=0;i<es.length;i++){
+      const e=es[i];
+      if(e.currentHp<=0)continue;
+      if((e.stunned||0)>0){
+        addLog(`${e.name} está Atordoado e perde o turno!`,'system');
+        es[i]={...es[i],stunned:es[i].stunned-1};
+        continue;
+      }
+
+      if(e.isBoss){
+        // IA da Qin
+        const qin=es[i];
+        const hpPct=(qin.currentHp/qin.maxHp)*100;
+        if(hpPct<40&&(qin.cooldowns?.abolidor||0)===0){
+          es[i]={...qin,
+            gutsState:{charges:2,windowTurns:5,turnsRemaining:5,revivePercent:30,active:true},
+            activeBuffs:[...(qin.activeBuffs||[]),{type:'defense_up',value:30,turns:5,id:'abolidor_def'}],
+            cooldowns:{...qin.cooldowns,abolidor:9},
+          };
+          addLog(`Qin — Abolidor Ruffian! Guts×2 (5t), Defesa +30%`,'enemy');
+          continue;
+        }
+        if(qin.npBar>=100){
+          const eff=QIN.np.effect;
+          es[i]={...qin,npBar:0,
+            activeBuffs:[...(qin.activeBuffs||[]),
+              {type:'attack_up',value:eff.atkUp,turns:eff.atkDur,id:'qin_np_atk'},
+              {type:'defense_up',value:eff.defUp,turns:eff.defDur,id:'qin_np_def'},
+              {type:'debuff_immunity',turns:eff.debuffImmDur,id:'qin_np_imm'},
+            ],
+          };
+          addLog(`⚡ QIN NP — ${QIN.np.name}! ATK+${eff.atkUp}% · DEF+${eff.defUp}% · Imunidade a Debuffs`,'np');
+          setDialogue({text:QIN.dialogue.np,portrait:QIN.assets.default});
+          fireNpCutin(QIN.assets.battle,QIN.np.name.toUpperCase(),QIN.dialogue.np);
+          continue;
+        }
+        if(hpPct<60&&(qin.cooldowns?.soldado||0)===0){
+          const healed=Math.round(qin.maxHp*0.17);
+          es[i]={...qin,currentHp:Math.min(qin.maxHp,qin.currentHp+healed),
+            npBar:clamp(qin.npBar+50,0,100),cooldowns:{...qin.cooldowns,soldado:6}};
+          addLog(`Qin — Aspecto do Soldado: +${healed} HP, +50% NP`,'enemy');
+          continue;
+        }
+        if((qin.cooldowns?.lanca||0)===0&&!(qin.activeBuffs||[]).some(b=>b.id==='lanca_eixo')){
+          es[i]={...qin,
+            activeBuffs:[...(qin.activeBuffs||[]),{type:'attack_up',value:16,turns:3,id:'lanca_eixo'}],
+            cooldowns:{...qin.cooldowns,lanca:6},
+          };
+          addLog(`Qin — Lança de Eixo Branco: ATK+16% por 3t`,'enemy');
+          continue;
+        }
+        // Ataque básico da Qin — Ibaraki pode esquivar; Qin pode critar
+        const dodgeChQ=5+Math.max(0,(servo.attributes.agility.points-qin.agility))/2;
+        if(rollChance(dodgeChQ)){
+          addLog(`💨 Ibaraki esquiva do ataque de Qin! (${dodgeChQ.toFixed(1)}%)`,'player');
+          es[i]={...qin,npBar:clamp(qin.npBar+(qin.attributes?.mana?.gainPercent||1.7),0,100)};
+        } else {
+          const qinRaw=Math.round(qin.atkScaled*(qin.attributes.strength.points/100));
+          let atkUp=0,critBuff=0;
+          for(const b of qin.activeBuffs||[]){
+            if(b.type==='attack_up')atkUp+=b.value;
+            if(b.id==='lanca_eixo')critBuff+=30; // Lança de Eixo Branco: +30% chance de crítico
+          }
+          let qinDmgBase=Math.round(qinRaw*(1+atkUp/100));
+          // Crítico do boss: Luck/2 (A=50 → 25% base) + buff da Lança
+          const qinCrit=rollChance(qin.attributes.luck.points/2+critBuff);
+          if(qinCrit)qinDmgBase=Math.round(qinDmgBase*1.5);
+          const qinFinal=s.className==='Berserker'?Math.round(qinDmgBase*1.5):qinDmgBase;
+          const qinMit=applyDmgToServo(qinFinal);
+          s.hp=Math.max(0,s.hp-qinMit);
+          // Tomar dano gera NP pro Servo (1.5× o ganho de ataque, estilo FGO)
+          s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+          es[i]={...qin,npBar:clamp(qin.npBar+(qin.attributes?.mana?.gainPercent||1.7),0,100)};
+          addLog(`${qinCrit?'🔥 CRÍTICO! ':''}Qin ataca Ibaraki: ${qinMit} dano${s.className==='Berserker'?' (+Anti-Berserker×1.5)':''}!`,'enemy');
+        }
+      } else {
+        // Inimigo comum — Ibaraki pode esquivar (Agility)
+        const dodgeCh=5+Math.max(0,(servo.attributes.agility.points-e.agility))/2;
+        if(rollChance(dodgeCh)){
+          addLog(`💨 Ibaraki esquiva do ataque de ${e.name}! (${dodgeCh.toFixed(1)}%)`,'player');
+        } else {
+          const rawDmg=applyDmgToServo(e.damage);
+          s.hp=Math.max(0,s.hp-rawDmg);
+          // Tomar dano gera NP pro Servo (1.5× o ganho de ataque)
+          s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+          addLog(`${e.name} ataca: ${rawDmg} dano!`,'enemy');
+        }
+      }
+
+      if(s.hp<=0){
+        setServo({...s});setEnemies(es);
+        setDialogue({text:IBARAKI.dialogue.lose,portrait:IBARAKI.assets.lose||IBARAKI.assets.default});
+        endCombat(false,s,es);return;
+      }
+    }
+
+    setTurn(t=>t+1);
+    setServo({...s});setEnemies(es);
+    addLog(`── Turno ${turn+1} ──`,'system');
+  }
+
+  // ─── FIM DE COMBATE ────────────────────────────────
+  function endCombat(won,finalServo,finalEnemies){
+    setResult(won?'win':'lose');
+
+    if(won){
+      // XP e Bond por vitória em combate — salvos IMEDIATAMENTE
+      const newBond=addBond(IBARAKI.id,30);
+      const xpGain=isBoss?XP_BOSS_WIN:XP_COMBAT_WIN;
+      const newXP=addServoXP(IBARAKI.id,xpGain);
+
+      // SQ e QP depositados IMEDIATAMENTE (leitura atômica do storage)
+      const sqGain=isBoss?5:2;
+      const qpGain=isBoss?1500:500;
+      depositSQ(sqGain);
+      const newProfile=depositQP(qpGain);
+      setProfile(newProfile);
+
+      const updatedCamp={...camp,
+        servo:{...finalServo,npLevel:bondToNP(newBond.level)},
+        bond:newBond,
+        npLevel:bondToNP(newBond.level),
+        sqEarned:(camp.sqEarned||0)+sqGain,
+        qpEarned:(camp.qpEarned||0)+qpGain,
+        xpEarned:(camp.xpEarned||0)+xpGain,
+        bondEarned:(camp.bondEarned||0)+30,
+        planBonus:null,
+      };
+
+      setDialogue({text:IBARAKI.dialogue.win,portrait:IBARAKI.assets.win||IBARAKI.assets.default});
+      addLog(`✦ Vitória! +${sqGain} SQ · +${qpGain} QP · +${xpGain} XP · +30 Bond`+(newXP.level>servoLvl?` · ✨ SERVO Nv.${newXP.level}!`:''),'system');
+      setCamp(updatedCamp);
+      setTimeout(()=>onWin(updatedCamp),2000);
+
+    } else {
+      // Derrota — SQ e QP dos combates anteriores já foram depositados em tempo real
+      addLog(`✦ Derrota. SQ e QP ganhos até aqui já estão no banco.`,'system');
+      setDialogue({text:IBARAKI.dialogue.lose,portrait:IBARAKI.assets.lose||IBARAKI.assets.default});
+      setTimeout(()=>onLose({...camp,servo:finalServo}),1500);
+    }
+  }
+
+  // ─── RENDER ─────────────────────────────────────────
+  const liveEnemies=enemies.filter(e=>e.currentHp>0);
+  const npReady=servo.npBar>=100;
+  const avgEnemyAgi=liveEnemies.length?liveEnemies.reduce((s,e)=>s+e.agility,0)/liveEnemies.length:0;
+  const fleeChance=isBoss?0:clamp(40+(servo.attributes.agility.points-avgEnemyAgi),5,90);
+
+  return(
+    <div className="screen" style={{padding:'12px'}}>
+      {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
+
+      {result&&(
+        <div className="result-overlay">
+          <div className={`result-title ${result==='lose'?'result-lose':'result-win'}`}>
+            {result==='win'?'VITÓRIA':result==='fled'?'FUGIU!':'DERROTA'}
+          </div>
+          <p style={{color:'var(--parchment-dark)',fontStyle:'italic',textAlign:'center',maxWidth:360}}>
+            {result==='win'?IBARAKI.dialogue.win:result==='fled'?'Vivendo para lutar outro dia... Sem recompensas desta vez.':IBARAKI.dialogue.lose}
+          </p>
+        </div>
+      )}
+
+      {npCutin&&(
+        <div className="np-cutin">
+          <img src={npCutin.src} alt={npCutin.name}/>
+          <div className="cutin-text">
+            <div className="cutin-name">⚡ {npCutin.name} ⚡</div>
+            <div className="cutin-quote">"{npCutin.quote}"</div>
+          </div>
+        </div>
+      )}
+
+      <div style={{maxWidth:800,width:'100%'}}>
+        {/* Status do Servo */}
+        <div className="panel" style={{marginBottom:10,padding:14}}>
+          <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
+            <Portrait src={dialogue.portrait||IBARAKI.assets.default} alt="Ibaraki" style={{width:64,height:84}}/>
+            <div style={{flex:1}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+                <span className="cinzel" style={{color:'var(--gold)',fontSize:'.8rem',letterSpacing:2}}>
+                  IBARAKI DOUJI <span style={{color:'var(--red-bright)',fontSize:'.7rem'}}>Berserker · Nv.{servoLvl}</span>
+                </span>
+                <span style={{fontSize:'.7rem',color:'var(--parchment-dark)'}}>Turno {turn}</span>
+              </div>
+              <Bar label="HP" current={servo.hp} max={servo.hpMax} type="hp"/>
+              <Bar label="NP" current={servo.npBar} max={100} type="np"/>
+              {(servo.activeBuffs||[]).length>0&&(
+                <div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:4}}>
+                  {servo.activeBuffs.map((b,i)=>(
+                    <span key={i} style={{fontSize:'.6rem',background:'rgba(201,162,39,0.2)',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'2px 6px',color:'var(--gold)'}}>
+                      {b.type==='attack_up'?`ATK+${b.value}%`:b.type==='defense_up'?`DEF+${b.value}%`:b.type==='np_damage_up'?`NP+${b.value}%`:b.type} {b.turns}t
+                    </span>
+                  ))}
+                  {(servo.activeDebuffs||[]).map((d,i)=>(
+                    <span key={i} style={{fontSize:'.6rem',background:'rgba(139,26,26,0.3)',border:'1px solid var(--red)',borderRadius:10,padding:'2px 6px',color:'#ff8080'}}>
+                      DEF-{d.value}% {d.turns}t
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          {dialogue.text&&(
+            <div className="dialogue-text" style={{marginTop:8,fontSize:'.8rem',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:8}}>
+              <em>"{dialogue.text}"</em>
+            </div>
+          )}
+        </div>
+
+        {/* Inimigos */}
+        <div className="enemy-group">
+          {enemies.map((e,i)=>(
+            <div key={e.instanceId}
+              className={`enemy-card${e.currentHp<=0?' dead':''}${i===selectedTarget&&e.currentHp>0?' selected':''}${(e.stunned||0)>0?' stunned':''}`}
+              onClick={()=>e.currentHp>0&&setSelectedTarget(i)}>
+              {(e.stunned||0)>0&&<span className="stun-badge">ATORD.</span>}
+              {e.isBoss&&(
+                <img src={QIN.assets.default} alt={e.name}
+                  style={{width:74,height:74,objectFit:'cover',objectPosition:'center 10%',borderRadius:2,border:'1px solid var(--red)',display:'block',margin:'0 auto 6px',background:'rgba(0,0,0,.35)'}}
+                  onError={ev=>{ev.target.style.display='none';}}/>
+              )}
+              <div className="enemy-name">{e.name}</div>
+              <div className="enemy-hp">{Math.max(0,e.currentHp)}/{e.maxHp}</div>
+              <div style={{height:4,background:'rgba(0,0,0,0.4)',borderRadius:2,marginTop:4,overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${clamp((e.currentHp/e.maxHp)*100,0,100)}%`,background:'var(--red-bright)',borderRadius:2,transition:'width .3s'}}/>
+              </div>
+              {e.isBoss&&e.gutsState?.active&&(
+                <div style={{fontSize:'.55rem',color:'#ffd080',marginTop:3}}>GUTS ×{e.gutsState.charges} ({e.gutsState.turnsRemaining}t)</div>
+              )}
+              {(e.activeDebuffs||[]).map((d,j)=>(
+                <span key={j} style={{display:'block',fontSize:'.55rem',color:'#ff8080'}}>DEF-{d.value}% {d.turns}t</span>
+              ))}
+              {(e.activeBuffs||[]).map((b,j)=>(
+                <span key={j} style={{display:'block',fontSize:'.55rem',color:'#ffd080'}}>{b.type==='attack_up'?`ATK+${b.value}%`:'buff'} {b.turns}t</span>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Ações */}
+        <div className="panel" style={{padding:12}}>
+          <div className="skills-row">
+            <button className="skill-btn" onClick={doBasicAttack}>
+              ⚔️ Atacar
+              <span className="skill-cd">{liveEnemies.length} alvo(s) vivo(s)</span>
+            </button>
+            <button className="skill-btn" onClick={doFlee} disabled={isBoss}
+              style={isBoss?{opacity:.35}:{}}>
+              💨 Fugir
+              <span className="skill-cd">{isBoss?'Impossível!':`${Math.round(fleeChance)}% chance`}</span>
+            </button>
+            {IBARAKI.activeSkills.map(sk=>{
+              const cd=servo.cooldowns[sk.id]||0;
+              return(
+                <button key={sk.id} className="skill-btn" onClick={()=>doSkill(sk.id)} disabled={cd>0}>
+                  {sk.name}
+                  <span className="skill-cd">{cd>0?`${cd}t recarga`:`Rank ${sk.rank}`}</span>
+                </button>
+              );
+            })}
+            <button className={`btn btn-np`} onClick={doNP} disabled={!npReady}
+              style={{opacity:npReady?1:0.4,minWidth:100}}>
+              ⚡ NP{npReady?' PRONTO!':''}
+              <span className="skill-cd" style={{display:'block',marginTop:3}}>
+                {npReady?'Rashōmon!':`${Math.round(100-servo.npBar)}% restante`}
+              </span>
+            </button>
+          </div>
+
+          <div className="divider"><span className="divider-text">SKILLS DO MESTRE</span></div>
+          <div className="skills-row">
+            {[['manaBuster','💥 Mana Buster'],['transf','🔮 Transf. Mana'],['veneno','☠️ Veneno']].map(([key,label])=>{
+              const cd=servo.profileCooldowns[key]||0;
+              return(
+                <button key={key} className="skill-btn" onClick={()=>doProfileSkill(key)} disabled={cd>0}>
+                  {label}
+                  <span className="skill-cd">{cd>0?`${cd}t recarga`:`Nv.${sv[key].lvl}`}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div style={{fontSize:'.65rem',color:'var(--parchment-dark)',textAlign:'center',marginTop:8,fontStyle:'italic'}}>
+            Skills são ações livres — apenas Atacar, NP ou Fugir encerram o turno.
+          </div>
+        </div>
+
+        {/* Log */}
+        <div className="battle-log" ref={logRef}>
+          {log.map(entry=>(
+            <div key={entry.id} className={`log-entry ${entry.type}`}>{entry.text}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// CONTROLADOR DE CAMPANHA
+// ══════════════════════════════════════════════════════
+function CampaignController({profile,setProfile,onNavigate}){
+  const[stage,setStage]=useState('select');
+  const[camp,setCamp]=useState(null);
+  const[eventType,setEventType]=useState(null);
+  const[campResult,setCampResult]=useState(null);
+
+  function startCampaign(servo){
+    const xpState=loadServoXP(servo.id);
+    const bond=loadBond(servo.id);
+    const lvl=xpState.level;
+    const hpMax=servo.getHp(lvl);
+    const npLvl=bondToNP(bond.level);
+    const sv=profileSkillValues(profile.skills);
+    const c={
+      phase:1,maxPhases:12,
+      servo:{
+        ...servo,level:lvl,
+        attackBase:servo.getAtk(lvl),hpMax,hp:hpMax,
+        npBar:0,npLevel:npLvl,
+        activeBuffs:[],activeDebuffs:[],
+        cooldowns:{natureza:0,rampage:0,forma:0},
+        profileCooldowns:{manaBuster:0,transf:0,veneno:0},
+      },
+      bond,npLevel:npLvl,
+      profile,profileSkills:sv,
+      sqEarned:0,xpEarned:0,bondEarned:0,
+    };
+    setCamp(c);setStage('map');
+  }
+
+  function choosePath(dir){
+    if(dir==='boss'){setStage('boss');return;}
+    const r=Math.random();
+    if(r<0.55){setStage('combat');}
+    else{
+      const evts=['trust','rest','plan'];
+      setEventType(evts[Math.floor(Math.random()*evts.length)]);
+      setStage('event');
+    }
+  }
+
+  function onCombatWin(updatedCamp){
+    const nextPhase=updatedCamp.phase+1;
+    if(nextPhase>updatedCamp.maxPhases){
+      const bonusSQ=5; const bonusQP=500;
+      depositSQ(bonusSQ);
+      const newProfile=depositQP(bonusQP);
+      setProfile(newProfile);
+      addServoXP(IBARAKI.id,XP_CAMPAIGN_COMPLETE);
+      setCampResult({type:'win',
+        sq:updatedCamp.sqEarned+bonusSQ,
+        qp:(updatedCamp.qpEarned||0)+bonusQP,
+        xp:updatedCamp.xpEarned+XP_CAMPAIGN_COMPLETE,
+        bondEarned:updatedCamp.bondEarned||0});
+      setStage('result');
+    } else {
+      setCamp({...updatedCamp,phase:nextPhase});
+      setStage('map');
+    }
+  }
+
+  function onBossWin(updatedCamp){
+    // SQ+QP do boss já depositados dentro do CombatScreen
+    const bonusSQ=5; const bonusQP=500;
+    depositSQ(bonusSQ);
+    const newProfile=depositQP(bonusQP);
+    setProfile(newProfile);
+    addServoXP(IBARAKI.id,XP_CAMPAIGN_COMPLETE);
+    setCampResult({type:'win',boss:true,
+      sq:updatedCamp.sqEarned+bonusSQ,
+      qp:(updatedCamp.qpEarned||0)+bonusQP,
+      xp:updatedCamp.xpEarned+XP_CAMPAIGN_COMPLETE,
+      bondEarned:updatedCamp.bondEarned||0});
+    setStage('result');
+  }
+
+  function onCombatLose(finalCamp){
+    // Tudo já depositado em tempo real — só exibe
+    setCampResult({type:'lose',
+      sq:finalCamp.sqEarned||0,
+      qp:finalCamp.qpEarned||0,
+      xp:finalCamp.xpEarned||0,
+      bondEarned:finalCamp.bondEarned||0});
+    setStage('result');
+  }
+
+  function onCombatFlee(finalServo){
+    // Fugir avança a fase SEM recompensas — só HP e NP atuais são levados
+    const nextPhase=camp.phase+1;
+    setCamp({...camp,servo:{...camp.servo,hp:finalServo.hp,npBar:finalServo.npBar},phase:nextPhase});
+    setStage(nextPhase>camp.maxPhases?'result':'map');
+  }
+
+  function onEventFinish(){
+    const nextPhase=camp.phase+1;
+    setCamp({...camp,phase:nextPhase});
+    setStage(nextPhase>camp.maxPhases?'result':'map');
+  }
+
+  function restart(){setStage('select');setCamp(null);setCampResult(null);}
+
+  if(stage==='select')return <ServoSelectScreen onNavigate={onNavigate} onStartCampaign={startCampaign}/>;
+  if(stage==='map')return <MapScreen camp={camp} onChoosePath={choosePath} onNavigate={onNavigate}/>;
+  if(stage==='combat')return <CombatScreen camp={camp} isBoss={false} onWin={onCombatWin} onLose={onCombatLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
+  if(stage==='boss')return <CombatScreen camp={camp} isBoss={true} onWin={onBossWin} onLose={onCombatLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
+  if(stage==='event')return <EventScreen camp={camp} type={eventType} onFinish={onEventFinish} setCamp={setCamp} setProfile={setProfile}/>;
+
+  // Tela de resultado
+  const xpFinal=loadServoXP(IBARAKI.id);
+  return(
+    <div className="screen">
+      <div className="panel" style={{maxWidth:500,textAlign:'center'}}>
+        <div style={{fontSize:'2.5rem',marginBottom:12}}>{campResult?.type==='win'?'🏆':'💀'}</div>
+        <h2 className="cinzel" style={{
+          color:campResult?.type==='win'?'var(--gold)':'var(--red-bright)',
+          letterSpacing:4,fontSize:'1.8rem',marginBottom:12}}>
+          {campResult?.type==='win'?'CAMPANHA VENCIDA!':'FIM DA CAMPANHA'}
+        </h2>
+
+        {campResult?.boss&&(
+          <p style={{color:'var(--parchment)',marginBottom:8,fontStyle:'italic'}}>Qin Liangyu foi derrotada!</p>
+        )}
+
+        {/* Resumo de ganhos */}
+        <div style={{background:'rgba(0,0,0,0.3)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:3,padding:14,margin:'12px 0',textAlign:'left'}}>
+          <div className="cinzel" style={{color:'var(--gold)',fontSize:'.75rem',letterSpacing:2,marginBottom:10}}>RESULTADO DA CAMPANHA</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,fontSize:'.85rem'}}>
+            <div>
+              <div style={{color:'var(--parchment-dark)',fontSize:'.7rem'}}>SQ Depositados</div>
+              <div style={{color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'1.1rem'}}>{campResult?.sq||0}</div>
+            </div>
+            <div>
+              <div style={{color:'#4fc3f7',fontSize:'.7rem'}}>QP Depositados</div>
+              <div style={{color:'#4fc3f7',fontFamily:'Cinzel,serif',fontSize:'1.1rem'}}>{(campResult?.qp||0).toLocaleString()}</div>
+            </div>
+            <div>
+              <div style={{color:'var(--parchment-dark)',fontSize:'.7rem'}}>XP Ganho</div>
+              <div style={{color:'#b44fef',fontFamily:'Cinzel,serif',fontSize:'1.1rem'}}>{campResult?.xp||0}</div>
+            </div>
+            <div>
+              <div style={{color:'var(--parchment-dark)',fontSize:'.7rem'}}>Bond Ganho</div>
+              <div style={{color:'var(--np-light)',fontFamily:'Cinzel,serif',fontSize:'1.1rem'}}>{campResult?.bondEarned||0} PB</div>
+            </div>
+            <div>
+              <div style={{color:'var(--parchment-dark)',fontSize:'.7rem'}}>Servo Nível</div>
+              <div style={{color:'var(--white)',fontFamily:'Cinzel,serif',fontSize:'1.1rem'}}>Nv.{xpFinal.level}</div>
+            </div>
+            <div>
+              <div style={{color:'var(--parchment-dark)',fontSize:'.7rem'}}>QP Total</div>
+              <div style={{color:'#4fc3f7',fontFamily:'Cinzel,serif',fontSize:'1.1rem'}}>{(loadProfile().qp||0).toLocaleString()}</div>
+            </div>
+          </div>
+          <div style={{marginTop:10}}>
+            <XPBar xpState={xpFinal}/>
+          </div>
+          <div style={{marginTop:8,fontSize:'.75rem',color:'var(--parchment-dark)',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:8}}>
+            SQ são <strong style={{color:'var(--gold)'}}>depositados automaticamente</strong> a cada vitória.
+            {campResult?.type==='lose'&&campResult?.sq>0&&' Os SQ das batalhas anteriores já estão no seu banco.'}
+          </div>
+        </div>
+
+        <p style={{color:'var(--parchment-dark)',fontStyle:'italic',margin:'12px 0',fontSize:'.85rem',lineHeight:1.6}}>
+          {campResult?.type==='win'?IBARAKI.dialogue.mapDone:IBARAKI.dialogue.lose}
+        </p>
+
+        <button className="btn btn-full" onClick={restart}>🔄 Nova Campanha</button>
+        <button className="btn btn-full" style={{marginTop:8}} onClick={()=>onNavigate('menu')}>← Menu Principal</button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// APP
+// ══════════════════════════════════════════════════════
+function App(){
+  const[screen,setScreen]=useState('menu');
+  const[profile,setProfile]=useState(loadProfile());
+  function navigate(s){setScreen(s);}
+  if(screen==='menu')return <MenuScreen onNavigate={navigate} profile={profile}/>;
+  if(screen==='profile')return <ProfileScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
+  if(screen==='shop')return <ShopScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
+  if(screen==='config')return <ConfigScreen onNavigate={navigate}/>;
+  if(screen==='campaign')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate}/>;
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+</body>
+</html>
