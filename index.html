@@ -207,6 +207,75 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .map-title-card .mtc-name{font-family:'Cinzel',serif;color:var(--gold);letter-spacing:4px;font-size:clamp(1.4rem,5vw,2.4rem);text-align:center;text-shadow:0 0 30px rgba(201,162,39,.5);animation:splashRise .9s ease}
 .map-title-card .mtc-line{width:0;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);margin-top:18px;animation:mtcLine 1.1s ease forwards}
 @keyframes mtcLine{to{width:min(70vw,340px)}}
+/* ── Tela de Pesadelo (Fase 3 mapa 3) ── */
+.nightmare-screen{position:fixed;inset:0;z-index:720;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#1a0508,#000);cursor:pointer;overflow:hidden}
+.nightmare-narration{color:#9a8a8a;font-style:italic;font-size:1rem;text-align:center;max-width:82%;line-height:1.8;letter-spacing:1px;z-index:5;animation:nmFade 2s ease;text-shadow:0 0 20px rgba(120,20,20,.4)}
+.nightmare-word{position:absolute;top:-60px;font-family:'Cinzel',serif;color:#b03030;white-space:nowrap;pointer-events:none;text-shadow:0 0 14px rgba(160,20,20,.7),0 0 30px rgba(80,0,0,.5);animation:nmFall linear forwards;opacity:.85}
+.nightmare-hint{position:absolute;bottom:26px;font-size:.62rem;color:#5a3030;letter-spacing:3px;z-index:5;animation:tapPulse 1.8s ease infinite}
+@keyframes nmFall{
+  0%{transform:translateY(0) rotate(var(--rot,0deg));opacity:0}
+  10%{opacity:.9}
+  85%{opacity:.75}
+  100%{transform:translateY(105vh) rotate(var(--rot,0deg));opacity:0}
+}
+@keyframes nmFade{from{opacity:0}to{opacity:1}}
+@keyframes nmPulseBg{0%,100%{background:radial-gradient(ellipse at center,#1a0508,#000)}50%{background:radial-gradient(ellipse at center,#2a0810,#050000)}}
+.nightmare-screen.active{animation:nmPulseBg 4s ease infinite}
+/* ── Tela de Memória/Sonho (Fase 18 mapa 3) — glitch no trauma ── */
+.memory-screen{position:fixed;inset:0;z-index:720;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#0d1420,#1a1410);cursor:pointer;overflow:hidden;padding:20px}
+.memory-screen.calm{animation:memCalm 6s ease infinite}
+@keyframes memCalm{0%,100%{background:linear-gradient(160deg,#0d1420,#1a1410)}50%{background:linear-gradient(160deg,#141c2a,#221a14)}}
+.memory-screen.glitch{animation:memGlitchBg .18s steps(2) infinite}
+@keyframes memGlitchBg{0%{background:#1a0808}50%{background:#0a0a18}100%{background:#180a0a}}
+.memory-art{max-width:min(92vw,640px);max-height:60vh;object-fit:contain;border:1px solid rgba(200,60,40,.5);border-radius:3px;box-shadow:0 0 50px rgba(180,40,20,.35);z-index:5}
+.memory-art.glitching{animation:artGlitch .16s steps(2) infinite}
+@keyframes artGlitch{
+  0%{transform:translate(0,0);filter:hue-rotate(0deg) saturate(1)}
+  25%{transform:translate(-4px,2px);filter:hue-rotate(-20deg) saturate(1.5)}
+  50%{transform:translate(3px,-2px);filter:hue-rotate(15deg) saturate(.8) contrast(1.3)}
+  75%{transform:translate(-2px,-1px);filter:hue-rotate(0deg) saturate(1.2)}
+  100%{transform:translate(2px,1px);filter:hue-rotate(10deg)}
+}
+.memory-scanlines{position:absolute;inset:0;pointer-events:none;z-index:8;background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,.15) 3px,rgba(0,0,0,0) 4px);opacity:0;transition:opacity .3s}
+.memory-scanlines.on{opacity:1;animation:scanMove .3s linear infinite}
+@keyframes scanMove{from{background-position-y:0}to{background-position-y:4px}}
+.memory-text{max-width:560px;text-align:center;z-index:6;margin-top:18px}
+.memory-narration{color:#9ab0c0;font-style:italic;font-size:.95rem;line-height:1.7;letter-spacing:.5px;animation:nmFade 1.5s ease}
+.memory-scream{color:#e04040;font-family:'Cinzel',serif;font-size:1.6rem;letter-spacing:3px;text-shadow:0 0 20px rgba(220,40,40,.7);animation:screamShake .3s ease}
+@keyframes screamShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+/* ── Selo de Comando (vitória contra a Archer): brilho vermelho + corte ── */
+.command-seal-fx{position:fixed;inset:0;z-index:850;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden;pointer-events:none}
+.cs-glow{position:absolute;width:40vmin;height:40vmin;border-radius:50%;background:radial-gradient(circle,rgba(255,40,40,.9),rgba(180,0,0,.4) 45%,transparent 70%);animation:csGlow 1.3s ease-out forwards}
+@keyframes csGlow{
+  0%{transform:scale(0);opacity:0}
+  25%{transform:scale(1);opacity:1}
+  60%{transform:scale(1.15);opacity:.9}
+  100%{transform:scale(3.5);opacity:0}
+}
+.cs-seal{position:absolute;font-family:'Cinzel',serif;font-size:14vmin;color:#ff2020;text-shadow:0 0 30px rgba(255,20,20,.95),0 0 60px rgba(200,0,0,.7);animation:csSeal 1.3s ease-out forwards;z-index:2}
+@keyframes csSeal{
+  0%{transform:scale(2) rotate(-20deg);opacity:0}
+  25%{transform:scale(1) rotate(0deg);opacity:1;filter:blur(0)}
+  70%{opacity:1}
+  100%{transform:scale(.8);opacity:0}
+}
+.cs-slash{position:absolute;top:0;left:-20%;width:140%;height:100%;z-index:3;pointer-events:none}
+.cs-slash::before,.cs-slash::after{content:'';position:absolute;background:linear-gradient(90deg,transparent,#fff 45%,#ffd0d0 50%,#fff 55%,transparent);box-shadow:0 0 24px rgba(255,255,255,.9),0 0 48px rgba(255,60,60,.8)}
+.cs-slash::before{top:48%;left:0;right:0;height:5px;transform-origin:center;animation:csSlashH 1.3s ease-out forwards;opacity:0}
+.cs-slash::after{top:0;bottom:0;left:50%;width:4px;transform-origin:center;animation:csSlashV 1.3s ease-out .15s forwards;opacity:0}
+@keyframes csSlashH{
+  0%{transform:scaleX(0) rotate(-8deg);opacity:0}
+  40%{transform:scaleX(1) rotate(-8deg);opacity:1}
+  100%{transform:scaleX(1) rotate(-8deg);opacity:0}
+}
+@keyframes csSlashV{
+  0%{transform:scaleY(0);opacity:0}
+  45%{transform:scaleY(1);opacity:1}
+  100%{transform:scaleY(1);opacity:0}
+}
+.cs-flash{position:absolute;inset:0;background:#fff;z-index:4;opacity:0;animation:csFlash 1.3s ease-out forwards}
+@keyframes csFlash{0%,55%{opacity:0}62%{opacity:.95}100%{opacity:0}}
+.cs-label{position:absolute;bottom:18%;left:0;right:0;text-align:center;z-index:5;font-family:'Cinzel',serif;color:#ff4040;letter-spacing:6px;font-size:clamp(.9rem,3vw,1.4rem);text-shadow:0 0 20px rgba(0,0,0,.9),0 0 40px rgba(255,20,20,.6);animation:nmFade 1s ease .3s both}
 </style>
 </head>
 <body>
@@ -522,6 +591,107 @@ const STORY_NITRO_LOSE={
   ],
 };
 
+// ── FASE FIXA 1 DO MAPA 3: partida da vila rumo a Kurikara ──
+const STORY_MAP3_DEPART={
+  start:[
+    {type:'narration',text:'Passaram-se dois dias depois do embate contra o robozão. Você ainda se encontra na vila, mas ficar aqui não vai avançar o mistério de como você chegou a este lugar.'},
+    {type:'master',text:'Berserker, estamos tempo demais aqui. Precisamos partir logo.'},
+    {type:'ibaraki',expr:'exp3',text:'Hehe, você sabe falar bem, Mestre. Temos que vazar daqui depois de roubar os idiotas daqui, hehe.'},
+    {type:'master',text:'Que ideia torta é essa....? Sua delinquente, está fazendo algo às escondidas, não é?'},
+    {type:'ibaraki',expr:'expDerrota',text:'Até tentei.... mas aquele Saber é esperto, me pegou na boca da botija umas 3x......'},
+    {type:'masterThought',text:'Devo abandonar ela na primeira cova que eu achar.'},
+    {type:'narration',text:'Passa-se um tempo, e você se encontra com Aria e Saber.'},
+    {type:'aria',text:'Então você vai partir? A próxima cidade é Kurikara, fica a uma semana caminhando, então é melhor você se preparar.'},
+    {type:'saber',text:'Ainda temos coisas pendentes na região. Não sei para onde desejam ir, mas evitem as cidades de Nara e Kyoto. As coisas naquele local estão um tanto quanto complicadas.'},
+    {type:'narration',text:'Então, no início da manhã, estão a caminho da cidade de Kurikara — e o caminho parece mais sombrio a cada passo.'},
+  ],
+};
+
+// ── FASE FIXA 8 DO MAPA 3: a encruzilhada ──
+const STORY_MAP3_CROSSROADS={
+  start:[
+    {type:'narration',text:'Os primeiros dias foram mais complicados, mas assim que se avança mais, o corpo se acostuma com essa caminhada e as paradas no fim da tarde.'},
+    {type:'narration',text:'Até que chegam a uma encruzilhada que se bifurca em dois caminhos para o destino.'},
+    {type:'master',text:'Da última vez fomos pela esquerda e nos demos mal com tantas criaturas. Devemos ir à direita agora?'},
+    {type:'ibaraki',expr:'exp2',text:'Hmm, pela esquerda não sinto nada de fato, mas à direita sinto cheiro de banquete — cheiro de carne podre e sangue.... heheheh'},
+    {type:'master',text:'Posso mudar minha escolha....?'},
+    {type:'narration',text:'A garota loira agarra pela manga da sua roupa e te arrasta pela trilha à direita, dando um sorriso de canto a canto.'},
+  ],
+};
+
+// ── FASE FIXA 12 DO MAPA 3: o grito (combate no meio) ──
+// Parte A: o grito → dispara combate contra 3 Dhampir
+const STORY_MAP3_SCREAM={
+  start:[
+    {type:'narration',text:'O clima por essas bandas é bem mais tenso — um ambiente sombrio, uma certa pressão no ar, como se tivessem vários olhos lhe observando. Mas é cortado por um grito.'},
+    {type:'unknown',text:'Arghh! Socorro!!!'},
+  ],
+};
+// Parte B: após vencer os Dhampir — o homem idoso
+const STORY_MAP3_OLDMAN={
+  start:[
+    {type:'narration',text:'Depois de derrotar os Dhampir, ambos se aproximam da origem do barulho. Então pode ser visto um homem de meia-idade, com as roupas manchadas de sangue e outros 4 cadáveres no chão — assim como uma carroça velha, mas sem os animais que a guiavam.'},
+    {type:'oldman',text:'Me ajude....'},
+    {type:'narration',text:'Ao se aproximar, podem ser vistos alguns ferimentos pelo corpo. Então, com um pouco de esforço e tempo, o sangue foi estancado, e o homem já conseguia falar um pouco depois de comer parte dos mantimentos que trazia consigo na carroça.'},
+    {type:'oldman',text:'Muito obrigado. Eu e meus familiares fomos emboscados por criaturas que pareciam humanos, mas eram monstros sugadores de sangue.... eram muitos, não sei como sobrevivi.... E tinha uma mulher..... com olhos fundos e brancos.... aquilo arremessou um dos cavalos para longe como se fosse algo leve....'},
+    {type:'ibaraki',expr:'exp2',text:'Certamente ainda sou mais forte! Posso fazer isso com dois cavalos!'},
+    {type:'masterThought',text:'Acho que isso é uma frase dita por alguém que, na hora do vamos ver, é a primeira a cair.....'},
+    {type:'oldman',text:'Me ajude a levar a carroça até a estrada principal. Me desculpe pedir isso aos meus salvadores.... mas, a partir da estrada, posso seguir sozinho e levá-la até uma vila atrás para achar um novo cavalo.....'},
+    {type:'master',text:'Pode deixar, te ajudo sim.'},
+  ],
+};
+
+// ── FASE FIXA 14 DO MAPA 3: despedida do homem idoso ──
+const STORY_MAP3_FAREWELL={
+  start:[
+    {type:'narration',text:'Depois de um tempo, finalmente conseguem colocar a carroça na estrada principal. O homem idoso escondeu a maioria dos itens que estavam na carroça em um canto e os cobriu com galhos e folhas.'},
+    {type:'oldman',text:'Com a carroça mais leve, consigo levá-la até a próxima vila. Podem ficar com o resto das minhas reservas de comida — a cidade que vocês falaram ainda é muito distante, e eu já não vou mais precisar.'},
+    {type:'master',text:'Obrigado, usaremos sim, pode deixar. Os ferimentos ainda estão se fechando, então recomendo que fique aqui por um tempo antes de partir.'},
+    {type:'oldman',text:'Você é um bom rapaz. Lhe desejo uma boa viagem.'},
+    {type:'ibaraki',expr:'exp1',text:'Vamos rápido, quero topar com a mulher e dar um sacode nela.'},
+  ],
+};
+
+// ── DIÁLOGO PRÉ-BOSS DO MAPA 3: o encontro com a Archer ──
+const STORY_MAP3_ARCHER_INTRO={
+  start:[
+    {type:'narration',text:'Enquanto caminham, uma névoa sinistra surge na estrada. Sons grotescos podem ser ouvidos, e então uma mulher alta, de pele pálida, olhos brancos e sem vida, surge. Aquilo não era ninguém menos do que a mulher que o idoso havia comentado.'},
+    {type:'narration',text:'Sua aparência, por mais exata que tenha sido descrita pelo idoso, não se comparava à pressão que ela exercia — era a própria morte andando.'},
+    {type:'master',text:'Berserker..... Ainda acha que consegue peitar aquilo...?'},
+    {type:'ibaraki',expr:'expDerrota',text:'Talvez.....?'},
+    {type:'archer',text:'Arrrghhhh! Ahhhhhh!'},
+    {type:'narration',text:'Aquela coisa não sabia falar uma frase completa, ou algo com sentido — só gritos de dor.'},
+  ],
+};
+
+// ── FIM DO COMBATE CONTRA A ARCHER ──
+const STORY_ARCHER_LOSE={
+  start:[
+    {type:'narration',text:'Aquela coisa maligna à sua frente é impiedosa e cruel. Sua vida se encontra nos últimos momentos, e sua visão começa a escurecer.....'},
+    {type:'shuten',text:'Fufufu, ainda está longe de ser perfeito. Comece de novo.'},
+  ],
+};
+// Vitória: usa o Selo de Comando (efeito visual especial antes deste diálogo)
+const STORY_ARCHER_WIN={
+  start:[
+    {type:'narration',text:'Com a alta regeneração do inimigo, você não vê outra saída....'},
+    {type:'narration',text:'No seu pulso, uma queimação começa. Aquela tatuagem misteriosa que havia surgido em seu pulso queima, e um brilho vermelho surge.'},
+    {type:'narration',text:'Um selo de comando foi usado. A Berserker ganha um impulso de poder extremo, desferindo um golpe vertical contra o inimigo, o finalizando ali mesmo.'},
+  ],
+};
+
+// ── FASE FIXA 18 DO MAPA 3: a memória (sonho-lembrança + flashback do trauma) ──
+// Sequência em fases visuais (não é chat comum): sonho calmo → glitch → despertar.
+// NOTA DE CONTINUIDADE: a "mulher nojenta com quatro subordinados" mencionada aqui
+// é uma VILÃ DISTINTA (a ser apresentada futuramente) — NÃO é a Archer Corrompida.
+// A mulher de "olhos fundos e brancos" que o homem idoso viu na Fase 12 = essa sim é a Archer.
+const MEMORY_DREAM=[
+  {type:'shuten',text:'Então, Ibaraki, vou fazer uma grande festa esta noite. Espero que compareça. Recebi um dos vinhos mais saborosos de toda a província.'},
+  {type:'ibaraki',expr:'exp2',text:'Hehe, Shuten, ainda acho que é muito cedo para isso. Aquela mulher nojenta está andando por aí com seus quatro sei-lá-das-quantas. Se você ficar levantando bandeira, algo de ruim pode acontecer....'},
+  {type:'shuten',text:'Fufu, aquela mulher não teria a menor chance contra mim, mesmo que eu esteja embriagada.'},
+  {type:'narration',text:'Então a noite chega, e a festa se inicia no Monte Ooe. Muita música e dança, bebidas e risos poderiam ser ouvidos a distâncias.'},
+];
+
 // ── QIN LIANGYU (BOSS) ───────────────────────────────
 const QIN={
   id:'qin_liangyu',name:'Qin Liangyu',className:'Lancer',isBoss:true,level:7,
@@ -607,8 +777,8 @@ const SAVE_KEY='oni_tactics_profile';
 const BOND_KEY=id=>`oni_tactics_bond_${id}`;
 
 function loadProfile(){
-  const def={nickname:'',sq:0,qp:0,qinDefeats:0,
-    skills:{manaBuster:1,transf:1,veneno:1},
+  const def={nickname:'',sq:0,qp:0,qinDefeats:0,advSkillsUnlocked:false,
+    skills:{manaBuster:1,transf:1,veneno:1,tormento:1,ossos:1},
     perks:{energizador:0,pocaoMana:0,pactoEscudo:0,contosEpicos:0,orbeCromatico:0},
     equippedPerks:['energizador','pocaoMana','pactoEscudo']};
   try{
@@ -721,6 +891,16 @@ function markQinDefeated(){
   return updated;
 }
 
+// Desbloqueia as skills avançadas do Mestre (Tormento, Ossos que não são meus),
+// concedidas após o pesadelo da Fase 3 do mapa 3.
+function unlockAdvancedSkills(){
+  const p=loadProfile();
+  if(p.advSkillsUnlocked)return p;
+  const updated={...p,advSkillsUnlocked:true};
+  saveProfile(updated);
+  return updated;
+}
+
 function loadBond(id){
   try{const r=localStorage.getItem(BOND_KEY(id));return r?JSON.parse(r):{level:1,points:0};}
   catch{return{level:1,points:0};}
@@ -733,12 +913,21 @@ function addBond(servoId,pts){
   saveBond(servoId,b);return b;
 }
 
+// Cooldown escalonado das skills avançadas (desbloqueadas na Fase 3 do mapa 3)
+function tormentoCD(lvl){return lvl>=10?7:lvl>=6?8:9;}
+function ossosCD(lvl){return lvl>=10?5:lvl>=6?6:7;}
+function advSkillCost(lvl){return 3*lvl;} // 3 SQ base, +3 por nível
+
 function profileSkillValues(skills){
-  const{manaBuster=1,transf=1,veneno=1}=skills;
+  const{manaBuster=1,transf=1,veneno=1,tormento=1,ossos=1}=skills;
   return{
     manaBuster:{lvl:manaBuster,atkBoost:linear(manaBuster,5,50),dur:1,cd:stdCD(manaBuster)},
     transf:{lvl:transf,npGain:linear(transf,5,50),cd:stdCD(transf)},
     veneno:{lvl:veneno,stunChance:linear(veneno,20,100),cd:stdCD(veneno)},
+    // Tormento: dano % do HP máx do inimigo (5% base, +2.5%/nível)
+    tormento:{lvl:tormento,hpDmgPct:5+2.5*(tormento-1),cd:tormentoCD(tormento)},
+    // Ossos que não são meus: +DEF por 3t (10% base, +5%/nível) + limpa 1 debuff
+    ossos:{lvl:ossos,defUp:10+5*(ossos-1),dur:3,cd:ossosCD(ossos)},
   };
 }
 function sqCost(lvl){return lvl;}
@@ -827,7 +1016,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('profile')}>📜 &nbsp; Perfil</button>
         <button className="btn btn-full" onClick={()=>onNavigate('shop')}>🏪 &nbsp; Loja de Perks</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.14</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.26</p>
       </div>
     </div>
   );
@@ -848,11 +1037,14 @@ function ProfileScreen({onNavigate,profile,setProfile}){
     const p={...profile,nickname:nick.trim()||'Mestre'};
     saveProfile(p);setProfile(p);setNotif('Perfil salvo!');
   }
+  const ADV_SKILLS=['tormento','ossos'];
+  function skillCostFor(key,lvl){return ADV_SKILLS.includes(key)?advSkillCost(lvl):sqCost(lvl);}
+
   function upgrade(key){
     const fresh=loadProfile(); // leitura fresca: nunca gasta em cima de saldo desatualizado
     const cur=(fresh.skills&&fresh.skills[key])||1;
     if(cur>=10)return;
-    const cost=sqCost(cur);
+    const cost=skillCostFor(key,cur);
     if((fresh.sq||0)<cost){setNotif(`SQ insuficiente! Precisa de ${cost} SQ.`);return;}
     const p={...fresh,sq:fresh.sq-cost,skills:{...fresh.skills,[key]:cur+1}};
     saveProfile(p);setProfile(p);
@@ -866,6 +1058,10 @@ function ProfileScreen({onNavigate,profile,setProfile}){
      desc:lvl=>`+${linear(lvl,5,50)}% Barra de NP · Recarga ${stdCD(lvl)}t`},
     {key:'veneno',name:'Veneno de Brasilisco',
      desc:lvl=>`Atordoar ${linear(lvl,20,100)}% chance · Recarga ${stdCD(lvl)}t`},
+    {key:'tormento',name:'Tormento',adv:true,
+     desc:lvl=>`Causa ${(5+2.5*(lvl-1)).toFixed(1)}% do HP do inimigo · Recarga ${tormentoCD(lvl)}t`},
+    {key:'ossos',name:'Ossos que não são meus',adv:true,
+     desc:lvl=>`+${10+5*(lvl-1)}% Defesa por 3t + limpa 1 debuff · Recarga ${ossosCD(lvl)}t`},
   ];
 
   return(
@@ -903,21 +1099,26 @@ function ProfileScreen({onNavigate,profile,setProfile}){
 
         <div className="divider"><span className="divider-text">SKILLS DO MESTRE</span></div>
 
-        {skillDefs.map(({key,name,desc})=>{
+        {skillDefs.map(({key,name,desc,adv})=>{
           const lvl=profile.skills[key]||1;
+          const locked=adv&&!profile.advSkillsUnlocked;
           return(
-            <div key={key} className="skill-row">
+            <div key={key} className="skill-row" style={locked?{opacity:.5}:{}}>
               <div className="skill-info">
-                <div className="skill-name">{name} <span style={{color:'var(--parchment-dark)'}}>Nv.{lvl}</span></div>
-                <div className="skill-desc">{desc(lvl)}</div>
-                <div className="skill-level-pips">
-                  {Array.from({length:10},(_,i)=>(
-                    <div key={i} className={`pip${i<lvl?' filled':''}`}/>
-                  ))}
-                </div>
+                <div className="skill-name">{locked?'🔒 ':''}{name} {!locked&&<span style={{color:'var(--parchment-dark)'}}>Nv.{lvl}</span>}</div>
+                <div className="skill-desc">{locked?'Desbloqueada ao avançar pelo Caminho Tortuoso...':desc(lvl)}</div>
+                {!locked&&(
+                  <div className="skill-level-pips">
+                    {Array.from({length:10},(_,i)=>(
+                      <div key={i} className={`pip${i<lvl?' filled':''}`}/>
+                    ))}
+                  </div>
+                )}
               </div>
-              {lvl<10
-                ?<button className="btn btn-sm" onClick={()=>upgrade(key)}>↑ {sqCost(lvl)} SQ</button>
+              {locked
+                ?<span style={{color:'var(--parchment-dark)',fontSize:'.7rem'}}>🔒</span>
+                :lvl<10
+                ?<button className="btn btn-sm" onClick={()=>upgrade(key)}>↑ {skillCostFor(key,lvl)} SQ</button>
                 :<span style={{color:'var(--gold)',fontSize:'.7rem',fontFamily:'Cinzel,serif'}}>MAX</span>
               }
             </div>
@@ -1243,13 +1444,51 @@ function ServoSelectScreen({onNavigate,onStartCampaign}){
   );
 }
 
+// ── BOSS DO MAPA 3: Archer Corrompida ──
+// Boss final: rápida, ataca 2x por turno (Riding), com kit de controle pesado.
+// Muito letal — exige Servo Nv.10 e boas Perks. HP moderado (é ágil, não tanque).
+const ARCHER={
+  id:'archer_corrupted',name:'Archer Corrompida',className:'Archer',isBoss:true,
+  hp:30000,attack:1200,
+  attributes:{
+    strength:{rank:'B',points:40},
+    agility:{rank:'A',points:50}, // muito rápida — age antes do Servo
+    luck:{rank:'C',points:30},
+    endurance:{rank:'C',points:30},
+    mana:{rank:'B',points:40,gainPercent:2.0},
+    np:{rank:'E',points:10},
+  },
+  // Riding A: 2 ataques básicos por turno. Territory Creation A: +5% NP/turno.
+  doubleAttack:true,npRegenPerTurn:5,
+  skills:{
+    grimalkin:{cd:6,evadeTurns:1,hpDrainPct:25}, // Evade 1t + tira 25% HP do Servo
+    blessedScion:{cd:7,npLockTurns:2,npGain:50,atkUp:20}, // trava NP 2t + 50% NP + 20% ATK
+    faeVampirism:{cd:5,hpDrainPct:15,selfHealPct:50,mitPct:20,mitTurns:3}, // dreno + cura + mit
+  },
+  np:{name:'Fetch Failnaught',poisonStacks:5,poisonPctOfAtk:10,poisonTurns:3}, // 5 venenos, 10% ATK cada
+  dialogue:{
+    intro:'Fufufu... então vocês são a próxima diversão? Venham, deixem-me ouvir seus gritos.',
+    grimalkin:'Você não pode me tocar~',
+    scion:'Silêncio. Sua trupe não cantará mais.',
+    vampirism:'Que sangue delicioso... mais, me dê mais!',
+    np:'Fetch Failnaught! Afogue-se no meu veneno!',
+    defeated:'Ah... que pena... eu queria brincar mais um pouco...',
+  },
+  assets:{
+    encounter:'assets/servos/archer/archer_encounter.jpg',
+    battle:'assets/servos/archer/archer_boss.png',
+    np:'assets/servos/archer/archer_boss.png',
+    face:'assets/servos/archer/archer_face.png', // rosto (avatar de chat nos diálogos)
+  },
+};
+
 // ── BOSS DO MAPA 2: Samurai Mecanizado Nitro-Type ──
 // Tanque extremo: HP altíssimo + mitigação passiva de 35%. Ataque básico fraco,
 // mas dispara MÍSSEIS em área (dano ~4.5×) a cada 3 turnos — telegrafado 1 turno
 // antes ("CARREGANDO"), dando ao jogador a chance de defender com Mudança de Forma.
 const NITRO={
   id:'samurai_nitro',name:'Samurai Mecanizado Nitro-Type',className:'Berserker',isBoss:true,
-  hp:45000,attack:900,
+  hp:45000,attack:2000,
   attributes:{
     strength:{rank:'A',points:50},
     agility:{rank:'D',points:20}, // lento — age quase sempre por último
@@ -1259,7 +1498,7 @@ const NITRO={
     np:{rank:'C',points:30},
   },
   passiveMitigation:35, // mitigação passiva fixa de 35% (muro — exige Nv.9-10)
-  missile:{multiplier:4.5,cooldown:3}, // dano do míssil e recarga
+  missile:{multiplier:7,cooldown:3}, // básico ~1000, míssil ~7000 (punitivo)
   dialogue:{
     intro:'⚙️ SISTEMA ATIVADO. ALVOS HOSTIS DETECTADOS. INICIANDO PROTOCOLO DE EXTERMÍNIO.',
     charging:'⚠️ CARREGANDO SILOS DE MÍSSEIS...',
@@ -1267,8 +1506,8 @@ const NITRO={
     defeated:'⚙️ ...NÚCLEO... COMPROMETIDO... DESLIGAN—',
   },
   assets:{
-    // Sem arte dedicada ainda — usa placeholder até o autor enviar
-    encounter:null,
+    encounter:'assets/servos/nitro/nitro_encounter.jpg',
+    battle:'assets/servos/nitro/nitro_encounter.jpg', // usada como retrato nos diálogos de combate
   },
 };
 
@@ -1298,6 +1537,26 @@ const DEON={
     np:'assets/servos/deon/deon_np.png',           // Noble Phantasm (Fleur de Lis)
     encounter:'assets/servos/deon/deon_encounter.jpg',
   },
+};
+
+// ══════════════════════════════════════════════════════
+// MAPA 3 — CAMINHO TORTUOSO (inimigos)
+// ══════════════════════════════════════════════════════
+// 2 inimigos aprimorados (Ghoul/Onmyoji do mapa 2, mais fortes) + 2 novos.
+// Mecânica nova: Vampirismo (Dhampir) — dano baseado no HP MÁXIMO do Servo
+// (ignora defesa) e cura o próprio Dhampir.
+const ENEMIES_MAP3={
+  ghoul3:{id:'ghoul3',name:'Ghoul Superior',hp:5100,atk:2350,agility:32,strPts:40,
+    description:'Morto-vivo evoluído do Caminho. Mais resistente e feroz que os da Vila.'},
+  onmyoji3:{id:'onmyoji3',name:'Onmyoji Ancião',hp:3400,atk:2080,agility:44,strPts:45,
+    poison:{chance:65,pctOfAtk:10,turns:4}, // veneno mais forte que o do mapa 2
+    description:'Feiticeiro ancião de poder corrompido. Seu veneno é mais potente e duradouro.'},
+  dhampir:{id:'dhampir',name:'Dhampir',hp:3600,atk:1900,agility:55,strPts:42,
+    vampirism:{dmgPctOfServoMaxHp:5,healPctOfMaxHp:15}, // dano 5% do HP máx do Servo, cura 15% do próprio
+    description:'Meio-vampiro veloz. Seus ataques drenam a vitalidade máxima do inimigo e o curam.'},
+  javali:{id:'javali',name:'Javali Gigante',hp:8200,atk:2200,agility:18,strPts:50,
+    passiveMitigation:20, // muito HP e defesa — tanque do mapa
+    description:'Besta colossal de couro grosso. HP e defesa altíssimos, mas lento e previsível.'},
 };
 
 // ══════════════════════════════════════════════════════
@@ -1338,6 +1597,15 @@ const MAPS={
     encounterSub:'??? — Vila de Tennobara',
     boss:'samurai_nitro', // Samurai Mecanizado Nitro-Type (gancho — a definir)
   },
+  tortuoso:{
+    id:'tortuoso',name:'Caminho Tortuoso',phases:19,
+    enemies:ENEMIES_MAP3,
+    // Fases fixas: 1, 3, 8, 12, 14, 18 (roteiros a definir).
+    // Boss a definir — por ora reusa o Nitro como placeholder para não quebrar a run.
+    intro:null,introFinishLabel:'⚔️ Adentrar o Caminho',
+    fixedPhases:[1,3,8,12,14,18],
+    boss:'archer_corrupted',
+  },
 };
 
 // Gera um encontro usando a tabela de inimigos do mapa atual.
@@ -1358,6 +1626,210 @@ function genEncounterForMap(mapId,phase){
       activeDebuffs:[],stunned:0,
     };
   }).sort((a,b)=>b.agility-a.agility);
+}
+
+// Gera um grupo FIXO de inimigos específicos (para encontros roteirizados).
+// Ex.: os 3 Dhampir da Fase 12. Recebe [{mapId, id, count}] ou lista de ids.
+function genFixedEnemies(mapId,enemyId,count,phase){
+  const map=MAPS[mapId]||MAPS.bosque;
+  const base=map.enemies[enemyId];
+  if(!base)return [];
+  const m=phaseMult(phase);
+  return Array.from({length:count},(_,i)=>({
+    ...base,instanceId:`${enemyId}_fx_${i}_${Date.now()+i}`,
+    maxHp:Math.round(base.hp*m),currentHp:Math.round(base.hp*m),
+    atkScaled:Math.round(base.atk*m),
+    damage:Math.round(base.atk*m*base.strPts/100),
+    activeDebuffs:[],stunned:0,
+  })).sort((a,b)=>b.agility-a.agility);
+}
+
+// ══════════════════════════════════════════════════════
+// EFEITO DO SELO DE COMANDO (vitória contra a Archer)
+// ══════════════════════════════════════════════════════
+function CommandSealFX({onFinish}){
+  useEffect(()=>{
+    const t=setTimeout(onFinish,1350); // dura ~1.3s e segue para o diálogo de vitória
+    return()=>clearTimeout(t);
+  },[]);
+  return(
+    <div className="command-seal-fx">
+      <div className="cs-glow"/>
+      <div className="cs-seal">令</div>
+      <div className="cs-slash"/>
+      <div className="cs-flash"/>
+      <div className="cs-label">SELO DE COMANDO</div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// TELA DE PESADELO (Fase 3 do mapa 3) — design fora do padrão de chat
+// ══════════════════════════════════════════════════════
+function NightmareScreen({onFinish}){
+  const NIGHTMARE_WORDS=['Rancor','Ódio','Arghhhhh','Estou com fome....','Mãe......',
+    'Esse é o fim do mundo.....','Minha perna ahhhhh','Eu... quero..... água.... um pouco de água....'];
+  const[phase,setPhase]=useState(0); // 0: narração inicial, 1: pesadelo, 2: narração final
+  const[drops,setDrops]=useState([]);
+
+  // Spawna palavras caindo continuamente durante a fase 1
+  useEffect(()=>{
+    if(phase!==1)return;
+    let alive=true;
+    let idx=0;
+    function spawn(){
+      if(!alive)return;
+      const word=NIGHTMARE_WORDS[Math.floor(Math.random()*NIGHTMARE_WORDS.length)];
+      const id=Date.now()+Math.random();
+      const left=5+Math.random()*80;
+      const dur=4+Math.random()*4;           // 4–8s de queda
+      const size=0.9+Math.random()*1.8;      // tamanhos variados
+      const rot=(Math.random()*30-15);       // leve rotação
+      const delay=Math.random()*0.5;
+      setDrops(d=>[...d,{id,word,left,dur,size,rot,delay}]);
+      setTimeout(()=>setDrops(d=>d.filter(x=>x.id!==id)),(dur+delay)*1000);
+      idx++;
+      setTimeout(spawn,420+Math.random()*520); // cadência irregular
+    }
+    spawn();
+    return()=>{alive=false;};
+  },[phase]);
+
+  function advance(){
+    if(phase===0)setPhase(1);
+    else if(phase===1)setPhase(2);
+    else onFinish();
+  }
+
+  return(
+    <div className={`nightmare-screen${phase===1?' active':''}`} onClick={advance}>
+      {phase===1&&drops.map(d=>(
+        <span key={d.id} className="nightmare-word"
+          style={{left:`${d.left}%`,fontSize:`${d.size}rem`,
+            animationDuration:`${d.dur}s`,animationDelay:`${d.delay}s`,
+            '--rot':`${d.rot}deg`}}>
+          {d.word}
+        </span>
+      ))}
+      {phase===0&&(
+        <div className="nightmare-narration">
+          Assim que param para descansar, o sono vem..... lentamente.......
+        </div>
+      )}
+      {phase===2&&(
+        <div className="nightmare-narration">
+          Um novo dia se inicia, e depois de um pesadelo estranho, a caminhada retorna.
+        </div>
+      )}
+      <div className="nightmare-hint">▼ TOQUE PARA CONTINUAR ▼</div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// TELA DE MEMÓRIA (Fase 18 do mapa 3) — sonho-lembrança + flashback
+// ══════════════════════════════════════════════════════
+function MemoryScreen({onFinish}){
+  // Etapas: 0 narração inicial · 1..N sonho (chat) · G glitch (arte+grito+braço) · despertar
+  const dreamMsgs=MEMORY_DREAM;
+  const[step,setStep]=useState(-1); // -1: narração inicial do sono
+  const[glitchStage,setGlitchStage]=useState(0); // 0 art, 1 grito, 2 braço
+  const areaRef=useRef();
+
+  // step: -1 = intro sono; 0..dreamMsgs.length-1 = mensagens do sonho;
+  // dreamMsgs.length = entra no GLITCH; depois glitchStage avança; então despertar
+  const inDream=step>=0&&step<dreamMsgs.length;
+  const inGlitch=step===dreamMsgs.length;
+  const awakening=step===dreamMsgs.length+1;
+
+  useEffect(()=>{if(areaRef.current)areaRef.current.scrollTop=areaRef.current.scrollHeight;},[step]);
+
+  function advance(){
+    if(inGlitch){
+      if(glitchStage<2)setGlitchStage(g=>g+1);
+      else setStep(s=>s+1); // vai para o despertar
+      return;
+    }
+    if(awakening){onFinish();return;}
+    setStep(s=>s+1);
+  }
+
+  const shownDream=inDream?dreamMsgs.slice(0,step+1):(step>=dreamMsgs.length?dreamMsgs:[]);
+
+  return(
+    <div className={`memory-screen ${inGlitch?'glitch':'calm'}`} onClick={advance}>
+      <div className={`memory-scanlines${inGlitch?' on':''}`}/>
+
+      {step===-1&&(
+        <div className="memory-text">
+          <div className="memory-narration">
+            Assim que a noite chega, o sono se aproxima — e, estranhamente, parece calmo.
+            O ambiente, mesmo conturbado e ao relento, acaba por embalar um sono confortável.
+          </div>
+        </div>
+      )}
+
+      {(inDream||step>=dreamMsgs.length)&&!inGlitch&&!awakening&&(
+        <div className="chat-area" ref={areaRef} style={{maxWidth:600,width:'100%',maxHeight:'70vh'}}>
+          {shownDream.map((m,i)=>{
+            if(m.type==='narration')return <div key={i} className="chat-narration">{m.text}</div>;
+            if(m.type==='shuten')return(
+              <div key={i} className="chat-msg left">
+                <div className="chat-avatar-unknown">?</div>
+                <div className="chat-body">
+                  <div className="chat-name" style={{color:'var(--oni-purple-light)'}}>SHUTEN DOUJI</div>
+                  <div className="chat-bubble mystic">{m.text}</div>
+                </div>
+              </div>
+            );
+            // ibaraki
+            return(
+              <div key={i} className="chat-msg left">
+                <img className="chat-avatar" src={IBARAKI_EXPRESSIONS[m.expr]||IBARAKI.assets.default} alt="Ibaraki"/>
+                <div className="chat-body">
+                  <div className="chat-name">IBARAKI DOUJI</div>
+                  <div className="chat-bubble">{m.text}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {inGlitch&&(
+        <>
+          <img className="memory-art glitching" src="assets/servos/ibaraki/ibaraki_combat.jpg" alt="Memória"
+            onError={e=>{e.target.style.display='none';}}/>
+          <div className="memory-text">
+            {glitchStage>=1&&<div className="memory-scream">SEU DESGRAÇADO!!!</div>}
+            {glitchStage>=2&&(
+              <div className="memory-narration" style={{marginTop:14,color:'#d09090'}}>
+                Enquanto Ibaraki grita, seu braço é arrancado, caindo a poucos metros do corpo dela.
+                E aquele que o arrancou era um homem com uma espada em chamas.
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {awakening&&(
+        <div className="memory-text">
+          <div className="memory-narration">
+            Aquele sonho tão vívido acaba, e você desperta — com o corpo da Ibaraki muito próximo.
+          </div>
+          <div className="chat-msg right" style={{justifyContent:'center',marginTop:20}}>
+            <div className="chat-avatar-q">?</div>
+            <div className="chat-body">
+              <div className="chat-name">MESTRE (pensa)</div>
+              <div className="chat-bubble action">( Aquilo foi..... entendo.... )</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="nightmare-hint">▼ TOQUE PARA CONTINUAR ▼</div>
+    </div>
+  );
 }
 
 // ══════════════════════════════════════════════════════
@@ -1450,6 +1922,26 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
         <div className="chat-body">
           <div className="chat-name unknown">VOZ DESCONHECIDA</div>
           <div className="chat-bubble mystic">{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='archer')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={ARCHER.assets.face} alt="???"
+          style={{borderColor:'rgba(224,64,128,.5)'}}
+          onError={ev=>{ev.target.style.display='none';}}/>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#e04080'}}>MULHER DE OLHOS PÁLIDOS</div>
+          <div className="chat-bubble" style={{borderColor:'rgba(224,64,128,.5)',color:'#e88',fontStyle:'italic'}}>{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='oldman')return(
+      <div key={i} className="chat-msg left">
+        <div className="chat-avatar-q" style={{color:'#b89a6a',borderColor:'rgba(184,154,106,.45)',background:'rgba(60,45,25,.35)'}}>⌂</div>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#c9a878'}}>HOMEM IDOSO</div>
+          <div className="chat-bubble" style={{borderColor:'rgba(184,154,106,.4)'}}>{m.text}</div>
         </div>
       </div>
     );
@@ -1583,6 +2075,7 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
   const{servo}=camp;
   const[done,setDone]=useState(false);
   const[result,setResult]=useState('');
+  const finalCampRef=useRef(camp); // guarda o camp com os buffs aplicados (ex: planBonus)
 
   function doEvent(){
     let newCamp={...camp,servo:{...servo}};
@@ -1631,12 +2124,32 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
       // Deposita o QP maior (não o padrão)
       const upd=depositQP(bonusQP);
       if(setProfile)setProfile(upd);
+      finalCampRef.current=newCamp;
       setResult(msg);setCamp(newCamp);setDone(true);
       return; // já depositou — evita o depósito padrão abaixo
+    } else if(type==='plan3'){
+      // Planejar Rota (mapa 3): cura 40% HP + buff forte no próximo combate
+      const heal=Math.round(servo.hpMax*0.40);
+      newCamp.servo.hp=clamp(servo.hp+heal,0,servo.hpMax);
+      newCamp.planBonus={atkUp:20,atkTurns:3,npGain:20};
+      newCamp.qpEarned=(camp.qpEarned||0)+qpGain;
+      msg=`Rota planejada! Recuperou ${heal} HP · +20% ATK (3t) e +20% NP no próximo combate. +${qpGain} QP.`;
+    } else if(type==='desviar'){
+      // Desviar do Caminho: +150 Bond e +100 XP
+      const newBond=addBond(servo.id,150);
+      const newXP=addServoXP(servo.id,100);
+      newCamp={...newCamp,bond:newBond,
+        bondEarned:(camp.bondEarned||0)+150,
+        xpEarned:(camp.xpEarned||0)+100,
+        npLevel:bondToNP(newBond.level)};
+      newCamp.servo.npLevel=bondToNP(newBond.level);
+      newCamp.qpEarned=(camp.qpEarned||0)+qpGain;
+      msg=`Desviou do caminho principal · +150 Bond · +100 XP · +${qpGain} QP${newXP.level>camp.servo.level?` · ✨ SERVO Nv.${newXP.level}!`:''}`;
     }
     // Deposita QP imediatamente (leitura fresca) e sincroniza o estado do App
     const updatedProfile=depositQP(qpGain);
     if(setProfile)setProfile(updatedProfile);
+    finalCampRef.current=newCamp;
     setResult(msg);setCamp(newCamp);setDone(true);
   }
 
@@ -1657,13 +2170,16 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
     IBARAKI.bondDialogue[1];
 
   const evtTitles={trust:'🤝 Ganhar Confiança',rest:'🌙 Descansar',plan:'🗺️ Planejar Rota',
-    rest2:'🏕️ Pausa para Descanso',aldeoes:'🧺 Lidar com Aldeões'};
+    rest2:'🏕️ Pausa para Descanso',aldeoes:'🧺 Lidar com Aldeões',
+    plan3:'🗺️ Planejar Rota',desviar:'🌿 Desviar do Caminho'};
   const evtDescs={
     trust:'Um momento de cumplicidade entre Mestre e Servo fortalece o vínculo.',
     rest:'Um breve descanso para recuperar forças antes de continuar.',
     plan:'Analisam os caminhos à frente para escolher a rota mais vantajosa.',
     rest2:'Vocês fazem uma pausa na Vila para recuperar forças.',
     aldeoes:tarefaRef.current,
+    plan3:'Estudam o caminho sombrio à frente, recuperando forças e traçando a melhor rota.',
+    desviar:'Tomam um atalho tortuoso pelo mato — mais perigoso, mas revelador. O vínculo se fortalece.',
   };
 
   return(
@@ -1679,7 +2195,7 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
           :(
             <>
               <div style={{background:'rgba(201,162,39,0.1)',border:'1px solid var(--gold-dim)',borderRadius:3,padding:12,margin:'12px 0',color:'var(--gold)',fontSize:'.85rem'}}>{result}</div>
-              <button className="btn btn-full" onClick={onFinish}>Seguir em Frente →</button>
+              <button className="btn btn-full" onClick={()=>onFinish(finalCampRef.current)}>Seguir em Frente →</button>
             </>
           )
         }
@@ -1691,7 +2207,7 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
 // ══════════════════════════════════════════════════════
 // COMBATE
 // ══════════════════════════════════════════════════════
-function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfile}){
+function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfile,fixedEnemies}){
   const xpState=loadServoXP(IBARAKI.id);
   const servoLvl=xpState.level;
   // Perks passivas EQUIPADAS do Mestre — carregadas do profile uma vez por combate
@@ -1699,22 +2215,43 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   // Buff da Aria (Fase 6): +10% HP extra (temporário) no próximo combate.
   const ariaHpBonus=camp.planBonus?.hpUp?Math.round((camp.servo.hpMax||IBARAKI.getHp(servoLvl))*(camp.planBonus.hpUp/100)):0;
+  // Buffs iniciais vindos do evento Planejar Rota do mapa 3 (plan3)
+  const planNpGain=camp.planBonus?.npGain||0;
+  const planAtkBuff=camp.planBonus?.atkTurns
+    ?[{type:'attack_up',value:camp.planBonus.atkUp,turns:camp.planBonus.atkTurns,id:'plan3_atk'}]
+    :[];
   const initServo={
     ...camp.servo,
     level:servoLvl,
     attackBase:IBARAKI.getAtk(servoLvl),
     hpMax:(camp.servo.hpMax||IBARAKI.getHp(servoLvl))+ariaHpBonus,
     hp:camp.servo.hp+ariaHpBonus,
+    npBar:clamp((camp.servo.npBar||0)+planNpGain,0,100),
     // Cada combate começa "limpo": buffs/debuffs e recargas resetam.
-    // HP e Barra de NP persistem entre as fases (essência roguelike).
-    activeBuffs:[],activeDebuffs:[],
+    // (exceto o buff temporário de ATK do Planejar Rota, se houver)
+    activeBuffs:planAtkBuff,activeDebuffs:[],
     cooldowns:{natureza:0,rampage:0,forma:0},
-    profileCooldowns:{manaBuster:0,transf:0,veneno:0},
+    profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
   };
 
   function createBossInstance(){
-    // Boss varia por mapa: Qin no Bosque, Nitro-Type na Vila de Tennobara
-    if((camp.mapId||'bosque')==='tennobara'){
+    // Boss varia por mapa: Qin (Bosque), Nitro (Vila), Archer (Caminho Tortuoso)
+    const mid=camp.mapId||'bosque';
+    if(mid==='tortuoso'){
+      return{
+        ...ARCHER,instanceId:'archer_boss',
+        maxHp:ARCHER.hp,currentHp:ARCHER.hp,
+        atkScaled:ARCHER.attack,
+        damage:Math.round(ARCHER.attack*(ARCHER.attributes.strength.points/100)),
+        agility:ARCHER.attributes.agility.points,
+        npBar:0,activeBuffs:[],activeDebuffs:[],
+        // Cooldowns começam parciais (não dispara tudo no turno 1)
+        cooldowns:{grimalkin:3,blessedScion:4,faeVampirism:2},
+        evadeTurns:0,npLockOnServo:0,
+        isArcher:true,isBoss:true,
+      };
+    }
+    if(mid==='tennobara'){
       return{
         ...NITRO,instanceId:'nitro_boss',
         maxHp:NITRO.hp,currentHp:NITRO.hp,
@@ -1722,8 +2259,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         damage:Math.round(NITRO.attack*(NITRO.attributes.strength.points/100)),
         agility:NITRO.attributes.agility.points,
         npBar:0,activeBuffs:[],activeDebuffs:[],
-        missileCd:3, // começa carregado: primeiros turnos de básico antes do 1º míssil
-        charging:false, // vira true no turno anterior ao disparo (telégrafo)
+        missileCd:3,charging:false,
         isNitro:true,isBoss:true,
       };
     }
@@ -1740,7 +2276,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   }
 
   const[servo,setServo]=useState(initServo);
-  const[enemies,setEnemies]=useState(isBoss?[createBossInstance()]:genEncounterForMap(camp.mapId||'bosque',camp.phase));
+  const[enemies,setEnemies]=useState(
+    isBoss?[createBossInstance()]
+    :fixedEnemies?fixedEnemies
+    :genEncounterForMap(camp.mapId||'bosque',camp.phase)
+  );
   const[selectedTarget,setSelectedTarget]=useState(0);
   const[log,setLog]=useState([]);
   const[turn,setTurn]=useState(1);
@@ -1774,9 +2314,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   useEffect(()=>{
     if(!introShown){
-      const isNitroBoss=isBoss&&(camp.mapId||'bosque')==='tennobara';
+      const mid=camp.mapId||'bosque';
+      const isArcherBoss=isBoss&&mid==='tortuoso';
+      const isNitroBoss=isBoss&&mid==='tennobara';
       setDialogue(
-        isNitroBoss?{text:NITRO.dialogue.intro,portrait:null}
+        isArcherBoss?{text:ARCHER.dialogue.intro,portrait:ARCHER.assets.battle}
+        :isNitroBoss?{text:NITRO.dialogue.intro,portrait:NITRO.assets.battle}
         :isBoss?{text:QIN.dialogue.intro,portrait:QIN.assets.default}
         :{text:IBARAKI.dialogue.battle,portrait:IBARAKI.assets.default}
       );
@@ -1798,7 +2341,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     }
     let atkUp=0;
     for(const b of servo.activeBuffs||[]){if(b.type==='attack_up')atkUp+=b.value;}
-    if(camp.planBonus?.atkUp)atkUp+=camp.planBonus.atkUp;
+    // planBonus.atkUp só conta aqui se NÃO for o buff temporário do plan3
+    // (esse já entra via activeBuffs 'plan3_atk', evitando dupla contagem)
+    if(camp.planBonus?.atkUp&&!camp.planBonus?.atkTurns)atkUp+=camp.planBonus.atkUp;
     // Perk: Energizador de Raiz — bônus de ATK passivo permanente
     if(perkEffects.atkUpPercent>0)atkUp+=perkEffects.atkUpPercent;
     // Fleur de Lis (Saber): +15% ATK durante todo o combate do boss
@@ -1815,6 +2360,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       const mit=clamp(enemy.passiveMitigation-defDown,0,90); // NP reduz a mitigação dele
       dmg=dmg*(1-mit/100);
     }
+    // Mitigação temporária da Archer (buff do Fae Vampirism)
+    let mitBuff=0;
+    for(const b of enemy.activeBuffs||[]){if(b.type==='mitigation')mitBuff+=b.value;}
+    if(mitBuff>0)dmg=dmg*(1-clamp(mitBuff-defDown,0,90)/100);
     return Math.round(dmg);
   }
 
@@ -1823,6 +2372,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // Boss também ganha Barra de NP ao SER atingido (1.5× o ganho de ataque).
   // O parâmetro fxKind controla o visual do número flutuante ('dmg'/'crit'/'np').
   function damageEnemy(e,dmg,fxKind='dmg'){
+    // Evade da Archer (Grimalkin): imune a dano enquanto durar
+    if(e.evadeTurns>0){
+      addLog(`💨 ${e.name} está intocável (Evade) — o ataque não a acerta!`,'enemy');
+      spawnFx(e.instanceId,'IMUNE','miss');
+      return e;
+    }
     spawnFx(e.instanceId,String(dmg),fxKind);
     let out={...e,currentHp:Math.max(0,e.currentHp-dmg)};
     if(out.currentHp<=0&&out.isBoss&&out.gutsState?.active&&out.gutsState.charges>0){
@@ -1867,6 +2422,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     }
     return{...s,
       hp,npBar,
+      npLocked:Math.max(0,(s.npLocked||0)-1), // trava de NP da Archer (Blessed Scion)
       activeBuffs:(s.activeBuffs||[]).map(b=>({...b,turns:b.turns-1})).filter(b=>b.turns>0),
       activeDebuffs:(s.activeDebuffs||[]).map(d=>({...d,turns:d.turns-1})).filter(d=>d.turns>0),
       cooldowns:Object.fromEntries(Object.entries(s.cooldowns||{}).map(([k,v])=>[k,Math.max(0,v-1)])),
@@ -1884,6 +2440,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       activeDebuffs:(e.activeDebuffs||[]).map(d=>({...d,turns:d.turns-1})).filter(d=>d.turns>0),
       activeBuffs:(e.activeBuffs||[]).map(b=>({...b,turns:b.turns-1})).filter(b=>b.turns>0),
       cooldowns:e.cooldowns?Object.fromEntries(Object.entries(e.cooldowns).map(([k,v])=>[k,Math.max(0,v-1)])):e.cooldowns,
+      evadeTurns:Math.max(0,(e.evadeTurns||0)-1), // Evade da Archer expira após 1 turno
       gutsState:newGuts,
     };
   }
@@ -1995,6 +2552,26 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           spawnFx(tgt.instanceId,'RESISTIU','miss');
         }
       }
+    } else if(skillKey==='tormento'){
+      // Tormento: causa dano igual a % do HP MÁXIMO do inimigo (ignora defesa)
+      const tgt=newEnemies[selectedTarget];
+      if(tgt&&tgt.currentHp>0){
+        const dmg=Math.round(tgt.maxHp*sk.hpDmgPct/100);
+        newEnemies=newEnemies.map((e,i)=>i===selectedTarget?damageEnemy(e,dmg,'crit'):e);
+        addLog(`Tormento Nv.${sk.lvl}: ${dmg} de dano (${sk.hpDmgPct.toFixed(1)}% do HP de ${tgt.name})!`,'player');
+        if(checkWin(newEnemies)){setServo(newServo);setEnemies(newEnemies);endCombat(true,newServo,newEnemies);return;}
+      }
+    } else if(skillKey==='ossos'){
+      // Ossos que não são meus: +DEF por 3t e limpa 1 debuff
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'defense_up',value:sk.defUp,turns:sk.dur,id:'ossos_def'}];
+      if((newServo.activeDebuffs||[]).length>0){
+        const removed=newServo.activeDebuffs[0];
+        newServo.activeDebuffs=newServo.activeDebuffs.slice(1);
+        addLog(`Ossos que não são meus Nv.${sk.lvl}: +${sk.defUp}% Defesa (3t) · removeu 1 efeito negativo!`,'player');
+      } else {
+        addLog(`Ossos que não são meus Nv.${sk.lvl}: +${sk.defUp}% Defesa por 3 turnos`,'player');
+      }
+      spawnFx('servo',`+${sk.defUp}% DEF`,'buff');
     }
     setServo(newServo);setEnemies(newEnemies);
     // Skills do Mestre também são ações livres: não passam o turno.
@@ -2002,6 +2579,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   function doNP(){
     if(result)return;
+    if((servo.npLocked||0)>0){setNotif(`NP travado pela Archer! (${servo.npLocked} turno(s) restante(s))`);return;}
     if(servo.npBar<100){setNotif('Barra de NP não está cheia!');return;}
     const tgt=enemies[selectedTarget];
     if(!tgt||tgt.currentHp<=0){setNotif('Selecione um inimigo vivo!');return;}
@@ -2091,7 +2669,90 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         break;
       }
 
-      if(e.isNitro){
+      if(e.isArcher){
+        // ── IA da Archer Corrompida (boss final) ──
+        let ar={...es[i]};
+        // Territory Creation A: +5% NP por turno
+        ar.npBar=clamp((ar.npBar||0)+ARCHER.npRegenPerTurn,0,100);
+        const hpPct=(ar.currentHp/ar.maxHp)*100;
+        let acted=false;
+
+        // Prioridade 1: NP quando a barra enche e o jogador não está muito ferido
+        if(ar.npBar>=100){
+          const npDmg=applyDmgToServo(Math.round(ar.atkScaled*(ar.attributes.strength.points/100)*3));
+          s.hp=Math.max(0,s.hp-npDmg);
+          // 5 stacks de veneno (10% do ATK cada), 3 turnos
+          const pDmg=Math.round(ar.atkScaled*ARCHER.np.poisonPctOfAtk/100)*ARCHER.np.poisonStacks;
+          const others=(s.activeDebuffs||[]).filter(d=>d.type!=='poison');
+          s.activeDebuffs=[...others,{type:'poison',value:pDmg,turns:ARCHER.np.poisonTurns}];
+          ar.npBar=0;
+          addLog(`⚡ ${ARCHER.np.name}! ${npDmg} de dano + 5 venenos (${pDmg}/turno por 3t)!`,'np');
+          setDialogue({text:ARCHER.dialogue.np,portrait:ARCHER.assets.battle});
+          fireNpCutin(ARCHER.assets.np,ARCHER.np.name.toUpperCase(),ARCHER.dialogue.np);
+          spawnFx('servo',String(npDmg),'np');
+          s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+          acted=true;
+        }
+        // Prioridade 2: Fae Vampirism (dreno + cura + mitigação)
+        else if((ar.cooldowns?.faeVampirism||0)<=0){
+          const sk=ARCHER.skills.faeVampirism;
+          const drain=Math.round(s.hpMax*sk.hpDrainPct/100);
+          s.hp=Math.max(0,s.hp-drain);
+          const heal=Math.round(ar.maxHp*sk.selfHealPct/100);
+          ar.currentHp=Math.min(ar.maxHp,ar.currentHp+heal);
+          ar.activeBuffs=[...(ar.activeBuffs||[]).filter(b=>b.id!=='fae_mit'),{type:'mitigation',value:sk.mitPct,turns:sk.mitTurns,id:'fae_mit'}];
+          ar.cooldowns={...ar.cooldowns,faeVampirism:sk.cd};
+          addLog(`🩸 Fae Vampirism! Drena ${drain} HP · cura ${heal} · +${sk.mitPct}% mitigação (${sk.mitTurns}t)`,'enemy');
+          setDialogue({text:ARCHER.dialogue.vampirism,portrait:ARCHER.assets.battle});
+          spawnFx('servo',`🩸 ${drain}`,'stun');spawnFx(ar.instanceId,`+${heal}`,'heal');
+          acted=true;
+        }
+        // Prioridade 3: Grimalkin (Evade + tira 25% HP)
+        else if((ar.cooldowns?.grimalkin||0)<=0){
+          const sk=ARCHER.skills.grimalkin;
+          const drain=Math.round(s.hpMax*sk.hpDrainPct/100);
+          s.hp=Math.max(0,s.hp-drain);
+          ar.evadeTurns=sk.evadeTurns;
+          ar.cooldowns={...ar.cooldowns,grimalkin:sk.cd};
+          addLog(`🐾 Grimalkin! ${ar.name} fica intocável (1t) e drena ${drain} HP!`,'enemy');
+          setDialogue({text:ARCHER.dialogue.grimalkin,portrait:ARCHER.assets.battle});
+          spawnFx('servo',`${drain}`,'stun');spawnFx(ar.instanceId,'EVADE','buff');
+          acted=true;
+        }
+        // Prioridade 4: Blessed Scion (trava NP + buff)
+        else if((ar.cooldowns?.blessedScion||0)<=0){
+          const sk=ARCHER.skills.blessedScion;
+          ar.npBar=clamp(ar.npBar+sk.npGain,0,100);
+          ar.activeBuffs=[...(ar.activeBuffs||[]).filter(b=>b.id!=='scion_atk'),{type:'attack_up',value:sk.atkUp,turns:99,id:'scion_atk'}];
+          ar.cooldowns={...ar.cooldowns,blessedScion:sk.cd};
+          s.npLocked=sk.npLockTurns; // trava o NP do jogador
+          addLog(`🎵 Blessed Scion! NP do Servo travado (${sk.npLockTurns}t) · Archer +${sk.atkUp}% ATK e +50% NP`,'enemy');
+          setDialogue({text:ARCHER.dialogue.scion,portrait:ARCHER.assets.battle});
+          spawnFx(ar.instanceId,'+20% ATK','buff');spawnFx('servo','NP TRAVADO','stun');
+          acted=true;
+        }
+
+        // Riding A: 2 ataques básicos por turno (sempre, mesmo após skill? não —
+        // se usou skill como ação principal, ainda desfere os golpes de Riding)
+        let atkUp=0;
+        for(const b of ar.activeBuffs||[]){if(b.type==='attack_up')atkUp+=b.value;}
+        const hits=ARCHER.doubleAttack?2:1;
+        for(let h=0;h<hits;h++){
+          if(s.hp<=0)break;
+          const dodge=5+Math.max(0,(servo.attributes.agility.points-ar.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0);
+          if(rollChance(dodge)){
+            addLog(`💨 Ibaraki esquiva de um golpe de ${ar.name}!`,'player');
+            spawnFx('servo','ESQUIVOU','miss');continue;
+          }
+          const raw=Math.round(ar.atkScaled*(ar.attributes.strength.points/100)*(1+atkUp/100));
+          const mit=applyDmgToServo(raw);
+          s.hp=Math.max(0,s.hp-mit);
+          s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+          addLog(`${ar.name} dispara: ${mit} de dano!`,'enemy');
+          spawnFx('servo',String(mit),'dmg');
+        }
+        es[i]=ar;
+      } else if(e.isNitro){
         // ── IA do Samurai Mecanizado Nitro-Type ──
         // Nitro NÃO tem passiva Anti-Berserker, então seu dano é "cru"
         // (sem o ×1.5 que a Qin aplica contra Berserkers).
@@ -2104,13 +2765,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
           es[i]={...nitro,charging:false,missileCd:NITRO.missile.cooldown};
           addLog(`🚀 ${NITRO.dialogue.missile} Mísseis explodem em área: ${mitMissile} de dano!`,'enemy');
-          setDialogue({text:NITRO.dialogue.missile,portrait:null});
+          setDialogue({text:NITRO.dialogue.missile,portrait:NITRO.assets.battle});
+          fireNpCutin(NITRO.assets.encounter,'BOMBARDEIO DE MÍSSEIS',NITRO.dialogue.missile);
           spawnFx('servo',`🚀 ${mitMissile}`,'crit');
         } else if((nitro.missileCd||0)<=0){
           // Recarga zerada: telegrafa o míssil (dispara no PRÓXIMO turno)
           es[i]={...nitro,charging:true};
           addLog(`⚠️ ${NITRO.dialogue.charging} (Míssil no próximo turno — defenda-se!)`,'enemy');
-          setDialogue({text:NITRO.dialogue.charging,portrait:null});
+          setDialogue({text:NITRO.dialogue.charging,portrait:NITRO.assets.battle});
           spawnFx(nitro.instanceId,'⚠️ CARREGANDO','buff');
         } else {
           // Ataque básico fraco + decrementa a recarga do míssil
@@ -2218,6 +2880,18 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             s.activeDebuffs=[...others,{type:'poison',value:poisonDmg,turns:e.poison.turns}];
             addLog(`☠️ ${e.name} envenena Ibaraki! ${poisonDmg}/turno por ${e.poison.turns} turnos.`,'enemy');
             spawnFx('servo','☠️ VENENO','stun');
+          }
+          // Vampirismo (Dhampir): PRIMEIRO o ataque padrão (já aplicado acima),
+          // DEPOIS o dreno adicional — dana 5% do HP MÁX do Servo (ignora defesa)
+          // e cura 15% do HP máximo do próprio Dhampir. Inimigo bem chatinho.
+          if(e.vampirism){
+            const drain=Math.round(s.hpMax*e.vampirism.dmgPctOfServoMaxHp/100);
+            s.hp=Math.max(0,s.hp-drain);
+            const selfHeal=Math.round(e.maxHp*e.vampirism.healPctOfMaxHp/100);
+            es[i]={...es[i],currentHp:Math.min(e.maxHp,es[i].currentHp+selfHeal)};
+            addLog(`🩸 ${e.name} drena a vitalidade de Ibaraki! +${drain} de dano · +${selfHeal} HP ao Dhampir.`,'enemy');
+            spawnFx('servo',`🩸 ${drain}`,'stun');
+            spawnFx(e.instanceId,`+${selfHeal}`,'heal');
           }
         }
       }
@@ -2373,7 +3047,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                 <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'12%'}}>{f.text}</span>
               ))}
               {e.isBoss&&(
-                <img src={QIN.assets.default} alt={e.name}
+                <img src={e.isArcher?ARCHER.assets.battle:e.isNitro?NITRO.assets.battle:QIN.assets.default} alt={e.name}
                   style={{width:74,height:74,objectFit:'cover',objectPosition:'center 10%',borderRadius:2,border:'1px solid var(--red)',display:'block',margin:'0 auto 6px',background:'rgba(0,0,0,.35)'}}
                   onError={ev=>{ev.target.style.display='none';}}/>
               )}
@@ -2427,8 +3101,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
           <div className="divider"><span className="divider-text">SKILLS DO MESTRE</span></div>
           <div className="skills-row">
-            {[['manaBuster','💥 Mana Buster'],['transf','🔮 Transf. Mana'],['veneno','☠️ Veneno']].map(([key,label])=>{
+            {[['manaBuster','💥 Mana Buster'],['transf','🔮 Transf. Mana'],['veneno','☠️ Veneno'],
+              ...(profile.advSkillsUnlocked?[['tormento','🔥 Tormento'],['ossos','🦴 Ossos']]:[])
+            ].map(([key,label])=>{
               const cd=servo.profileCooldowns[key]||0;
+              const pcd=servo.profileCooldowns; // pode não ter a chave nova em saves antigos
               return(
                 <button key={key} className="skill-btn" onClick={()=>doProfileSkill(key)} disabled={cd>0}>
                   {label}
@@ -2461,6 +3138,7 @@ function CampaignController({profile,setProfile,onNavigate}){
   const[camp,setCamp]=useState(null);
   const[eventType,setEventType]=useState(null);
   const[campResult,setCampResult]=useState(null);
+  const scriptedFightRef=useRef(null); // guarda inimigos de combates roteirizados (ex: Fase 12)
 
   // Cria o estado de campanha para um mapa específico, preservando HP/NP/moedas
   // quando é uma transição entre mapas (o Servo continua a jornada).
@@ -2482,7 +3160,7 @@ function CampaignController({profile,setProfile,onNavigate}){
         npLevel:npLvl,
         activeBuffs:[],activeDebuffs:[],
         cooldowns:{natureza:0,rampage:0,forma:0},
-        profileCooldowns:{manaBuster:0,transf:0,veneno:0},
+        profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
       },
       bond,npLevel:npLvl,
       profile,profileSkills:sv,
@@ -2502,18 +3180,28 @@ function CampaignController({profile,setProfile,onNavigate}){
 
   function choosePath(dir){
     if(dir==='boss'){setStage('bossStory');return;}
-    const isMap2=(camp.mapId||'bosque')==='tennobara';
+    const mapId=camp.mapId||'bosque';
 
-    if(isMap2){
+    if(mapId==='tennobara'){
       // Fase 1: só combate. Após vencê-la, a Fase 2 tem diálogo fixo (Saber).
       if(camp.phase===1){setStage('combat');return;}
-      // Eventos fixos de história nas fases 2, 6, 12 e 15
-      // (Fase 2 já é tratada no fluxo pós-combate da fase 1; 6/12/15 são ganchos.)
       const r=Math.random();
-      // 55% combate, 45% evento (descanso ou aldeões)
       if(r<0.55){setStage('combat');}
       else{
         const evts=['rest2','aldeoes'];
+        setEventType(evts[Math.floor(Math.random()*evts.length)]);
+        setStage('event');
+      }
+      return;
+    }
+
+    if(mapId==='tortuoso'){
+      // Caminho Tortuoso — fases fixas (3,8,12,14,18) serão adicionadas depois.
+      // (Fase 1 já é tratada na entrada do mapa.) Eventos: Planejar Rota e Desviar.
+      const r=Math.random();
+      if(r<0.58){setStage('combat');}
+      else{
+        const evts=['plan3','desviar'];
         setEventType(evts[Math.floor(Math.random()*evts.length)]);
         setStage('event');
       }
@@ -2534,6 +3222,7 @@ function CampaignController({profile,setProfile,onNavigate}){
   // Fases fixas do mapa 2: 2 (Saber+vila), 6 (Aria). 12 e 15 são ganchos futuros.
   function goToPhase(baseCamp,nextPhase){
     const isMap2=(baseCamp.mapId||'bosque')==='tennobara';
+    const isMap3=(baseCamp.mapId||'bosque')==='tortuoso';
     if(nextPhase>baseCamp.maxPhases){
       finishCampaign(baseCamp,false);return;
     }
@@ -2541,8 +3230,13 @@ function CampaignController({profile,setProfile,onNavigate}){
     if(isMap2&&nextPhase===2){setCamp(advanced);setStage('map2Saber');return;}
     if(isMap2&&nextPhase===6){setCamp(advanced);setStage('map2AriaInvite');return;}
     if(isMap2&&nextPhase===12){setCamp(advanced);setStage('map2Tea');return;}
-    // Fase 15: aparição do Nitro → ajuda do Saber → combate do boss
     if(isMap2&&nextPhase===15){setCamp(advanced);setStage('map2NitroIntro');return;}
+    // Fases fixas do mapa 3: 3 (pesadelo), 8 (encruzilhada), 12 (grito+combate), 14 (despedida), 18 (memória).
+    if(isMap3&&nextPhase===3){setCamp(advanced);setStage('map3Nightmare');return;}
+    if(isMap3&&nextPhase===8){setCamp(advanced);setStage('map3Crossroads');return;}
+    if(isMap3&&nextPhase===12){setCamp(advanced);setStage('map3Scream');return;}
+    if(isMap3&&nextPhase===14){setCamp(advanced);setStage('map3Farewell');return;}
+    if(isMap3&&nextPhase===18){setCamp(advanced);setStage('map3Memory');return;}
     setCamp(advanced);setStage('map');
   }
 
@@ -2584,6 +3278,32 @@ function CampaignController({profile,setProfile,onNavigate}){
     setStage('boss');
   }
 
+  // Fim da Fase 8 (encruzilhada): +10% ATK por 3 turnos no próximo combate.
+  function afterCrossroads(){
+    setCamp({...camp,planBonus:{atkUp:10,atkTurns:3}});
+    setStage('map');
+  }
+
+  // Fim da Fase 14 (despedida): +30% HP recuperado, +20% NP e +10% ATK (3t) no próximo combate.
+  function afterFarewell(){
+    const heal=Math.round(camp.servo.hpMax*0.30);
+    setCamp({...camp,
+      servo:{...camp.servo,hp:clamp(camp.servo.hp+heal,0,camp.servo.hpMax)},
+      planBonus:{atkUp:10,atkTurns:3,npGain:20}});
+    setStage('map');
+  }
+
+  // Fase 12: guarda os Dhampir fixos e trata o pós-combate roteirizado.
+  function startScreamFight(){
+    scriptedFightRef.current=genFixedEnemies('tortuoso','dhampir',3,camp.phase);
+    setStage('map3ScreamFight');
+  }
+  function onScreamFightWin(updatedCamp){
+    // Preserva HP/NP do combate e segue para o diálogo do homem idoso
+    setCamp({...updatedCamp,phase:12});
+    setStage('map3OldMan');
+  }
+
   function finishCampaign(updatedCamp,viaBoss){
     const peW=getActivePerkEffects();
     const multW=1+(peW.sqQpBonusPercent||0)/100;
@@ -2602,9 +3322,11 @@ function CampaignController({profile,setProfile,onNavigate}){
 
   function onBossWin(updatedCamp){
     setCamp(updatedCamp);
-    if((updatedCamp.mapId||'bosque')==='bosque'){setStage('bossWinStory');return;}
-    // Mapa 2 (Nitro): diálogo de vitória (Ibaraki + Saber) antes do fim
-    setStage('nitroWinStory');
+    const mapId=updatedCamp.mapId||'bosque';
+    if(mapId==='bosque'){setStage('bossWinStory');return;}
+    if(mapId==='tennobara'){setStage('nitroWinStory');return;} // Nitro → mapa 3
+    // Mapa 3 (Archer): efeito do Selo de Comando → diálogo de vitória → fim da jornada.
+    setStage('commandSeal');
   }
 
   // Chamado após a narração de vitória contra o boss.
@@ -2617,15 +3339,28 @@ function CampaignController({profile,setProfile,onNavigate}){
     }
   }
 
-  // Constrói o estado do mapa 2 carregando HP/NP/moedas da jornada
-  function enterMap2(){
+  // Constrói o estado de um novo mapa carregando HP/NP/moedas da jornada
+  function enterNextMap(mapId){
     const carry={
       hp:camp.servo.hp,npBar:camp.servo.npBar,
       sqEarned:camp.sqEarned,qpEarned:camp.qpEarned,
       xpEarned:camp.xpEarned,bondEarned:camp.bondEarned,
     };
-    setCamp(buildCampForMap(IBARAKI,'tennobara',carry));
-    setStage('map'); // arte grande da Deon já foi mostrada; entra no mapa
+    setCamp(buildCampForMap(IBARAKI,mapId,carry));
+    setStage('map');
+  }
+  function enterMap2(){enterNextMap('tennobara');}
+
+  // Após vencer o Nitro (fim do mapa 2): segue para o Caminho Tortuoso (mapa 3).
+  // A Fase 1 do mapa 3 é fixa (diálogo de partida), então entra por ela.
+  function afterNitroWin(){
+    const carry={
+      hp:camp.servo.hp,npBar:camp.servo.npBar,
+      sqEarned:camp.sqEarned,qpEarned:camp.qpEarned,
+      xpEarned:camp.xpEarned,bondEarned:camp.bondEarned,
+    };
+    setCamp(buildCampForMap(IBARAKI,'tortuoso',carry));
+    setStage('map3Depart');
   }
 
   function onCombatLose(finalCamp){
@@ -2639,16 +3374,19 @@ function CampaignController({profile,setProfile,onNavigate}){
     setCampResult({type:'lose',
       sq:finalCamp.sqEarned||0,qp:finalCamp.qpEarned||0,
       xp:finalCamp.xpEarned||0,bondEarned:finalCamp.bondEarned||0});
-    // Derrota: Voz Desconhecida (Qin no bosque, versão do Nitro no mapa 2)
-    setStage((finalCamp.mapId||'bosque')==='tennobara'?'nitroLoseStory':'bossLoseStory');
+    // Derrota: diálogo específico por mapa (Qin no bosque, Nitro na vila, Archer no caminho)
+    const mid=finalCamp.mapId||'bosque';
+    setStage(mid==='tortuoso'?'archerLoseStory':mid==='tennobara'?'nitroLoseStory':'bossLoseStory');
   }
 
   function onCombatFlee(finalServo){
     goToPhase({...camp,servo:{...camp.servo,hp:finalServo.hp,npBar:finalServo.npBar}},camp.phase+1);
   }
 
-  function onEventFinish(){
-    goToPhase(camp,camp.phase+1);
+  function onEventFinish(finishedCamp){
+    // Usa o camp finalizado (com planBonus/buffs aplicados), não o estado antigo
+    const base=finishedCamp||camp;
+    goToPhase(base,base.phase+1);
   }
 
   function restart(){setStage('select');setCamp(null);setCampResult(null);}
@@ -2660,17 +3398,37 @@ function CampaignController({profile,setProfile,onNavigate}){
   // Splash da Ibaraki entre a conversa inicial e o mapa 1
   if(stage==='introEncounter')return <SplashScreen art={IBARAKI.assets.encounter} title="IBARAKI DOUJI" sub="Oni-Berserker — Bosque dos Caminhos Cegos" onFinish={()=>setStage('map')}/>;
   if(stage==='bossStory'){
-    // Bosque: narração + arte da Qin. Vila: cartão de nome do boss robô
-    // (sem arte dedicada ainda — o autor vai enviar depois).
+    // Bosque: narração + arte da Qin. Vila: Nitro. Caminho: diálogo + arte da Archer.
     if(camp.mapId==='bosque')return <StoryScreen profile={profile} script={STORY_BOSS_INTRO} finishLabel="⚔️ Iniciar o Confronto" onFinish={()=>setStage('bossEncounter')}/>;
-    return <MapTitleCard name="⚙️ Samurai Mecanizado Nitro-Type" onFinish={()=>setStage('boss')}/>;
+    if(camp.mapId==='tortuoso')return <StoryScreen profile={profile} script={STORY_MAP3_ARCHER_INTRO} finishLabel="⚔️ Encarar o horror" onFinish={()=>setStage('archerEncounter')}/>;
+    return <SplashScreen art={NITRO.assets.encounter} title="⚙️ NITRO-TYPE" sub="Samurai Mecanizado — Ameaça Anacrônica" onFinish={()=>setStage('boss')}/>;
   }
+  // Splash da Archer (após o diálogo pré-boss)
+  if(stage==='archerEncounter')return <SplashScreen art={ARCHER.assets.encounter} title="ARCHER CORROMPIDA" sub="A Fada Carniceira do Caminho Tortuoso" onFinish={()=>setStage('boss')}/>;
   // Splash da Qin antes do combate contra ela
   if(stage==='bossEncounter')return <SplashScreen art={QIN.assets.encounter} title="QIN LIANGYU" sub="Lancer — A General da Cavalaria Branca" onFinish={()=>setStage('boss')}/>;
   if(stage==='bossWinStory')return <StoryScreen profile={profile} script={STORY_BOSS_WIN} finishLabel="Continuar →" onFinish={afterBossWinStory}/>;
   // Fim do combate do Nitro (Fase 15)
-  if(stage==='nitroWinStory')return <StoryScreen profile={profile} script={STORY_NITRO_WIN} finishLabel="Continuar →" onFinish={()=>finishCampaign(camp,true)}/>;
+  if(stage==='nitroWinStory')return <StoryScreen profile={profile} script={STORY_NITRO_WIN} finishLabel="Seguir em Frente →" onFinish={afterNitroWin}/>;
+  // Fase fixa 1 do mapa 3: partida da vila rumo a Kurikara
+  if(stage==='map3Depart')return <StoryScreen profile={profile} script={STORY_MAP3_DEPART} finishLabel="Partir para Kurikara →" onFinish={()=>setStage('map')}/>;
+  // Fase fixa 3 do mapa 3: o pesadelo (design fora do padrão de chat)
+  if(stage==='map3Nightmare')return <NightmareScreen onFinish={()=>{const up=unlockAdvancedSkills();setProfile(up);setStage('map');}}/>;
+  // Fase fixa 8 do mapa 3: a encruzilhada
+  if(stage==='map3Crossroads')return <StoryScreen profile={profile} script={STORY_MAP3_CROSSROADS} finishLabel="Seguir pela direita →" onFinish={afterCrossroads}/>;
+  // Fase fixa 12: grito → combate contra 3 Dhampir → homem idoso
+  if(stage==='map3Scream')return <StoryScreen profile={profile} script={STORY_MAP3_SCREAM} finishLabel="⚔️ Investigar o grito" onFinish={startScreamFight}/>;
+  if(stage==='map3ScreamFight')return <CombatScreen camp={camp} isBoss={false} fixedEnemies={scriptedFightRef.current} onWin={onScreamFightWin} onLose={onCombatLose} onFlee={onScreamFightWin} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
+  if(stage==='map3OldMan')return <StoryScreen profile={profile} script={STORY_MAP3_OLDMAN} finishLabel="Continuar a Jornada →" onFinish={()=>setStage('map')}/>;
+  // Fase fixa 14 do mapa 3: despedida do homem idoso
+  if(stage==='map3Farewell')return <StoryScreen profile={profile} script={STORY_MAP3_FAREWELL} finishLabel="Continuar a Jornada →" onFinish={afterFarewell}/>;
+  // Fase fixa 18 do mapa 3: a memória (flashback do braço arrancado)
+  if(stage==='map3Memory')return <MemoryScreen onFinish={()=>setStage('map')}/>;
   if(stage==='nitroLoseStory')return <StoryScreen profile={profile} script={STORY_NITRO_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
+  // Fim do combate contra a Archer (boss do mapa 3)
+  if(stage==='commandSeal')return <CommandSealFX onFinish={()=>setStage('archerWinStory')}/>;
+  if(stage==='archerWinStory')return <StoryScreen profile={profile} script={STORY_ARCHER_WIN} finishLabel="Continuar →" onFinish={()=>finishCampaign(camp,true)}/>;
+  if(stage==='archerLoseStory')return <StoryScreen profile={profile} script={STORY_ARCHER_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   // Cadeia de transição Bosque → Vila de Tennobara
   if(stage==='map2Leave')return <StoryScreen profile={profile} script={STORY_MAP2_LEAVE} finishLabel="Continuar →" onFinish={()=>setStage('map2TitleCard')}/>;
   if(stage==='map2TitleCard')return <MapTitleCard name="Vila de Tennobara" onFinish={()=>setStage('map2Deon')}/>;
