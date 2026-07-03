@@ -680,6 +680,39 @@ const STORY_ARCHER_WIN={
   ],
 };
 
+// ── FASE FIXA 1 DO MAPA 4: o rescaldo (a Archer se reergue como marionete) ──
+const STORY_MAP4_AFTERMATH={
+  start:[
+    {type:'image',src:'assets/servos/archer/archer_death.jpg'},
+    {type:'narration',text:'O corpo pálido da garota naquele chão de terra batida mostrava que aquele confronto havia acabado. Não parecia que ela iria se levantar, com aquela palidez e com o golpe desferido pela Berserker com toda a força.'},
+    {type:'ibaraki',expr:'exp1',text:'Heheh, eu falei, não falei? Eu consigo derrotar essa coisa.'},
+    {type:'master',text:'Nunca duvidei.....'},
+    {type:'narration',text:'Enquanto decidiam se passavam por cima do corpo ou o contornavam para não serem amaldiçoados sem querer, aqueles olhos pálidos tremem. Parece encarar os olhos do Mestre — e, por mais que não tenha pupila, podia ser sentida aquela encarada mórbida.'},
+    {type:'master',text:'Não me diga que ela tem fase 2......'},
+    {type:'ibaraki',expr:'expDerrota',text:'Não diga algo assim.... isso sempre é um ato de levantar bandeira para o inimigo....'},
+    {type:'master',text:'........'},
+    {type:'archer',text:'Arrhhh..... Ghrrrr.....'},
+    {type:'narration',text:'Ela se levanta com uma rapidez não natural, como se houvesse cordas a erguendo — uma marionete sendo controlada. Então ela adentra a névoa e desaparece.'},
+    {type:'master',text:'Sinceramente, deixar ela fugir é a melhor opção....'},
+    {type:'ibaraki',expr:'expDerrota',text:'Não gosto de deixar uma presa fugir. Mas aquilo nem poderia ser chamado de presa. Só dessa vez, eu deixo passar.'},
+  ],
+};
+
+// ── FASE FIXA 6 DO MAPA 4: a aparição da Archer "mais viva" ──
+const STORY_MAP4_APPARITION={
+  start:[
+    {type:'narration',text:'Enquanto se aproximam da cidade de Kurikara, uma estranha sensação de estar sendo vigiado aumenta.'},
+    {type:'master',text:'Vamos ficar atentos. Alguma coisa está nos seguindo desde mais cedo.'},
+    {type:'ibaraki',expr:'exp1',text:'Deve ser só mais algum bandido.'},
+    {type:'master',text:'Assim espero....'},
+    {type:'image',src:'assets/servos/archer/archer_visu.jpg'},
+    {type:'narration',text:'Entre as árvores, um rosto familiar pode ser visto — mas estranhamente mais vivo, com roupas de cores mais fortes e olhos que, mesmo quase totalmente brancos, agora deixavam ver a sua pupila.'},
+    {type:'master',text:'Ah.... aquela não é a.... Archer?'},
+    {type:'ibaraki',expr:'expDerrota',text:'Gyahh! Não me assuste assim.... mas parece.'},
+    {type:'narration',text:'Assim que percebeu que foi notada, a estranha garota desaparece à plena vista.'},
+  ],
+};
+
 // ── FASE FIXA 18 DO MAPA 3: a memória (sonho-lembrança + flashback do trauma) ──
 // Sequência em fases visuais (não é chat comum): sonho calmo → glitch → despertar.
 // NOTA DE CONTINUIDADE: a "mulher nojenta com quatro subordinados" mencionada aqui
@@ -1062,12 +1095,13 @@ function MenuScreen({onNavigate,profile}){
           </p>
         )}
         <button className="btn btn-full" onClick={()=>onNavigate('campaign')}>⚔️ &nbsp; Iniciar Campanha</button>
+        <button className="btn btn-full btn-red" onClick={()=>onNavigate('tower')}>🗼 &nbsp; Torre de Desafios</button>
         <button className="btn btn-full" onClick={()=>onNavigate('profile')}>📜 &nbsp; Perfil</button>
         <button className="btn btn-full" onClick={()=>onNavigate('shop')}>🏪 &nbsp; Loja de Perks</button>
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.29</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.41</p>
       </div>
     </div>
   );
@@ -1081,16 +1115,85 @@ const CODEX=[
   {id:'ibaraki',cat:'servo',name:'Ibaraki Douji',classe:'Berserker',
    art:'assets/servos/ibaraki/ibaraki_default.png',
    reveal:()=>true,
-   info:'A Oni de Rashōmon, companheira do Mestre. Impulsiva, gulosa e provocadora, mas leal à sua maneira. No passado, foi amiga de Shuten Douji no Monte Ooe — até um homem com uma espada em chamas arrancar seu braço.'},
+   info:'A Oni de Rashōmon, companheira do Mestre. Impulsiva, gulosa e provocadora, mas leal à sua maneira. No passado, foi amiga de Shuten Douji no Monte Ooe — até um homem com uma espada em chamas arrancar seu braço.',
+   details:[
+     {title:'IDENTIDADE',body:'Uma das Oni que surgiram na Capital Imperial durante o período Heian, cometendo exaustivamente todo tipo de atrocidade. Diz-se que Ibaraki-Douji era considerada subordinada de Shuten-Douji, que vivia no Monte Ooe. Durante o "Extermínio dos Oni do Monte Ooe" por Minamoto-no-Raikou e seus Quatro Reis Celestiais, Ibaraki cruzou espadas com Watanabe-no-Tsuna, um dos Quatro Reis. Por suas anedotas e vestígios, é classificada como uma "Anti-Heroína".'},
+     {title:'LENDA',body:'Na verdade, Ibaraki-Douji não era subordinada de Shuten-Douji — acredita-se que existiu como "a líder dos Oni do Monte Ooe". Shuten nasceu do Grande Deus Ibuki do Monte Ibuki (isto é, Yamata no Orochi) e de um humano. Era apropriado que Abe-no-Seimei, autoridade da antiga Kyoto, prestasse atenção a tal ser. No entanto, quem de fato liderava os Oni do Monte Ooe não era outro senão Ibaraki-Douji.'},
+     {title:'APARÊNCIA',body:'Uma garota de cabelos loiros e olhos escarlates cor de sangue. Na anedota do Rashōmon, apareceu na figura de uma "bela mulher".\n\nÉ uma Serva de estatura baixa. Cabelo loiro claro, com duas franjas encaracoladas nas laterais e cortado reto na altura das coxas; olhos de um dourado brilhante. Orelhas pontudas e brincos que lembram contas pretas. Seus chifres se projetam da testa, variando do preto ao vermelho. Veste um yukata curto e folgado (da cor de seu cabelo, com padrão floral multicolorido nas mangas), sobre uma blusa branca decotada, com um colar de grandes contas pretas e uma faixa cor de vinho amarrada em laço nas costas. Como o yukata é folgado, os ombros ficam à mostra.\n\nSuas unhas são afiadas como garras, negras por natureza. Mãos e pés são de um vermelho-sangue antinatural, que se funde à pele pálida em tatuagens tribais que sobem das mãos aos ombros e dos pés até abaixo dos joelhos. Anda descalça, com tiras pretas no peito do pé.'},
+     {title:'PERSONALIDADE',body:'Uma Oni nascida neste mundo com aparência desumana. Na infância, foi estritamente disciplinada pela mãe, de linhagem nobre, para aprender o orgulho de uma Oni — ainda que, vista de fora, tal criação estivesse mais próxima do assédio do que do amor.\n\nEmbora sua aparência exale inocência, seu ser é o de um Oni: ferir humanos, devorá-los, amar o sangue. Não tem, porém, grande inclinação ao prazer egoísta de matar; não é uma Oni que traz desordem ao mundo — devora humanos como um ser vivo, próxima de um animal selvagem. Mesmo fascinada por doces, sua natureza não é a de uma jovem humana: dependendo das circunstâncias, pode devorar o próprio humano que a atraiu com doces. Nunca subestime um leão. Mas, se alguém conseguir alimentá-la, ela poderá exibir um sorriso encantador.'},
+     {title:'HABILIDADES DE CLASSE',items:[
+       {name:'Aprimoramento da Loucura',rank:'B',text:'Aumenta todos os parâmetros, mas remove grande parte da razão. Graças à sua natureza oni combinada à habilidade de classe, ela pode se controlar excepcionalmente — quando o faz, é capaz de raciocinar e manter uma conversa coerente.'},
+     ]},
+     {title:'HABILIDADES PESSOAIS',items:[
+       {name:'Demônio de Natureza Oni',rank:'A',text:'Representa a natureza demoníaca e o superpoder de um oni. Só oni de sangue puro ou mestiços a adquirem. Combina Demônio Natural, Força Monstruosa, Carisma e Explosão de Mana — e, no caso de Ibaraki, sua Explosão de Mana se torna "chama". Um golpe seu, unindo Força de rank alto, Força Monstruosa A e Explosão de Mana A, gera força destrutiva impressionante.'},
+       {name:'Oni de Ooe, Tumulto',rank:'A+',text:'A habilidade de se retirar da batalha, retornando um combate desvantajoso ao estado inicial. Vem da anedota em que escapou esplendidamente ao lutar contra Watanabe e ter a mão decepada pela espada "Higekiri" — permitindo-lhe fugir antes que Sakata Kintoki disparasse a Faísca Dourada.'},
+       {name:'Metamorfose',rank:'A',text:'Transformação livre da própria forma — pode assumir a de uma criança ou até a de um gigante. Como sua estrutura física não cresce mais, Ibaraki usa isso ao extremo, esforçando-se diariamente para se tornar a grande oni que todos temem.'},
+     ]},
+     {title:'FANTASMAS NOBRES',items:[
+       {name:'Grande Rancor de Rashōmon',text:'Sua mão direita, decepada por Watanabe no Tsuna. Normalmente presa, Ibaraki pode destacá-la e manipulá-la livremente — fazê-la flutuar ou usá-la como arma. Foi poderosa o bastante para arremessar Sakata Kintoki para longe. Sua variante é "Chama, Sougenbi".'},
+       {name:'A Grande Chama do Monte Ooe',text:'Dez ataques consecutivos de calor escaldante que esmagam e queimam até 3 alvos, reduzindo o inimigo a cinzas e deixando apenas ossos carbonizados em brasas negras.'},
+     ]},
+   ],
+   params:[
+     {label:'Força',rank:'B'},{label:'Resistência',rank:'A+'},{label:'Agilidade',rank:'C'},
+     {label:'Mana',rank:'C'},{label:'Sorte',rank:'B'},{label:'NP',rank:'C'},
+   ],
+   va:'Nao Toyama'},
   {id:'qin',cat:'servo',name:'Qin Liangyu',classe:'Lancer',
    art:'assets/servos/qin/qin_default.png',
    reveal:p=>(p.qinDefeats||0)>0||!!(p.achievements&&p.achievements.defeat_qin),
-   info:'A General da Cavalaria Branca, guardiã do Bosque dos Caminhos Cegos. Disciplinada e honrada em combate, revive por orgulho (Guts) e é especialmente perigosa contra Berserkers.'},
+   info:'A General da Cavalaria Branca, guardiã do Bosque dos Caminhos Cegos. Disciplinada e honrada em combate, revive por orgulho (Guts) e é especialmente perigosa contra Berserkers.',
+   details:[
+     {title:'IDENTIDADE',body:'Qin Liangyu foi uma figura importante da história chinesa — aquela que deixou seu nome como a única "general feminina" registrada em uma obra histórica, a "História de Ming".\n\nOriginalmente pertencente a um grupo minoritário, Qin Liangyu casou-se com Ma Qiancheng, que governava a região de Zhongzhou, e juntos participaram de uma campanha para suprimir uma revolta. Depois, sucedendo o marido — que foi preso por um processo civil e morreu na prisão —, ela expulsou bandidos em várias ocasiões como general. Seus subordinados, conhecidos como a Cavalaria Branca, portavam lanças feitas de freixo e eram temidos por toda parte.'},
+     {title:'PERSONALIDADE',body:'De temperamento gentil, e ainda que permaneça humilde, possui engenhosidade excepcional e lida com as dificuldades de forma flexível. Uma pessoa confiável da cabeça aos pés.'},
+     {title:'HABILIDADES DE CLASSE',items:[
+       {name:'Resistência Mágica',rank:'C',text:'Anula feitiços de magia feitos com um encantamento de dois versos ou menos. Não defende contra magia de grande escala, como Grandes Magias e Feitiços Rituais.'},
+     ]},
+     {title:'HABILIDADES PESSOAIS',items:[
+       {name:'Natureza de um Soldado Leal',rank:'B',text:'Denota alguém que jura lealdade ao seu Mestre e, ao mesmo tempo, conquista a confiança dele. Apesar de ser nativa de um grupo minoritário e de seu marido ter sido preso sob falsas acusações, Qin Liangyu dedicou sua lealdade à Dinastia Ming — e a Dinastia depositou enorme confiança nela.'},
+       {name:'Abolição de Rufiões',rank:'A',text:'A sublimação da anedota em que derrotou muitos bandidos como senhora de um castelo. Concede bônus de combate vantajoso contra Servos que são Anti-Heróis ou que têm carreiras ligadas à pirataria ou ao banditismo.'},
+       {name:'Continuação da Batalha',rank:'C+',text:'Não se sabe quando desistir. Qin Liangyu mantém a superioridade em aspectos como o moral das tropas não em uma única batalha, mas em batalhas prolongadas, como cercos.'},
+       {name:'Lança de Haste Branca',rank:'B',text:'Originalmente um Fantasma Nobre. A lança feita de freixo é a favorita dela e de seus subordinados. A lança em si não possui anedotas, mas tem o efeito de causar certo medo em Servos Anti-Heróis.'},
+     ]},
+     {title:'FANTASMAS NOBRES',items:[
+       {name:'A Canção da Lealdade Abnegada',text:'Seu Fantasma Nobre principal. São quatro poemas em sua homenagem, que teriam sido escritos pelo próprio Imperador.'},
+       {name:'A Lança de Haste Branca',text:'Uma lança de freixo que Qin Liangyu usava com seus subordinados. Embora não haja relatos sobre a lança em si, ela incute certo medo em Servos Anti-Heróis.'},
+     ]},
+   ],
+   params:[
+     {label:'Força',rank:'C'},{label:'Resistência',rank:'B'},{label:'Agilidade',rank:'A'},
+     {label:'Mana',rank:'D'},{label:'Sorte',rank:'A'},{label:'NP',rank:'B'},
+   ],
+   va:'Noriko Shitaya'},
   {id:'archer',cat:'servo',name:'Archer Corrompida',classe:'Archer',
    art:'assets/servos/archer/archer_face.png',
    reveal:p=>!!(p.achievements&&p.achievements.defeat_archer),
-   info:'A Fada Carniceira do Caminho Tortuoso. Uma mulher de olhos brancos e sem vida, incapaz de formar frases — só gritos de dor. Rápida e cruel, drena a vida de suas presas. A mesma que o velho da carroça avistou.'},
-  {id:'ninja',cat:'servo',name:'Ninja do Clã Genji',classe:'Assassin',
+   info:'A Fada Carniceira do Caminho Tortuoso. Uma mulher de olhos brancos e sem vida, incapaz de formar frases — só gritos de dor. Rápida e cruel, drena a vida de suas presas. A mesma que o velho da carroça avistou.',
+   details:[
+     {title:'IDENTIDADE',body:'Seu verdadeiro nome é Cavaleira Fada Tristan (Tam Lin Tristan), membro dos Cavaleiros da Távola Redonda da Grã-Bretanha das Fadas. Recebe tratamento favorável como "filha" e sucessora de Morgan, governante da Grã-Bretanha Perdida — uma das duas fadas criadas como bruxas em uma Grã-Bretanha onde a magia é considerada desnecessária.\n\nSeu nome como fada é Baobhan Sith, uma fada feminina das lendas escocesas. A própria palavra significa "mulher fada". Diz-se que aparece à noite para drenar a força vital das pessoas e matá-las. Tem predileção por sangue e é vulnerável à luz solar. Muitas fadas têm tanto "benefício" quanto "mal", mas Baobhan Sith é uma fada maligna que só causa "mal". Parece uma bela mulher humana, mas seus pés, escondidos sob a longa saia, são de fada — os calcanhares são "cascos de veado".\n\nOutrora era gentil, mas os Fae a maltratavam constantemente, até que Morgan (então chamada Aesc) a resgatou e adotou como filha, ensinando-a a ser cruel — transformando-a na vil e perigosa Cavaleira das Fadas.'},
+     {title:'APARÊNCIA',body:'Uma personagem elegante de forte estética gótica. Longos cabelos esvoaçantes de um rosa profundo e vibrante, com mechas pretas misturadas, que emolduram seu rosto. Usa gargantilha e luvas longas até abaixo dos cotovelos.\n\nSeu traje mistura design vitoriano com elementos de fantasia. A cor principal é um vermelho carmesim intenso, com detalhes em preto e branco de atmosfera gótica: um top espartilhado e, sobre ele, uma jaqueta estruturada que se abre em cauda pontiaguda como asas. A saia tem múltiplas camadas alternando branco e uma sobreposição escura, adornadas com renda, fitas e babados. As meias são de vermelho profundo com cadarço preto ao centro, terminando em botas de plataforma de salto alto com ornamentos em forma de garras.'},
+     {title:'PERSONALIDADE',body:'Diplomática e ativa, com a postura de uma governante que fala de seus desejos sem pudor e trabalha para realizá-los. Hedonista, vive apenas o momento presente, satisfazendo-se enquanto se sente bem naquele instante.\n\nPrefere a diversão, como qualquer fada — mas a única coisa "divertida" que conhece são as vozes de sofrimento dos desfavorecidos. Atormenta e pisoteia os fracos, fadas ou humanos. (Como nunca recebeu amor e sua "mãe" Morgan só a elogiava quando ela "atormentava os fracos", aprendeu a gostar disso.) Boas e puras ações a enojam profundamente, e ela faz questão de vilipendiá-las: "É óbvio que é porque eu as acho entediantes."\n\nSeu único hobby era o vandalismo. Acabou cativada pelos "saltos altos" da História Humana Correta e tornou-se colecionadora de sapatos — nisso, é sincera e diligente. No quarto dela, porém, os pés de fada cortados dos calcanhares que colecionou são guardados como tesouros.\n\nRevela-se que Baobhan Sith fora outrora uma fada bondosa, traída e mutilada pelas fadas ingratas. Morgan a encontrou com os membros arrancados e a adotou, criando-a para suprimir sua bondade. Por trás da crueldade reside uma garota aterrorizada com a possibilidade de perder o amor da mãe adotiva, à beira da loucura — sua obsessão por alcançar objetivos a leva a se ferir involuntariamente, a ponto de perder os próprios membros.'},
+     {title:'HABILIDADES DE CLASSE',items:[
+       {name:'Resistência Mágica',rank:'EX',text:'A Resistência Mágica da Cavaleira Fada Tristan — que nunca cede, se arrepende ou sente culpa pela maneira como age — demonstra força extraordinária.'},
+       {name:'Montaria',rank:'A',text:'A Cavaleira Fada não monta em nada: impulsiona a própria terra com as pernas. Ainda assim, possui a habilidade de Montaria.'},
+       {name:'Criação de Território',rank:'A',text:'Educada também como maga no mundo das fadas, é proficiente na arte de criar oficinas.'},
+       {name:'Cavaleiro das Fadas',rank:'B',text:'A proteção divina de quem foi escolhido para proteger o povo das fadas — para elas, um geass. Fortalecimento anti-unidade e anti-civilização, mas proíbe ataques contra outros Cavaleiros das Fadas: quem matar outro se autodestrói.'},
+     ]},
+     {title:'HABILIDADES PESSOAIS',items:[
+       {name:'Grimalkin',rank:'A',text:'Um legado de bruxas na Inglaterra, coroado com o nome de uma fada-gato. As características felinas são interpretadas ao estilo das fadas: "eliminar o som dos passos, aliviar o peso e aumentar a velocidade". O uso por Baobhan Sith é bastante eficaz.'},
+       {name:'Sucessora Abençoada',rank:'EX',text:'Reconhecida como filha de Morgan, possui a "autoridade real de governar". Como o cavaleiro que "admoestou o Rei dos Cavaleiros", tem poder suficiente para dominar o espaço e expressar suas opiniões a Morgan. (Círculo de Domínio de Mana)'},
+       {name:'Sanguessuga de Fada',rank:'A',text:'Sua habilidade como vampira: absorve os PV e NP do alvo. A antiga Baobhan Sith detestava essa arcana e não a usava diante de outros — mas foi forçada a abusar dela por diversão, transformando uma cidade inteira em necrópole transbordando de cadáveres.'},
+     ]},
+     {title:'FANTASMA NOBRE',items:[
+       {name:'Fetch Failnaught',text:'Prejudicial ao próprio usuário, corrói sua alma a cada uso. Magia de um demônio que amaldiçoa o alvo à morte sem falha, independentemente da distância. Cria um duplo do inimigo a partir de sua carne (cabelo, unha, etc.) e, ao matar esse duplo, amaldiçoa o inimigo à morte. É semelhante a uma versão de fada do ritual ushi-no-koku-mairi.'},
+     ]},
+   ],
+   params:[
+     {label:'Força',rank:'A'},{label:'Resistência',rank:'C'},{label:'Agilidade',rank:'A'},
+     {label:'Mana',rank:'B'},{label:'Sorte',rank:'D'},{label:'NP',rank:'—'},
+   ],
+   va:'Azumi Waki'},
+  {id:'ninja',cat:'npc',name:'Ninja do Clã Genji',classe:'Assassin',
    art:'assets/servos/ninja/ninja_encounter.jpg',
    reveal:p=>!!(p.achievements&&p.achievements.defeat_ninja),
    info:'Um assassino silencioso dos arredores de Kurikara. O clã Genji não deixa testemunhas. Ágil e traiçoeiro, usa veneno e shurikens, e desaparece num piscar de olhos com seu golpe supremo.'},
@@ -1104,10 +1207,32 @@ const CODEX=[
    reveal:p=>!!(p.achievements&&p.achievements.defeat_qin),
    info:'Uma jovem mestra de Londres, fria e ríspida. Não deseja fazer amizades, mas oferece cooperação. É a Mestra de Saber na Vila de Tennobara.'},
   // ── NPCs ──
-  {id:'deon',cat:'npc',name:"Chevalier D'Eon",classe:'Saber',
+  {id:'deon',cat:'servo',name:"Chevalier D'Eon",classe:'Saber',
    art:'assets/servos/deon/deon_profile.png',
-   reveal:p=>!!(p.achievements&&p.achievements.defeat_qin),
-   info:'Um espadachim de aparência andrógina e honra inabalável — Saber, servo de Aria. Guia o Mestre até a Vila de Tennobara e, no confronto contra o Nitro-Type, empresta seu Noble Phantasm, o Fleur de Lis.'},
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_nitro),
+   info:'Um espadachim de aparência andrógina e honra inabalável — Saber, servo de Aria. Guia o Mestre até a Vila de Tennobara e, no confronto contra o Nitro-Type, empresta seu Noble Phantasm, o Fleur de Lis.',
+   details:[
+     {title:'IDENTIDADE',body:'Chevalier D\'Éon era o Cavaleiro do Lírio Branco. Dizia-se ser "uma mulher que era um homem, ou um homem que era uma mulher" — uma figura lendária da França dos séculos XVIII e XIX. Tanto soldado quanto escritor, teve uma carreira prolífica como espião a serviço de uma agência secreta caçada pelas grandes potências, e também foi ministro plenipotenciário e capitão de dragões.\n\nAo infiltrar-se no Império Russo em missão secreta, socializou com a Imperatriz da Rússia sob o nome de Mademoiselle Léa de Beaumont, deixando anedotas de ter a beleza elogiada pela Imperatriz e seus acompanhantes.'},
+     {title:'APARÊNCIA',body:'Dizia-se que, apesar de se vestir formalmente como homem e comportar-se como tal, era dotado de uma beleza tão grande que podia passar por uma jovem encantadora. De fato, antes da idade adulta, foi apresentado à alta sociedade vestindo um vestido, ganhando reputação de "mulher bonita".\n\nO peso não provém de declaração pessoal, mas de conjectura baseada na aparência.'},
+     {title:'PERSONALIDADE',body:'Vivo ou como Espírito Heroico, em corpo de homem ou de mulher, há apenas um caminho a seguir: permanecer como o cavaleiro do lírio branco. D\'Éon continuará a oferecer sua lealdade ao Mestre e à família real francesa.'},
+     {title:'HABILIDADES DE CLASSE',items:[
+       {name:'Resistência Mágica',rank:'C',text:'Não se defende contra magias de grande escala, como Grandes Magias e Feitiços Rituais.'},
+       {name:'Montaria',rank:'B',text:'Permite controlar a maioria dos veículos e criaturas. Criaturas Fantasmagóricas, porém, não podem ser controladas.'},
+     ]},
+     {title:'HABILIDADES PESSOAIS',items:[
+       {name:'Deixe o Lírio Branco Brilhar',rank:'A+',text:'Poderosa sugestão que tem a si mesmo como alvo. Concede alta resistência contra efeitos de Magias, Habilidades e Fantasmas Nobres que influenciam a mente. Ora homem, ora mulher — até o corpo é capaz de se transformar.'},
+       {name:'Olho da Mente (Verdadeiro)',rank:'C',text:'Fruto da experiência como espião em países estrangeiros. É a explicação para o fato de que esta pessoa não é apenas fofa.'},
+       {name:'Bela Aparência',rank:'C',text:'Combinada às vestimentas, confere uma beleza que torna difícil discernir o gênero por meio de uma aura (não pela aparência). Aplica modificadores ao negociar com homens e mulheres, e desconsidera efeitos que visam um gênero específico.'},
+     ]},
+     {title:'FANTASMA NOBRE',items:[
+       {name:'Fleur de Lis',text:'Uma bela dança com espadas que encanta quem a contempla. O modo de vida de D\'Éon — que seguiu alcançando seus objetivos enquanto muitos homens e mulheres se deixavam desviar por ele — foi sublimado neste Fantasma Nobre.'},
+     ]},
+   ],
+   params:[
+     {label:'Força',rank:'A'},{label:'Resistência',rank:'B'},{label:'Agilidade',rank:'B'},
+     {label:'Mana',rank:'C'},{label:'Sorte',rank:'A'},{label:'NP',rank:'C'},
+   ],
+   va:'Chiwa Saito'},
   {id:'oldman',cat:'npc',name:'Homem Idoso',classe:'Viajante',
    art:null,
    reveal:p=>!!(p.achievements&&p.achievements.defeat_archer)||(p.stats&&p.stats.runs||0)>3,
@@ -1159,6 +1284,32 @@ function CodexScreen({onNavigate,profile}){
                 <p style={{fontSize:'.85rem',color:'var(--parchment)',lineHeight:1.7}}>
                   {known?c.info:'Este personagem ainda não foi revelado. Continue sua jornada para descobrir mais.'}
                 </p>
+                {known&&c.details&&c.details.map((sec,si)=>(
+                  <div key={si} style={{marginTop:14}}>
+                    <div className="cinzel" style={{color:'var(--red-bright)',fontSize:'.8rem',letterSpacing:2,marginBottom:6,borderBottom:'1px solid var(--gold-dim)',paddingBottom:4}}>{sec.title}</div>
+                    {sec.body&&<p style={{fontSize:'.82rem',color:'var(--parchment)',lineHeight:1.7,marginBottom:sec.items?8:0,whiteSpace:'pre-line'}}>{sec.body}</p>}
+                    {sec.items&&sec.items.map((it,ii)=>(
+                      <div key={ii} style={{fontSize:'.8rem',color:'var(--parchment)',lineHeight:1.6,marginBottom:6,paddingLeft:10,borderLeft:'2px solid rgba(201,162,39,0.35)'}}>
+                        {it.name&&<span style={{color:'var(--gold)',fontWeight:'bold'}}>{it.name}{it.rank?` (${it.rank})`:''}: </span>}
+                        {it.text}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                {known&&c.params&&(
+                  <div style={{marginTop:14}}>
+                    <div className="cinzel" style={{color:'var(--red-bright)',fontSize:'.8rem',letterSpacing:2,marginBottom:8,borderBottom:'1px solid var(--gold-dim)',paddingBottom:4}}>PARÂMETROS</div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+                      {c.params.map((p,pi)=>(
+                        <div key={pi} style={{display:'flex',justifyContent:'space-between',padding:'4px 8px',background:'rgba(0,0,0,0.25)',borderRadius:3}}>
+                          <span style={{fontSize:'.72rem',color:'var(--parchment-dark)'}}>{p.label}</span>
+                          <span style={{fontSize:'.78rem',color:'var(--gold)',fontFamily:'Cinzel,serif',fontWeight:'bold'}}>{p.rank}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {known&&c.va&&<div style={{marginTop:12,fontSize:'.72rem',color:'var(--parchment-dark)',fontStyle:'italic'}}>Voz: {c.va}</div>}
                 <button className="btn btn-full" style={{marginTop:16}} onClick={()=>setSel(null)}>← Voltar à lista</button>
               </div>
             );
@@ -1187,6 +1338,86 @@ function CodexScreen({onNavigate,profile}){
         )}
 
         {!sel&&<button className="btn btn-full" style={{marginTop:16}} onClick={()=>onNavigate('menu')}>← Voltar</button>}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// TORRE DE DESAFIOS — seleção de servo e mapa
+// ══════════════════════════════════════════════════════
+function TowerSelectScreen({onNavigate,onStart,profile}){
+  const[servo,setServo]=useState('ibaraki');
+  // Servos jogáveis: Ibaraki já pronta; os demais serão liberados ao ajustar suas skills.
+  const SERVOS=[
+    {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',art:IBARAKI.assets.default,ready:true,
+     unlock:null},
+    {id:'qin',name:'Qin Liangyu',classe:'Lancer',art:QIN.assets.default,ready:false,
+     unlock:'defeat_qin'},
+    {id:'archer',name:'Archer',classe:'Archer',art:ARCHER.assets.face,ready:false,
+     unlock:'defeat_archer'},
+    {id:'ninja',name:'Ninja Genji',classe:'Assassin',art:NINJA.assets.encounter,ready:false,
+     unlock:'defeat_ninja'},
+  ];
+  const done=profile.achievements||{};
+
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      <div className="panel" style={{maxWidth:640}}>
+        <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,marginBottom:4}}>🗼 TORRE DE DESAFIOS</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:16}}>
+          O verdadeiro teste: 20 fases por andar, inimigos reforçados, sem tréguas. Escolha seu Servo e o andar.
+        </p>
+
+        <div className="divider"><span className="divider-text">ESCOLHA O SERVO</span></div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
+          {SERVOS.map(s=>{
+            const unlocked=s.ready; // por ora, só quem está "ready" é jogável
+            return(
+              <button key={s.id} disabled={!unlocked} onClick={()=>unlocked&&setServo(s.id)}
+                style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',
+                  background:servo===s.id?'rgba(201,162,39,0.15)':'rgba(0,0,0,0.25)',
+                  border:`1px solid ${servo===s.id?'var(--gold)':'var(--gold-dim)'}`,borderRadius:3,
+                  cursor:unlocked?'pointer':'not-allowed',opacity:unlocked?1:0.5,textAlign:'left'}}>
+                {unlocked
+                  ?<img src={s.art} alt="" style={{width:44,height:44,objectFit:'cover',objectPosition:'center 20%',borderRadius:3}} onError={e=>{e.target.style.display='none';}}/>
+                  :<div style={{width:44,height:44,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.4rem',background:'rgba(0,0,0,0.3)',borderRadius:3}}>🔒</div>}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:'.8rem',color:unlocked?'var(--gold)':'var(--parchment-dark)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.name}</div>
+                  <div style={{fontSize:'.65rem',color:'var(--parchment-dark)'}}>{unlocked?s.classe:'Em breve'}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="divider"><span className="divider-text">ESCOLHA O ANDAR</span></div>
+        <div style={{display:'grid',gap:8,marginBottom:16}}>
+          {TOWER_ORDER.map((mid,i)=>{
+            const map=TOWER_MAPS[mid];
+            const unlockAch=TOWER_UNLOCK[mid];
+            // O 1º andar (Floresta) sempre disponível; os demais exigem ter vencido o boss na Campanha.
+            const unlocked=i===0||!!done[unlockAch];
+            return(
+              <button key={mid} disabled={!unlocked} onClick={()=>unlocked&&onStart(IBARAKI,mid)}
+                style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 14px',
+                  background:'rgba(120,40,40,0.1)',border:`1px solid ${unlocked?'var(--red)':'rgba(120,120,120,0.25)'}`,
+                  borderRadius:3,cursor:unlocked?'pointer':'not-allowed',opacity:unlocked?1:0.5}}>
+                <div style={{textAlign:'left'}}>
+                  <div className="cinzel" style={{color:unlocked?'var(--parchment)':'var(--parchment-dark)',fontSize:'.9rem',letterSpacing:1}}>
+                    {unlocked?'':'🔒 '}Andar {i+1} — {map.name}
+                  </div>
+                  <div style={{fontSize:'.68rem',color:'var(--parchment-dark)',marginTop:2}}>
+                    {unlocked?'20 fases · boss na fase 20':'Vença este boss na Campanha para liberar'}
+                  </div>
+                </div>
+                {unlocked&&<span style={{color:'var(--red-bright)',fontSize:'1.2rem'}}>⚔️</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar</button>
       </div>
     </div>
   );
@@ -1713,7 +1944,7 @@ const NINJA={
 // Muito letal — exige Servo Nv.10 e boas Perks. HP moderado (é ágil, não tanque).
 const ARCHER={
   id:'archer_corrupted',name:'Archer Corrompida',className:'Archer',isBoss:true,
-  hp:30000,attack:1200,
+  hp:120000,attack:1500,
   attributes:{
     strength:{rank:'B',points:40},
     agility:{rank:'A',points:50}, // muito rápida — age antes do Servo
@@ -1743,6 +1974,8 @@ const ARCHER={
     battle:'assets/servos/archer/archer_boss.png',
     np:'assets/servos/archer/archer_boss.png',
     face:'assets/servos/archer/archer_face.png', // rosto (avatar de chat nos diálogos)
+    death:'assets/servos/archer/archer_death.jpg', // corpo caído (rescaldo do combate)
+    visu:'assets/servos/archer/archer_visu.jpg', // versão "mais viva" (aparição na Fase 6 do mapa 4)
   },
 };
 
@@ -1895,8 +2128,30 @@ const MAPS={
   },
 };
 
+// ══════════════════════════════════════════════════════
+// TORRE DE DESAFIOS — modo roguelike puro (sem história)
+// ══════════════════════════════════════════════════════
+// Reusa os mesmos inimigos e bosses dos mapas da Campanha, mas:
+//  - 20 fases por mapa (boss sempre na fase 20)
+//  - inimigos com dano/HP amplificados (towerMult)
+//  - sem fases fixas de história; encontros 100% aleatórios
+const TOWER_MAPS={
+  bosque:{id:'bosque',name:'Floresta',phases:20,enemies:ENEMIES_DATA,boss:'qin_liangyu',
+    towerHpMult:1.5,towerAtkMult:1.4},
+  tennobara:{id:'tennobara',name:'Vila',phases:20,enemies:ENEMIES_MAP2,boss:'samurai_nitro',
+    towerHpMult:1.5,towerAtkMult:1.4},
+  tortuoso:{id:'tortuoso',name:'Caminho',phases:20,enemies:ENEMIES_MAP3,boss:'archer_corrupted',
+    towerHpMult:1.5,towerAtkMult:1.4},
+  kurikara:{id:'kurikara',name:'Redondezas',phases:20,enemies:ENEMIES_MAP4,boss:'ninja_genji',
+    towerHpMult:1.5,towerAtkMult:1.4},
+};
+const TOWER_ORDER=['bosque','tennobara','tortuoso','kurikara'];
+// Qual conquista libera cada mapa/servo da Torre
+const TOWER_UNLOCK={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja'};
+
 // Gera um encontro usando a tabela de inimigos do mapa atual.
-function genEncounterForMap(mapId,phase){
+// hpMult/atkMult (>1) amplificam os inimigos no modo Torre de Desafios.
+function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1){
   const map=MAPS[mapId]||MAPS.bosque;
   const table=map.enemies;
   const ids=Object.keys(table);
@@ -1905,11 +2160,13 @@ function genEncounterForMap(mapId,phase){
     const id=ids[Math.floor(Math.random()*ids.length)];
     const base=table[id];
     const m=phaseMult(phase);
+    const hp=Math.round(base.hp*m*hpMult);
+    const atk=Math.round(base.atk*m*atkMult);
     return{
       ...base,instanceId:`${id}_${i}_${Date.now()+i}`,
-      maxHp:Math.round(base.hp*m),currentHp:Math.round(base.hp*m),
-      atkScaled:Math.round(base.atk*m),
-      damage:Math.round(base.atk*m*base.strPts/100),
+      maxHp:hp,currentHp:hp,
+      atkScaled:atk,
+      damage:Math.round(atk*base.strPts/100),
       activeDebuffs:[],stunned:0,
     };
   }).sort((a,b)=>b.agility-a.agility);
@@ -2184,6 +2441,11 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
     if(m.type==='narration')return(
       <div key={i} className="chat-narration">{m.text}</div>
     );
+    if(m.type==='image')return(
+      <div key={i} style={{margin:'12px auto',textAlign:'center'}}>
+        <img src={m.src} alt="" style={{maxWidth:'100%',maxHeight:'42vh',objectFit:'contain',borderRadius:4,border:'1px solid rgba(180,40,40,.4)',boxShadow:'0 0 30px rgba(120,20,20,.3)'}} onError={e=>{e.target.style.display='none';}}/>
+      </div>
+    );
     if(m.type==='ibaraki')return(
       <div key={i} className="chat-msg left">
         <img className="chat-avatar" src={IBARAKI_EXPRESSIONS[m.expr]||IBARAKI.assets.default} alt="Ibaraki"/>
@@ -2312,8 +2574,9 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
 // ══════════════════════════════════════════════════════
 function MapScreen({camp,onChoosePath,onNavigate}){
   const{servo,phase,maxPhases}=camp;
-  const curMap=MAPS[camp.mapId]||MAPS.bosque;
-  const isBossPhase=phase>=maxPhases-1; // últimas 2 fases levam ao boss
+  const curMap=(camp.towerMode?TOWER_MAPS[camp.mapId]:MAPS[camp.mapId])||MAPS.bosque;
+  // Torre: boss só na última fase (20). Campanha: últimas 2 fases levam ao boss.
+  const isBossPhase=camp.towerMode?(phase>=maxPhases):(phase>=maxPhases-1);
   return(
     <div className="screen">
       <div className="panel" style={{maxWidth:600}}>
@@ -2524,8 +2787,16 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   function createBossInstance(){
     // Boss varia por mapa: Qin (Bosque), Nitro (Vila), Archer (Caminho), Ninja (Kurikara)
     const mid=camp.mapId||'bosque';
+    // Multiplicadores da Torre (1 na Campanha)
+    const hpM=camp.towerHpMult||1, atkM=camp.towerAtkMult||1;
+    // Aplica os multiplicadores da Torre ao boss recém-criado
+    const T=(b)=>({...b,
+      maxHp:Math.round(b.maxHp*hpM),currentHp:Math.round(b.currentHp*hpM),
+      atkScaled:Math.round(b.atkScaled*atkM),
+      damage:Math.round((b.damage||0)*atkM),
+    });
     if(mid==='kurikara'){
-      return{
+      return T({
         ...NINJA,instanceId:'ninja_boss',
         maxHp:NINJA.hp,currentHp:NINJA.hp,
         atkScaled:NINJA.attack,
@@ -2535,24 +2806,23 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         cooldowns:{veneno:3,shurikens:2},
         evadeTurns:0,
         isNinja:true,isBoss:true,
-      };
+      });
     }
     if(mid==='tortuoso'){
-      return{
+      return T({
         ...ARCHER,instanceId:'archer_boss',
         maxHp:ARCHER.hp,currentHp:ARCHER.hp,
         atkScaled:ARCHER.attack,
         damage:Math.round(ARCHER.attack*(ARCHER.attributes.strength.points/100)),
         agility:ARCHER.attributes.agility.points,
         npBar:0,activeBuffs:[],activeDebuffs:[],
-        // Cooldowns começam parciais (não dispara tudo no turno 1)
         cooldowns:{grimalkin:3,blessedScion:4,faeVampirism:2},
         evadeTurns:0,npLockOnServo:0,
         isArcher:true,isBoss:true,
-      };
+      });
     }
     if(mid==='tennobara'){
-      return{
+      return T({
         ...NITRO,instanceId:'nitro_boss',
         maxHp:NITRO.hp,currentHp:NITRO.hp,
         atkScaled:NITRO.attack,
@@ -2561,9 +2831,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         npBar:0,activeBuffs:[],activeDebuffs:[],
         missileCd:3,charging:false,
         isNitro:true,isBoss:true,
-      };
+      });
     }
-    return{
+    return T({
       ...QIN,instanceId:'qin_boss',
       maxHp:QIN.hp,currentHp:QIN.hp,
       atkScaled:QIN.attack,
@@ -2572,14 +2842,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       npBar:0,activeBuffs:[],activeDebuffs:[],
       cooldowns:{lanca:0,soldado:0,abolidor:0},
       gutsState:null,isBoss:true,
-    };
+    });
   }
 
   const[servo,setServo]=useState(initServo);
   const[enemies,setEnemies]=useState(
     isBoss?[createBossInstance()]
     :fixedEnemies?fixedEnemies
-    :genEncounterForMap(camp.mapId||'bosque',camp.phase)
+    :genEncounterForMap(camp.mapId||'bosque',camp.phase,camp.towerHpMult||1,camp.towerAtkMult||1)
   );
   const[selectedTarget,setSelectedTarget]=useState(0);
   const[log,setLog]=useState([]);
@@ -3539,8 +3809,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 // ══════════════════════════════════════════════════════
 // CONTROLADOR DE CAMPANHA
 // ══════════════════════════════════════════════════════
-function CampaignController({profile,setProfile,onNavigate}){
-  const[stage,setStage]=useState('select');
+function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
+  const[stage,setStage]=useState(mode==='tower'?'towerSelect':'select');
   const[camp,setCamp]=useState(null);
   const[eventType,setEventType]=useState(null);
   const[campResult,setCampResult]=useState(null);
@@ -3548,8 +3818,8 @@ function CampaignController({profile,setProfile,onNavigate}){
 
   // Cria o estado de campanha para um mapa específico, preservando HP/NP/moedas
   // quando é uma transição entre mapas (o Servo continua a jornada).
-  function buildCampForMap(servo,mapId,carry=null){
-    const map=MAPS[mapId];
+  function buildCampForMap(servo,mapId,carry=null,tower=false){
+    const map=tower?TOWER_MAPS[mapId]:MAPS[mapId];
     const xpState=loadServoXP(servo.id);
     const bond=loadBond(servo.id);
     const lvl=xpState.level;
@@ -3558,6 +3828,9 @@ function CampaignController({profile,setProfile,onNavigate}){
     const sv=profileSkillValues(profile.skills);
     return{
       mapId,phase:1,maxPhases:map.phases,
+      towerMode:tower,
+      towerHpMult:tower?(map.towerHpMult||1):1,
+      towerAtkMult:tower?(map.towerAtkMult||1):1,
       servo:{
         ...servo,level:lvl,
         attackBase:servo.getAtk(lvl),hpMax,
@@ -3570,12 +3843,11 @@ function CampaignController({profile,setProfile,onNavigate}){
       },
       bond,npLevel:npLvl,
       profile,profileSkills:sv,
-      // Moedas acumulam ao longo de TODA a jornada (mapa 1 + mapa 2)
       sqEarned:carry?carry.sqEarned:0,
       qpEarned:carry?carry.qpEarned:0,
       xpEarned:carry?carry.xpEarned:0,
       bondEarned:carry?carry.bondEarned:0,
-      orbeUsed:false, // Orbe reseta a cada mapa novo também
+      orbeUsed:false,
     };
   }
 
@@ -3585,9 +3857,35 @@ function CampaignController({profile,setProfile,onNavigate}){
     setStage('story');
   }
 
+  // Inicia uma run da Torre de Desafios (roguelike puro) com o servo e mapa escolhidos.
+  function startTower(servo,mapId){
+    setProfile(incRuns());
+    setCamp(buildCampForMap(servo,mapId,null,true));
+    setStage('map');
+  }
+
   function choosePath(dir){
-    if(dir==='boss'){setStage('bossStory');return;}
+    if(dir==='boss'){
+      // Modo Torre: boss direto ao combate, sem diálogos de história
+      setStage(camp.towerMode?'boss':'bossStory');
+      return;
+    }
     const mapId=camp.mapId||'bosque';
+
+    // Modo Torre: encontros 100% aleatórios (combate ou evento), sem história.
+    if(camp.towerMode){
+      const r=Math.random();
+      if(r<0.60){setStage('combat');}
+      else{
+        // Eventos genéricos apropriados por mapa
+        const evtPool=mapId==='bosque'?['trust','rest','plan']
+          :mapId==='tennobara'?['rest2','aldeoes']
+          :['plan3','desviar'];
+        setEventType(evtPool[Math.floor(Math.random()*evtPool.length)]);
+        setStage('event');
+      }
+      return;
+    }
 
     if(mapId==='tennobara'){
       // Fase 1: só combate. Após vencê-la, a Fase 2 tem diálogo fixo (Saber).
@@ -3640,11 +3938,16 @@ function CampaignController({profile,setProfile,onNavigate}){
   // Avança para a próxima fase, checando se ela é uma FASE FIXA de história.
   // Fases fixas do mapa 2: 2 (Saber+vila), 6 (Aria). 12 e 15 são ganchos futuros.
   function goToPhase(baseCamp,nextPhase){
-    const isMap2=(baseCamp.mapId||'bosque')==='tennobara';
-    const isMap3=(baseCamp.mapId||'bosque')==='tortuoso';
     if(nextPhase>baseCamp.maxPhases){
       finishCampaign(baseCamp,false);return;
     }
+    // Modo Torre: sem fases fixas de história — sempre vai ao mapa.
+    if(baseCamp.towerMode){
+      setCamp({...baseCamp,phase:nextPhase});setStage('map');return;
+    }
+    const isMap2=(baseCamp.mapId||'bosque')==='tennobara';
+    const isMap3=(baseCamp.mapId||'bosque')==='tortuoso';
+    const isMap4=(baseCamp.mapId||'bosque')==='kurikara';
     const advanced={...baseCamp,phase:nextPhase};
     if(isMap2&&nextPhase===2){setCamp(advanced);setStage('map2Saber');return;}
     if(isMap2&&nextPhase===6){setCamp(advanced);setStage('map2AriaInvite');return;}
@@ -3656,6 +3959,8 @@ function CampaignController({profile,setProfile,onNavigate}){
     if(isMap3&&nextPhase===12){setCamp(advanced);setStage('map3Scream');return;}
     if(isMap3&&nextPhase===14){setCamp(advanced);setStage('map3Farewell');return;}
     if(isMap3&&nextPhase===18){setCamp(advanced);setStage('map3Memory');return;}
+    // Fases fixas do mapa 4: 1 (rescaldo, na entrada), 6 (aparição). 9, 12, 15 são ganchos.
+    if(isMap4&&nextPhase===6){setCamp(advanced);setStage('map4Apparition');return;}
     setCamp(advanced);setStage('map');
   }
 
@@ -3703,6 +4008,12 @@ function CampaignController({profile,setProfile,onNavigate}){
     setStage('map');
   }
 
+  // Fim da Fase 6 do mapa 4 (aparição da Archer): +10% ATK por 3 turnos.
+  function afterApparition(){
+    setCamp({...camp,planBonus:{atkUp:10,atkTurns:3}});
+    setStage('map');
+  }
+
   // Fim da Fase 14 (despedida): +30% HP recuperado, +20% NP e +10% ATK (3t) no próximo combate.
   function afterFarewell(){
     const heal=Math.round(camp.servo.hpMax*0.30);
@@ -3741,6 +4052,8 @@ function CampaignController({profile,setProfile,onNavigate}){
 
   function onBossWin(updatedCamp){
     setCamp(updatedCamp);
+    // Modo Torre: vencer o boss (fase 20) encerra a run com vitória, sem história.
+    if(updatedCamp.towerMode){finishCampaign(updatedCamp,true);return;}
     const mapId=updatedCamp.mapId||'bosque';
     if(mapId==='bosque'){setStage('bossWinStory');return;}
     if(mapId==='tennobara'){setStage('nitroWinStory');return;} // Nitro → mapa 3
@@ -3771,9 +4084,16 @@ function CampaignController({profile,setProfile,onNavigate}){
   }
   function enterMap2(){enterNextMap('tennobara');}
 
-  // Após vencer a Archer (fim do mapa 3): segue para os Arredores de Kurikara (mapa 4).
+  // Após vencer a Archer (fim do mapa 3): entra nos Arredores de Kurikara (mapa 4)
+  // pela Fase 1 fixa (o rescaldo — a Archer se reergue e foge).
   function afterArcherWin(){
-    enterNextMap('kurikara');
+    const carry={
+      hp:camp.servo.hp,npBar:camp.servo.npBar,
+      sqEarned:camp.sqEarned,qpEarned:camp.qpEarned,
+      xpEarned:camp.xpEarned,bondEarned:camp.bondEarned,
+    };
+    setCamp(buildCampForMap(IBARAKI,'kurikara',carry));
+    setStage('map4Aftermath');
   }
 
   // Após vencer o Nitro (fim do mapa 2): segue para o Caminho Tortuoso (mapa 3).
@@ -3799,6 +4119,8 @@ function CampaignController({profile,setProfile,onNavigate}){
     setCampResult({type:'lose',
       sq:finalCamp.sqEarned||0,qp:finalCamp.qpEarned||0,
       xp:finalCamp.xpEarned||0,bondEarned:finalCamp.bondEarned||0});
+    // Modo Torre: derrota vai direto ao resultado, sem diálogos de história.
+    if(finalCamp.towerMode){setStage('result');return;}
     // Derrota: diálogo específico por mapa (Qin no bosque, Nitro na vila, Archer no caminho)
     const mid=finalCamp.mapId||'bosque';
     if(mid==='tortuoso'){setStage('archerLoseStory');return;}
@@ -3822,6 +4144,7 @@ function CampaignController({profile,setProfile,onNavigate}){
   const curMap=camp?MAPS[camp.mapId]:MAPS.bosque;
 
   if(stage==='select')return <ServoSelectScreen onNavigate={onNavigate} onStartCampaign={startCampaign}/>;
+  if(stage==='towerSelect')return <TowerSelectScreen onNavigate={onNavigate} onStart={startTower} profile={profile}/>;
   if(stage==='story')return <StoryScreen profile={profile} onFinish={()=>setStage('introEncounter')}/>;
   // Splash da Ibaraki entre a conversa inicial e o mapa 1
   if(stage==='introEncounter')return <SplashScreen art={IBARAKI.assets.encounter} title="IBARAKI DOUJI" sub="Oni-Berserker — Bosque dos Caminhos Cegos" onFinish={()=>setStage('map')}/>;
@@ -3857,6 +4180,10 @@ function CampaignController({profile,setProfile,onNavigate}){
   // Fim do combate contra a Archer (boss do mapa 3)
   if(stage==='commandSeal')return <CommandSealFX onFinish={()=>setStage('archerWinStory')}/>;
   if(stage==='archerWinStory')return <StoryScreen profile={profile} script={STORY_ARCHER_WIN} finishLabel="Seguir para Kurikara →" onFinish={afterArcherWin}/>;
+  // Fase fixa 1 do mapa 4: o rescaldo (a Archer se reergue como marionete e foge)
+  if(stage==='map4Aftermath')return <StoryScreen profile={profile} script={STORY_MAP4_AFTERMATH} finishLabel="Prosseguir →" onFinish={()=>setStage('map')}/>;
+  // Fase fixa 6 do mapa 4: a aparição da Archer "mais viva"
+  if(stage==='map4Apparition')return <StoryScreen profile={profile} script={STORY_MAP4_APPARITION} finishLabel="Prosseguir →" onFinish={afterApparition}/>;
   if(stage==='archerLoseStory')return <StoryScreen profile={profile} script={STORY_ARCHER_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   // Cadeia de transição Bosque → Vila de Tennobara
   if(stage==='map2Leave')return <StoryScreen profile={profile} script={STORY_MAP2_LEAVE} finishLabel="Continuar →" onFinish={()=>setStage('map2TitleCard')}/>;
@@ -3977,6 +4304,7 @@ function App(){
   if(screen==='codex')return <CodexScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='config')return <ConfigScreen onNavigate={navigate}/>;
   if(screen==='campaign')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate}/>;
+  if(screen==='tower')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate} mode="tower"/>;
   return null;
 }
 
