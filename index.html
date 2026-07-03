@@ -778,6 +778,9 @@ const BOND_KEY=id=>`oni_tactics_bond_${id}`;
 
 function loadProfile(){
   const def={nickname:'',sq:0,qp:0,qinDefeats:0,advSkillsUnlocked:false,
+    stats:{runs:0,enemiesDefeated:0,highestDamage:0},
+    achievements:{}, // id da conquista → true quando concedida (recompensa já paga)
+    codex:{}, // id do personagem → true quando descoberto no Álbum
     skills:{manaBuster:1,transf:1,veneno:1,tormento:1,ossos:1},
     perks:{energizador:0,pocaoMana:0,pactoEscudo:0,contosEpicos:0,orbeCromatico:0},
     equippedPerks:['energizador','pocaoMana','pactoEscudo']};
@@ -790,6 +793,9 @@ function loadProfile(){
     return{...def,...saved,
       skills:{...def.skills,...(saved.skills||{})},
       perks:{...def.perks,...(saved.perks||{})},
+      stats:{...def.stats,...(saved.stats||{})},
+      achievements:{...def.achievements,...(saved.achievements||{})},
+      codex:{...def.codex,...(saved.codex||{})},
       equippedPerks:saved.equippedPerks||def.equippedPerks,
     };
   }catch{return def;}
@@ -899,6 +905,49 @@ function unlockAdvancedSkills(){
   const updated={...p,advSkillsUnlocked:true};
   saveProfile(updated);
   return updated;
+}
+
+// ─── CONQUISTAS ──────────────────────────────────────
+// Cada conquista concede QP e SQ UMA vez, quando desbloqueada.
+const ACHIEVEMENTS=[
+  {id:'defeat_qin',name:'Derrote Qin Liangyu',desc:'Vença a General da Cavalaria Branca no Bosque.',qp:2000,sq:10,icon:'🐎'},
+  {id:'defeat_nitro',name:'Derrote o Nitro-Type',desc:'Destrua o Samurai Mecanizado na Vila de Tennobara.',qp:4000,sq:15,icon:'⚙️'},
+  {id:'defeat_archer',name:'Derrote a Archer Corrompida',desc:'Silencie a Fada Carniceira do Caminho Tortuoso.',qp:10000,sq:20,icon:'🏹'},
+  {id:'defeat_ninja',name:'Derrote o Ninja do Clã Genji',desc:'Supere o assassino dos Arredores de Kurikara.',qp:15000,sq:26,icon:'🥷'},
+];
+
+// Concede uma conquista (se ainda não obtida): paga a recompensa e marca no profile.
+function grantAchievement(id){
+  const p=loadProfile();
+  if(p.achievements&&p.achievements[id])return{profile:p,granted:false};
+  const def=ACHIEVEMENTS.find(a=>a.id===id);
+  if(!def)return{profile:p,granted:false};
+  const updated={...p,
+    sq:(p.sq||0)+def.sq,
+    qp:(p.qp||0)+def.qp,
+    achievements:{...p.achievements,[id]:true}};
+  saveProfile(updated);
+  return{profile:updated,granted:true,def};
+}
+
+// ─── ESTATÍSTICAS (atômicas, read-modify-write) ──────
+function statsGet(){return loadProfile().stats||{runs:0,enemiesDefeated:0,highestDamage:0};}
+function incRuns(){
+  const p=loadProfile();
+  const s={...p.stats,runs:(p.stats?.runs||0)+1};
+  const up={...p,stats:s};saveProfile(up);return up;
+}
+function addEnemiesDefeated(n){
+  if(!n)return loadProfile();
+  const p=loadProfile();
+  const s={...p.stats,enemiesDefeated:(p.stats?.enemiesDefeated||0)+n};
+  const up={...p,stats:s};saveProfile(up);return up;
+}
+function recordDamage(dmg){
+  const p=loadProfile();
+  if((dmg||0)<=(p.stats?.highestDamage||0))return p;
+  const s={...p.stats,highestDamage:Math.round(dmg)};
+  const up={...p,stats:s};saveProfile(up);return up;
 }
 
 function loadBond(id){
@@ -1015,8 +1064,168 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('campaign')}>⚔️ &nbsp; Iniciar Campanha</button>
         <button className="btn btn-full" onClick={()=>onNavigate('profile')}>📜 &nbsp; Perfil</button>
         <button className="btn btn-full" onClick={()=>onNavigate('shop')}>🏪 &nbsp; Loja de Perks</button>
+        <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
+        <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.26</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.29</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── ÁLBUM / CÓDEX DE PERSONAGENS ────────────────────
+// Cada personagem tem categoria (servo/mestre/npc), arte e informações.
+// 'reveal' recebe o profile e decide se já foi descoberto pelo jogador.
+const CODEX=[
+  // ── SERVOS ──
+  {id:'ibaraki',cat:'servo',name:'Ibaraki Douji',classe:'Berserker',
+   art:'assets/servos/ibaraki/ibaraki_default.png',
+   reveal:()=>true,
+   info:'A Oni de Rashōmon, companheira do Mestre. Impulsiva, gulosa e provocadora, mas leal à sua maneira. No passado, foi amiga de Shuten Douji no Monte Ooe — até um homem com uma espada em chamas arrancar seu braço.'},
+  {id:'qin',cat:'servo',name:'Qin Liangyu',classe:'Lancer',
+   art:'assets/servos/qin/qin_default.png',
+   reveal:p=>(p.qinDefeats||0)>0||!!(p.achievements&&p.achievements.defeat_qin),
+   info:'A General da Cavalaria Branca, guardiã do Bosque dos Caminhos Cegos. Disciplinada e honrada em combate, revive por orgulho (Guts) e é especialmente perigosa contra Berserkers.'},
+  {id:'archer',cat:'servo',name:'Archer Corrompida',classe:'Archer',
+   art:'assets/servos/archer/archer_face.png',
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_archer),
+   info:'A Fada Carniceira do Caminho Tortuoso. Uma mulher de olhos brancos e sem vida, incapaz de formar frases — só gritos de dor. Rápida e cruel, drena a vida de suas presas. A mesma que o velho da carroça avistou.'},
+  {id:'ninja',cat:'servo',name:'Ninja do Clã Genji',classe:'Assassin',
+   art:'assets/servos/ninja/ninja_encounter.jpg',
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_ninja),
+   info:'Um assassino silencioso dos arredores de Kurikara. O clã Genji não deixa testemunhas. Ágil e traiçoeiro, usa veneno e shurikens, e desaparece num piscar de olhos com seu golpe supremo.'},
+  {id:'shuten',cat:'servo',name:'Shuten Douji',classe:'???',
+   art:null,
+   reveal:p=>(p.stats&&p.stats.runs||0)>0,
+   info:'A "Voz Desconhecida" que ecoa nas derrotas com um "fufufu... comece de novo". Amiga de Ibaraki no passado, no Monte Ooe. Confiante e sarcástica, subestimava "aquela mulher nojenta e seus quatro subordinados".'},
+  // ── MESTRES ──
+  {id:'aria',cat:'mestre',name:'Aria Rothschild',classe:'Mestra',
+   art:'assets/servos/aria/aria_avatar.png',
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_qin),
+   info:'Uma jovem mestra de Londres, fria e ríspida. Não deseja fazer amizades, mas oferece cooperação. É a Mestra de Saber na Vila de Tennobara.'},
+  // ── NPCs ──
+  {id:'deon',cat:'npc',name:"Chevalier D'Eon",classe:'Saber',
+   art:'assets/servos/deon/deon_profile.png',
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_qin),
+   info:'Um espadachim de aparência andrógina e honra inabalável — Saber, servo de Aria. Guia o Mestre até a Vila de Tennobara e, no confronto contra o Nitro-Type, empresta seu Noble Phantasm, o Fleur de Lis.'},
+  {id:'oldman',cat:'npc',name:'Homem Idoso',classe:'Viajante',
+   art:null,
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_archer)||(p.stats&&p.stats.runs||0)>3,
+   info:'Um viajante de meia-idade emboscado por monstros sugadores de sangue no Caminho Tortuoso. Sobrevivente por sorte, foi ajudado pelo Mestre a levar sua carroça de volta à estrada. Testemunhou a Archer arremessar um cavalo como se nada fosse.'},
+];
+
+// ══════════════════════════════════════════════════════
+// ÁLBUM / INFORMAÇÕES
+// ══════════════════════════════════════════════════════
+function CodexScreen({onNavigate,profile}){
+  const[cat,setCat]=useState('servo');
+  const[sel,setSel]=useState(null);
+  const cats=[['servo','Servos'],['mestre','Mestres'],['npc','NPCs']];
+  const list=CODEX.filter(c=>c.cat===cat);
+
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      <div className="panel" style={{maxWidth:640}}>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:12}}>📖 INFORMAÇÕES</h2>
+
+        {/* Abas de categoria */}
+        <div style={{display:'flex',gap:8,marginBottom:16}}>
+          {cats.map(([id,label])=>(
+            <button key={id} onClick={()=>{setCat(id);setSel(null);}}
+              className="btn btn-sm" style={{flex:1,
+                background:cat===id?'var(--gold-dim)':'rgba(0,0,0,0.3)',
+                color:cat===id?'#1a1005':'var(--parchment-dark)'}}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {sel?(
+          // Detalhe do personagem selecionado
+          (()=>{
+            const c=CODEX.find(x=>x.id===sel);
+            const known=c.reveal(profile);
+            return(
+              <div>
+                <div style={{display:'flex',gap:14,marginBottom:14,alignItems:'flex-start'}}>
+                  {known&&c.art
+                    ?<img src={c.art} alt={c.name} style={{width:90,height:90,objectFit:'cover',objectPosition:'center 20%',borderRadius:3,border:'1px solid var(--gold-dim)'}} onError={e=>{e.target.style.display='none';}}/>
+                    :<div style={{width:90,height:90,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2.5rem',color:'var(--parchment-dark)',border:'1px solid rgba(120,120,120,0.3)',borderRadius:3,background:'rgba(0,0,0,0.3)'}}>?</div>}
+                  <div style={{flex:1}}>
+                    <div className="cinzel" style={{color:'var(--gold)',fontSize:'1.1rem',letterSpacing:1}}>{known?c.name:'???'}</div>
+                    <div style={{fontSize:'.8rem',color:'var(--parchment-dark)',marginTop:2}}>{known?c.classe:'Desconhecido'}</div>
+                  </div>
+                </div>
+                <p style={{fontSize:'.85rem',color:'var(--parchment)',lineHeight:1.7}}>
+                  {known?c.info:'Este personagem ainda não foi revelado. Continue sua jornada para descobrir mais.'}
+                </p>
+                <button className="btn btn-full" style={{marginTop:16}} onClick={()=>setSel(null)}>← Voltar à lista</button>
+              </div>
+            );
+          })()
+        ):(
+          // Grade de personagens da categoria
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            {list.map(c=>{
+              const known=c.reveal(profile);
+              return(
+                <button key={c.id} onClick={()=>setSel(c.id)}
+                  style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',
+                    background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:3,
+                    cursor:'pointer',textAlign:'left',opacity:known?1:0.6}}>
+                  {known&&c.art
+                    ?<img src={c.art} alt="" style={{width:42,height:42,objectFit:'cover',objectPosition:'center 20%',borderRadius:3}} onError={e=>{e.target.style.display='none';}}/>
+                    :<div style={{width:42,height:42,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.5rem',color:'var(--parchment-dark)',background:'rgba(0,0,0,0.3)',borderRadius:3}}>?</div>}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:'.8rem',color:known?'var(--gold)':'var(--parchment-dark)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{known?c.name:'???'}</div>
+                    <div style={{fontSize:'.65rem',color:'var(--parchment-dark)'}}>{known?c.classe:'—'}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {!sel&&<button className="btn btn-full" style={{marginTop:16}} onClick={()=>onNavigate('menu')}>← Voltar</button>}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// CONQUISTAS
+// ══════════════════════════════════════════════════════
+function AchievementsScreen({onNavigate,profile}){
+  const done=profile.achievements||{};
+  const total=ACHIEVEMENTS.length;
+  const unlocked=ACHIEVEMENTS.filter(a=>done[a.id]).length;
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      <div className="panel" style={{maxWidth:600}}>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:4}}>🏆 CONQUISTAS</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:16}}>
+          {unlocked} de {total} desbloqueadas
+        </p>
+        {ACHIEVEMENTS.map(a=>{
+          const got=!!done[a.id];
+          return(
+            <div key={a.id} style={{
+              display:'flex',alignItems:'center',gap:12,padding:'12px 14px',marginBottom:10,
+              background:got?'rgba(201,162,39,0.1)':'rgba(0,0,0,0.25)',
+              border:`1px solid ${got?'var(--gold-dim)':'rgba(120,120,120,0.2)'}`,
+              borderRadius:3,opacity:got?1:0.65}}>
+              <div style={{fontSize:'1.8rem',filter:got?'none':'grayscale(1)'}}>{got?a.icon:'🔒'}</div>
+              <div style={{flex:1}}>
+                <div className="cinzel" style={{color:got?'var(--gold)':'var(--parchment-dark)',fontSize:'.9rem',letterSpacing:1}}>{a.name}</div>
+                <div style={{fontSize:'.75rem',color:'var(--parchment-dark)',marginTop:2}}>{a.desc}</div>
+                <div style={{fontSize:'.7rem',color:got?'#4fc3f7':'var(--parchment-dark)',marginTop:4}}>
+                  Recompensa: {a.qp.toLocaleString()} QP · {a.sq} SQ {got&&<span style={{color:'var(--gold)'}}>✓ RECEBIDA</span>}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        <button className="btn btn-full" style={{marginTop:16}} onClick={()=>onNavigate('menu')}>← Voltar</button>
       </div>
     </div>
   );
@@ -1093,6 +1302,25 @@ function ProfileScreen({onNavigate,profile,setProfile}){
               <div style={{fontSize:'.65rem',color:'#4fc3f7',letterSpacing:1}}>QUANTUM PIECE</div>
               <div style={{fontSize:'1.4rem',fontFamily:'Cinzel,serif',color:'#4fc3f7',letterSpacing:2}}>{(profile.qp||0).toLocaleString()} <span style={{fontSize:'.7rem',color:'#1e88e5'}}>QP</span></div>
               <div style={{fontSize:'.65rem',color:'var(--parchment-dark)',marginTop:2}}>Usar para comprar Perks</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Estatísticas da jornada */}
+        <div style={{background:'rgba(120,40,40,0.08)',border:'1px solid var(--red)',borderRadius:3,padding:14,marginBottom:16}}>
+          <div className="cinzel" style={{color:'var(--red-bright)',fontSize:'.8rem',letterSpacing:2,marginBottom:10}}>📖 CRÔNICAS DO MESTRE</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,textAlign:'center'}}>
+            <div>
+              <div style={{fontSize:'1.5rem',fontFamily:'Cinzel,serif',color:'var(--parchment)',letterSpacing:1}}>{(profile.stats?.runs||0).toLocaleString()}</div>
+              <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:1,marginTop:2}}>RUNS FEITAS</div>
+            </div>
+            <div>
+              <div style={{fontSize:'1.5rem',fontFamily:'Cinzel,serif',color:'var(--parchment)',letterSpacing:1}}>{(profile.stats?.enemiesDefeated||0).toLocaleString()}</div>
+              <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:1,marginTop:2}}>INIMIGOS DERROTADOS</div>
+            </div>
+            <div>
+              <div style={{fontSize:'1.5rem',fontFamily:'Cinzel,serif',color:'var(--red-bright)',letterSpacing:1}}>{(profile.stats?.highestDamage||0).toLocaleString()}</div>
+              <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:1,marginTop:2}}>MAIOR DANO</div>
             </div>
           </div>
         </div>
@@ -1444,6 +1672,42 @@ function ServoSelectScreen({onNavigate,onStartCampaign}){
   );
 }
 
+// ── BOSS DO MAPA 4: Ninja do Clã Genji ──
+// Boss ágil e traiçoeiro: golpes que atordoam, ataque em área e um NP com Evade.
+const NINJA={
+  id:'ninja_genji',name:'Ninja do Clã Genji',className:'Assassin',isBoss:true,
+  hp:34000,attack:1400,
+  attributes:{
+    strength:{rank:'B',points:45},
+    agility:{rank:'A',points:55}, // muito rápido — quase sempre age antes
+    luck:{rank:'B',points:40},
+    endurance:{rank:'C',points:30},
+    mana:{rank:'C',points:30,gainPercent:1.8},
+    np:{rank:'C',points:30},
+  },
+  npRegenPerTurn:4,
+  skills:{
+    // Injetar Veneno: alto dano + atordoa o Servo por 1 turno
+    veneno:{cd:7,dmgMult:1.9,stunTurns:1},
+    // Chuva de Shurikens: dano leve, "acerta 2 alvos" (2 golpes leves na Ibaraki)
+    shurikens:{cd:3,dmgMult:0.55,hits:2},
+  },
+  // NP Caminho para Jigokuraku: alto dano + Evade (imune a dano por 1 turno)
+  np:{name:'Caminho para Jigokuraku',dmgMult:2.6,evadeTurns:1},
+  dialogue:{
+    intro:'Hmph. O clã Genji não deixa testemunhas. Morram em silêncio.',
+    veneno:'Sinta o veneno correr em suas veias.',
+    shurikens:'Chuva de aço!',
+    np:'Caminho para Jigokuraku... este é o seu fim.',
+    defeated:'Impossível... um oni... verdadeiro...',
+  },
+  assets:{
+    encounter:'assets/servos/ninja/ninja_encounter.jpg',
+    battle:'assets/servos/ninja/ninja_encounter.jpg',
+    np:'assets/servos/ninja/ninja_encounter.jpg',
+  },
+};
+
 // ── BOSS DO MAPA 3: Archer Corrompida ──
 // Boss final: rápida, ataca 2x por turno (Riding), com kit de controle pesado.
 // Muito letal — exige Servo Nv.10 e boas Perks. HP moderado (é ágil, não tanque).
@@ -1540,6 +1804,21 @@ const DEON={
 };
 
 // ══════════════════════════════════════════════════════
+// MAPA 4 — ARREDORES DE KURIKARA (inimigos)
+// ══════════════════════════════════════════════════════
+// 3 arquétipos distintos de bandido. Mecânica nova: o Ladrão de Carteiras
+// rouba 1500 QP se DERROTAR o jogador (se não tiver, leva tudo o que houver).
+const ENEMIES_MAP4={
+  arruaceiro:{id:'arruaceiro',name:'Bandido Arruaceiro',hp:4200,atk:3100,agility:40,strPts:50,
+    description:'Bandido violento e imprudente. Dano altíssimo, mas frágil e sem defesa.'},
+  ladrao:{id:'ladrao',name:'Ladrão de Carteiras',hp:3800,atk:2000,agility:68,strPts:38,
+    stealQP:1500, // se DERROTAR o jogador, rouba 1500 QP (ou tudo, se tiver menos)
+    description:'Larápio veloz e escorregadio. Se te derrotar, foge com 1500 QP da sua bolsa!'},
+  glutao:{id:'glutao',name:'Bandido Glutão',hp:11000,atk:2400,agility:14,strPts:45,
+    description:'Brutamontes de apetite insaciável. HP enorme, mas lentíssimo e previsível.'},
+};
+
+// ══════════════════════════════════════════════════════
 // MAPA 3 — CAMINHO TORTUOSO (inimigos)
 // ══════════════════════════════════════════════════════
 // 2 inimigos aprimorados (Ghoul/Onmyoji do mapa 2, mais fortes) + 2 novos.
@@ -1605,6 +1884,14 @@ const MAPS={
     intro:null,introFinishLabel:'⚔️ Adentrar o Caminho',
     fixedPhases:[1,3,8,12,14,18],
     boss:'archer_corrupted',
+  },
+  kurikara:{
+    id:'kurikara',name:'Arredores de Kurikara',phases:16,
+    enemies:ENEMIES_MAP4,
+    // Fases fixas: 1, 6, 9, 12, 15 (roteiros a definir).
+    intro:null,introFinishLabel:'⚔️ Adentrar os Arredores',
+    fixedPhases:[1,6,9,12,15],
+    boss:'ninja_genji',
   },
 };
 
@@ -2229,14 +2516,27 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     npBar:clamp((camp.servo.npBar||0)+planNpGain,0,100),
     // Cada combate começa "limpo": buffs/debuffs e recargas resetam.
     // (exceto o buff temporário de ATK do Planejar Rota, se houver)
-    activeBuffs:planAtkBuff,activeDebuffs:[],
+    activeBuffs:planAtkBuff,activeDebuffs:[],stunned:0,
     cooldowns:{natureza:0,rampage:0,forma:0},
     profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
   };
 
   function createBossInstance(){
-    // Boss varia por mapa: Qin (Bosque), Nitro (Vila), Archer (Caminho Tortuoso)
+    // Boss varia por mapa: Qin (Bosque), Nitro (Vila), Archer (Caminho), Ninja (Kurikara)
     const mid=camp.mapId||'bosque';
+    if(mid==='kurikara'){
+      return{
+        ...NINJA,instanceId:'ninja_boss',
+        maxHp:NINJA.hp,currentHp:NINJA.hp,
+        atkScaled:NINJA.attack,
+        damage:Math.round(NINJA.attack*(NINJA.attributes.strength.points/100)),
+        agility:NINJA.attributes.agility.points,
+        npBar:0,activeBuffs:[],activeDebuffs:[],
+        cooldowns:{veneno:3,shurikens:2},
+        evadeTurns:0,
+        isNinja:true,isBoss:true,
+      };
+    }
     if(mid==='tortuoso'){
       return{
         ...ARCHER,instanceId:'archer_boss',
@@ -2315,10 +2615,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   useEffect(()=>{
     if(!introShown){
       const mid=camp.mapId||'bosque';
+      const isNinjaBoss=isBoss&&mid==='kurikara';
       const isArcherBoss=isBoss&&mid==='tortuoso';
       const isNitroBoss=isBoss&&mid==='tennobara';
       setDialogue(
-        isArcherBoss?{text:ARCHER.dialogue.intro,portrait:ARCHER.assets.battle}
+        isNinjaBoss?{text:NINJA.dialogue.intro,portrait:NINJA.assets.battle}
+        :isArcherBoss?{text:ARCHER.dialogue.intro,portrait:ARCHER.assets.battle}
         :isNitroBoss?{text:NITRO.dialogue.intro,portrait:NITRO.assets.battle}
         :isBoss?{text:QIN.dialogue.intro,portrait:QIN.assets.default}
         :{text:IBARAKI.dialogue.battle,portrait:IBARAKI.assets.default}
@@ -2446,9 +2748,24 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   }
   function checkWin(es){return es.every(e=>e.currentHp<=0);}
 
+  // Se o Servo estiver Atordoado (ex.: Injetar Veneno do Ninja), a ação que
+  // encerraria o turno é consumida pelo atordoamento: decrementa e passa a vez.
+  function servoStunnedThisTurn(){
+    if((servo.stunned||0)>0){
+      const ns={...servo,stunned:servo.stunned-1};
+      addLog(`😵 Ibaraki está atordoada e perde o turno!`,'system');
+      spawnFx('servo','😵 ATORDOADA','stun');
+      setServo(ns);
+      doEnemyTurn(ns,enemies);
+      return true;
+    }
+    return false;
+  }
+
   // ─── AÇÕES DO JOGADOR ─────────────────────────────
   function doBasicAttack(){
     if(result)return;
+    if(servoStunnedThisTurn())return;
     const tgt=enemies[selectedTarget];
     if(!tgt||tgt.currentHp<=0){setNotif('Selecione um inimigo vivo!');return;}
     // Ação de ataque gera NP mesmo se o alvo esquivar (a ação foi executada)
@@ -2468,6 +2785,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const isCrit=rollChance(servo.attributes.luck.points);
     if(isCrit)dmg=Math.round(dmg*1.5);
     dmg=applyDmgToEnemy(dmg,tgt);
+    recordDamage(dmg); // estatística: maior dano dado
     const newEnemies=enemies.map((e,i)=>i!==selectedTarget?e:damageEnemy(e,dmg,isCrit?'crit':'dmg'));
     addLog(`${isCrit?'🔥 CRÍTICO! ':''}Ibaraki ataca ${tgt.name}: ${dmg} dano`+(isCrit?' (×1.5)':''),'player');
     setServo(newServo);setEnemies(newEnemies);
@@ -2557,6 +2875,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       const tgt=newEnemies[selectedTarget];
       if(tgt&&tgt.currentHp>0){
         const dmg=Math.round(tgt.maxHp*sk.hpDmgPct/100);
+        recordDamage(dmg); // estatística: Tormento pode dar dano alto em bosses
         newEnemies=newEnemies.map((e,i)=>i===selectedTarget?damageEnemy(e,dmg,'crit'):e);
         addLog(`Tormento Nv.${sk.lvl}: ${dmg} de dano (${sk.hpDmgPct.toFixed(1)}% do HP de ${tgt.name})!`,'player');
         if(checkWin(newEnemies)){setServo(newServo);setEnemies(newEnemies);endCombat(true,newServo,newEnemies);return;}
@@ -2581,6 +2900,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(result)return;
     if((servo.npLocked||0)>0){setNotif(`NP travado pela Archer! (${servo.npLocked} turno(s) restante(s))`);return;}
     if(servo.npBar<100){setNotif('Barra de NP não está cheia!');return;}
+    if(servoStunnedThisTurn())return;
     const tgt=enemies[selectedTarget];
     if(!tgt||tgt.currentHp<=0){setNotif('Selecione um inimigo vivo!');return;}
     const npLvl=servo.npLevel||1;
@@ -2590,6 +2910,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     let npUp=0;
     for(const b of servo.activeBuffs||[]){if(b.type==='np_damage_up')npUp+=b.value;}
     dmg=Math.round(applyDmgToEnemy(dmg*(1+npUp/100)*(npDef.dmgPct/100),tgt));
+    recordDamage(dmg); // estatística: maior dano dado (o NP costuma ser o pico)
 
     const newEnemies=enemies.map((e,i)=>{
       if(i!==selectedTarget)return e;
@@ -2669,7 +2990,67 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         break;
       }
 
-      if(e.isArcher){
+      if(e.isNinja){
+        // ── IA do Ninja do Clã Genji (boss do mapa 4) ──
+        let nj={...es[i]};
+        nj.npBar=clamp((nj.npBar||0)+NINJA.npRegenPerTurn,0,100);
+        const atkBase=nj.atkScaled*(nj.attributes.strength.points/100);
+
+        // Prioridade 1: NP (alto dano + Evade)
+        if(nj.npBar>=100){
+          const raw=Math.round(atkBase*NINJA.np.dmgMult);
+          const mit=applyDmgToServo(raw);
+          s.hp=Math.max(0,s.hp-mit);
+          nj.evadeTurns=NINJA.np.evadeTurns;
+          nj.npBar=0;
+          addLog(`⚡ ${NINJA.np.name}! ${mit} de dano — e o ninja fica intocável (1t)!`,'np');
+          setDialogue({text:NINJA.dialogue.np,portrait:NINJA.assets.battle});
+          fireNpCutin(NINJA.assets.np,NINJA.np.name.toUpperCase(),NINJA.dialogue.np);
+          spawnFx('servo',String(mit),'np');spawnFx(nj.instanceId,'EVADE','buff');
+          s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+        }
+        // Prioridade 2: Injetar Veneno (alto dano + atordoa 1t)
+        else if((nj.cooldowns?.veneno||0)<=0){
+          const sk=NINJA.skills.veneno;
+          const mit=applyDmgToServo(Math.round(atkBase*sk.dmgMult));
+          s.hp=Math.max(0,s.hp-mit);
+          s.stunned=(s.stunned||0)+sk.stunTurns; // atordoa o Servo
+          nj.cooldowns={...nj.cooldowns,veneno:sk.cd};
+          addLog(`☠️ Injetar Veneno! ${mit} de dano e Ibaraki foi atordoada (${sk.stunTurns}t)!`,'enemy');
+          setDialogue({text:NINJA.dialogue.veneno,portrait:NINJA.assets.battle});
+          spawnFx('servo',`${mit}`,'crit');spawnFx('servo','☠️ ATORDOADA','stun');
+          s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+        }
+        // Prioridade 3: Chuva de Shurikens (2 golpes leves)
+        else if((nj.cooldowns?.shurikens||0)<=0){
+          const sk=NINJA.skills.shurikens;
+          let total=0;
+          for(let h=0;h<sk.hits;h++){
+            const mit=applyDmgToServo(Math.round(atkBase*sk.dmgMult));
+            s.hp=Math.max(0,s.hp-mit);total+=mit;
+          }
+          nj.cooldowns={...nj.cooldowns,shurikens:sk.cd};
+          addLog(`🌟 Chuva de Shurikens! ${sk.hits} golpes: ${total} de dano no total.`,'enemy');
+          setDialogue({text:NINJA.dialogue.shurikens,portrait:NINJA.assets.battle});
+          spawnFx('servo',`${total}`,'dmg');
+          s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+        }
+        // Padrão: ataque básico
+        else {
+          const dodge=5+Math.max(0,(servo.attributes.agility.points-nj.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0);
+          if(rollChance(dodge)){
+            addLog(`💨 Ibaraki esquiva do golpe do ninja!`,'player');
+            spawnFx('servo','ESQUIVOU','miss');
+          } else {
+            const mit=applyDmgToServo(Math.round(atkBase));
+            s.hp=Math.max(0,s.hp-mit);
+            addLog(`${nj.name} golpeia: ${mit} de dano!`,'enemy');
+            spawnFx('servo',String(mit),'dmg');
+            s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+          }
+        }
+        es[i]=nj;
+      } else if(e.isArcher){
         // ── IA da Archer Corrompida (boss final) ──
         let ar={...es[i]};
         // Territory Creation A: +5% NP por turno
@@ -2939,6 +3320,19 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       let newProfile=depositQP(qpGain);
       // Só o boss do BOSQUE (Qin) desbloqueia as Perks avançadas.
       if(isBoss&&(camp.mapId||'bosque')==='bosque')newProfile=markQinDefeated();
+      // Conquista por derrotar cada boss (paga QP+SQ uma vez)
+      if(isBoss){
+        const achId={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja'}[camp.mapId||'bosque'];
+        if(achId){
+          const res=grantAchievement(achId);
+          if(res.granted){
+            newProfile=res.profile;
+            addLog(`🏆 CONQUISTA: ${res.def.name}! +${res.def.qp} QP · +${res.def.sq} SQ`,'system');
+          }
+        }
+      }
+      // Estatística: soma os inimigos derrotados neste combate
+      newProfile=addEnemiesDefeated((finalEnemies||[]).length);
       setProfile(newProfile);
 
       const updatedCamp={...camp,
@@ -2960,6 +3354,18 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     } else {
       // Derrota — SQ e QP dos combates anteriores já foram depositados em tempo real
       addLog(`✦ Derrota. SQ e QP ganhos até aqui já estão no banco.`,'system');
+      // Ladrão de Carteiras: se algum estiver VIVO ao te derrotar, rouba QP do banco.
+      const ladraoVivo=(finalEnemies||[]).find(e=>e.stealQP&&e.currentHp>0);
+      if(ladraoVivo){
+        const fresh=loadProfile();
+        const roubo=Math.min(ladraoVivo.stealQP,fresh.qp||0);
+        if(roubo>0){
+          const robbed={...fresh,qp:(fresh.qp||0)-roubo};
+          saveProfile(robbed);setProfile(robbed);
+          addLog(`💰 O ${ladraoVivo.name} fugiu com ${roubo} QP da sua bolsa!`,'enemy');
+          setNotif(`💰 O Ladrão roubou ${roubo} QP!`);
+        }
+      }
       setDialogue({text:IBARAKI.dialogue.lose,portrait:IBARAKI.assets.lose||IBARAKI.assets.default});
       setTimeout(()=>onLose({...camp,servo:finalServo}),1500);
     }
@@ -3047,7 +3453,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                 <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'12%'}}>{f.text}</span>
               ))}
               {e.isBoss&&(
-                <img src={e.isArcher?ARCHER.assets.battle:e.isNitro?NITRO.assets.battle:QIN.assets.default} alt={e.name}
+                <img src={e.isNinja?NINJA.assets.battle:e.isArcher?ARCHER.assets.battle:e.isNitro?NITRO.assets.battle:QIN.assets.default} alt={e.name}
                   style={{width:74,height:74,objectFit:'cover',objectPosition:'center 10%',borderRadius:2,border:'1px solid var(--red)',display:'block',margin:'0 auto 6px',background:'rgba(0,0,0,.35)'}}
                   onError={ev=>{ev.target.style.display='none';}}/>
               )}
@@ -3174,6 +3580,7 @@ function CampaignController({profile,setProfile,onNavigate}){
   }
 
   function startCampaign(servo){
+    setProfile(incRuns()); // conta cada nova run iniciada
     setCamp(buildCampForMap(servo,'bosque'));
     setStage('story');
   }
@@ -3200,6 +3607,18 @@ function CampaignController({profile,setProfile,onNavigate}){
       // (Fase 1 já é tratada na entrada do mapa.) Eventos: Planejar Rota e Desviar.
       const r=Math.random();
       if(r<0.58){setStage('combat');}
+      else{
+        const evts=['plan3','desviar'];
+        setEventType(evts[Math.floor(Math.random()*evts.length)]);
+        setStage('event');
+      }
+      return;
+    }
+
+    if(mapId==='kurikara'){
+      // Arredores de Kurikara — fases fixas (1,6,9,12,15) serão adicionadas depois.
+      const r=Math.random();
+      if(r<0.60){setStage('combat');}
       else{
         const evts=['plan3','desviar'];
         setEventType(evts[Math.floor(Math.random()*evts.length)]);
@@ -3325,8 +3744,9 @@ function CampaignController({profile,setProfile,onNavigate}){
     const mapId=updatedCamp.mapId||'bosque';
     if(mapId==='bosque'){setStage('bossWinStory');return;}
     if(mapId==='tennobara'){setStage('nitroWinStory');return;} // Nitro → mapa 3
-    // Mapa 3 (Archer): efeito do Selo de Comando → diálogo de vitória → fim da jornada.
-    setStage('commandSeal');
+    if(mapId==='tortuoso'){setStage('commandSeal');return;} // Archer → Selo → mapa 4
+    // Mapa 4 (Ninja) é o último por ora: vencer o boss encerra a jornada.
+    finishCampaign(updatedCamp,true);
   }
 
   // Chamado após a narração de vitória contra o boss.
@@ -3350,6 +3770,11 @@ function CampaignController({profile,setProfile,onNavigate}){
     setStage('map');
   }
   function enterMap2(){enterNextMap('tennobara');}
+
+  // Após vencer a Archer (fim do mapa 3): segue para os Arredores de Kurikara (mapa 4).
+  function afterArcherWin(){
+    enterNextMap('kurikara');
+  }
 
   // Após vencer o Nitro (fim do mapa 2): segue para o Caminho Tortuoso (mapa 3).
   // A Fase 1 do mapa 3 é fixa (diálogo de partida), então entra por ela.
@@ -3376,7 +3801,10 @@ function CampaignController({profile,setProfile,onNavigate}){
       xp:finalCamp.xpEarned||0,bondEarned:finalCamp.bondEarned||0});
     // Derrota: diálogo específico por mapa (Qin no bosque, Nitro na vila, Archer no caminho)
     const mid=finalCamp.mapId||'bosque';
-    setStage(mid==='tortuoso'?'archerLoseStory':mid==='tennobara'?'nitroLoseStory':'bossLoseStory');
+    if(mid==='tortuoso'){setStage('archerLoseStory');return;}
+    if(mid==='tennobara'){setStage('nitroLoseStory');return;}
+    if(mid==='kurikara'){setStage('result');return;} // Ninja: sem diálogo de derrota ainda
+    setStage('bossLoseStory');
   }
 
   function onCombatFlee(finalServo){
@@ -3398,9 +3826,10 @@ function CampaignController({profile,setProfile,onNavigate}){
   // Splash da Ibaraki entre a conversa inicial e o mapa 1
   if(stage==='introEncounter')return <SplashScreen art={IBARAKI.assets.encounter} title="IBARAKI DOUJI" sub="Oni-Berserker — Bosque dos Caminhos Cegos" onFinish={()=>setStage('map')}/>;
   if(stage==='bossStory'){
-    // Bosque: narração + arte da Qin. Vila: Nitro. Caminho: diálogo + arte da Archer.
+    // Bosque: narração + arte da Qin. Vila: Nitro. Caminho: Archer. Kurikara: Ninja.
     if(camp.mapId==='bosque')return <StoryScreen profile={profile} script={STORY_BOSS_INTRO} finishLabel="⚔️ Iniciar o Confronto" onFinish={()=>setStage('bossEncounter')}/>;
     if(camp.mapId==='tortuoso')return <StoryScreen profile={profile} script={STORY_MAP3_ARCHER_INTRO} finishLabel="⚔️ Encarar o horror" onFinish={()=>setStage('archerEncounter')}/>;
+    if(camp.mapId==='kurikara')return <SplashScreen art={NINJA.assets.encounter} title="NINJA DO CLÃ GENJI" sub="Assassino — Arredores de Kurikara" onFinish={()=>setStage('boss')}/>;
     return <SplashScreen art={NITRO.assets.encounter} title="⚙️ NITRO-TYPE" sub="Samurai Mecanizado — Ameaça Anacrônica" onFinish={()=>setStage('boss')}/>;
   }
   // Splash da Archer (após o diálogo pré-boss)
@@ -3427,7 +3856,7 @@ function CampaignController({profile,setProfile,onNavigate}){
   if(stage==='nitroLoseStory')return <StoryScreen profile={profile} script={STORY_NITRO_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   // Fim do combate contra a Archer (boss do mapa 3)
   if(stage==='commandSeal')return <CommandSealFX onFinish={()=>setStage('archerWinStory')}/>;
-  if(stage==='archerWinStory')return <StoryScreen profile={profile} script={STORY_ARCHER_WIN} finishLabel="Continuar →" onFinish={()=>finishCampaign(camp,true)}/>;
+  if(stage==='archerWinStory')return <StoryScreen profile={profile} script={STORY_ARCHER_WIN} finishLabel="Seguir para Kurikara →" onFinish={afterArcherWin}/>;
   if(stage==='archerLoseStory')return <StoryScreen profile={profile} script={STORY_ARCHER_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   // Cadeia de transição Bosque → Vila de Tennobara
   if(stage==='map2Leave')return <StoryScreen profile={profile} script={STORY_MAP2_LEAVE} finishLabel="Continuar →" onFinish={()=>setStage('map2TitleCard')}/>;
@@ -3544,6 +3973,8 @@ function App(){
   if(screen==='menu')return <MenuScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='profile')return <ProfileScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='shop')return <ShopScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
+  if(screen==='achievements')return <AchievementsScreen onNavigate={navigate} profile={profile}/>;
+  if(screen==='codex')return <CodexScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='config')return <ConfigScreen onNavigate={navigate}/>;
   if(screen==='campaign')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate}/>;
   return null;
