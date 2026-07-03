@@ -1101,7 +1101,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.41</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.43</p>
       </div>
     </div>
   );
@@ -1165,10 +1165,10 @@ const CODEX=[
      {label:'Mana',rank:'D'},{label:'Sorte',rank:'A'},{label:'NP',rank:'B'},
    ],
    va:'Noriko Shitaya'},
-  {id:'archer',cat:'servo',name:'Archer Corrompida',classe:'Archer',
+  {id:'archer',cat:'servo',name:'Baobhan Sith',classe:'Archer',
    art:'assets/servos/archer/archer_face.png',
    reveal:p=>!!(p.achievements&&p.achievements.defeat_archer),
-   info:'A Fada Carniceira do Caminho Tortuoso. Uma mulher de olhos brancos e sem vida, incapaz de formar frases — só gritos de dor. Rápida e cruel, drena a vida de suas presas. A mesma que o velho da carroça avistou.',
+   info:'A Fada Carniceira do Caminho Tortuoso, enfrentada como "Archer Corrompida". Uma mulher de olhos brancos e sem vida, incapaz de formar frases — só gritos de dor. Rápida e cruel, drena a vida de suas presas. A mesma que o velho da carroça avistou.',
    details:[
      {title:'IDENTIDADE',body:'Seu verdadeiro nome é Cavaleira Fada Tristan (Tam Lin Tristan), membro dos Cavaleiros da Távola Redonda da Grã-Bretanha das Fadas. Recebe tratamento favorável como "filha" e sucessora de Morgan, governante da Grã-Bretanha Perdida — uma das duas fadas criadas como bruxas em uma Grã-Bretanha onde a magia é considerada desnecessária.\n\nSeu nome como fada é Baobhan Sith, uma fada feminina das lendas escocesas. A própria palavra significa "mulher fada". Diz-se que aparece à noite para drenar a força vital das pessoas e matá-las. Tem predileção por sangue e é vulnerável à luz solar. Muitas fadas têm tanto "benefício" quanto "mal", mas Baobhan Sith é uma fada maligna que só causa "mal". Parece uma bela mulher humana, mas seus pés, escondidos sob a longa saia, são de fada — os calcanhares são "cascos de veado".\n\nOutrora era gentil, mas os Fae a maltratavam constantemente, até que Morgan (então chamada Aesc) a resgatou e adotou como filha, ensinando-a a ser cruel — transformando-a na vil e perigosa Cavaleira das Fadas.'},
      {title:'APARÊNCIA',body:'Uma personagem elegante de forte estética gótica. Longos cabelos esvoaçantes de um rosa profundo e vibrante, com mechas pretas misturadas, que emolduram seu rosto. Usa gargantilha e luvas longas até abaixo dos cotovelos.\n\nSeu traje mistura design vitoriano com elementos de fantasia. A cor principal é um vermelho carmesim intenso, com detalhes em preto e branco de atmosfera gótica: um top espartilhado e, sobre ele, uma jaqueta estruturada que se abre em cauda pontiaguda como asas. A saia tem múltiplas camadas alternando branco e uma sobreposição escura, adornadas com renda, fitas e babados. As meias são de vermelho profundo com cadarço preto ao centro, terminando em botas de plataforma de salto alto com ornamentos em forma de garras.'},
@@ -1354,10 +1354,10 @@ function TowerSelectScreen({onNavigate,onStart,profile}){
      unlock:null},
     {id:'qin',name:'Qin Liangyu',classe:'Lancer',art:QIN.assets.default,ready:false,
      unlock:'defeat_qin'},
-    {id:'archer',name:'Archer',classe:'Archer',art:ARCHER.assets.face,ready:false,
+    {id:'deon',name:"Chevalier D'Eon",classe:'Saber',art:DEON.assets.profile,ready:false,
+     unlock:'defeat_nitro'},
+    {id:'archer',name:'Baobhan Sith',classe:'Archer',art:ARCHER.assets.face,ready:false,
      unlock:'defeat_archer'},
-    {id:'ninja',name:'Ninja Genji',classe:'Assassin',art:NINJA.assets.encounter,ready:false,
-     unlock:'defeat_ninja'},
   ];
   const done=profile.achievements||{};
 
