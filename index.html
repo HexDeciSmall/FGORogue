@@ -174,6 +174,39 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .tap-hint{text-align:center;font-size:.65rem;color:var(--gold-dim);letter-spacing:2px;padding-top:8px;animation:tapPulse 1.6s ease infinite}
 @keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes tapPulse{0%,100%{opacity:.35}50%{opacity:.9}}
+/* ── Chat: variações de personagem ── */
+.chat-name.hostile{color:#ff8080}
+.chat-msg.left .chat-bubble.hostile{border-color:var(--red)}
+.chat-msg.left .chat-bubble.hostile::before{border-right-color:var(--red)}
+.chat-avatar-unknown{width:54px;height:54px;border:1px solid var(--oni-purple-light);border-radius:4px;background:radial-gradient(circle at 50% 35%,rgba(74,14,110,.65),rgba(0,0,0,.85));flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.5rem;color:var(--oni-purple-light);text-shadow:0 0 12px rgba(123,45,158,.8)}
+.chat-name.unknown{color:var(--oni-purple-light)}
+.chat-msg.left .chat-bubble.mystic{border-color:var(--oni-purple-light);background:rgba(74,14,110,.18)}
+.chat-msg.left .chat-bubble.mystic::before{border-right-color:var(--oni-purple-light)}
+/* ── FX flutuantes de combate ── */
+.dmg-float{font-size:1.05rem;color:#ff8a65;text-shadow:0 0 8px rgba(0,0,0,.95),0 0 14px rgba(255,80,40,.35)}
+.dmg-float.crit{font-size:1.3rem;color:#ffd257;text-shadow:0 0 10px rgba(0,0,0,.95),0 0 18px rgba(255,180,60,.5)}
+.dmg-float.np{font-size:1.5rem;color:#8fc3ff;text-shadow:0 0 12px rgba(0,0,0,.95),0 0 20px rgba(79,195,247,.6)}
+.dmg-float.heal{color:#7ddc7d;text-shadow:0 0 8px rgba(0,0,0,.95),0 0 14px rgba(80,220,80,.35)}
+.dmg-float.miss{color:#d8d8d8;font-size:.7rem;letter-spacing:2px}
+.dmg-float.stun{color:#c07ce0;font-size:.7rem;letter-spacing:1px}
+.dmg-float.buff{color:var(--gold);font-size:.72rem;letter-spacing:1px}
+@keyframes panelShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.shake{animation:panelShake .4s ease}
+/* ── Splash de Full Art (encounter) ── */
+.splash-screen{position:fixed;inset:0;z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(30,12,0,.6),rgba(0,0,0,.94));cursor:pointer;animation:splashFade .5s ease;padding:16px}
+.splash-art{max-width:min(96vw,620px);max-height:78vh;object-fit:contain;border:1px solid var(--gold-dim);border-radius:4px;box-shadow:0 0 60px rgba(201,162,39,.25);animation:splashRise .7s cubic-bezier(.2,.8,.2,1)}
+.splash-caption{margin-top:16px;text-align:center;animation:splashRise .9s cubic-bezier(.2,.8,.2,1)}
+.splash-title{font-family:'Cinzel',serif;color:var(--gold);letter-spacing:6px;font-size:clamp(1rem,4vw,1.6rem);text-shadow:0 0 24px rgba(201,162,39,.5)}
+.splash-sub{color:var(--parchment-dark);font-style:italic;font-size:.85rem;margin-top:6px;letter-spacing:1px}
+.splash-hint{position:absolute;bottom:24px;font-size:.65rem;color:var(--gold-dim);letter-spacing:3px;animation:tapPulse 1.6s ease infinite}
+@keyframes splashFade{from{opacity:0}to{opacity:1}}
+@keyframes splashRise{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+/* ── Cartão de transição de mapa (só o nome) ── */
+.map-title-card{position:fixed;inset:0;z-index:710;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(20,10,0,.85),rgba(0,0,0,.97));cursor:pointer;animation:splashFade .6s ease}
+.map-title-card .mtc-label{font-family:'Cinzel',serif;color:var(--gold-dim);letter-spacing:6px;font-size:.7rem;margin-bottom:14px;animation:splashRise .7s ease}
+.map-title-card .mtc-name{font-family:'Cinzel',serif;color:var(--gold);letter-spacing:4px;font-size:clamp(1.4rem,5vw,2.4rem);text-align:center;text-shadow:0 0 30px rgba(201,162,39,.5);animation:splashRise .9s ease}
+.map-title-card .mtc-line{width:0;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);margin-top:18px;animation:mtcLine 1.1s ease forwards}
+@keyframes mtcLine{to{width:min(70vw,340px)}}
 </style>
 </head>
 <body>
@@ -305,6 +338,7 @@ const IBARAKI={
     np:'assets/servos/ibaraki/ibaraki_np.png',
     win:'assets/servos/ibaraki/ibaraki_win.png',
     lose:'assets/servos/ibaraki/ibaraki_lose.png',
+    encounter:'assets/servos/ibaraki/ibaraki_encounter.png',
   },
 };
 
@@ -314,6 +348,9 @@ const IBARAKI={
 const IBARAKI_EXPRESSIONS={
   exp1:'assets/servos/ibaraki/ibaraki_win.png',     // Expressão 1: sorriso provocador
   exp2:'assets/servos/ibaraki/ibaraki_default.png', // Expressão 2: séria / irritada
+  expDerrota:'assets/servos/ibaraki/ibaraki_lose.png', // Expressão de derrota: boquiaberta / indignada
+  exp3:'assets/servos/ibaraki/ibaraki_exp3.png', // Expressão 3: serena / sorriso leve
+  exp4:'assets/servos/ibaraki/ibaraki_exp4.png', // Expressão 4: brava / gritando
 };
 
 // ── ROTEIRO: DIÁLOGO INICIAL DA CAMPANHA ──
@@ -345,6 +382,143 @@ const STORY_INTRO={
     {type:'ibaraki',expr:'exp1',text:'Nananinanão, você e eu estamos na merda, e você não vai fugir sozinho. Para um Onmyoji você é bem covarde, não? Eu sou a Oni-Berserker. E se acovardar novamente, por mais que estejamos ligados, eu vou arrancar seu braço.'},
     {type:'narration',text:'Assim que ela fala "ligados", em seu pulso uma tatuagem segmentada em três partes, semelhante a um tridente, queima em sua pele — e uma leve conexão com a garota pode ser sentida através daquele símbolo. Aquilo é uma coleira para criatura, tanto para limitar suas ações quanto para prender ela nessa realidade.'},
     {type:'ibaraki',expr:'exp1',text:'Vamos sair daqui, ficar muito tempo parado vai ser ruim para mim.'},
+  ],
+};
+
+// ── ROTEIROS DO CONFRONTO COM A QIN ──
+// Pré-batalha: mostrado ao escolher enfrentar o boss, antes do combate.
+const STORY_BOSS_INTRO={
+  start:[
+    {type:'qin',text:'Criatura maligna, então você estava aqui? Prepare-se para pagar pelos seus pecados!'},
+    {type:'ibaraki',expr:'expDerrota',text:'Dessa vez eu não fiz nada! E essa maluca está ainda atrás de mim!'},
+    {type:'master',text:'Esse seu jeito de delinquente entrega bastante, certamente foi você.'},
+    {type:'ibaraki',expr:'expDerrota',text:'Mas-.....'},
+  ],
+};
+// Vitória contra a Qin
+const STORY_BOSS_WIN={
+  start:[
+    {type:'narration',text:'Antes de desferir o último golpe, uma lança vem voando e acerta o chão entre a Ibaraki e a Qin — com isso, uma nuvem de poeira sobe. Quando o vento afasta a nuvem de poeira, a Qin já não está mais lá.'},
+  ],
+};
+// Derrota contra a Qin
+const STORY_BOSS_LOSE={
+  start:[
+    {type:'narration',text:'Sua vista começa a escurecer, e então você escuta uma voz feminina com um sotaque antigo.'},
+    {type:'unknown',text:'Haha, patético, comece de novo!'},
+  ],
+};
+
+// ── TRANSIÇÃO PARA O MAPA 2 ──
+// Parte A: saída da floresta (antes da tela de transição do mapa)
+const STORY_MAP2_LEAVE={
+  start:[
+    {type:'narration',text:'Vocês saem da floresta escura às pressas, seus passos estão mais espaçados, mas já é possível ver uma área mais aberta próxima.'},
+    {type:'ibaraki',expr:'exp3',text:'As coisas estão ficando preocupantes..... aquela lança que caiu do céu certamente é de alguém nojento. Espero não topar com ela ou o cachorrinho dela novamente.'},
+    {type:'master',text:'Estou começando a lembrar de alguns detalhes também.....'},
+    {type:'narration',text:'Na noite anterior, quando se perdeu, você lembra de alguns flashes, memórias vagas, de uma batalha entre a Ibaraki e a Qin e mais um homem desconhecido, que possuía o que parece ser uma espada flamejante. Mas nada além disso.'},
+  ],
+};
+// Parte B: encontro com a Deon (depois da tela de transição do mapa)
+const STORY_MAP2_DEON={
+  start:[
+    {type:'deon',text:'Alto lá! Quem são vocês dois!?'},
+    {type:'ibaraki',expr:'exp4',text:'Vaza, mulher estranha! Sou uma Oni muito perigosa quando estou com fome!'},
+    {type:'masterThought',text:'Definitivamente ela não é boa em infiltrações....'},
+    {type:'deon',text:'Entendo, mais uma criatura vil que saiu dessa floresta, já não basta aqueles carniçais....'},
+    {type:'master',text:'Espere, vocês duas..... antes de mais nada, não somos inimigos, eu acho.... estávamos perdidos na floresta.'},
+    {type:'ibaraki',expr:'exp4',text:'Mestre não precisa dar satisfação para essa coisa! Ela não vai ser um problema se eu começar batendo.'},
+    {type:'masterThought',text:'Ela não deve ter percebido, mas essa garota na nossa frente é semelhante àquela mulher que enfrentamos, e até mesmo semelhante à Ibaraki. Não parece ser um humano.'},
+    {type:'master',text:'Berserker, acabamos de quase não sair vivos de um embate e já deseja entrar em outro?'},
+    {type:'ibaraki',expr:'exp3',text:'Mas ela é só uma garota....... não deve dar trabalho.'},
+    {type:'deonPog',text:'Então..... eu não sou uma garota...... sou homem.'},
+    {type:'master',text:'????'},
+    {type:'ibaraki',expr:'exp3',text:'????'},
+  ],
+};
+
+// ── FASE 2 DO MAPA 2 (após vencer o combate da Fase 1) ──
+// Parte A: o Saber se apresenta (usa a mesma imagem da Deon, agora nomeado "Saber")
+const STORY_MAP2_SABER={
+  start:[
+    {type:'narration',text:'Assim que passa pelo combate, você adquire um pouco da confiança do garoto afeminado.'},
+    {type:'saber',text:'Prazer, meu nome é Saber. Entendo.... estamos do mesmo lado, mesmo sabendo que você é o mestre dessa criatura....'},
+    {type:'ibaraki',expr:'exp4',text:'Criatura?! Deixa eu te mostrar o que é uma criatura!!!'},
+    {type:'master',text:'Quietinha. Estamos há algumas horas sem comer. Saber, saberia de alguma cidade por perto? Ou um Posto de Gasolina com Mercadinho?'},
+    {type:'saber',text:'Posto de Gasolina? Receio não saber o que é isso.... Mas temos uma vila na região, podemos passar lá e nos alimentar. Não confio 100% em vossas ações, mas pela honra é imoral e nada ético matar nem mesmo um animal com sede. Imagina a vida de um ser humano.'},
+  ],
+};
+// Parte B: chegada na vila (a revelação do isekai) — após recuperar HP/Bond
+const STORY_MAP2_VILLAGE={
+  start:[
+    {type:'narration',text:'Você chega com a Berserker e o Saber em uma vila com aparência antiga. Apesar do Saber não ter conhecimento de um "Posto de Gasolina", você percebe, pela visão da Vila, que é algo de algum momento da Era Heian. Você não está mais em 2026.'},
+    {type:'master',text:'Isso é aquilo, não é.....? Um Isekai com Viagem no Tempo?!'},
+    {type:'narration',text:'Você passa seu dia descansando em um pequeno quarto que o Saber lhe preparou.'},
+  ],
+};
+
+// ── FASE 6 DO MAPA 2: "Não se apresentar não é falta de respeito?" ──
+// Parte A: o Saber, tímido, convida o Mestre (antes da full art da Aria)
+const STORY_MAP2_SABER_INVITE={
+  start:[
+    {type:'narration',text:'Você acaba encontrando o Saber na entrada do seu quarto. Ele te olha com uma certa expressão tímida.'},
+    {type:'saber',expr:'shy',text:'Então... preciso lhe apresentar uma certa pessoa. Pelo que vi nesses dias que ficou aqui, você conquistou a confiança da vila, então acho justo lhe apresentar.'},
+    {type:'narration',text:'Você sai e vai até a casa mais ao sul da vila — o que parece ser uma casa bem chique para as condições da época.'},
+  ],
+};
+// Parte B: apresentação da Aria (depois da full art dela)
+const STORY_MAP2_ARIA={
+  start:[
+    {type:'saber',text:'Essa é minha mestra, Aria Rothschild.'},
+    {type:'aria',text:'Prazer em lhe conhecer, Mestre da Berserker.'},
+    {type:'masterThought',text:'É impressão minha ou até agora ninguém se perguntou meu nome? Sou tão irrelevante assim....?'},
+    {type:'master',text:'Prazer, meu nome é ---'},
+    {type:'aria',text:'Não precisa dizer. Acredito que não vou conhecer sua família e nem você.'},
+    {type:'masterThought',text:'Uma garota rica e ríspida.....'},
+    {type:'aria',text:'Não me entenda mal, não sou desse país. Então, tirando os mestres vindos de Londres, desconheço qualquer outro indivíduo, e não desejo fazer amizades. Mas sua cooperação é bem-vinda.'},
+    {type:'masterThought',text:'Não vi a Berserker em lugar algum. O que essa pirralha está aprontando?'},
+  ],
+};
+
+// ── FASE 12 DO MAPA 2: "Chá da Tarde" ──
+const STORY_MAP2_TEA={
+  start:[
+    {type:'narration',text:'Nesses poucos dias que ficou, você notou: definitivamente não é a era moderna. Seu celular não demonstra sinal, e a bateria acabou há algumas horas.'},
+    {type:'ibaraki',expr:'exp2',text:'Então, Mestre, aquele cara com rosto de garota pediu para avisar que a mestra dele quer falar contigo.'},
+    {type:'masterThought',text:'Berserker aceitando ser garota de recado? Será que ela tentou morder o Saber?'},
+    {type:'master',text:'Certo, certo, eu vou lá.'},
+    {type:'narration',text:'Chegando até o local marcado, Aria já se encontra com o Saber.'},
+    {type:'aria',text:'Então, Mestre da Berserker, queria te falar sobre algo preocupante. Parece que na redondeza têm-se visto uma criatura grande de aço que cospe fogo. Espero que tenha cuidado em suas saidinhas pela redondeza.'},
+    {type:'masterThought',text:'Ela é bem direta. Ela falou de Londres, achei que as pessoas de fora seriam mais amigáveis nessa época.'},
+    {type:'ibaraki',expr:'exp3',text:'Mestre! Claramente devemos pegar esse monstro! Vamos agora caçar ele!'},
+  ],
+};
+
+// ── FASE 15 DO MAPA 2: aparição do Nitro-Type (antes do boss) ──
+const STORY_MAP2_NITRO_INTRO={
+  start:[
+    {type:'narration',text:'Enquanto caminha com a Berserker pelas redondezas da Vila, um som estranho ecoa ao longe — algo grande correndo, fazendo um barulho metálico.'},
+    {type:'narration',text:'Por mais pesado que fosse, aquela coisa chegou rapidamente: um enorme robô metálico de cor vermelha com partes prateadas. Aquilo talvez fosse a criatura avistada — certamente aquela gente nunca viu um robô, o que poderia ser confundido com uma criatura.'},
+    {type:'ibaraki',expr:'exp3',text:'Woooo! Eu vou destruir essa coisa! Mas estranho..... não tem cheiro de carne ou sangue..... Mas também não é um espírito.'},
+    {type:'master',text:'Um robô. Talvez conheça como golem? Mas isso certamente é um anacronismo......'},
+    {type:'saber',text:'Mestre da Berserker! Cuidado!'},
+    {type:'narration',text:'O Saber vem correndo em alta velocidade, se aproximando de sua localização rapidamente.'},
+    {type:'saber',text:'Vou lhe ajudar momentaneamente para derrotar tal inimigo.'},
+  ],
+};
+
+// ── FASE 15: diálogos de fim do combate do boss ──
+const STORY_NITRO_WIN={
+  start:[
+    {type:'ibaraki',expr:'exp3',text:'Hahaha! Não importa se é de carne ou de metal, todos vão cair perante a mim!'},
+    {type:'saber',text:'De fato, um inimigo complicado.....'},
+  ],
+};
+const STORY_NITRO_LOSE={
+  start:[
+    {type:'ibaraki',expr:'expDerrota',text:'M-mestre.....?'},
+    {type:'narration',text:'A vista começa a escurecer, então uma voz desconhecida familiar ecoa em sua mente.'},
+    {type:'unknown',text:'Olha isso, fufufu, não conseguiu passar disso? Imagina o que tem por vir ainda, haha. Comece de novo.'},
   ],
 };
 
@@ -383,6 +557,9 @@ const QIN={
   assets:{
     default:'assets/servos/qin/qin_default.png',
     battle:'assets/servos/qin/qin_battle.png',
+    avatar:'assets/servos/qin/qin_avatar.png', // recorte do rosto da arte de batalha (chat)
+    np:'assets/servos/qin/qin_np.png', // arte exclusiva do cut-in de Noble Phantasm
+    encounter:'assets/servos/qin/qin_encounter.jpg',
   },
 };
 
@@ -430,11 +607,22 @@ const SAVE_KEY='oni_tactics_profile';
 const BOND_KEY=id=>`oni_tactics_bond_${id}`;
 
 function loadProfile(){
+  const def={nickname:'',sq:0,qp:0,qinDefeats:0,
+    skills:{manaBuster:1,transf:1,veneno:1},
+    perks:{energizador:0,pocaoMana:0,pactoEscudo:0,contosEpicos:0,orbeCromatico:0},
+    equippedPerks:['energizador','pocaoMana','pactoEscudo']};
   try{
     const r=localStorage.getItem(SAVE_KEY);
-    const def={nickname:'',sq:0,qp:0,skills:{manaBuster:1,transf:1,veneno:1},perks:{energizador:0,pocaoMana:0,pactoEscudo:0}};
-    return r?{...def,...JSON.parse(r)}:def;
-  }catch{return{nickname:'',sq:0,qp:0,skills:{manaBuster:1,transf:1,veneno:1},perks:{energizador:0,pocaoMana:0,pactoEscudo:0}};}
+    if(!r)return def;
+    const saved=JSON.parse(r);
+    // Merge profundo de perks/skills: saves antigos não têm as chaves novas,
+    // e um spread raso apagaria contosEpicos/orbeCromatico do objeto default.
+    return{...def,...saved,
+      skills:{...def.skills,...(saved.skills||{})},
+      perks:{...def.perks,...(saved.perks||{})},
+      equippedPerks:saved.equippedPerks||def.equippedPerks,
+    };
+  }catch{return def;}
 }
 function saveProfile(p){try{localStorage.setItem(SAVE_KEY,JSON.stringify(p));}catch{}}
 
@@ -476,21 +664,61 @@ const PERK_DEFS={
     effect:lvl=>({type:'perk_hp_regen',value:400+50*(lvl-1)}),
     costAtLevel:lvl=>800*(2**(lvl-1)),
   },
+  // ── Perks avançadas: desbloqueadas ao derrotar Qin Liangyu 1x ──
+  contosEpicos:{
+    id:'contosEpicos',name:'Contos Épicos de um Vagabundo',icon:'📜',
+    maxLevel:3,requiresQinDefeat:true,
+    desc:lvl=>`Aumenta a obtenção de SQ e QP em +${lvl*50}%`,
+    effect:lvl=>({type:'perk_sq_qp_up',value:lvl*50}),
+    costAtLevel:lvl=>2500+lvl*2500, // 5000 / 7500 / 10000
+  },
+  orbeCromatico:{
+    id:'orbeCromatico',name:'Orbe Cromático',icon:'💠',
+    maxLevel:10,requiresQinDefeat:true,
+    desc:lvl=>`Ao ser derrotado, revive o Servo com ${lvl*10}% de HP e ${lvl*10}% de NP (1x por campanha)`,
+    effect:lvl=>({type:'perk_orbe',value:lvl*10}),
+    costAtLevel:lvl=>1500*lvl, // 1500 / 3000 / 4500 ... 15000
+  },
 };
 const PERK_IDS=Object.keys(PERK_DEFS);
 
-// Retorna os efeitos passivos ativos das Perks do perfil
-function getPerkEffects(perks={}){
-  const effects={atkUpPercent:0,npRegenPercent:0,hpRegenPerTurn:0};
-  for(const id of PERK_IDS){
+// Slots padrão (migração de saves antigos: as 3 perks originais equipadas)
+const DEFAULT_EQUIPPED=['energizador','pocaoMana','pactoEscudo'];
+const MAX_EQUIPPED_PERKS=3;
+
+// Retorna os efeitos passivos das Perks EQUIPADAS (máx. 3 em batalha).
+// Perks compradas mas não equipadas NÃO têm efeito.
+function getPerkEffects(profileObj={}){
+  const perks=profileObj.perks||{};
+  const equipped=(profileObj.equippedPerks||DEFAULT_EQUIPPED).slice(0,MAX_EQUIPPED_PERKS);
+  const effects={atkUpPercent:0,npRegenPercent:0,hpRegenPerTurn:0,sqQpBonusPercent:0,orbeRevivePercent:0};
+  for(const id of equipped){
     const lvl=perks[id]||0;
     if(lvl<=0)continue;
-    const eff=PERK_DEFS[id].effect(lvl);
+    const def=PERK_DEFS[id];
+    if(!def)continue;
+    const eff=def.effect(lvl);
     if(eff.type==='perk_atk_up')effects.atkUpPercent+=eff.value;
     if(eff.type==='perk_np_regen')effects.npRegenPercent+=eff.value;
     if(eff.type==='perk_hp_regen')effects.hpRegenPerTurn+=eff.value;
+    if(eff.type==='perk_sq_qp_up')effects.sqQpBonusPercent+=eff.value;
+    if(eff.type==='perk_orbe')effects.orbeRevivePercent+=eff.value;
   }
   return effects;
+}
+
+// Efeitos das perks lendo o save mais recente (para telas sem prop profile)
+function getActivePerkEffects(){
+  return getPerkEffects(loadProfile());
+}
+
+// Registra uma vitória contra a Qin (desbloqueia as Perks avançadas).
+// Leitura atômica, igual aos bancos de SQ/QP.
+function markQinDefeated(){
+  const p=loadProfile();
+  const updated={...p,qinDefeats:(p.qinDefeats||0)+1};
+  saveProfile(updated);
+  return updated;
 }
 
 function loadBond(id){
@@ -599,7 +827,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('profile')}>📜 &nbsp; Perfil</button>
         <button className="btn btn-full" onClick={()=>onNavigate('shop')}>🏪 &nbsp; Loja de Perks</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.6</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.14</p>
       </div>
     </div>
   );
@@ -724,24 +952,55 @@ function ProfileScreen({onNavigate,profile,setProfile}){
 // ══════════════════════════════════════════════════════
 function ShopScreen({onNavigate,profile,setProfile}){
   const[notif,setNotif]=useState('');
-  const perks=profile.perks||{energizador:0,pocaoMana:0,pactoEscudo:0};
+  const perks=profile.perks||{};
+  const equipped=(profile.equippedPerks||DEFAULT_EQUIPPED).filter(id=>(perks[id]||0)>0||DEFAULT_EQUIPPED.includes(id));
+  const qinUnlocked=(profile.qinDefeats||0)>=1;
 
   function buyPerk(id){
     const fresh=loadProfile(); // leitura fresca: nunca gasta em cima de saldo desatualizado
-    const perksNow=fresh.perks||{energizador:0,pocaoMana:0,pactoEscudo:0};
+    const def=PERK_DEFS[id];
+    const maxLvl=def.maxLevel||10;
+    if(def.requiresQinDefeat&&(fresh.qinDefeats||0)<1){
+      setNotif('🔒 Derrote Qin Liangyu para desbloquear esta Perk!');return;
+    }
+    const perksNow=fresh.perks||{};
     const curLvl=perksNow[id]||0;
-    if(curLvl>=10){setNotif('Esta Perk já está no nível máximo!');return;}
+    if(curLvl>=maxLvl){setNotif('Esta Perk já está no nível máximo!');return;}
     const nextLvl=curLvl+1;
-    const cost=PERK_DEFS[id].costAtLevel(nextLvl);
+    const cost=def.costAtLevel(nextLvl);
     if((fresh.qp||0)<cost){
       setNotif(`QP insuficiente! Precisa de ${cost.toLocaleString()} QP.`);return;
     }
-    const updated={...fresh,qp:(fresh.qp||0)-cost,perks:{...perksNow,[id]:nextLvl}};
+    let eq=(fresh.equippedPerks||DEFAULT_EQUIPPED).slice();
+    // Primeira compra da Perk: auto-equipa se houver slot livre
+    let autoEq='';
+    if(curLvl===0&&!eq.includes(id)&&eq.length<MAX_EQUIPPED_PERKS){
+      eq.push(id);autoEq=' Equipada automaticamente!';
+    }
+    const updated={...fresh,qp:(fresh.qp||0)-cost,perks:{...perksNow,[id]:nextLvl},equippedPerks:eq};
     saveProfile(updated);setProfile(updated);
-    setNotif(`✨ ${PERK_DEFS[id].name} evoluída para Nv.${nextLvl}!`);
+    setNotif(`✨ ${def.name} evoluída para Nv.${nextLvl}!${autoEq}`);
   }
 
-  const effects=getPerkEffects(perks);
+  function toggleEquip(id){
+    const fresh=loadProfile();
+    let eq=(fresh.equippedPerks||DEFAULT_EQUIPPED).slice();
+    if(eq.includes(id)){
+      eq=eq.filter(x=>x!==id);
+      setNotif(`${PERK_DEFS[id].name} desequipada.`);
+    }else{
+      if((fresh.perks?.[id]||0)<=0){setNotif('Compre a Perk antes de equipar!');return;}
+      if(eq.length>=MAX_EQUIPPED_PERKS){
+        setNotif(`Máximo de ${MAX_EQUIPPED_PERKS} Perks equipadas! Desequipe uma primeiro.`);return;
+      }
+      eq.push(id);
+      setNotif(`${PERK_DEFS[id].name} equipada!`);
+    }
+    const updated={...fresh,equippedPerks:eq};
+    saveProfile(updated);setProfile(updated);
+  }
+
+  const effects=getPerkEffects(profile);
 
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
@@ -765,15 +1024,40 @@ function ShopScreen({onNavigate,profile,setProfile}){
           <div style={{fontSize:'1.8rem'}}>🪙</div>
         </div>
 
+        {/* Slots de equipamento */}
+        <div style={{background:'rgba(201,162,39,0.06)',border:'1px solid var(--gold-dim)',
+          borderRadius:3,padding:'10px 14px',marginBottom:12}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span style={{fontSize:'.7rem',color:'var(--gold)',letterSpacing:2,fontFamily:'Cinzel,serif'}}>
+              ⚔️ EQUIPADAS: {equipped.length}/{MAX_EQUIPPED_PERKS}
+            </span>
+            <span style={{fontSize:'.65rem',color:'var(--parchment-dark)',fontStyle:'italic'}}>
+              Só Perks equipadas têm efeito em batalha
+            </span>
+          </div>
+          {equipped.length>0&&(
+            <div style={{display:'flex',gap:6,marginTop:8,flexWrap:'wrap'}}>
+              {equipped.map(id=>(
+                <span key={id} style={{fontSize:'.7rem',background:'rgba(79,195,247,0.12)',
+                  border:'1px solid rgba(79,195,247,0.4)',borderRadius:10,padding:'3px 10px',color:'#4fc3f7'}}>
+                  {PERK_DEFS[id]?.icon} {PERK_DEFS[id]?.name} Nv.{perks[id]||0}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Efeitos ativos resumidos */}
-        {(effects.atkUpPercent>0||effects.npRegenPercent>0||effects.hpRegenPerTurn>0)&&(
+        {(effects.atkUpPercent>0||effects.npRegenPercent>0||effects.hpRegenPerTurn>0||effects.sqQpBonusPercent>0||effects.orbeRevivePercent>0)&&(
           <div style={{background:'rgba(0,0,0,0.3)',border:'1px solid rgba(255,255,255,0.08)',
             borderRadius:3,padding:'10px 14px',marginBottom:16,
             display:'flex',gap:16,flexWrap:'wrap'}}>
-            <span style={{fontSize:'.7rem',color:'var(--gold-dim)',letterSpacing:1,width:'100%',fontFamily:'Cinzel,serif'}}>BÔNUS ATIVOS</span>
+            <span style={{fontSize:'.7rem',color:'var(--gold-dim)',letterSpacing:1,width:'100%',fontFamily:'Cinzel,serif'}}>BÔNUS ATIVOS EM BATALHA</span>
             {effects.atkUpPercent>0&&<span style={{fontSize:'.8rem',color:'#ffd080'}}>⚡ ATK +{effects.atkUpPercent}%</span>}
             {effects.npRegenPercent>0&&<span style={{fontSize:'.8rem',color:'#90caf9'}}>🔮 NP +{effects.npRegenPercent}%/turno</span>}
             {effects.hpRegenPerTurn>0&&<span style={{fontSize:'.8rem',color:'#a5d6a7'}}>🛡️ HP +{effects.hpRegenPerTurn}/turno</span>}
+            {effects.sqQpBonusPercent>0&&<span style={{fontSize:'.8rem',color:'#ffd257'}}>📜 SQ/QP +{effects.sqQpBonusPercent}%</span>}
+            {effects.orbeRevivePercent>0&&<span style={{fontSize:'.8rem',color:'#b39ddb'}}>💠 Revive {effects.orbeRevivePercent}% (1x/run)</span>}
           </div>
         )}
 
@@ -781,69 +1065,101 @@ function ShopScreen({onNavigate,profile,setProfile}){
 
         {PERK_IDS.map(id=>{
           const def=PERK_DEFS[id];
+          const maxLvl=def.maxLevel||10;
           const curLvl=perks[id]||0;
           const nextLvl=curLvl+1;
-          const cost=curLvl<10?def.costAtLevel(nextLvl):null;
+          const locked=def.requiresQinDefeat&&!qinUnlocked;
+          const isEquipped=equipped.includes(id);
+          const cost=!locked&&curLvl<maxLvl?def.costAtLevel(nextLvl):null;
           const canAfford=cost!==null&&(profile.qp||0)>=cost;
-          const isMax=curLvl>=10;
+          const isMax=curLvl>=maxLvl;
+          const borderColor=locked?'rgba(255,255,255,0.12)'
+            :isEquipped?'var(--gold)'
+            :canAfford?'rgba(79,195,247,0.5)'
+            :'rgba(79,195,247,0.2)';
 
           return(
-            <div key={id} style={{border:'1px solid rgba(79,195,247,0.2)',borderRadius:3,
+            <div key={id} style={{border:`1px solid ${borderColor}`,borderRadius:3,
               padding:14,marginBottom:10,background:'rgba(0,0,0,0.25)',
-              transition:'border-color .2s',
-              ...(canAfford?{borderColor:'rgba(79,195,247,0.5)'}:{})}}>
+              transition:'border-color .2s',opacity:locked?0.55:1,
+              ...(isEquipped?{boxShadow:'0 0 12px rgba(201,162,39,0.15)'}:{})}}>
               <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
-                <div style={{fontSize:'2rem',lineHeight:1}}>{def.icon}</div>
+                <div style={{fontSize:'2rem',lineHeight:1,filter:locked?'grayscale(1)':'none'}}>{locked?'🔒':def.icon}</div>
                 <div style={{flex:1}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
-                    <div className="cinzel" style={{color:'#4fc3f7',fontSize:'.85rem',letterSpacing:1}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4,gap:8,flexWrap:'wrap'}}>
+                    <div className="cinzel" style={{color:locked?'var(--parchment-dark)':'#4fc3f7',fontSize:'.85rem',letterSpacing:1}}>
                       {def.name}
+                      {isEquipped&&<span style={{color:'var(--gold)',fontSize:'.65rem',marginLeft:8}}>⚔️ EQUIPADA</span>}
                     </div>
                     <div className="cinzel" style={{
                       color:isMax?'var(--gold)':'var(--parchment-dark)',
                       fontSize:'.75rem',letterSpacing:1}}>
-                      {isMax?'✦ MAX':'Nv.'+curLvl+(curLvl>0?'':' (inativo)')}
+                      {locked?'BLOQUEADA':isMax?'✦ MAX':'Nv.'+curLvl+(curLvl>0?'':' (não comprada)')}
                     </div>
                   </div>
 
-                  {/* Descrição do nível atual e próximo */}
-                  <div style={{fontSize:'.75rem',color:'var(--parchment-dark)',marginBottom:6,lineHeight:1.5}}>
-                    {curLvl>0&&<div style={{color:'#a5d6a7'}}>✓ Ativo: {def.desc(curLvl)}</div>}
-                    {!isMax&&<div style={{color:'var(--parchment-dark)'}}>→ Nv.{nextLvl}: {def.desc(nextLvl)}</div>}
-                  </div>
-
-                  {/* Barra de nível */}
-                  <div style={{display:'flex',gap:3,marginBottom:8}}>
-                    {Array.from({length:10},(_,i)=>(
-                      <div key={i} style={{
-                        height:5,flex:1,borderRadius:1,
-                        background:i<curLvl?'#4fc3f7':'rgba(255,255,255,0.1)',
-                        border:`1px solid ${i<curLvl?'#1e88e5':'rgba(255,255,255,0.15)'}`,
-                        transition:'background .3s',
-                      }}/>
-                    ))}
-                  </div>
-
-                  {/* Botão de compra */}
-                  {!isMax&&(
-                    <button
-                      onClick={()=>buyPerk(id)}
-                      disabled={!canAfford}
-                      style={{
-                        padding:'7px 16px',border:`1px solid ${canAfford?'#4fc3f7':'rgba(79,195,247,0.25)'}`,
-                        background:canAfford?'rgba(79,195,247,0.15)':'rgba(0,0,0,0.3)',
-                        color:canAfford?'#4fc3f7':'rgba(79,195,247,0.4)',
-                        fontFamily:'Cinzel,serif',fontSize:'.7rem',letterSpacing:1,
-                        cursor:canAfford?'pointer':'not-allowed',
-                        borderRadius:2,transition:'all .2s',
-                      }}>
-                      {canAfford?'✦ ':''}Comprar Nv.{nextLvl} — {cost.toLocaleString()} QP
-                    </button>
-                  )}
-                  {isMax&&(
-                    <div style={{color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'.7rem',letterSpacing:2}}>
-                      ✦ PERK DOMINADA
+                  {locked?(
+                    <div style={{fontSize:'.75rem',color:'var(--parchment-dark)',fontStyle:'italic',lineHeight:1.5}}>
+                      🔒 Derrote <strong style={{color:'#ff9090'}}>Qin Liangyu</strong> ao menos 1 vez para desbloquear esta Perk na Loja.
                     </div>
+                  ):(
+                    <>
+                      {/* Descrição do nível atual e próximo */}
+                      <div style={{fontSize:'.75rem',color:'var(--parchment-dark)',marginBottom:6,lineHeight:1.5}}>
+                        {curLvl>0&&<div style={{color:'#a5d6a7'}}>✓ Efeito: {def.desc(curLvl)}</div>}
+                        {!isMax&&<div style={{color:'var(--parchment-dark)'}}>→ Nv.{nextLvl}: {def.desc(nextLvl)}</div>}
+                      </div>
+
+                      {/* Barra de nível */}
+                      <div style={{display:'flex',gap:3,marginBottom:8}}>
+                        {Array.from({length:maxLvl},(_,i)=>(
+                          <div key={i} style={{
+                            height:5,flex:1,borderRadius:1,
+                            background:i<curLvl?'#4fc3f7':'rgba(255,255,255,0.1)',
+                            border:`1px solid ${i<curLvl?'#1e88e5':'rgba(255,255,255,0.15)'}`,
+                            transition:'background .3s',
+                          }}/>
+                        ))}
+                      </div>
+
+                      {/* Botões: comprar + equipar */}
+                      <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                        {!isMax&&(
+                          <button
+                            onClick={()=>buyPerk(id)}
+                            disabled={!canAfford}
+                            style={{
+                              padding:'7px 16px',border:`1px solid ${canAfford?'#4fc3f7':'rgba(79,195,247,0.25)'}`,
+                              background:canAfford?'rgba(79,195,247,0.15)':'rgba(0,0,0,0.3)',
+                              color:canAfford?'#4fc3f7':'rgba(79,195,247,0.4)',
+                              fontFamily:'Cinzel,serif',fontSize:'.7rem',letterSpacing:1,
+                              cursor:canAfford?'pointer':'not-allowed',
+                              borderRadius:2,transition:'all .2s',
+                            }}>
+                            {canAfford?'✦ ':''}Comprar Nv.{nextLvl} — {cost.toLocaleString()} QP
+                          </button>
+                        )}
+                        {isMax&&(
+                          <span style={{color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'.7rem',letterSpacing:2,alignSelf:'center'}}>
+                            ✦ PERK DOMINADA
+                          </span>
+                        )}
+                        {curLvl>0&&(
+                          <button
+                            onClick={()=>toggleEquip(id)}
+                            style={{
+                              padding:'7px 16px',
+                              border:`1px solid ${isEquipped?'var(--gold)':'var(--gold-dim)'}`,
+                              background:isEquipped?'rgba(201,162,39,0.18)':'rgba(0,0,0,0.3)',
+                              color:isEquipped?'var(--gold)':'var(--gold-dim)',
+                              fontFamily:'Cinzel,serif',fontSize:'.7rem',letterSpacing:1,
+                              cursor:'pointer',borderRadius:2,transition:'all .2s',
+                            }}>
+                            {isEquipped?'✓ Equipada':'Equipar'}
+                          </button>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -927,12 +1243,158 @@ function ServoSelectScreen({onNavigate,onStartCampaign}){
   );
 }
 
+// ── BOSS DO MAPA 2: Samurai Mecanizado Nitro-Type ──
+// Tanque extremo: HP altíssimo + mitigação passiva de 35%. Ataque básico fraco,
+// mas dispara MÍSSEIS em área (dano ~4.5×) a cada 3 turnos — telegrafado 1 turno
+// antes ("CARREGANDO"), dando ao jogador a chance de defender com Mudança de Forma.
+const NITRO={
+  id:'samurai_nitro',name:'Samurai Mecanizado Nitro-Type',className:'Berserker',isBoss:true,
+  hp:45000,attack:900,
+  attributes:{
+    strength:{rank:'A',points:50},
+    agility:{rank:'D',points:20}, // lento — age quase sempre por último
+    luck:{rank:'E',points:10},
+    endurance:{rank:'EX',points:120},
+    mana:{rank:'E',points:10,gainPercent:1.5},
+    np:{rank:'C',points:30},
+  },
+  passiveMitigation:35, // mitigação passiva fixa de 35% (muro — exige Nv.9-10)
+  missile:{multiplier:4.5,cooldown:3}, // dano do míssil e recarga
+  dialogue:{
+    intro:'⚙️ SISTEMA ATIVADO. ALVOS HOSTIS DETECTADOS. INICIANDO PROTOCOLO DE EXTERMÍNIO.',
+    charging:'⚠️ CARREGANDO SILOS DE MÍSSEIS...',
+    missile:'🚀 DISPARANDO OGIVAS. IMPACTO IMINENTE.',
+    defeated:'⚙️ ...NÚCLEO... COMPROMETIDO... DESLIGAN—',
+  },
+  assets:{
+    // Sem arte dedicada ainda — usa placeholder até o autor enviar
+    encounter:null,
+  },
+};
+
+// ── ARIA ROTHSCHILD (mestra do Saber, Mapa 2) ──
+const ARIA={
+  id:'aria',name:'Aria Rothschild',
+  assets:{
+    avatar:'assets/servos/aria/aria_avatar.png',   // rosto (chat)
+    encounter:'assets/servos/aria/aria_encounter.jpg',
+  },
+};
+
+// Noble Phantasm do Saber (Fleur de Lis) — buff de apoio na luta do boss.
+// Ativo durante TODO o combate: +15% ATK, +15% DEF, +15% chance de esquiva.
+const SABER_NP={
+  name:'Fleur de Lis',
+  atkUp:15,defUp:15,evasionUp:15,
+};
+
+// ── CHEVALIER D'EON (personagem do Mapa 2) ──
+const DEON={
+  id:'deon',name:"Chevalier D'Eon",
+  assets:{
+    profile:'assets/servos/deon/deon_profile.png', // rosto sério (padrão)
+    pog:'assets/servos/deon/deon_pog.png',         // chocado / boquiaberto
+    shy:'assets/servos/deon/deon_shy.png',         // tímido / envergonhado
+    np:'assets/servos/deon/deon_np.png',           // Noble Phantasm (Fleur de Lis)
+    encounter:'assets/servos/deon/deon_encounter.jpg',
+  },
+};
+
+// ══════════════════════════════════════════════════════
+// MAPA 2 — VILA DE TENNOBARA (inimigos + config)
+// ══════════════════════════════════════════════════════
+// Stats dos 4 inimigos da Vila (mais rápidos e agressivos que o Bosque).
+// Calibração v0.12: +80% HP e +40% ATK — desafiam de verdade sem virar
+// esponjas tediosas. O "freio de ~40 runs" vem do XP/custos, não de HP inflado.
+// Propriedades especiais: critChance (Samurai), poison (Onmyoji).
+const ENEMIES_MAP2={
+  bushi:{id:'bushi',name:'Guerreiro Bushi',hp:4680,atk:1960,agility:38,strPts:40,
+    description:'Guerreiro disciplinado da vila. Equilibrado entre ataque e velocidade.'},
+  samurai_errante:{id:'samurai_errante',name:'Samurai Errante',hp:2700,atk:2100,agility:58,strPts:35,
+    critChance:40, // 40% de acertar crítico (×1.5)
+    description:'Espadachim veloz e mortal. Frágil, mas seus golpes críticos ferem fundo.'},
+  ghoul2:{id:'ghoul2',name:'Ghoul',hp:3780,atk:1750,agility:30,strPts:40,
+    description:'Morto-vivo padrão. Equilibrado em tudo, sem grandes fraquezas.'},
+  onmyoji:{id:'onmyoji',name:'Onmyoji Corrompido',hp:2520,atk:1540,agility:42,strPts:45,
+    poison:{chance:60,pctOfAtk:8,turns:3}, // 60% de envenenar: 8% do ATK/turno por 3 turnos
+    description:'Feiticeiro corrompido. Frágil, mas seus ataques envenenam (dano por turno).'},
+};
+
+// Registro de mapas: permite adicionar novos mapas sem reescrever o motor.
+const MAPS={
+  bosque:{
+    id:'bosque',name:'Bosque dos Caminhos Cegos',phases:12,
+    enemies:ENEMIES_DATA,
+    intro:STORY_INTRO,introFinishLabel:'⚔️ Adentrar o Bosque',
+    boss:'qin_liangyu',
+  },
+  tennobara:{
+    id:'tennobara',name:'Vila de Tennobara',phases:16,
+    enemies:ENEMIES_MAP2,
+    // Diálogos da Deon serão preenchidos depois — por ora, só o encounter da art.
+    intro:null,introFinishLabel:'⚔️ Entrar na Vila',
+    encounterArt:'assets/servos/deon/deon_encounter.jpg',
+    encounterTitle:'GAROTA DESCONHECIDA',
+    encounterSub:'??? — Vila de Tennobara',
+    boss:'samurai_nitro', // Samurai Mecanizado Nitro-Type (gancho — a definir)
+  },
+};
+
+// Gera um encontro usando a tabela de inimigos do mapa atual.
+function genEncounterForMap(mapId,phase){
+  const map=MAPS[mapId]||MAPS.bosque;
+  const table=map.enemies;
+  const ids=Object.keys(table);
+  const size=rollGroupSize(phase);
+  return Array.from({length:size},(_,i)=>{
+    const id=ids[Math.floor(Math.random()*ids.length)];
+    const base=table[id];
+    const m=phaseMult(phase);
+    return{
+      ...base,instanceId:`${id}_${i}_${Date.now()+i}`,
+      maxHp:Math.round(base.hp*m),currentHp:Math.round(base.hp*m),
+      atkScaled:Math.round(base.atk*m),
+      damage:Math.round(base.atk*m*base.strPts/100),
+      activeDebuffs:[],stunned:0,
+    };
+  }).sort((a,b)=>b.agility-a.agility);
+}
+
+// ══════════════════════════════════════════════════════
+// SPLASH DE FULL ART (encounter)
+// ══════════════════════════════════════════════════════
+function SplashScreen({art,title,sub,onFinish}){
+  return(
+    <div className="splash-screen" onClick={onFinish}>
+      <img className="splash-art" src={art} alt={title}
+        onError={e=>{e.target.style.display='none';}}/>
+      <div className="splash-caption">
+        <div className="splash-title">{title}</div>
+        {sub&&<div className="splash-sub">{sub}</div>}
+      </div>
+      <div className="splash-hint">▼ TOQUE PARA CONTINUAR ▼</div>
+    </div>
+  );
+}
+
+// Cartão de transição entre mapas (só o nome, estilo cinematográfico)
+function MapTitleCard({name,onFinish}){
+  return(
+    <div className="map-title-card" onClick={onFinish}>
+      <div className="mtc-label">✦ VOCÊ ADENTRA ✦</div>
+      <div className="mtc-name">{name}</div>
+      <div className="mtc-line"/>
+      <div className="splash-hint">▼ TOQUE PARA CONTINUAR ▼</div>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════
 // HISTÓRIA (chat estilo visual novel)
 // ══════════════════════════════════════════════════════
-function StoryScreen({profile,onFinish}){
-  const[messages,setMessages]=useState([STORY_INTRO.start[0]]);
-  const[queue,setQueue]=useState(STORY_INTRO.start.slice(1));
+function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o Bosque',onFinish}){
+  const[messages,setMessages]=useState([script.start[0]]);
+  const[queue,setQueue]=useState(script.start.slice(1));
   const[choice,setChoice]=useState(null);
   const[done,setDone]=useState(false);
   const areaRef=useRef();
@@ -953,7 +1415,7 @@ function StoryScreen({profile,onFinish}){
       ?{type:'master',text:opt.speech}
       :{type:'masterAction',text:opt.label};
     setMessages(m=>[...m,feedback]);
-    setQueue(STORY_INTRO[opt.next]||[]);
+    setQueue(script[opt.next]||[]);
     setChoice(null);
   }
 
@@ -972,14 +1434,63 @@ function StoryScreen({profile,onFinish}){
         </div>
       </div>
     );
-    // master | masterAction
+    if(m.type==='qin')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={QIN.assets.avatar} alt="Qin Liangyu"
+          onError={ev=>{ev.target.onerror=null;ev.target.src=QIN.assets.default;}}/>
+        <div className="chat-body">
+          <div className="chat-name hostile">QIN LIANGYU</div>
+          <div className="chat-bubble hostile">{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='unknown')return(
+      <div key={i} className="chat-msg left">
+        <div className="chat-avatar-unknown">?</div>
+        <div className="chat-body">
+          <div className="chat-name unknown">VOZ DESCONHECIDA</div>
+          <div className="chat-bubble mystic">{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='saber')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={m.expr==='shy'?DEON.assets.shy:DEON.assets.profile} alt="Saber"
+          onError={ev=>{ev.target.onerror=null;ev.target.src=DEON.assets.profile;}}/>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#c9b8ff'}}>SABER</div>
+          <div className="chat-bubble" style={{borderColor:'rgba(201,184,255,.45)'}}>{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='aria')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={ARIA.assets.avatar} alt="Aria"
+          onError={ev=>{ev.target.style.display='none';}}/>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#e6c86e'}}>ARIA ROTHSCHILD</div>
+          <div className="chat-bubble" style={{borderColor:'rgba(230,200,110,.5)'}}>{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='deon'||m.type==='deonPog')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={m.type==='deonPog'?DEON.assets.pog:DEON.assets.profile} alt="D'Eon"
+          onError={ev=>{ev.target.onerror=null;ev.target.src=DEON.assets.profile;}}/>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#9fd8c8'}}>PESSOA DESCONHECIDA</div>
+          <div className="chat-bubble" style={{borderColor:'rgba(159,216,200,.45)'}}>{m.text}</div>
+        </div>
+      </div>
+    );
+    // master | masterAction | masterThought
     return(
       <div key={i} className="chat-msg right">
         <div className="chat-avatar-q">?</div>
         <div className="chat-body">
-          <div className="chat-name">{masterName}</div>
-          <div className={`chat-bubble${m.type==='masterAction'?' action':''}`}>
-            {m.type==='masterAction'?`— ${m.text} —`:m.text}
+          <div className="chat-name">{masterName}{m.type==='masterThought'?' (pensa)':''}</div>
+          <div className={`chat-bubble${(m.type==='masterAction'||m.type==='masterThought')?' action':''}`}>
+            {m.type==='masterAction'?`— ${m.text} —`:m.type==='masterThought'?`( ${m.text} )`:m.text}
           </div>
         </div>
       </div>
@@ -1007,7 +1518,7 @@ function StoryScreen({profile,onFinish}){
           {done&&(
             <button className="btn btn-full" style={{marginTop:14}}
               onClick={e=>{e.stopPropagation();onFinish();}}>
-              ⚔️ Adentrar o Bosque
+              {finishLabel}
             </button>
           )}
         </div>
@@ -1022,12 +1533,13 @@ function StoryScreen({profile,onFinish}){
 // ══════════════════════════════════════════════════════
 function MapScreen({camp,onChoosePath,onNavigate}){
   const{servo,phase,maxPhases}=camp;
-  const isBossPhase=phase>=11;
+  const curMap=MAPS[camp.mapId]||MAPS.bosque;
+  const isBossPhase=phase>=maxPhases-1; // últimas 2 fases levam ao boss
   return(
     <div className="screen">
       <div className="panel" style={{maxWidth:600}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
-          <h2 className="cinzel" style={{color:'var(--gold)',fontSize:'.9rem',letterSpacing:3}}>BOSQUE DOS CAMINHOS CEGOS</h2>
+          <h2 className="cinzel" style={{color:'var(--gold)',fontSize:'.9rem',letterSpacing:3}}>{curMap.name.toUpperCase()}</h2>
           <span style={{color:'var(--parchment-dark)',fontSize:'.75rem'}}>Fase {phase}/{maxPhases}</span>
         </div>
         <Bar label="HP" current={servo.hp} max={servo.hpMax} type="hp"/>
@@ -1042,7 +1554,7 @@ function MapScreen({camp,onChoosePath,onNavigate}){
           <div style={{textAlign:'center',padding:'20px 0'}}>
             <div style={{fontSize:'2rem',marginBottom:12}}>⚔️👹⚔️</div>
             <p className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,fontSize:'1rem',marginBottom:8}}>CONFRONTO FINAL</p>
-            <p style={{color:'var(--parchment-dark)',fontSize:'.85rem',marginBottom:20}}>Uma presença poderosa aguarda no centro do Bosque...</p>
+            <p style={{color:'var(--parchment-dark)',fontSize:'.85rem',marginBottom:20}}>Uma presença poderosa aguarda em {curMap.name}...</p>
             <button className="btn btn-red btn-full" onClick={()=>onChoosePath('boss')}>⚔️ Enfrentar o Boss</button>
           </div>
         ):(
@@ -1075,8 +1587,9 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
   function doEvent(){
     let newCamp={...camp,servo:{...servo}};
     let msg='';
-    // QP por evento: 250 QP — depositado imediatamente
-    const qpGain=250;
+    // QP por evento: 250 base — multiplicado pela Perk Contos Épicos, se equipada
+    const pe=getActivePerkEffects();
+    const qpGain=Math.round(250*(1+(pe.sqQpBonusPercent||0)/100));
 
     if(type==='trust'){
       const newBond=addBond(servo.id,150);
@@ -1099,12 +1612,42 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
       newCamp.planBonus={atkUp:10,defUp:10};
       newCamp.qpEarned=(camp.qpEarned||0)+qpGain;
       msg=`Rota planejada! +10% ATK/DEF no próximo combate. +${qpGain} QP.`;
+    } else if(type==='rest2'){
+      // Descanso da Vila: recupera 30% HP + 10% NP + um pouco de XP
+      const heal=Math.round(servo.hpMax*0.30);
+      const newXP=addServoXP(servo.id,XP_TRUST_EVENT);
+      newCamp.servo.hp=clamp(servo.hp+heal,0,servo.hpMax);
+      newCamp.servo.npBar=clamp(servo.npBar+10,0,100);
+      newCamp.qpEarned=(camp.qpEarned||0)+qpGain;
+      newCamp.xpEarned=(camp.xpEarned||0)+XP_TRUST_EVENT;
+      msg=`Recuperou ${heal} HP e 10% NP · +${XP_TRUST_EVENT} XP · +${qpGain} QP${newXP.level>camp.servo.level?` · ✨ SERVO Nv.${newXP.level}!`:''}`;
+    } else if(type==='aldeoes'){
+      // Lidar com aldeões: tarefa aleatória → QP extra + XP
+      const bonusQP=Math.round(qpGain*1.5); // tarefas rendem mais QP que o normal
+      const newXP=addServoXP(servo.id,XP_TRUST_EVENT);
+      newCamp.qpEarned=(camp.qpEarned||0)+bonusQP;
+      newCamp.xpEarned=(camp.xpEarned||0)+XP_TRUST_EVENT;
+      msg=`Tarefa concluída! +${XP_TRUST_EVENT} XP · +${bonusQP} QP${newXP.level>camp.servo.level?` · ✨ SERVO Nv.${newXP.level}!`:''}`;
+      // Deposita o QP maior (não o padrão)
+      const upd=depositQP(bonusQP);
+      if(setProfile)setProfile(upd);
+      setResult(msg);setCamp(newCamp);setDone(true);
+      return; // já depositou — evita o depósito padrão abaixo
     }
     // Deposita QP imediatamente (leitura fresca) e sincroniza o estado do App
     const updatedProfile=depositQP(qpGain);
     if(setProfile)setProfile(updatedProfile);
     setResult(msg);setCamp(newCamp);setDone(true);
   }
+
+  // Tarefas aleatórias do evento "Lidar com Aldeões" (mapa 2)
+  const ALDEAO_TAREFAS=[
+    'Você ajudou a colher alguns vegetais no campo da vila.',
+    'Você lidou com o pirralho ladrão de calcinhas que aterrorizava as senhoras.',
+    'Você consertou o telhado da casa de um velho pescador.',
+    'Você espantou os corvos que rondavam o celeiro de arroz.',
+  ];
+  const tarefaRef=useRef(ALDEAO_TAREFAS[Math.floor(Math.random()*ALDEAO_TAREFAS.length)]);
 
   const bondLvl=camp.bond?.level||1;
   const trustDialogue=
@@ -1113,11 +1656,14 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
     bondLvl>=4?IBARAKI.bondDialogue[5]:
     IBARAKI.bondDialogue[1];
 
-  const evtTitles={trust:'🤝 Ganhar Confiança',rest:'🌙 Descansar',plan:'🗺️ Planejar Rota'};
+  const evtTitles={trust:'🤝 Ganhar Confiança',rest:'🌙 Descansar',plan:'🗺️ Planejar Rota',
+    rest2:'🏕️ Pausa para Descanso',aldeoes:'🧺 Lidar com Aldeões'};
   const evtDescs={
     trust:'Um momento de cumplicidade entre Mestre e Servo fortalece o vínculo.',
     rest:'Um breve descanso para recuperar forças antes de continuar.',
     plan:'Analisam os caminhos à frente para escolher a rota mais vantajosa.',
+    rest2:'Vocês fazem uma pausa na Vila para recuperar forças.',
+    aldeoes:tarefaRef.current,
   };
 
   return(
@@ -1148,15 +1694,17 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
 function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfile}){
   const xpState=loadServoXP(IBARAKI.id);
   const servoLvl=xpState.level;
-  // Perks passivas do Mestre — carregadas do profile uma vez por combate
-  const perkEffects=getPerkEffects(profile.perks||{});
+  // Perks passivas EQUIPADAS do Mestre — carregadas do profile uma vez por combate
+  const perkEffects=getPerkEffects(profile);
 
+  // Buff da Aria (Fase 6): +10% HP extra (temporário) no próximo combate.
+  const ariaHpBonus=camp.planBonus?.hpUp?Math.round((camp.servo.hpMax||IBARAKI.getHp(servoLvl))*(camp.planBonus.hpUp/100)):0;
   const initServo={
     ...camp.servo,
     level:servoLvl,
     attackBase:IBARAKI.getAtk(servoLvl),
-    hpMax:camp.servo.hpMax||IBARAKI.getHp(servoLvl),
-    hp:camp.servo.hp,
+    hpMax:(camp.servo.hpMax||IBARAKI.getHp(servoLvl))+ariaHpBonus,
+    hp:camp.servo.hp+ariaHpBonus,
     // Cada combate começa "limpo": buffs/debuffs e recargas resetam.
     // HP e Barra de NP persistem entre as fases (essência roguelike).
     activeBuffs:[],activeDebuffs:[],
@@ -1165,6 +1713,20 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   };
 
   function createBossInstance(){
+    // Boss varia por mapa: Qin no Bosque, Nitro-Type na Vila de Tennobara
+    if((camp.mapId||'bosque')==='tennobara'){
+      return{
+        ...NITRO,instanceId:'nitro_boss',
+        maxHp:NITRO.hp,currentHp:NITRO.hp,
+        atkScaled:NITRO.attack,
+        damage:Math.round(NITRO.attack*(NITRO.attributes.strength.points/100)),
+        agility:NITRO.attributes.agility.points,
+        npBar:0,activeBuffs:[],activeDebuffs:[],
+        missileCd:3, // começa carregado: primeiros turnos de básico antes do 1º míssil
+        charging:false, // vira true no turno anterior ao disparo (telégrafo)
+        isNitro:true,isBoss:true,
+      };
+    }
     return{
       ...QIN,instanceId:'qin_boss',
       maxHp:QIN.hp,currentHp:QIN.hp,
@@ -1178,7 +1740,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   }
 
   const[servo,setServo]=useState(initServo);
-  const[enemies,setEnemies]=useState(isBoss?[createBossInstance()]:genEncounter(camp.phase));
+  const[enemies,setEnemies]=useState(isBoss?[createBossInstance()]:genEncounterForMap(camp.mapId||'bosque',camp.phase));
   const[selectedTarget,setSelectedTarget]=useState(0);
   const[log,setLog]=useState([]);
   const[turn,setTurn]=useState(1);
@@ -1193,6 +1755,16 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     setTimeout(()=>setNpCutin(null),1900);
   }
 
+  // ── Efeitos visuais flutuantes (dano/cura/buff/esquiva) ──
+  const[fx,setFx]=useState([]);
+  const enemyTurnPtr=useRef(0); // rotação round-robin: qual inimigo age no próximo turno
+  function spawnFx(targetId,text,kind='dmg'){
+    const id=Date.now()+Math.random();
+    const left=22+Math.random()*50; // posição horizontal variada p/ números não se sobreporem
+    setFx(prev=>[...prev,{id,targetId,text,kind,left}]);
+    setTimeout(()=>setFx(prev=>prev.filter(f=>f.id!==id)),950);
+  }
+
   const sv=profileSkillValues(profile.skills);
   const logRef=useRef();
 
@@ -1202,8 +1774,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   useEffect(()=>{
     if(!introShown){
-      setDialogue(isBoss
-        ?{text:QIN.dialogue.intro,portrait:QIN.assets.default}
+      const isNitroBoss=isBoss&&(camp.mapId||'bosque')==='tennobara';
+      setDialogue(
+        isNitroBoss?{text:NITRO.dialogue.intro,portrait:null}
+        :isBoss?{text:QIN.dialogue.intro,portrait:QIN.assets.default}
         :{text:IBARAKI.dialogue.battle,portrait:IBARAKI.assets.default}
       );
       addLog(`── Turno 1 · Fase ${camp.phase} ──`,'system');
@@ -1227,20 +1801,29 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(camp.planBonus?.atkUp)atkUp+=camp.planBonus.atkUp;
     // Perk: Energizador de Raiz — bônus de ATK passivo permanente
     if(perkEffects.atkUpPercent>0)atkUp+=perkEffects.atkUpPercent;
+    // Fleur de Lis (Saber): +15% ATK durante todo o combate do boss
+    if(camp.saberBuff)atkUp+=SABER_NP.atkUp;
     return Math.round(dmg*(1+atkUp/100)*mult);
   }
 
   function applyDmgToEnemy(raw,enemy){
     let defDown=0;
     for(const d of enemy.activeDebuffs||[]){if(d.type==='defense_down')defDown+=d.value;}
-    return Math.round(raw*(1+defDown/100));
+    let dmg=raw*(1+defDown/100);
+    // Mitigação passiva fixa do Nitro-Type (tanque blindado)
+    if(enemy.passiveMitigation){
+      const mit=clamp(enemy.passiveMitigation-defDown,0,90); // NP reduz a mitigação dele
+      dmg=dmg*(1-mit/100);
+    }
+    return Math.round(dmg);
   }
 
   // Aplica dano a um inimigo respeitando o Guts (2 cargas, janela de 5 turnos).
   // Se o HP zerar com Guts ativo: consome 1 carga e revive com 30% do HP Base.
-  // Boss também ganha Barra de NP ao SER atingido (1.5× o ganho de ataque),
-  // igual ao FGO — isso faz o NP dela realmente acontecer em lutas longas.
-  function damageEnemy(e,dmg){
+  // Boss também ganha Barra de NP ao SER atingido (1.5× o ganho de ataque).
+  // O parâmetro fxKind controla o visual do número flutuante ('dmg'/'crit'/'np').
+  function damageEnemy(e,dmg,fxKind='dmg'){
+    spawnFx(e.instanceId,String(dmg),fxKind);
     let out={...e,currentHp:Math.max(0,e.currentHp-dmg)};
     if(out.currentHp<=0&&out.isBoss&&out.gutsState?.active&&out.gutsState.charges>0){
       const g=out.gutsState;
@@ -1248,6 +1831,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       out={...out,currentHp:reviveHp,
         gutsState:{...g,charges:g.charges-1,active:g.charges-1>0}};
       addLog(`💀 GUTS! ${e.name} recusa a morte e revive com ${reviveHp} HP! (${out.gutsState.charges} carga restante)`,'np');
+      spawnFx(e.instanceId,'💀 GUTS!','heal');
     }
     if(out.currentHp>0&&out.isBoss){
       out.npBar=clamp((out.npBar||0)+((out.attributes?.mana?.gainPercent||1.7)*1.5),0,100);
@@ -1260,6 +1844,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     let defUp=0,defDown=0;
     for(const b of servo.activeBuffs||[]){if(b.type==='defense_up')defUp+=b.value;}
     if(camp.planBonus?.defUp)defUp+=camp.planBonus.defUp;
+    // Fleur de Lis (Saber): +15% DEF durante todo o combate do boss
+    if(camp.saberBuff)defUp+=SABER_NP.defUp;
     for(const d of servo.activeDebuffs||[]){if(d.type==='defense_down')defDown+=d.value;}
     return Math.round(raw*(1-clamp(passiveMit+defUp-defDown,0,95)/100));
   }
@@ -1271,6 +1857,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(perkEffects.hpRegenPerTurn>0)hp=clamp(hp+perkEffects.hpRegenPerTurn,0,s.hpMax);
     // Perk: Poção de Mana — regen de NP por turno
     if(perkEffects.npRegenPercent>0)npBar=clamp(npBar+perkEffects.npRegenPercent,0,100);
+    // Veneno (aplicado pelo Onmyoji Corrompido): dano por turno enquanto durar
+    let poisonDmg=0;
+    for(const d of s.activeDebuffs||[]){if(d.type==='poison')poisonDmg+=d.value;}
+    if(poisonDmg>0){
+      hp=Math.max(0,hp-poisonDmg);
+      addLog(`☠️ Veneno corrói Ibaraki: ${poisonDmg} de dano!`,'enemy');
+      spawnFx('servo',String(poisonDmg),'stun');
+    }
     return{...s,
       hp,npBar,
       activeBuffs:(s.activeBuffs||[]).map(b=>({...b,turns:b.turns-1})).filter(b=>b.turns>0),
@@ -1307,6 +1901,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       const dodge=5+Math.max(0,(tgt.agility-servo.attributes.agility.points))/2;
       if(rollChance(dodge)){
         addLog(`💨 ${tgt.name} esquiva do ataque! (${dodge.toFixed(1)}% de chance)`,'enemy');
+        spawnFx(tgt.instanceId,'ESQUIVOU','miss');
         setServo(newServo);
         doEnemyTurn(newServo,enemies);
         return;
@@ -1316,7 +1911,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const isCrit=rollChance(servo.attributes.luck.points);
     if(isCrit)dmg=Math.round(dmg*1.5);
     dmg=applyDmgToEnemy(dmg,tgt);
-    const newEnemies=enemies.map((e,i)=>i!==selectedTarget?e:damageEnemy(e,dmg));
+    const newEnemies=enemies.map((e,i)=>i!==selectedTarget?e:damageEnemy(e,dmg,isCrit?'crit':'dmg'));
     addLog(`${isCrit?'🔥 CRÍTICO! ':''}Ibaraki ataca ${tgt.name}: ${dmg} dano`+(isCrit?' (×1.5)':''),'player');
     setServo(newServo);setEnemies(newEnemies);
     if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
@@ -1340,10 +1935,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         {type:'np_damage_up',value:eff.npDmgUp,turns:eff.dur,id:'nat_np'},
       ];
       addLog(`Natureza Demoníaca: Ataque +${eff.atkUp}% e NP +${eff.npDmgUp}% por ${eff.dur}t`,'player');
+      spawnFx('servo',`+${eff.atkUp}% ATK`,'buff');
     } else if(skillId==='rampage'){
       const healed=Math.round(newServo.hpMax*eff.healPct/100);
       newServo.hp=clamp(newServo.hp+healed,0,newServo.hpMax);
       newServo.activeDebuffs=[];
+      spawnFx('servo',`+${healed}`,'heal');
       const tgt=newEnemies[selectedTarget];
       if(tgt&&tgt.currentHp>0){
         const strDmg=Math.round(servo.attackBase*(servo.attributes.strength.points/100)*(eff.strDmgPct/100));
@@ -1360,6 +1957,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         {type:'defense_up',value:eff.defUp,turns:eff.dur,id:'forma_def'},
       ];
       addLog(`Mudança de Forma: Defesa +${eff.defUp}% por ${eff.dur}t`,'player');
+      spawnFx('servo',`+${eff.defUp}% DEF`,'buff');
     }
 
     setDialogue({text:IBARAKI.dialogue.skill,portrait:IBARAKI.assets.default});
@@ -1379,9 +1977,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(skillKey==='manaBuster'){
       newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'attack_up',value:sk.atkBoost,turns:sk.dur,id:'mana_b'}];
       addLog(`Mana Buster Nv.${sk.lvl}: Ataque +${sk.atkBoost}% por ${sk.dur}t`,'player');
+      spawnFx('servo',`+${sk.atkBoost}% ATK`,'buff');
     } else if(skillKey==='transf'){
       newServo.npBar=clamp(newServo.npBar+sk.npGain,0,100);
       addLog(`Transferência de Mana Nv.${sk.lvl}: +${sk.npGain}% Barra de NP`,'player');
+      spawnFx('servo',`+${sk.npGain}% NP`,'buff');
     } else if(skillKey==='veneno'){
       const tgt=newEnemies[selectedTarget];
       if(tgt&&tgt.currentHp>0){
@@ -1389,8 +1989,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         if(rollChance(clamp(sk.stunChance-debuffRes,0,100))){
           newEnemies=newEnemies.map((e,i)=>i===selectedTarget?{...e,stunned:1}:e);
           addLog(`Veneno de Brasilisco Nv.${sk.lvl}: ${tgt.name} Atordoado!`,'player');
+          spawnFx(tgt.instanceId,'☠️ ATORDOADO','stun');
         } else {
           addLog(`Veneno de Brasilisco Nv.${sk.lvl}: falhou (${Math.round(clamp(sk.stunChance-debuffRes,0,100))}% chance)`,'system');
+          spawnFx(tgt.instanceId,'RESISTIU','miss');
         }
       }
     }
@@ -1414,7 +2016,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const newEnemies=enemies.map((e,i)=>{
       if(i!==selectedTarget)return e;
       // NP não é esquivável — mas respeita o Guts do boss
-      let hit=damageEnemy(e,dmg);
+      let hit=damageEnemy(e,dmg,'np');
       hit={...hit,activeDebuffs:[...(hit.activeDebuffs||[]),{type:'defense_down',value:npDef.defDown,turns:IBARAKI.np.defDownDur}]};
       return hit;
     });
@@ -1447,22 +2049,80 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     }
   }
 
-  // ─── TURNO DOS INIMIGOS ─────────────────────────────
+  // ─── TURNO DOS INIMIGOS (intercalado: 1 inimigo por vez) ─────
+  // Balanceamento v0.8: inimigos NUNCA atacam em conjunto. A cada turno do
+  // jogador, apenas UM inimigo age (rotação round-robin na ordem de Agility).
+  // Isso evita morte por spam de golpes no 1º turno em grupos grandes.
+  // Se o inimigo da vez estiver Atordoado, o lado inimigo perde o turno inteiro.
   function doEnemyTurn(curServo,curEnemies){
     let s=tickServoEffects({...curServo});
     s.hp=clamp(s.hp,0,s.hpMax);
+    // Morte por VENENO no tick (antes dos inimigos agirem) — respeita o Orbe
+    if(s.hp<=0){
+      const orbePct=perkEffects.orbeRevivePercent||0;
+      if(orbePct>0&&!camp.orbeUsed){
+        s.hp=Math.max(1,Math.round(s.hpMax*orbePct/100));
+        s.npBar=clamp(orbePct,0,100);
+        setCamp({...camp,orbeUsed:true});
+        addLog(`💠 ORBE CROMÁTICO! O Servo recusa a queda e revive com ${orbePct}% de HP e NP! (1x por campanha)`,'np');
+        spawnFx('servo',`💠 +${orbePct}%`,'heal');
+      } else {
+        setServo({...s});setEnemies(curEnemies);
+        setDialogue({text:IBARAKI.dialogue.lose,portrait:IBARAKI.assets.lose||IBARAKI.assets.default});
+        endCombat(false,s,curEnemies);return;
+      }
+    }
+    // Durações (buffs/debuffs/guts/recargas) contam em turnos do JOGADOR:
+    // todos os inimigos envelhecem seus efeitos a cada ciclo.
     let es=curEnemies.map(e=>e.currentHp>0?tickEnemyEffects(e):e);
 
-    for(let i=0;i<es.length;i++){
+    const n=es.length;
+    let actedIdx=-1;
+    for(let step=0;step<n;step++){
+      const i=(enemyTurnPtr.current+step)%n;
       const e=es[i];
       if(e.currentHp<=0)continue;
+      actedIdx=i;
+
       if((e.stunned||0)>0){
         addLog(`${e.name} está Atordoado e perde o turno!`,'system');
+        spawnFx(e.instanceId,'ATORDOADO','stun');
         es[i]={...es[i],stunned:es[i].stunned-1};
-        continue;
+        break;
       }
 
-      if(e.isBoss){
+      if(e.isNitro){
+        // ── IA do Samurai Mecanizado Nitro-Type ──
+        // Nitro NÃO tem passiva Anti-Berserker, então seu dano é "cru"
+        // (sem o ×1.5 que a Qin aplica contra Berserkers).
+        const nitro=es[i];
+        if(nitro.charging){
+          // Turno do disparo: solta o míssil (dano em área ~4.5×)
+          const missileRaw=Math.round(nitro.atkScaled*(nitro.attributes.strength.points/100)*NITRO.missile.multiplier);
+          const mitMissile=applyDmgToServo(missileRaw);
+          s.hp=Math.max(0,s.hp-mitMissile);
+          s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+          es[i]={...nitro,charging:false,missileCd:NITRO.missile.cooldown};
+          addLog(`🚀 ${NITRO.dialogue.missile} Mísseis explodem em área: ${mitMissile} de dano!`,'enemy');
+          setDialogue({text:NITRO.dialogue.missile,portrait:null});
+          spawnFx('servo',`🚀 ${mitMissile}`,'crit');
+        } else if((nitro.missileCd||0)<=0){
+          // Recarga zerada: telegrafa o míssil (dispara no PRÓXIMO turno)
+          es[i]={...nitro,charging:true};
+          addLog(`⚠️ ${NITRO.dialogue.charging} (Míssil no próximo turno — defenda-se!)`,'enemy');
+          setDialogue({text:NITRO.dialogue.charging,portrait:null});
+          spawnFx(nitro.instanceId,'⚠️ CARREGANDO','buff');
+        } else {
+          // Ataque básico fraco + decrementa a recarga do míssil
+          const raw=Math.round(nitro.atkScaled*(nitro.attributes.strength.points/100));
+          const mit=applyDmgToServo(raw);
+          s.hp=Math.max(0,s.hp-mit);
+          s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+          es[i]={...nitro,missileCd:(nitro.missileCd||0)-1};
+          addLog(`${nitro.name} desfere um golpe mecânico: ${mit} de dano.`,'enemy');
+          spawnFx('servo',String(mit),'dmg');
+        }
+      } else if(e.isBoss){
         // IA da Qin
         const qin=es[i];
         const hpPct=(qin.currentHp/qin.maxHp)*100;
@@ -1473,7 +2133,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             cooldowns:{...qin.cooldowns,abolidor:9},
           };
           addLog(`Qin — Abolidor Ruffian! Guts×2 (5t), Defesa +30%`,'enemy');
-          continue;
+          spawnFx(qin.instanceId,'GUTS ×2','buff');
+          break;
         }
         if(qin.npBar>=100){
           const eff=QIN.np.effect;
@@ -1486,15 +2147,16 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           };
           addLog(`⚡ QIN NP — ${QIN.np.name}! ATK+${eff.atkUp}% · DEF+${eff.defUp}% · Imunidade a Debuffs`,'np');
           setDialogue({text:QIN.dialogue.np,portrait:QIN.assets.default});
-          fireNpCutin(QIN.assets.battle,QIN.np.name.toUpperCase(),QIN.dialogue.np);
-          continue;
+          fireNpCutin(QIN.assets.np,QIN.np.name.toUpperCase(),QIN.dialogue.np);
+          break;
         }
         if(hpPct<60&&(qin.cooldowns?.soldado||0)===0){
           const healed=Math.round(qin.maxHp*0.17);
           es[i]={...qin,currentHp:Math.min(qin.maxHp,qin.currentHp+healed),
             npBar:clamp(qin.npBar+50,0,100),cooldowns:{...qin.cooldowns,soldado:6}};
           addLog(`Qin — Aspecto do Soldado: +${healed} HP, +50% NP`,'enemy');
-          continue;
+          spawnFx(qin.instanceId,`+${healed}`,'heal');
+          break;
         }
         if((qin.cooldowns?.lanca||0)===0&&!(qin.activeBuffs||[]).some(b=>b.id==='lanca_eixo')){
           es[i]={...qin,
@@ -1502,12 +2164,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             cooldowns:{...qin.cooldowns,lanca:6},
           };
           addLog(`Qin — Lança de Eixo Branco: ATK+16% por 3t`,'enemy');
-          continue;
+          spawnFx(qin.instanceId,'+16% ATK','buff');
+          break;
         }
         // Ataque básico da Qin — Ibaraki pode esquivar; Qin pode critar
-        const dodgeChQ=5+Math.max(0,(servo.attributes.agility.points-qin.agility))/2;
+        const dodgeChQ=5+Math.max(0,(servo.attributes.agility.points-qin.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0);
         if(rollChance(dodgeChQ)){
           addLog(`💨 Ibaraki esquiva do ataque de Qin! (${dodgeChQ.toFixed(1)}%)`,'player');
+          spawnFx('servo','ESQUIVOU','miss');
           es[i]={...qin,npBar:clamp(qin.npBar+(qin.attributes?.mana?.gainPercent||1.7),0,100)};
         } else {
           const qinRaw=Math.round(qin.atkScaled*(qin.attributes.strength.points/100));
@@ -1527,22 +2191,50 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
           es[i]={...qin,npBar:clamp(qin.npBar+(qin.attributes?.mana?.gainPercent||1.7),0,100)};
           addLog(`${qinCrit?'🔥 CRÍTICO! ':''}Qin ataca Ibaraki: ${qinMit} dano${s.className==='Berserker'?' (+Anti-Berserker×1.5)':''}!`,'enemy');
+          spawnFx('servo',String(qinMit),qinCrit?'crit':'dmg');
         }
       } else {
         // Inimigo comum — Ibaraki pode esquivar (Agility)
-        const dodgeCh=5+Math.max(0,(servo.attributes.agility.points-e.agility))/2;
+        const dodgeCh=5+Math.max(0,(servo.attributes.agility.points-e.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0);
         if(rollChance(dodgeCh)){
           addLog(`💨 Ibaraki esquiva do ataque de ${e.name}! (${dodgeCh.toFixed(1)}%)`,'player');
+          spawnFx('servo','ESQUIVOU','miss');
         } else {
-          const rawDmg=applyDmgToServo(e.damage);
+          // Crítico (Samurai Errante): critChance% de chance de ×1.5
+          let dmgBase=e.damage;
+          const isCrit=e.critChance&&rollChance(e.critChance);
+          if(isCrit)dmgBase=Math.round(dmgBase*1.5);
+          const rawDmg=applyDmgToServo(dmgBase);
           s.hp=Math.max(0,s.hp-rawDmg);
           // Tomar dano gera NP pro Servo (1.5× o ganho de ataque)
           s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
-          addLog(`${e.name} ataca: ${rawDmg} dano!`,'enemy');
+          addLog(`${isCrit?'🔥 CRÍTICO! ':''}${e.name} ataca: ${rawDmg} dano!`,'enemy');
+          spawnFx('servo',String(rawDmg),isCrit?'crit':'dmg');
+          // Veneno (Onmyoji Corrompido): chance de aplicar dano-por-turno
+          if(e.poison&&rollChance(e.poison.chance)){
+            const poisonDmg=Math.round(e.atkScaled*e.poison.pctOfAtk/100);
+            // Não empilha: renova o veneno se já houver
+            const others=(s.activeDebuffs||[]).filter(d=>d.type!=='poison');
+            s.activeDebuffs=[...others,{type:'poison',value:poisonDmg,turns:e.poison.turns}];
+            addLog(`☠️ ${e.name} envenena Ibaraki! ${poisonDmg}/turno por ${e.poison.turns} turnos.`,'enemy');
+            spawnFx('servo','☠️ VENENO','stun');
+          }
         }
       }
+      break;
+    }
+    if(actedIdx>=0)enemyTurnPtr.current=(actedIdx+1)%n;
 
-      if(s.hp<=0){
+    // Morte do Servo — com chance de revive pelo Orbe Cromático (1x/campanha)
+    if(s.hp<=0){
+      const orbePct=perkEffects.orbeRevivePercent||0;
+      if(orbePct>0&&!camp.orbeUsed){
+        s.hp=Math.max(1,Math.round(s.hpMax*orbePct/100));
+        s.npBar=clamp(orbePct,0,100);
+        setCamp({...camp,orbeUsed:true});
+        addLog(`💠 ORBE CROMÁTICO! O Servo recusa a queda e revive com ${orbePct}% de HP e NP! (1x por campanha)`,'np');
+        spawnFx('servo',`💠 +${orbePct}%`,'heal');
+      } else {
         setServo({...s});setEnemies(es);
         setDialogue({text:IBARAKI.dialogue.lose,portrait:IBARAKI.assets.lose||IBARAKI.assets.default});
         endCombat(false,s,es);return;
@@ -1565,10 +2257,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       const newXP=addServoXP(IBARAKI.id,xpGain);
 
       // SQ e QP depositados IMEDIATAMENTE (leitura atômica do storage)
-      const sqGain=isBoss?5:2;
-      const qpGain=isBoss?1500:500;
+      // Perk "Contos Épicos de um Vagabundo": multiplica a obtenção de SQ e QP
+      const moneyMult=1+(perkEffects.sqQpBonusPercent||0)/100;
+      const sqGain=Math.round((isBoss?5:2)*moneyMult);
+      const qpGain=Math.round((isBoss?1500:500)*moneyMult);
       depositSQ(sqGain);
-      const newProfile=depositQP(qpGain);
+      let newProfile=depositQP(qpGain);
+      // Só o boss do BOSQUE (Qin) desbloqueia as Perks avançadas.
+      if(isBoss&&(camp.mapId||'bosque')==='bosque')newProfile=markQinDefeated();
       setProfile(newProfile);
 
       const updatedCamp={...camp,
@@ -1628,7 +2324,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
       <div style={{maxWidth:800,width:'100%'}}>
         {/* Status do Servo */}
-        <div className="panel" style={{marginBottom:10,padding:14}}>
+        <div className={`panel${fx.some(f=>f.targetId==='servo'&&(f.kind==='dmg'||f.kind==='crit'))?' shake':''}`} style={{marginBottom:10,padding:14}}>
+          {fx.filter(f=>f.targetId==='servo').map(f=>(
+            <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'30%'}}>{f.text}</span>
+          ))}
           <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
             <Portrait src={dialogue.portrait||IBARAKI.assets.default} alt="Ibaraki" style={{width:64,height:84}}/>
             <div style={{flex:1}}>
@@ -1670,6 +2369,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
               className={`enemy-card${e.currentHp<=0?' dead':''}${i===selectedTarget&&e.currentHp>0?' selected':''}${(e.stunned||0)>0?' stunned':''}`}
               onClick={()=>e.currentHp>0&&setSelectedTarget(i)}>
               {(e.stunned||0)>0&&<span className="stun-badge">ATORD.</span>}
+              {fx.filter(f=>f.targetId===e.instanceId).map(f=>(
+                <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'12%'}}>{f.text}</span>
+              ))}
               {e.isBoss&&(
                 <img src={QIN.assets.default} alt={e.name}
                   style={{width:74,height:74,objectFit:'cover',objectPosition:'center 10%',borderRadius:2,border:'1px solid var(--red)',display:'block',margin:'0 auto 6px',background:'rgba(0,0,0,.35)'}}
@@ -1760,32 +2462,65 @@ function CampaignController({profile,setProfile,onNavigate}){
   const[eventType,setEventType]=useState(null);
   const[campResult,setCampResult]=useState(null);
 
-  function startCampaign(servo){
+  // Cria o estado de campanha para um mapa específico, preservando HP/NP/moedas
+  // quando é uma transição entre mapas (o Servo continua a jornada).
+  function buildCampForMap(servo,mapId,carry=null){
+    const map=MAPS[mapId];
     const xpState=loadServoXP(servo.id);
     const bond=loadBond(servo.id);
     const lvl=xpState.level;
     const hpMax=servo.getHp(lvl);
     const npLvl=bondToNP(bond.level);
     const sv=profileSkillValues(profile.skills);
-    const c={
-      phase:1,maxPhases:12,
+    return{
+      mapId,phase:1,maxPhases:map.phases,
       servo:{
         ...servo,level:lvl,
-        attackBase:servo.getAtk(lvl),hpMax,hp:hpMax,
-        npBar:0,npLevel:npLvl,
+        attackBase:servo.getAtk(lvl),hpMax,
+        hp:carry?carry.hp:hpMax,
+        npBar:carry?carry.npBar:0,
+        npLevel:npLvl,
         activeBuffs:[],activeDebuffs:[],
         cooldowns:{natureza:0,rampage:0,forma:0},
         profileCooldowns:{manaBuster:0,transf:0,veneno:0},
       },
       bond,npLevel:npLvl,
       profile,profileSkills:sv,
-      sqEarned:0,xpEarned:0,bondEarned:0,
+      // Moedas acumulam ao longo de TODA a jornada (mapa 1 + mapa 2)
+      sqEarned:carry?carry.sqEarned:0,
+      qpEarned:carry?carry.qpEarned:0,
+      xpEarned:carry?carry.xpEarned:0,
+      bondEarned:carry?carry.bondEarned:0,
+      orbeUsed:false, // Orbe reseta a cada mapa novo também
     };
-    setCamp(c);setStage('story');
+  }
+
+  function startCampaign(servo){
+    setCamp(buildCampForMap(servo,'bosque'));
+    setStage('story');
   }
 
   function choosePath(dir){
-    if(dir==='boss'){setStage('boss');return;}
+    if(dir==='boss'){setStage('bossStory');return;}
+    const isMap2=(camp.mapId||'bosque')==='tennobara';
+
+    if(isMap2){
+      // Fase 1: só combate. Após vencê-la, a Fase 2 tem diálogo fixo (Saber).
+      if(camp.phase===1){setStage('combat');return;}
+      // Eventos fixos de história nas fases 2, 6, 12 e 15
+      // (Fase 2 já é tratada no fluxo pós-combate da fase 1; 6/12/15 são ganchos.)
+      const r=Math.random();
+      // 55% combate, 45% evento (descanso ou aldeões)
+      if(r<0.55){setStage('combat');}
+      else{
+        const evts=['rest2','aldeoes'];
+        setEventType(evts[Math.floor(Math.random()*evts.length)]);
+        setStage('event');
+      }
+      return;
+    }
+
+    // Mapa 1 (Bosque)
     const r=Math.random();
     if(r<0.55){setStage('combat');}
     else{
@@ -1795,34 +2530,69 @@ function CampaignController({profile,setProfile,onNavigate}){
     }
   }
 
-  function onCombatWin(updatedCamp){
-    const nextPhase=updatedCamp.phase+1;
-    if(nextPhase>updatedCamp.maxPhases){
-      const bonusSQ=5; const bonusQP=500;
-      depositSQ(bonusSQ);
-      const newProfile=depositQP(bonusQP);
-      setProfile(newProfile);
-      addServoXP(IBARAKI.id,XP_CAMPAIGN_COMPLETE);
-      setCampResult({type:'win',
-        sq:updatedCamp.sqEarned+bonusSQ,
-        qp:(updatedCamp.qpEarned||0)+bonusQP,
-        xp:updatedCamp.xpEarned+XP_CAMPAIGN_COMPLETE,
-        bondEarned:updatedCamp.bondEarned||0});
-      setStage('result');
-    } else {
-      setCamp({...updatedCamp,phase:nextPhase});
-      setStage('map');
+  // Avança para a próxima fase, checando se ela é uma FASE FIXA de história.
+  // Fases fixas do mapa 2: 2 (Saber+vila), 6 (Aria). 12 e 15 são ganchos futuros.
+  function goToPhase(baseCamp,nextPhase){
+    const isMap2=(baseCamp.mapId||'bosque')==='tennobara';
+    if(nextPhase>baseCamp.maxPhases){
+      finishCampaign(baseCamp,false);return;
     }
+    const advanced={...baseCamp,phase:nextPhase};
+    if(isMap2&&nextPhase===2){setCamp(advanced);setStage('map2Saber');return;}
+    if(isMap2&&nextPhase===6){setCamp(advanced);setStage('map2AriaInvite');return;}
+    if(isMap2&&nextPhase===12){setCamp(advanced);setStage('map2Tea');return;}
+    // Fase 15: aparição do Nitro → ajuda do Saber → combate do boss
+    if(isMap2&&nextPhase===15){setCamp(advanced);setStage('map2NitroIntro');return;}
+    setCamp(advanced);setStage('map');
   }
 
-  function onBossWin(updatedCamp){
-    // SQ+QP do boss já depositados dentro do CombatScreen
-    const bonusSQ=5; const bonusQP=500;
+  function onCombatWin(updatedCamp){
+    goToPhase(updatedCamp,updatedCamp.phase+1);
+  }
+
+  // Fim da sequência da Fase 2: recupera 50% HP + Bond, mostra a vila, vai ao mapa
+  function afterSaberIntro(){
+    const heal=Math.round(camp.servo.hpMax*0.50);
+    const newBond=addBond(IBARAKI.id,80);
+    setCamp({...camp,
+      servo:{...camp.servo,hp:clamp(camp.servo.hp+heal,0,camp.servo.hpMax),npLevel:bondToNP(newBond.level)},
+      bond:newBond,npLevel:bondToNP(newBond.level),
+      bondEarned:(camp.bondEarned||0)+80,
+    });
+    setStage('map2Village');
+  }
+
+  // Fim da Fase 6 (apresentação da Aria): concede +10% ATK e +10% HP no
+  // PRÓXIMO combate (mesma mecânica do Planejar Rota), e segue para o mapa.
+  function afterAriaIntro(){
+    setCamp({...camp,planBonus:{atkUp:10,defUp:10,hpUp:10}});
+    setStage('map');
+  }
+
+  // Fim da Fase 12 (Chá da Tarde): +10% ATK e +20% HP recuperado no próximo combate.
+  function afterTeaEvent(){
+    const heal=Math.round(camp.servo.hpMax*0.20);
+    setCamp({...camp,
+      servo:{...camp.servo,hp:clamp(camp.servo.hp+heal,0,camp.servo.hpMax)},
+      planBonus:{atkUp:10,defUp:0,hpUp:0}});
+    setStage('map');
+  }
+
+  // Fim da intro do Nitro (Fase 15): ativa o Fleur de Lis do Saber e entra no boss.
+  function afterNitroIntro(){
+    setCamp({...camp,saberBuff:true}); // buff dura o combate inteiro do boss
+    setStage('boss');
+  }
+
+  function finishCampaign(updatedCamp,viaBoss){
+    const peW=getActivePerkEffects();
+    const multW=1+(peW.sqQpBonusPercent||0)/100;
+    const bonusSQ=Math.round(5*multW); const bonusQP=Math.round(500*multW);
     depositSQ(bonusSQ);
     const newProfile=depositQP(bonusQP);
     setProfile(newProfile);
     addServoXP(IBARAKI.id,XP_CAMPAIGN_COMPLETE);
-    setCampResult({type:'win',boss:true,
+    setCampResult({type:'win',boss:viaBoss,
       sq:updatedCamp.sqEarned+bonusSQ,
       qp:(updatedCamp.qpEarned||0)+bonusQP,
       xp:updatedCamp.xpEarned+XP_CAMPAIGN_COMPLETE,
@@ -1830,36 +2600,115 @@ function CampaignController({profile,setProfile,onNavigate}){
     setStage('result');
   }
 
+  function onBossWin(updatedCamp){
+    setCamp(updatedCamp);
+    if((updatedCamp.mapId||'bosque')==='bosque'){setStage('bossWinStory');return;}
+    // Mapa 2 (Nitro): diálogo de vitória (Ibaraki + Saber) antes do fim
+    setStage('nitroWinStory');
+  }
+
+  // Chamado após a narração de vitória contra o boss.
+  // Bosque → Vila de Tennobara: inicia a sequência de transição narrativa.
+  function afterBossWinStory(){
+    if(camp.mapId==='bosque'){
+      setStage('map2Leave'); // diálogo saindo da floresta
+    } else {
+      finishCampaign(camp,true); // fim da jornada (último mapa)
+    }
+  }
+
+  // Constrói o estado do mapa 2 carregando HP/NP/moedas da jornada
+  function enterMap2(){
+    const carry={
+      hp:camp.servo.hp,npBar:camp.servo.npBar,
+      sqEarned:camp.sqEarned,qpEarned:camp.qpEarned,
+      xpEarned:camp.xpEarned,bondEarned:camp.bondEarned,
+    };
+    setCamp(buildCampForMap(IBARAKI,'tennobara',carry));
+    setStage('map'); // arte grande da Deon já foi mostrada; entra no mapa
+  }
+
   function onCombatLose(finalCamp){
-    // Tudo já depositado em tempo real — só exibe
     setCampResult({type:'lose',
-      sq:finalCamp.sqEarned||0,
-      qp:finalCamp.qpEarned||0,
-      xp:finalCamp.xpEarned||0,
-      bondEarned:finalCamp.bondEarned||0});
+      sq:finalCamp.sqEarned||0,qp:finalCamp.qpEarned||0,
+      xp:finalCamp.xpEarned||0,bondEarned:finalCamp.bondEarned||0});
     setStage('result');
   }
 
+  function onBossLose(finalCamp){
+    setCampResult({type:'lose',
+      sq:finalCamp.sqEarned||0,qp:finalCamp.qpEarned||0,
+      xp:finalCamp.xpEarned||0,bondEarned:finalCamp.bondEarned||0});
+    // Derrota: Voz Desconhecida (Qin no bosque, versão do Nitro no mapa 2)
+    setStage((finalCamp.mapId||'bosque')==='tennobara'?'nitroLoseStory':'bossLoseStory');
+  }
+
   function onCombatFlee(finalServo){
-    // Fugir avança a fase SEM recompensas — só HP e NP atuais são levados
-    const nextPhase=camp.phase+1;
-    setCamp({...camp,servo:{...camp.servo,hp:finalServo.hp,npBar:finalServo.npBar},phase:nextPhase});
-    setStage(nextPhase>camp.maxPhases?'result':'map');
+    goToPhase({...camp,servo:{...camp.servo,hp:finalServo.hp,npBar:finalServo.npBar}},camp.phase+1);
   }
 
   function onEventFinish(){
-    const nextPhase=camp.phase+1;
-    setCamp({...camp,phase:nextPhase});
-    setStage(nextPhase>camp.maxPhases?'result':'map');
+    goToPhase(camp,camp.phase+1);
   }
 
   function restart(){setStage('select');setCamp(null);setCampResult(null);}
 
+  const curMap=camp?MAPS[camp.mapId]:MAPS.bosque;
+
   if(stage==='select')return <ServoSelectScreen onNavigate={onNavigate} onStartCampaign={startCampaign}/>;
-  if(stage==='story')return <StoryScreen profile={profile} onFinish={()=>setStage('map')}/>;
+  if(stage==='story')return <StoryScreen profile={profile} onFinish={()=>setStage('introEncounter')}/>;
+  // Splash da Ibaraki entre a conversa inicial e o mapa 1
+  if(stage==='introEncounter')return <SplashScreen art={IBARAKI.assets.encounter} title="IBARAKI DOUJI" sub="Oni-Berserker — Bosque dos Caminhos Cegos" onFinish={()=>setStage('map')}/>;
+  if(stage==='bossStory'){
+    // Bosque: narração + arte da Qin. Vila: cartão de nome do boss robô
+    // (sem arte dedicada ainda — o autor vai enviar depois).
+    if(camp.mapId==='bosque')return <StoryScreen profile={profile} script={STORY_BOSS_INTRO} finishLabel="⚔️ Iniciar o Confronto" onFinish={()=>setStage('bossEncounter')}/>;
+    return <MapTitleCard name="⚙️ Samurai Mecanizado Nitro-Type" onFinish={()=>setStage('boss')}/>;
+  }
+  // Splash da Qin antes do combate contra ela
+  if(stage==='bossEncounter')return <SplashScreen art={QIN.assets.encounter} title="QIN LIANGYU" sub="Lancer — A General da Cavalaria Branca" onFinish={()=>setStage('boss')}/>;
+  if(stage==='bossWinStory')return <StoryScreen profile={profile} script={STORY_BOSS_WIN} finishLabel="Continuar →" onFinish={afterBossWinStory}/>;
+  // Fim do combate do Nitro (Fase 15)
+  if(stage==='nitroWinStory')return <StoryScreen profile={profile} script={STORY_NITRO_WIN} finishLabel="Continuar →" onFinish={()=>finishCampaign(camp,true)}/>;
+  if(stage==='nitroLoseStory')return <StoryScreen profile={profile} script={STORY_NITRO_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
+  // Cadeia de transição Bosque → Vila de Tennobara
+  if(stage==='map2Leave')return <StoryScreen profile={profile} script={STORY_MAP2_LEAVE} finishLabel="Continuar →" onFinish={()=>setStage('map2TitleCard')}/>;
+  if(stage==='map2TitleCard')return <MapTitleCard name="Vila de Tennobara" onFinish={()=>setStage('map2Deon')}/>;
+  if(stage==='map2Deon')return <StoryScreen profile={profile} script={STORY_MAP2_DEON} finishLabel="Continuar →" onFinish={()=>setStage('map2DeonSplash')}/>;
+  if(stage==='map2DeonSplash')return <SplashScreen art={DEON.assets.encounter} title="CHEVALIER D'EON" sub="??? — Vila de Tennobara" onFinish={enterMap2}/>;
+  // Cadeia da Fase 2 do mapa 2: Saber se apresenta → cartão da vila → chegada
+  if(stage==='map2Saber')return <StoryScreen profile={profile} script={STORY_MAP2_SABER} finishLabel="Seguir para a Vila →" onFinish={()=>setStage('map2EntranceCard')}/>;
+  if(stage==='map2EntranceCard')return <MapTitleCard name="Entrada da Vila" onFinish={afterSaberIntro}/>;
+  if(stage==='map2Village')return <StoryScreen profile={profile} script={STORY_MAP2_VILLAGE} finishLabel="Continuar a Jornada →" onFinish={()=>setStage('map')}/>;
+  // Cadeia da Fase 6: Saber convida → full art da Aria → apresentação → buff
+  if(stage==='map2AriaInvite')return <StoryScreen profile={profile} script={STORY_MAP2_SABER_INVITE} finishLabel="Ir até a casa ao sul →" onFinish={()=>setStage('map2AriaSplash')}/>;
+  if(stage==='map2AriaSplash')return <SplashScreen art={ARIA.assets.encounter} title="ARIA ROTHSCHILD" sub="A Mestra do Saber — Vila de Tennobara" onFinish={()=>setStage('map2Aria')}/>;
+  if(stage==='map2Aria')return <StoryScreen profile={profile} script={STORY_MAP2_ARIA} finishLabel="Continuar a Jornada →" onFinish={afterAriaIntro}/>;
+  // Fase 12: Chá da Tarde
+  if(stage==='map2Tea')return <StoryScreen profile={profile} script={STORY_MAP2_TEA} finishLabel="Continuar a Jornada →" onFinish={afterTeaEvent}/>;
+  // Fase 15: aparição do Nitro → ajuda do Saber → mensagem do Fleur de Lis → boss
+  if(stage==='map2NitroIntro')return <StoryScreen profile={profile} script={STORY_MAP2_NITRO_INTRO} finishLabel="Preparar-se →" onFinish={()=>setStage('map2FleurDeLis')}/>;
+  if(stage==='map2FleurDeLis')return (
+    <div className="screen">
+      <div className="panel" style={{maxWidth:520,textAlign:'center'}}>
+        <div style={{fontSize:'2rem',marginBottom:10}}>⚜️</div>
+        <h2 className="cinzel" style={{color:'#c9b8ff',letterSpacing:3,marginBottom:6}}>SABER USA SEU NOBLE PHANTASM</h2>
+        <p className="cinzel" style={{color:'var(--gold)',fontSize:'1.1rem',letterSpacing:2,marginBottom:14}}>Fleur de Lis</p>
+        <img src={DEON.assets.np} alt="Fleur de Lis" style={{maxWidth:'80%',maxHeight:280,objectFit:'contain',margin:'0 auto 14px',display:'block'}} onError={e=>{e.target.style.display='none';}}/>
+        <div style={{background:'rgba(201,184,255,0.1)',border:'1px solid rgba(201,184,255,0.4)',borderRadius:3,padding:12,marginBottom:16}}>
+          <p style={{color:'#c9b8ff',fontSize:'.85rem',lineHeight:1.7}}>
+            ⚔️ +{SABER_NP.atkUp}% Ataque · 🛡️ +{SABER_NP.defUp}% Defesa · 💨 +{SABER_NP.evasionUp}% Esquiva
+            <br/><span style={{color:'var(--parchment-dark)',fontSize:'.75rem'}}>Ativo durante todo o combate contra o Nitro-Type</span>
+          </p>
+        </div>
+        <button className="btn btn-full" onClick={afterNitroIntro}>⚔️ Iniciar o Confronto</button>
+      </div>
+    </div>
+  );
+  if(stage==='bossLoseStory')return <StoryScreen profile={profile} script={STORY_BOSS_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   if(stage==='map')return <MapScreen camp={camp} onChoosePath={choosePath} onNavigate={onNavigate}/>;
   if(stage==='combat')return <CombatScreen camp={camp} isBoss={false} onWin={onCombatWin} onLose={onCombatLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
-  if(stage==='boss')return <CombatScreen camp={camp} isBoss={true} onWin={onBossWin} onLose={onCombatLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
+  if(stage==='boss')return <CombatScreen camp={camp} isBoss={true} onWin={onBossWin} onLose={onBossLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
   if(stage==='event')return <EventScreen camp={camp} type={eventType} onFinish={onEventFinish} setCamp={setCamp} setProfile={setProfile}/>;
 
   // Tela de resultado
