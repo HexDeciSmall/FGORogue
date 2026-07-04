@@ -1162,26 +1162,27 @@ const COMIC_PROFILES={
   // Adicione mais perfis aqui conforme for traduzindo outros personagens.
 };
 
-// Posts do feed. `pages` = lista de imagens (1 = página única; várias = multi-página).
-// `tags` = { autor, personagens[] } usados na busca/filtro.
+// Monta a lista de páginas a partir de um PREFIXO e a QUANTIDADE.
+// Ex.: comicPages('sith',8) → ['comics/sith1.jpg', ..., 'comics/sith8.jpg']
+// Assim, basta jogar as imagens na pasta comics/ com esse nome e numeração.
+function comicPages(prefix,count,ext='jpg'){
+  const arr=[];
+  for(let i=1;i<=count;i++)arr.push(`comics/${prefix}${i}.${ext}`);
+  return arr;
+}
+
+// Posts do feed. Cada post: quem publica, quantas páginas (prefixo+count) e as tags.
+// COMO ADICIONAR: jogue as imagens em comics/ (ex.: sith1.jpg ... sith8.jpg) e
+// crie um post abaixo com o prefixo e a contagem. Nada de listar arquivo por arquivo.
 const COMIC_POSTS=[
   {
     id:'sith_rayshift',
     profile:'baobhan_sith', // quem "publica" (personagem em foco)
-    caption:'Baobhan Sith e o convite para a próxima Rayshift...',
-    date:'',
-    tags:{ autor:'', personagens:['Baobhan Sith','Ritsuka Fujimaru'] },
-    // Páginas em ordem. Placeholder por ora — troque pelos arquivos reais.
-    pages:[
-      'comics/_placeholder.svg',
-      'comics/_placeholder.svg',
-      'comics/_placeholder.svg',
-      'comics/_placeholder.svg',
-      'comics/_placeholder.svg',
-      'comics/_placeholder.svg',
-      'comics/_placeholder.svg',
-      'comics/_placeholder.svg',
-    ],
+    pages:comicPages('sith',8), // comics/sith1.jpg ... comics/sith8.jpg
+    tags:{
+      autor:'@IZit_unk',
+      personagens:['Baobhan Sith','Fujimaru Ritsuka','Melusine','Barghest','Morgan Le Fay','Oberon','Castoria'],
+    },
   },
   // Adicione mais posts aqui.
 ];
@@ -1556,7 +1557,7 @@ function ComicAlbumScreen({onNavigate}){
     }
     if(search.trim()){
       const q=search.toLowerCase();
-      const hay=[prof.name,prof.handle,p.caption,p.tags?.autor,...(p.tags?.personagens||[])].join(' ').toLowerCase();
+      const hay=[prof.name,prof.handle,p.tags?.autor,...(p.tags?.personagens||[])].join(' ').toLowerCase();
       if(!hay.includes(q))return false;
     }
     return true;
@@ -1645,13 +1646,11 @@ function ComicAlbumScreen({onNavigate}){
                 {multi&&<span style={{fontSize:'.6rem',color:'var(--parchment-dark)',background:'rgba(0,0,0,0.3)',padding:'2px 7px',borderRadius:10}}>📄 {post.pages.length} págs</span>}
               </div>
 
-              {/* Legenda */}
-              {post.caption&&<div style={{padding:'0 12px 10px',fontSize:'.78rem',color:'var(--parchment)'}}>{post.caption}</div>}
-
               {/* Páginas: primeira grande + miniaturas se houver mais */}
               <div>
                 <img src={post.pages[0]} alt="Página 1" onClick={()=>setViewer({post,pageIdx:0})}
-                  style={{width:'100%',height:'auto',display:'block',cursor:'pointer'}}/>
+                  style={{width:'100%',height:'auto',display:'block',cursor:'pointer',minHeight:60,background:'rgba(0,0,0,0.3)'}}
+                  onError={e=>{e.target.style.padding='30px 10px';e.target.style.minHeight='120px';e.target.alt='📄 Coloque '+post.pages[0].split('/').pop()+' na pasta comics/';e.target.src='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="500" height="140"><rect width="500" height="140" fill="#1a1512"/><text x="250" y="65" font-family="Georgia" font-size="18" fill="#6a5a4a" text-anchor="middle">📄 Imagem não encontrada</text><text x="250" y="95" font-family="Georgia" font-size="14" fill="#4a3f38" text-anchor="middle">'+post.pages[0].split('/').pop()+'</text></svg>');}}/>
                 {multi&&(
                   <div style={{display:'flex',gap:4,padding:8,overflowX:'auto'}}>
                     {post.pages.slice(1).map((pg,i)=>(
@@ -1869,7 +1868,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.65</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.66</p>
       </div>
     </div>
   );
