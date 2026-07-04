@@ -1062,6 +1062,7 @@ function loadProfile(){
     achievements:{}, // id da conquista → true quando concedida (recompensa já paga)
     codex:{}, // id do personagem → true quando descoberto no Álbum
     skills:{manaBuster:1,transf:1,veneno:1,tormento:1,ossos:1},
+    towerSkills:{carisma:0}, // skills exclusivas da Torre (0 = não comprada)
     perks:{energizador:0,pocaoMana:0,pactoEscudo:0,contosEpicos:0,orbeCromatico:0},
     equippedPerks:['energizador','pocaoMana','pactoEscudo']};
   try{
@@ -1072,6 +1073,7 @@ function loadProfile(){
     // e um spread raso apagaria contosEpicos/orbeCromatico do objeto default.
     return{...def,...saved,
       skills:{...def.skills,...(saved.skills||{})},
+      towerSkills:{...def.towerSkills,...(saved.towerSkills||{})},
       perks:{...def.perks,...(saved.perks||{})},
       stats:{...def.stats,...(saved.stats||{})},
       achievements:{...def.achievements,...(saved.achievements||{})},
@@ -1261,6 +1263,28 @@ function profileSkillValues(skills){
 }
 function sqCost(lvl){return lvl;}
 
+// ─── SKILLS DA TORRE DE DESAFIOS ─────────────────────
+// Skills PASSIVAS que só se aplicam em runs da Torre. Compradas com SQ.
+// Estrutura data-driven: para adicionar uma nova, basta acrescentar aqui,
+// dar o efeito em towerSkillValues() e aplicá-lo no combate (buildTowerBonuses).
+const TOWER_SKILLS=[
+  {id:'carisma',name:'Carisma',icon:'👑',maxLvl:10,
+   desc:'Aumenta o Ataque permanentemente e dá chance de ganho de NP.',
+   // custo: 2 SQ base, sobe de 2 em 2 por nível (2,4,6,8...)
+   costFor:lvl=>2*(lvl+1)},
+];
+// Valores efetivos de cada skill da Torre pelo nível comprado (0 = não tem)
+function towerSkillValues(towerSkills){
+  const{carisma=0}=towerSkills||{};
+  return{
+    carisma:{lvl:carisma,
+      // +10% ATK base, +2,5% por nível adicional (Nv1=10%, Nv10=32,5%)
+      atkUp:carisma>0?10+2.5*(carisma-1):0,
+      // 40% de chance de ganhar 5% de NP ao atacar (não escala)
+      npChance:carisma>0?40:0, npGain:5},
+  };
+}
+
 // ══════════════════════════════════════════════════════
 // COMPONENTES
 // ══════════════════════════════════════════════════════
@@ -1348,7 +1372,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.50</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.52</p>
       </div>
     </div>
   );
@@ -1593,11 +1617,11 @@ function CodexScreen({onNavigate,profile}){
 // ══════════════════════════════════════════════════════
 // TORRE DE DESAFIOS — seleção de servo e mapa
 // ══════════════════════════════════════════════════════
-function TowerSelectScreen({onNavigate,onStart,profile}){
-  const[servo,setServo]=useState('ibaraki');
-  // Mapa do id curto (usado na seleção) para o objeto jogável real
+function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
+  // Party: até 3 servos distintos (ids curtos). O 1º escolhido é o líder.
+  const[partySel,setPartySel]=useState(['ibaraki']);
   const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE};
-  // Servos jogáveis: Ibaraki já pronta; os demais serão liberados ao ajustar suas skills.
+  const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer'};
   const SERVOS=[
     {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',art:IBARAKI.assets.default,ready:true,
      unlock:null},
@@ -1610,24 +1634,35 @@ function TowerSelectScreen({onNavigate,onStart,profile}){
   ];
   const done=profile.achievements||{};
 
+  // Adiciona/remove um servo da party (máx 3, sem repetir)
+  function toggleServo(id){
+    setPartySel(prev=>{
+      if(prev.includes(id))return prev.filter(x=>x!==id); // remove
+      if(prev.length>=3)return prev; // já cheia
+      return[...prev,id];
+    });
+  }
+
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
       <div className="panel" style={{maxWidth:640}}>
         <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,marginBottom:4}}>🗼 TORRE DE DESAFIOS</h2>
         <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:16}}>
-          O verdadeiro teste: 20 fases por andar, inimigos reforçados, sem tréguas. Escolha seu Servo e o andar.
+          O verdadeiro teste: 20 fases por andar, inimigos reforçados. Monte uma party de até 3 Servos — eles lutam juntos, e você troca quem fica na frente.
         </p>
 
-        <div className="divider"><span className="divider-text">ESCOLHA O SERVO</span></div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
+        <div className="divider"><span className="divider-text">MONTE SUA PARTY ({partySel.length}/3)</span></div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:8}}>
           {SERVOS.map(s=>{
-            const unlocked=s.ready; // por ora, só quem está "ready" é jogável
+            const unlocked=s.ready;
+            const selIdx=partySel.indexOf(s.id);
+            const inParty=selIdx>=0;
             return(
-              <button key={s.id} disabled={!unlocked} onClick={()=>unlocked&&setServo(s.id)}
+              <button key={s.id} disabled={!unlocked} onClick={()=>unlocked&&toggleServo(s.id)}
                 style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',
-                  background:servo===s.id?'rgba(201,162,39,0.15)':'rgba(0,0,0,0.25)',
-                  border:`1px solid ${servo===s.id?'var(--gold)':'var(--gold-dim)'}`,borderRadius:3,
-                  cursor:unlocked?'pointer':'not-allowed',opacity:unlocked?1:0.5,textAlign:'left'}}>
+                  background:inParty?'rgba(201,162,39,0.15)':'rgba(0,0,0,0.25)',
+                  border:`1px solid ${inParty?'var(--gold)':'var(--gold-dim)'}`,borderRadius:3,
+                  cursor:unlocked?'pointer':'not-allowed',opacity:unlocked?1:0.5,textAlign:'left',position:'relative'}}>
                 {unlocked
                   ?<img src={s.art} alt="" style={{width:44,height:44,objectFit:'cover',objectPosition:'center 20%',borderRadius:3}} onError={e=>{e.target.style.display='none';}}/>
                   :<div style={{width:44,height:44,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.4rem',background:'rgba(0,0,0,0.3)',borderRadius:3}}>🔒</div>}
@@ -1635,37 +1670,15 @@ function TowerSelectScreen({onNavigate,onStart,profile}){
                   <div style={{fontSize:'.8rem',color:unlocked?'var(--gold)':'var(--parchment-dark)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.name}</div>
                   <div style={{fontSize:'.65rem',color:'var(--parchment-dark)'}}>{unlocked?s.classe:'Em breve'}</div>
                 </div>
+                {inParty&&<span style={{position:'absolute',top:4,right:6,fontSize:'.7rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{selIdx===0?'★ Líder':`#${selIdx+1}`}</span>}
               </button>
             );
           })}
         </div>
+        <p style={{fontSize:'.66rem',color:'var(--parchment-dark)',marginBottom:16,fontStyle:'italic'}}>
+          Toque para adicionar/remover. O primeiro é o Líder (entra na frente). Mínimo 1, máximo 3.
+        </p>
 
-        {/* Detalhes do servo selecionado: Nível, ATK/HP, Bond e NP */}
-        {(()=>{
-          const objId=({ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer'})[servo];
-          const def=objId&&PLAYABLE_SERVOS[objId];
-          if(!def)return null;
-          const sxp=loadServoXP(objId);
-          const sbond=loadBond(objId);
-          const snp=bondToNP(sbond.level);
-          return(
-            <div style={{background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:3,padding:'12px 14px',marginBottom:16}}>
-              <div className="cinzel" style={{color:'var(--gold)',fontSize:'.85rem',letterSpacing:1,marginBottom:8}}>{def.name} — Nv.{sxp.level}</div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px 14px',fontSize:'.72rem',color:'var(--parchment)'}}>
-                <div>⚔️ ATK: <span style={{color:'var(--gold)'}}>{def.getAtk(sxp.level)}</span></div>
-                <div>❤️ HP: <span style={{color:'var(--gold)'}}>{def.getHp(sxp.level)}</span></div>
-                <div>💠 NP: <span style={{color:'var(--gold)'}}>Nv.{snp}</span></div>
-                <div>🔗 Bond: <span style={{color:'var(--gold)'}}>{sbond.level}</span></div>
-              </div>
-              <div style={{marginTop:8}}>
-                <div style={{fontSize:'.62rem',color:'var(--parchment-dark)',marginBottom:2}}>Progresso de Nível</div>
-                <XPBar xpState={sxp}/>
-              </div>
-            </div>
-          );
-        })()}
-
-        <div className="divider"><span className="divider-text">ESCOLHA O ANDAR</span></div>
         <div style={{display:'grid',gap:8,marginBottom:16}}>
           {TOWER_ORDER.map((mid,i)=>{
             const map=TOWER_MAPS[mid];
@@ -1673,7 +1686,7 @@ function TowerSelectScreen({onNavigate,onStart,profile}){
             // O 1º andar (Floresta) sempre disponível; os demais exigem ter vencido o boss na Campanha.
             const unlocked=i===0||!!done[unlockAch];
             return(
-              <button key={mid} disabled={!unlocked} onClick={()=>unlocked&&onStart(TOWER_SERVO_OBJ[servo]||IBARAKI,mid)}
+              <button key={mid} disabled={!unlocked||partySel.length<1} onClick={()=>unlocked&&partySel.length>=1&&onStart(partySel.map(id=>TOWER_SERVO_OBJ[id]),mid)}
                 style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 14px',
                   background:'rgba(120,40,40,0.1)',border:`1px solid ${unlocked?'var(--red)':'rgba(120,120,120,0.25)'}`,
                   borderRadius:3,cursor:unlocked?'pointer':'not-allowed',opacity:unlocked?1:0.5}}>
@@ -1691,7 +1704,88 @@ function TowerSelectScreen({onNavigate,onStart,profile}){
           })}
         </div>
 
+        <button className="btn btn-full btn-red" style={{marginBottom:8}} onClick={onOpenShop}>🏪 &nbsp; Loja da Torre</button>
         <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar</button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// LOJA DA TORRE — skills/perks exclusivas do modo Torre
+// ══════════════════════════════════════════════════════
+function TowerShopScreen({profile,setProfile,onBack}){
+  const[notif,setNotif]=useState('');
+  const[sq,setSq]=useState(profile.sq||0);
+  const[towerSkills,setTowerSkills]=useState(profile.towerSkills||{carisma:0});
+
+  function buy(skillDef){
+    const cur=(towerSkills[skillDef.id])||0;
+    if(cur>=skillDef.maxLvl){setNotif('Nível máximo atingido!');return;}
+    const cost=skillDef.costFor(cur);
+    // Débito atômico: lê o profile fresco do storage para não gastar sobre saldo velho
+    const fresh=loadProfile();
+    if((fresh.sq||0)<cost){setNotif(`Saint Quartz insuficiente! Precisa de ${cost} SQ.`);return;}
+    const newTS={...fresh.towerSkills,[skillDef.id]:cur+1};
+    const p={...fresh,sq:fresh.sq-cost,towerSkills:newTS};
+    saveProfile(p);setProfile(p);
+    setSq(p.sq);setTowerSkills(newTS);
+    setNotif(`${skillDef.name} evoluída para Nv.${cur+1}!`);
+  }
+
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      <div className="panel" style={{maxWidth:600}}>
+        <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,marginBottom:4}}>🏪 LOJA DA TORRE</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.78rem',marginBottom:12}}>
+          Skills e perks que só funcionam dentro da Torre de Desafios. Compre com Saint Quartz.
+        </p>
+        <div style={{textAlign:'right',marginBottom:14,color:'var(--gold)',fontSize:'.85rem',fontFamily:'Cinzel,serif'}}>
+          💠 {sq} SQ
+        </div>
+
+        {notif&&<div style={{background:'rgba(201,162,39,0.15)',border:'1px solid var(--gold)',borderRadius:3,padding:'8px 12px',marginBottom:12,fontSize:'.75rem',color:'var(--gold)'}}>{notif}</div>}
+
+        {TOWER_SKILLS.map(sk=>{
+          const cur=(towerSkills[sk.id])||0;
+          const vals=towerSkillValues({[sk.id]:cur})[sk.id];
+          const next=towerSkillValues({[sk.id]:Math.min(cur+1,sk.maxLvl)})[sk.id];
+          const isMax=cur>=sk.maxLvl;
+          const cost=isMax?0:sk.costFor(cur);
+          const canAfford=sq>=cost;
+          return(
+            <div key={sk.id} style={{background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:4,padding:'14px',marginBottom:12}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+                <span className="cinzel" style={{color:'var(--gold)',fontSize:'.95rem',letterSpacing:1}}>{sk.icon} {sk.name}</span>
+                <span style={{fontSize:'.72rem',color:cur>0?'var(--red-bright)':'var(--parchment-dark)'}}>
+                  {cur>0?`Nv.${cur}/${sk.maxLvl}`:'Não adquirida'}
+                </span>
+              </div>
+              <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:8}}>{sk.desc}</p>
+              {/* Efeitos atuais vs próximos (específico do Carisma) */}
+              {sk.id==='carisma'&&(
+                <div style={{fontSize:'.72rem',color:'var(--parchment)',marginBottom:10,lineHeight:1.6}}>
+                  <div>⚔️ ATK: <span style={{color:'var(--gold)'}}>{cur>0?`+${vals.atkUp}%`:'—'}</span>
+                    {!isMax&&<span style={{color:'var(--parchment-dark)'}}> → +{next.atkUp}%</span>}</div>
+                  <div>💠 NP ao atacar: <span style={{color:'var(--gold)'}}>{cur>0?`${vals.npChance}% de chance · +${vals.npGain}% NP`:'—'}</span></div>
+                </div>
+              )}
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                {isMax
+                  ?<span style={{color:'var(--gold)',fontSize:'.8rem',fontFamily:'Cinzel,serif'}}>✦ NÍVEL MÁXIMO ✦</span>
+                  :<span style={{fontSize:'.75rem',color:canAfford?'var(--parchment)':'#a55'}}>Custo: 💠 {cost} SQ</span>}
+                {!isMax&&(
+                  <button className="btn btn-sm" disabled={!canAfford} onClick={()=>buy(sk)}
+                    style={{opacity:canAfford?1:0.4}}>
+                    {cur>0?'↑ Evoluir':'Adquirir'}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        <button className="btn btn-full" style={{marginTop:8}} onClick={onBack}>← Voltar à Torre</button>
       </div>
     </div>
   );
@@ -3038,40 +3132,20 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
 // COMBATE
 // ══════════════════════════════════════════════════════
 function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfile,fixedEnemies}){
-  // Servo ativo desta run (Ibaraki na Campanha; qualquer jogável na Torre)
-  const SDEF=PLAYABLE_SERVOS[camp.servo.id]||IBARAKI;
-  // Esquiva passiva (ex.: Montaria) somada das passivas do servo ativo
-  const servoEvadePassive=(SDEF.passiveSkills||[]).reduce((a,p)=>a+((p.effect&&p.effect.type==='evade_passive')?p.effect.value:0),0);
-  const xpState=loadServoXP(SDEF.id);
-  const servoLvl=xpState.level;
   // Perks passivas EQUIPADAS do Mestre — carregadas do profile uma vez por combate
   const perkEffects=getPerkEffects(profile);
+  // Bônus das skills da Torre (só valem em runs da Torre de Desafios)
+  const towerSk=camp.towerMode?towerSkillValues(profile.towerSkills):null;
+  const towerAtkUp=towerSk?towerSk.carisma.atkUp:0;
 
-  // Buff da Aria (Fase 6): +10% HP extra (temporário) no próximo combate.
-  const ariaHpBonus=camp.planBonus?.hpUp?Math.round((camp.servo.hpMax||SDEF.getHp(servoLvl))*(camp.planBonus.hpUp/100)):0;
-  // Buffs iniciais vindos do evento Planejar Rota do mapa 3 (plan3)
+  // Buff da Aria (Fase 6): +10% HP extra (temporário) no próximo combate. (só líder/Campanha)
+  const leaderDef=PLAYABLE_SERVOS[camp.servo.id]||IBARAKI;
+  const leaderLvl=(loadServoXP(leaderDef.id)).level;
+  const ariaHpBonus=camp.planBonus?.hpUp?Math.round((camp.servo.hpMax||leaderDef.getHp(leaderLvl))*(camp.planBonus.hpUp/100)):0;
   const planNpGain=camp.planBonus?.npGain||0;
   const planAtkBuff=camp.planBonus?.atkTurns
     ?[{type:'attack_up',value:camp.planBonus.atkUp,turns:camp.planBonus.atkTurns,id:'plan3_atk'}]
     :[];
-  const initServo={
-    ...camp.servo,
-    level:servoLvl,
-    attackBase:SDEF.getAtk(servoLvl),
-    hpMax:(camp.servo.hpMax||SDEF.getHp(servoLvl))+ariaHpBonus,
-    hp:camp.servo.hp+ariaHpBonus,
-    npBar:clamp((camp.servo.npBar||0)+planNpGain,0,100),
-    // Cada combate começa "limpo": buffs/debuffs e recargas resetam.
-    // (exceto o buff temporário de ATK do Planejar Rota, se houver)
-    activeBuffs:planAtkBuff,activeDebuffs:[],stunned:0,
-    // Cooldowns das skills ativas do servo atual (0 = pronta)
-    cooldowns:Object.fromEntries((SDEF.activeSkills||[]).map(s=>[s.id,0])),
-    profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
-    // Guts (Continuação da Batalha da Qin): quantas revives restam
-    gutsCharges:(SDEF.passiveSkills||[]).some(p=>p.effect&&p.effect.type==='guts')?1:0,
-    tempGuts:null, // Guts temporário da Lança de Haste Branca
-    evadeTurns:0, // evasão do servo (Olho da Mente do Deon)
-  };
 
   function createBossInstance(){
     // Boss varia por mapa: Qin (Bosque), Nitro (Vila), Archer (Caminho), Ninja (Kurikara)
@@ -3134,7 +3208,50 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     });
   }
 
-  const[servo,setServo]=useState(initServo);
+  // ─── PARTY (FGO-style) ───────────────────────────────
+  // A Torre usa até 3 servos em campo; a Campanha usa 1. Cada membro tem
+  // HP/NP/buffs/cooldowns próprios. `activeIdx` é quem está agindo agora.
+  // Prepara cada membro da party para o combate (reset de buffs/cooldowns).
+  function initPartyMember(m,isLeader){
+    const def=PLAYABLE_SERVOS[m.id]||IBARAKI;
+    const lvl=(loadServoXP(def.id)).level;
+    // Bônus da Aria/plan só se aplicam ao líder na Campanha (não há party lá).
+    const hpBonus=isLeader?ariaHpBonus:0;
+    const buffs=isLeader?planAtkBuff:[];
+    const npAdd=isLeader?planNpGain:0;
+    return{
+      ...m,
+      level:lvl,
+      attackBase:def.getAtk(lvl),
+      hpMax:(m.hpMax||def.getHp(lvl))+hpBonus,
+      hp:(m.hp!=null?m.hp:def.getHp(lvl))+hpBonus,
+      npBar:clamp((m.npBar||0)+npAdd,0,100),
+      npLevel:m.npLevel||bondToNP(loadBond(def.id).level),
+      activeBuffs:buffs,activeDebuffs:[],stunned:0,
+      cooldowns:Object.fromEntries((def.activeSkills||[]).map(s=>[s.id,0])),
+      profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
+      gutsCharges:(def.passiveSkills||[]).some(p=>p.effect&&p.effect.type==='guts')?1:0,
+      tempGuts:null,evadeTurns:0,
+      defeated:false,
+    };
+  }
+  const initialParty=(camp.party&&camp.party.length?camp.party:[camp.servo]).map((m,i)=>initPartyMember(m,i===0));
+
+  const[party,setParty]=useState(initialParty);
+  const[activeIdx,setActiveIdx]=useState(0);
+  // `servo` = membro ativo da party; `setServo` atualiza esse membro no array.
+  const servo=party[activeIdx];
+  const setServo=(updater)=>{
+    setParty(prev=>prev.map((m,i)=>{
+      if(i!==activeIdx)return m;
+      return typeof updater==='function'?updater(m):updater;
+    }));
+  };
+  const isParty=party.length>1;
+  // SDEF/nível/esquiva passiva derivados do SERVO ATIVO (mudam ao trocar de servo)
+  const SDEF=PLAYABLE_SERVOS[servo.id]||IBARAKI;
+  const servoLvl=servo.level||(loadServoXP(SDEF.id)).level;
+  const servoEvadePassive=(SDEF.passiveSkills||[]).reduce((a,p)=>a+((p.effect&&p.effect.type==='evade_passive')?p.effect.value:0),0);
   const[enemies,setEnemies]=useState(
     isBoss?[createBossInstance()]
     :fixedEnemies?fixedEnemies
@@ -3209,6 +3326,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(perkEffects.atkUpPercent>0)atkUp+=perkEffects.atkUpPercent;
     // Fleur de Lis (Saber): +15% ATK durante todo o combate do boss
     if(camp.saberBuff)atkUp+=SABER_NP.atkUp;
+    // Skill da Torre — Carisma: +ATK passivo permanente
+    if(towerAtkUp>0)atkUp+=towerAtkUp;
     return Math.round(dmg*(1+atkUp/100)*mult);
   }
 
@@ -3368,7 +3487,41 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     return false;
   }
 
-  // Se o Servo estiver Atordoado (ex.: Injetar Veneno do Ninja), a ação que
+  // Party: processa a queda do servo ATIVO. Retorna true se o combate deve
+  // terminar (todos caíram); false se ainda há servos vivos (troca de ativo).
+  // Persiste o array da party com o servo morto marcado como `defeated`.
+  function partyHandleDeath(deadServo){
+    // Marca o ativo como derrotado no array
+    let nextIdx=-1;
+    const newParty=party.map((m,i)=>{
+      if(i===activeIdx)return{...deadServo,hp:0,defeated:true};
+      return m;
+    });
+    // Procura o próximo servo vivo (a partir do próximo índice)
+    for(let off=1;off<newParty.length;off++){
+      const idx=(activeIdx+off)%newParty.length;
+      if(!newParty[idx].defeated&&newParty[idx].hp>0){nextIdx=idx;break;}
+    }
+    if(nextIdx<0){
+      // Todos caíram — game over
+      setParty(newParty);
+      return true;
+    }
+    // Ainda há vivos: registra a queda e troca para o próximo
+    addLog(`💀 ${(PLAYABLE_SERVOS[deadServo.id]||IBARAKI).name} foi derrotado! ${(PLAYABLE_SERVOS[newParty[nextIdx].id]||IBARAKI).name} assume a linha de frente!`,'system');
+    setParty(newParty);
+    setActiveIdx(nextIdx);
+    return false;
+  }
+
+  // Party: troca o servo ativo (ação livre, não encerra o turno)
+  function switchServo(idx){
+    if(idx===activeIdx||result)return;
+    if(!party[idx]||party[idx].defeated||party[idx].hp<=0){setNotif('Este servo não pode entrar!');return;}
+    setActiveIdx(idx);
+    const nm=(PLAYABLE_SERVOS[party[idx].id]||IBARAKI).name;
+    addLog(`🔄 ${nm} assume a linha de frente!`,'player');
+  }
   // encerraria o turno é consumida pelo atordoamento: decrementa e passa a vez.
   function servoStunnedThisTurn(){
     if((servo.stunned||0)>0){
@@ -3409,6 +3562,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(isCrit)dmg=Math.round(dmg*1.5);
     dmg=applyDmgToEnemy(dmg,tgt);
     recordDamage(dmg); // estatística: maior dano dado
+    // Skill da Torre — Carisma: chance de ganhar NP ao atacar
+    if(towerSk&&towerSk.carisma.lvl>0&&rollChance(towerSk.carisma.npChance)){
+      newServo.npBar=clamp(newServo.npBar+towerSk.carisma.npGain,0,100);
+      addLog(`👑 Carisma inspira! +${towerSk.carisma.npGain}% de NP.`,'player');
+    }
     const newEnemies=enemies.map((e,i)=>i!==selectedTarget?e:damageEnemy(e,dmg,isCrit?'crit':'dmg'));
     addLog(`${isCrit?'🔥 CRÍTICO! ':''}${SDEF.name} ataca ${tgt.name}: ${dmg} dano`+(isCrit?' (×1.5)':''),'player');
     setServo(newServo);setEnemies(newEnemies);
@@ -3694,6 +3852,16 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Morte por VENENO no tick (antes dos inimigos agirem) — respeita o Orbe
     if(s.hp<=0){
       if(!tryReviveServo(s)){
+        if(isParty){
+          // Party: servo cai, mas a run segue se houver vivos
+          if(partyHandleDeath(s)){
+            setEnemies(curEnemies);
+            setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
+            endCombat(false,s,curEnemies);return;
+          }
+          setEnemies(curEnemies);
+          return; // trocou de servo; jogador continua a agir
+        }
         setServo({...s});setEnemies(curEnemies);
         setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
         endCombat(false,s,curEnemies);return;
@@ -4012,6 +4180,15 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Morte do Servo — revive por tempGuts (Lança), Guts passivo (Continuação) ou Orbe
     if(s.hp<=0){
       if(!tryReviveServo(s)){
+        if(isParty){
+          setEnemies(es);
+          if(partyHandleDeath(s)){
+            setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
+            endCombat(false,s,es);return;
+          }
+          setTurn(t=>t+1);
+          return; // trocou de servo; segue o combate
+        }
         setServo({...s});setEnemies(es);
         setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
         endCombat(false,s,es);return;
@@ -4057,8 +4234,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       newProfile=addEnemiesDefeated((finalEnemies||[]).length);
       setProfile(newProfile);
 
+      // Atualiza a party persistida: o servo ativo recebe o estado final; os demais mantêm HP/NP
+      const finalParty=party.map((m,i)=>i===activeIdx?{...finalServo,npLevel:bondToNP(newBond.level)}:m);
       const updatedCamp={...camp,
-        servo:{...finalServo,npLevel:bondToNP(newBond.level)},
+        party:finalParty,
+        servo:finalParty[0]||{...finalServo,npLevel:bondToNP(newBond.level)},
         bond:newBond,
         npLevel:bondToNP(newBond.level),
         sqEarned:(camp.sqEarned||0)+sqGain,
@@ -4125,6 +4305,35 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       )}
 
       <div style={{maxWidth:800,width:'100%'}}>
+        {/* Fileira da PARTY (Torre): os 3 servos, clique para trocar quem está na frente */}
+        {isParty&&(
+          <div style={{display:'flex',gap:6,marginBottom:8}}>
+            {party.map((m,i)=>{
+              const mdef=PLAYABLE_SERVOS[m.id]||IBARAKI;
+              const dead=m.defeated||m.hp<=0;
+              const active=i===activeIdx;
+              return(
+                <button key={i} onClick={()=>switchServo(i)} disabled={dead||active}
+                  style={{flex:1,padding:'6px 4px',borderRadius:4,textAlign:'left',
+                    background:active?'rgba(201,162,39,0.18)':dead?'rgba(20,20,20,0.6)':'rgba(0,0,0,0.3)',
+                    border:`1px solid ${active?'var(--gold)':dead?'#333':'var(--gold-dim)'}`,
+                    cursor:dead||active?'default':'pointer',opacity:dead?0.45:1,position:'relative'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:3}}>
+                    <img src={mdef.assets.default} alt="" style={{width:24,height:24,objectFit:'cover',objectPosition:'center 20%',borderRadius:3,filter:dead?'grayscale(1)':'none'}} onError={e=>{e.target.style.display='none';}}/>
+                    <span style={{fontSize:'.58rem',color:active?'var(--gold)':'var(--parchment)',fontFamily:'Cinzel,serif',lineHeight:1.1,overflow:'hidden'}}>{mdef.name.split(' ')[0]}{dead?' 💀':active?' ⚔️':''}</span>
+                  </div>
+                  <div style={{height:4,background:'rgba(0,0,0,0.5)',borderRadius:2,overflow:'hidden',marginBottom:2}}>
+                    <div style={{height:'100%',width:`${clamp(m.hp/m.hpMax*100,0,100)}%`,background:m.hp/m.hpMax<0.3?'var(--red-bright)':'#5a9a5a'}}/>
+                  </div>
+                  <div style={{height:3,background:'rgba(0,0,0,0.5)',borderRadius:2,overflow:'hidden'}}>
+                    <div style={{height:'100%',width:`${clamp(m.npBar,0,100)}%`,background:'var(--gold)'}}/>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Status do Servo */}
         <div className={`panel${fx.some(f=>f.targetId==='servo'&&(f.kind==='dmg'||f.kind==='crit'))?' shake':''}`} style={{marginBottom:10,padding:14}}>
           {fx.filter(f=>f.targetId==='servo').map(f=>(
@@ -4270,7 +4479,23 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
 
   // Cria o estado de campanha para um mapa específico, preservando HP/NP/moedas
   // quando é uma transição entre mapas (o Servo continua a jornada).
-  function buildCampForMap(servo,mapId,carry=null,tower=false){
+  // Constrói o estado de um servo para a party (HP/NP/nível próprios)
+  function buildPartyMember(servoDef){
+    const xp=loadServoXP(servoDef.id);
+    const bond=loadBond(servoDef.id);
+    const lvl=xp.level;
+    return{
+      ...servoDef,level:lvl,
+      attackBase:servoDef.getAtk(lvl),hpMax:servoDef.getHp(lvl),
+      hp:servoDef.getHp(lvl),npBar:0,
+      npLevel:bondToNP(bond.level),
+      activeBuffs:[],activeDebuffs:[],
+      cooldowns:Object.fromEntries((servoDef.activeSkills||[]).map(s=>[s.id,0])),
+      profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
+    };
+  }
+
+  function buildCampForMap(servo,mapId,carry=null,tower=false,partyServos=null){
     const map=tower?TOWER_MAPS[mapId]:MAPS[mapId];
     const xpState=loadServoXP(servo.id);
     const bond=loadBond(servo.id);
@@ -4278,21 +4503,26 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     const hpMax=servo.getHp(lvl);
     const npLvl=bondToNP(bond.level);
     const sv=profileSkillValues(profile.skills);
+    // Party: na Torre pode ter até 3 servos distintos; na Campanha é só o líder.
+    const party=(partyServos&&partyServos.length)
+      ? partyServos.map(buildPartyMember)
+      : [{
+          ...servo,level:lvl,
+          attackBase:servo.getAtk(lvl),hpMax,
+          hp:carry?carry.hp:hpMax,
+          npBar:carry?carry.npBar:0,
+          npLevel:npLvl,
+          activeBuffs:[],activeDebuffs:[],
+          cooldowns:{natureza:0,rampage:0,forma:0},
+          profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
+        }];
     return{
       mapId,phase:1,maxPhases:map.phases,
       towerMode:tower,
       towerHpMult:tower?(map.towerHpMult||1):1,
       towerAtkMult:tower?(map.towerAtkMult||1):1,
-      servo:{
-        ...servo,level:lvl,
-        attackBase:servo.getAtk(lvl),hpMax,
-        hp:carry?carry.hp:hpMax,
-        npBar:carry?carry.npBar:0,
-        npLevel:npLvl,
-        activeBuffs:[],activeDebuffs:[],
-        cooldowns:{natureza:0,rampage:0,forma:0},
-        profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
-      },
+      party, // array de servos (1 na Campanha, até 3 na Torre)
+      servo:party[0], // líder — mantém a Campanha e leituras legadas funcionando
       bond,npLevel:npLvl,
       profile,profileSkills:sv,
       sqEarned:carry?carry.sqEarned:0,
@@ -4309,10 +4539,11 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     setStage('story');
   }
 
-  // Inicia uma run da Torre de Desafios (roguelike puro) com o servo e mapa escolhidos.
-  function startTower(servo,mapId){
+  // Inicia uma run da Torre de Desafios (roguelike puro) com a party (até 3 servos).
+  function startTower(partyServos,mapId){
     setProfile(incRuns());
-    setCamp(buildCampForMap(servo,mapId,null,true));
+    const leader=partyServos[0];
+    setCamp(buildCampForMap(leader,mapId,null,true,partyServos));
     setStage('map');
   }
 
@@ -4582,7 +4813,12 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   }
 
   function onCombatFlee(finalServo){
-    goToPhase({...camp,servo:{...camp.servo,hp:finalServo.hp,npBar:finalServo.npBar}},camp.phase+1);
+    // Preserva a party (se houver) atualizando o líder com HP/NP finais
+    const baseParty=(camp.party&&camp.party.length)?camp.party:null;
+    const nextCamp=baseParty
+      ?{...camp,party:baseParty,servo:{...camp.servo,hp:finalServo.hp,npBar:finalServo.npBar}}
+      :{...camp,servo:{...camp.servo,hp:finalServo.hp,npBar:finalServo.npBar}};
+    goToPhase(nextCamp,camp.phase+1);
   }
 
   function onEventFinish(finishedCamp){
@@ -4596,7 +4832,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   const curMap=camp?MAPS[camp.mapId]:MAPS.bosque;
 
   if(stage==='select')return <ServoSelectScreen onNavigate={onNavigate} onStartCampaign={startCampaign}/>;
-  if(stage==='towerSelect')return <TowerSelectScreen onNavigate={onNavigate} onStart={startTower} profile={profile}/>;
+  if(stage==='towerSelect')return <TowerSelectScreen onNavigate={onNavigate} onStart={startTower} profile={profile} setProfile={setProfile} onOpenShop={()=>setStage('towerShop')}/>;
+  if(stage==='towerShop')return <TowerShopScreen profile={profile} setProfile={setProfile} onBack={()=>setStage('towerSelect')}/>;
   if(stage==='story')return <StoryScreen profile={profile} onFinish={()=>setStage('introEncounter')}/>;
   // Splash da Ibaraki entre a conversa inicial e o mapa 1
   if(stage==='introEncounter')return <SplashScreen art={IBARAKI.assets.encounter} title="IBARAKI DOUJI" sub="Oni-Berserker — Bosque dos Caminhos Cegos" onFinish={()=>setStage('map')}/>;
