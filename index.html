@@ -1372,7 +1372,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.53</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.54</p>
       </div>
     </div>
   );
@@ -3911,14 +3911,17 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     let es=curEnemies.map(e=>e.currentHp>0?tickEnemyEffects(e):e);
     setEnemies(es);
     if(checkWin(es)){endCombat(true,s,es);return;}
-    // Passa a vez para o próximo combatente VIVO na fila
-    stepOrder(s,es);
+    // Passa a vez para o próximo combatente VIVO na fila (a partir da posição atual)
+    stepOrder(s,es,orderPtr);
   }
 
   // Avança o ponteiro da fila até o próximo combatente vivo e resolve a vez dele.
-  function stepOrder(curServo,curEnemies){
-    let order=turnOrder;
-    let ptr=orderPtr;
+  // IMPORTANTE: `fromPtr` é passado explicitamente ao longo da cadeia porque o
+  // estado `orderPtr` fica "congelado" na closure durante ações encadeadas via
+  // setTimeout (o React não re-renderiza entre elas). Ler do estado causaria loop.
+  function stepOrder(curServo,curEnemies,fromPtr){
+    const order=turnOrder;
+    let ptr=(fromPtr==null?orderPtr:fromPtr);
     const partySnapshot=party;
     for(let guard=0;guard<order.length+1;guard++){
       ptr=(ptr+1)%order.length;
@@ -3937,8 +3940,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         const ei=curEnemies.findIndex(e=>e.instanceId===entry.ref&&e.currentHp>0);
         if(ei<0)continue; // morto: pula
         setOrderPtr(ptr);
-        // Deixa o inimigo agir após um pequeno delay (visual)
-        setTimeout(()=>runOneEnemyAction(entry.ref,curServo,curEnemies),650);
+        const actPtr=ptr; // captura o ponteiro DESTA ação para encadear corretamente
+        setTimeout(()=>runOneEnemyAction(entry.ref,curServo,curEnemies,actPtr),650);
         return;
       }
     }
@@ -3947,13 +3950,13 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   }
 
   // Executa a ação de UM inimigo específico (por instanceId). Depois, avança a fila.
-  function runOneEnemyAction(enemyId,curServo,curEnemiesIn){
+  function runOneEnemyAction(enemyId,curServo,curEnemiesIn,curPtr){
     if(result)return;
     let s={...curServo};
     let es=[...curEnemiesIn];
     const idx=es.findIndex(e=>e.instanceId===enemyId&&e.currentHp>0);
-    if(idx<0){ stepOrder(s,es); return; } // já morreu; segue a fila
-    doEnemyAction(idx,s,es);
+    if(idx<0){ stepOrder(s,es,curPtr); return; } // já morreu; segue a fila
+    doEnemyAction(idx,s,es,curPtr);
   }
 
   // (mantida por compatibilidade com chamadas legadas; encaminha ao orquestrador)
@@ -3962,19 +3965,19 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   }
 
   // Ação de um inimigo específico (índice em `es`). Contém a IA de cada tipo.
-  function doEnemyAction(actIdx,s,es){
+  function doEnemyAction(actIdx,s,es,curPtr){
     const n=es.length;
     act:{
       const i=actIdx;
       const e=es[i];
-      if(!e||e.currentHp<=0){stepOrder(s,es);return;}
+      if(!e||e.currentHp<=0){stepOrder(s,es,curPtr);return;}
 
       if((e.stunned||0)>0){
         addLog(`${e.name} está Atordoado e perde o turno!`,'system');
         spawnFx(e.instanceId,'ATORDOADO','stun');
         es[i]={...es[i],stunned:es[i].stunned-1};
         setEnemies(es);
-        stepOrder(s,es);return;
+        stepOrder(s,es,curPtr);return;
       }
 
       if(e.isNinja){
@@ -4277,7 +4280,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             endCombat(false,s,es);return;
           }
           // servo caiu mas a party segue — continua a fila
-          stepOrder(servo,es);return;
+          stepOrder(servo,es,curPtr);return;
         }
         setServo({...s});
         setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
@@ -4287,7 +4290,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // O servo ativo (que tomou o dano) é persistido
     setServo(s);
     // Continua a fila de iniciativa: próximo combatente
-    stepOrder(s,es);
+    stepOrder(s,es,curPtr);
   }
 
   // ─── FIM DE COMBATE ────────────────────────────────
