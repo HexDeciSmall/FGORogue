@@ -806,23 +806,23 @@ const QIN_PLAYABLE={
       getEffect:lvl=>({atkUp:linear(lvl,20,30),npGain:linear(lvl,20,40),dur:3}),
       getCD:lvl=>stdCD(lvl)},
     {id:'abolicao',name:'Abolição de Rufiões',rank:'A',
-      desc:'Dano direto a 1 inimigo (+dano vs Anti-Heróis)',
+      desc:'Dano direto a 1 inimigo (+vs Anti-Heróis) e Crítico ↑ por 3t',
       effectType:'direct_dmg_antihero',
-      getEffect:lvl=>({strDmgPct:linear(lvl,30,60),antiHeroBonus:50}),
+      getEffect:lvl=>({strDmgPct:linear(lvl,30,60),antiHeroBonus:50,critUp:linear(lvl,20,35),critDur:3}),
       getCD:lvl=>stdCD(lvl)},
     {id:'lanca_branca',name:'Lança de Haste Branca',rank:'B',
-      desc:'Ataque próprio ↑ e incute medo (ATK inimigo ↓) por 3t',
-      effectType:'buff_atk_fear',
-      getEffect:lvl=>({atkUp:linear(lvl,15,25),fearAtkDown:linear(lvl,15,30),dur:3}),
+      desc:'Ataque ↑, medo (ATK inimigo ↓) por 3t e Guts (revive 1x em 5t)',
+      effectType:'buff_atk_fear_guts',
+      getEffect:lvl=>({atkUp:linear(lvl,15,25),fearAtkDown:linear(lvl,15,30),dur:3,gutsTurns:5,gutsRevivePct:linear(lvl,25,40)}),
       getCD:lvl=>stdCD(lvl)},
   ],
   // ── NP (ATAQUE SUPREMO) ──
   // Canção da Lealdade Abnegada: dano ST forte + buff próprio (os 4 poemas do Imperador)
   np:{
-    name:'Canção da Lealdade Abnegada',type:'Anti-Unit',isAoE:false,effectType:'dmg_selfbuff',
+    name:'Canção da Lealdade Abnegada',type:'Anti-Unit',isAoE:false,effectType:'dmg_selfbuff_crit',
     levels:{
-      1:{dmgPct:650,atkUp:30},2:{dmgPct:850,atkUp:35},
-      3:{dmgPct:1050,atkUp:40},4:{dmgPct:1250,atkUp:45},5:{dmgPct:1450,atkUp:50},
+      1:{dmgPct:650,atkUp:30,critUp:20},2:{dmgPct:850,atkUp:35,critUp:25},
+      3:{dmgPct:1050,atkUp:40,critUp:30},4:{dmgPct:1250,atkUp:45,critUp:35},5:{dmgPct:1450,atkUp:50,critUp:40},
     },
     selfBuffDur:3,
   },
@@ -847,6 +847,171 @@ const QIN_PLAYABLE={
 
 // Registra a Qin como servo jogável
 PLAYABLE_SERVOS.qin_liangyu=QIN_PLAYABLE;
+
+// ══════════════════════════════════════════════════════
+// CHEVALIER D'ÉON — VERSÃO JOGÁVEL (Torre de Desafios)
+// ══════════════════════════════════════════════════════
+// Kit fiel ao FGO: Saber defensivo. Skills de Classe = passivas;
+// Skills Pessoais = ativas; NP = Fleur de Lis (debuffs + charme).
+const DEON_PLAYABLE={
+  id:'deon_saber',name:"Chevalier D'Éon",className:'Saber',
+  getAtk:lvl=>Math.round(linear(lvl,1460,8765)),
+  getHp:lvl=>Math.round(linear(lvl,2121,13256)),
+  attributes:{
+    strength:{rank:'A',points:rankToPoints('A')},
+    agility:{rank:'B',points:rankToPoints('B')},
+    luck:{rank:'A',points:rankToPoints('A')},
+    endurance:{rank:'B',points:rankToPoints('B')},
+    mana:{rank:'C',points:rankToPoints('C'),gainPercent:manaGain('C')},
+    np:{rank:'C',points:rankToPoints('C')},
+  },
+  // ── SKILLS DE CLASSE (PASSIVAS) ──
+  passiveSkills:[
+    // Resistência Mágica C: resiste a debuffs
+    {id:'magic_res',name:'Resistência Mágica C',effect:{type:'debuff_res',value:20}},
+    // Montaria B: velocidade — esquiva passiva
+    {id:'riding',name:'Montaria B',effect:{type:'evade_passive',value:10}},
+  ],
+  // ── SKILLS PESSOAIS (ATIVAS) ── fiéis às 3 skills do FGO
+  activeSkills:[
+    // Olho da Mente (Verdadeiro): Evade 1t + DEF up 3t
+    {id:'olho_mente',name:'Olho da Mente (Verdadeiro)',rank:'C',
+      desc:'Evasão (1t) e Defesa ↑ por 3 turnos',
+      effectType:'evade_defup',
+      getEffect:lvl=>({evadeTurns:1,defUp:linear(lvl,20,40),dur:3}),
+      getCD:lvl=>stdCD(lvl)},
+    // Autossugestão (Self-Suggestion): remove debuffs + resistência a debuff 3t
+    {id:'autossugestao',name:'Deixe o Lírio Branco Brilhar',rank:'A+',
+      desc:'Remove debuffs e Resistência a debuff ↑ por 3 turnos',
+      effectType:'cleanse_debuffres',
+      getEffect:lvl=>({debuffRes:linear(lvl,40,80),dur:3}),
+      getCD:lvl=>stdCD(lvl)},
+    // Bela Aparência (Beautiful Appearance): cura + reduz ATK inimigo (charme/distração)
+    {id:'bela_aparencia',name:'Bela Aparência',rank:'C',
+      desc:'Cura HP e reduz o Ataque de todos os inimigos por 3t',
+      effectType:'heal_enemyatkdown',
+      getEffect:lvl=>({healPct:linear(lvl,15,30),enemyAtkDown:linear(lvl,15,25),dur:3}),
+      getCD:lvl=>stdCD(lvl)},
+  ],
+  // ── NP (ATAQUE SUPREMO): Fleur de Lis ──
+  // Dança de espadas que encanta: ATK↓ e DEF↓ nos inimigos + chance de Charme.
+  // Como aqui não há dano físico no NP oficial, damos um dano moderado + os debuffs.
+  np:{
+    name:'Fleur de Lis',type:'Anti-Army',isAoE:true,effectType:'dmg_atkdef_charm',
+    levels:{
+      1:{dmgPct:450,atkDown:20,defDown:20,charmChance:30},
+      2:{dmgPct:550,atkDown:25,defDown:25,charmChance:40},
+      3:{dmgPct:650,atkDown:30,defDown:30,charmChance:50},
+      4:{dmgPct:750,atkDown:35,defDown:35,charmChance:60},
+      5:{dmgPct:850,atkDown:40,defDown:40,charmChance:70},
+    },
+    debuffDur:3,charmDur:1,
+  },
+  dialogue:{
+    summon:"Saber, Chevalier D'Éon. O Cavaleiro do Lírio Branco está ao seu lado, Mestre.",
+    battle:'Pela honra e pela coroa. En garde!',
+    lose:'Perdoe-me... o lírio... se curva...',
+    win:'A dança termina. A vitória é vossa, Mestre.',
+    np:'Contemplai a dança da lâmina... Fleur de Lis!',
+    skill:'Um cavaleiro nunca vacila.',
+    mapDone:'Onde formos, servirei com lealdade inabalável.',
+  },
+  assets:{
+    default:'assets/servos/deon/deon_profile.png',
+    battle:'assets/servos/deon/deon_profile.png',
+    np:'assets/servos/deon/deon_np.png',
+    win:'assets/servos/deon/deon_profile.png',
+    lose:'assets/servos/deon/deon_pog.png',
+    encounter:'assets/servos/deon/deon_encounter.jpg',
+  },
+};
+PLAYABLE_SERVOS.deon_saber=DEON_PLAYABLE;
+
+// ══════════════════════════════════════════════════════
+// BAOBHAN SITH — VERSÃO JOGÁVEL (Torre de Desafios)
+// ══════════════════════════════════════════════════════
+// Kit fiel ao FGO: Archer glass-cannon de maldições (curse), dreno e evasão.
+const SITH_PLAYABLE={
+  id:'sith_archer',name:'Baobhan Sith',className:'Archer',
+  getAtk:lvl=>Math.round(linear(lvl,1575,9455)),
+  getHp:lvl=>Math.round(linear(lvl,1940,12127)),
+  attributes:{
+    strength:{rank:'A',points:rankToPoints('A')},
+    agility:{rank:'A',points:rankToPoints('A')},
+    luck:{rank:'D',points:rankToPoints('D')},
+    endurance:{rank:'C',points:rankToPoints('C')},
+    mana:{rank:'B',points:rankToPoints('B'),gainPercent:manaGain('B')},
+    np:{rank:'A',points:rankToPoints('A')},
+  },
+  // ── SKILLS DE CLASSE (PASSIVAS) ──
+  passiveSkills:[
+    // Montaria A: impulsiona a própria terra — esquiva passiva alta
+    {id:'riding',name:'Montaria A',effect:{type:'evade_passive',value:15}},
+    // Criação de Território A: proficiente em oficinas — regenera NP por turno
+    {id:'territory',name:'Criação de Território A',effect:{type:'np_regen',value:5}},
+  ],
+  // ── SKILLS PESSOAIS (ATIVAS) ── fiéis às 3 skills do FGO
+  activeSkills:[
+    // Grimalkin A: buff de dano 3t + Invencibilidade 1 turno
+    {id:'grimalkin',name:'Grimalkin',rank:'A',
+      desc:'Ataque ↑ por 3t e Invencibilidade por 1 turno',
+      effectType:'buff_atk_invuln',
+      getEffect:lvl=>({atkUp:linear(lvl,20,40),dur:3,invulnTurns:1}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Sucessora Abençoada EX: sela NP e Skills do inimigo + carrega a própria barra de NP
+    {id:'sucessora',name:'Sucessora Abençoada',rank:'EX',
+      desc:'Sela o NP do inimigo (2t) e carrega a própria Barra de NP',
+      effectType:'enemyseal_npcharge',
+      getEffect:lvl=>({npCharge:linear(lvl,30,50),sealTurns:2}),
+      getCD:lvl=>stdCD(lvl,9,8,7)},
+    // Sanguessuga de Fada A: dreno — dano ao inimigo + cura a si mesma
+    {id:'sanguessuga',name:'Sanguessuga de Fada',rank:'A',
+      desc:'Drena a vida de um inimigo (dano + cura a si mesma)',
+      effectType:'lifedrain',
+      getEffect:lvl=>({strDmgPct:linear(lvl,40,80),healPctOfDmg:60}),
+      getCD:lvl=>stdCD(lvl)},
+  ],
+  // ── NP (ATAQUE SUPREMO): Fetch Failnaught ──
+  // Single-target Quick com Sure Hit (acerto garantido, ignora evasão) +
+  // Maldição forte (curse: dano por turno alto) por vários turnos.
+  np:{
+    name:'Fetch Failnaught',type:'Anti-Personnel',isAoE:false,effectType:'dmg_curse',sureHit:true,
+    levels:{
+      1:{dmgPct:700,cursePctOfAtk:12,curseTurns:5},
+      2:{dmgPct:900,cursePctOfAtk:15,curseTurns:5},
+      3:{dmgPct:1100,cursePctOfAtk:18,curseTurns:5},
+      4:{dmgPct:1300,cursePctOfAtk:21,curseTurns:5},
+      5:{dmgPct:1500,cursePctOfAtk:25,curseTurns:5},
+    },
+  },
+  dialogue:{
+    summon:'Archer, Baobhan Sith. Fufu... vai ser divertido te ver sofrer, Mestre.',
+    battle:'Hora de brincar! Sangrem para mim!',
+    lose:'Impossível... eu sou a filha de Morgan...!',
+    win:'Ahaha! Isso é tudo que sabem fazer? Que tédio.',
+    np:'Morram como marionetes... Fetch Failnaught!',
+    skill:'Não é adorável? Fufu.',
+    mapDone:'Que desperdício. Nem valeu a diversão. Vamos, Mestre.',
+  },
+  assets:{
+    default:'assets/servos/archer/archer_visu.jpg',
+    battle:'assets/servos/archer/archer_visu.jpg',
+    np:'assets/servos/archer/archer_boss.png',
+    win:'assets/servos/archer/archer_visu.jpg',
+    lose:'assets/servos/archer/archer_face.png',
+    encounter:'assets/servos/archer/archer_encounter.jpg',
+  },
+};
+PLAYABLE_SERVOS.sith_archer=SITH_PLAYABLE;
+
+// Lista dos servos jogáveis (para Perfil e Torre), com o critério de desbloqueio.
+// unlock:null = sempre disponível; senão, exige a conquista correspondente.
+const PLAYABLE_ROSTER=[
+  {id:'ibaraki_douji',short:'ibaraki',unlock:null},
+  {id:'qin_liangyu',short:'qin',unlock:'defeat_qin'},
+  {id:'deon_saber',short:'deon',unlock:'defeat_nitro'},
+  {id:'sith_archer',short:'archer',unlock:'defeat_archer'},
+];
 
 // ── INIMIGOS COMUNS ──────────────────────────────────
 const ENEMIES_DATA={
@@ -1183,7 +1348,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.45</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.49</p>
       </div>
     </div>
   );
@@ -1431,16 +1596,16 @@ function CodexScreen({onNavigate,profile}){
 function TowerSelectScreen({onNavigate,onStart,profile}){
   const[servo,setServo]=useState('ibaraki');
   // Mapa do id curto (usado na seleção) para o objeto jogável real
-  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE};
+  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE};
   // Servos jogáveis: Ibaraki já pronta; os demais serão liberados ao ajustar suas skills.
   const SERVOS=[
     {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',art:IBARAKI.assets.default,ready:true,
      unlock:null},
     {id:'qin',name:'Qin Liangyu',classe:'Lancer',art:QIN.assets.default,ready:true,
      unlock:'defeat_qin'},
-    {id:'deon',name:"Chevalier D'Eon",classe:'Saber',art:DEON.assets.profile,ready:false,
+    {id:'deon',name:"Chevalier D'Eon",classe:'Saber',art:DEON.assets.profile,ready:true,
      unlock:'defeat_nitro'},
-    {id:'archer',name:'Baobhan Sith',classe:'Archer',art:ARCHER.assets.face,ready:false,
+    {id:'archer',name:'Baobhan Sith',classe:'Archer',art:ARCHER.assets.face,ready:true,
      unlock:'defeat_archer'},
   ];
   const done=profile.achievements||{};
@@ -1474,6 +1639,31 @@ function TowerSelectScreen({onNavigate,onStart,profile}){
             );
           })}
         </div>
+
+        {/* Detalhes do servo selecionado: Nível, ATK/HP, Bond e NP */}
+        {(()=>{
+          const objId=({ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer'})[servo];
+          const def=objId&&PLAYABLE_SERVOS[objId];
+          if(!def)return null;
+          const sxp=loadServoXP(objId);
+          const sbond=loadBond(objId);
+          const snp=bondToNP(sbond.level);
+          return(
+            <div style={{background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:3,padding:'12px 14px',marginBottom:16}}>
+              <div className="cinzel" style={{color:'var(--gold)',fontSize:'.85rem',letterSpacing:1,marginBottom:8}}>{def.name} — Nv.{sxp.level}</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px 14px',fontSize:'.72rem',color:'var(--parchment)'}}>
+                <div>⚔️ ATK: <span style={{color:'var(--gold)'}}>{def.getAtk(sxp.level)}</span></div>
+                <div>❤️ HP: <span style={{color:'var(--gold)'}}>{def.getHp(sxp.level)}</span></div>
+                <div>💠 NP: <span style={{color:'var(--gold)'}}>Nv.{snp}</span></div>
+                <div>🔗 Bond: <span style={{color:'var(--gold)'}}>{sbond.level}</span></div>
+              </div>
+              <div style={{marginTop:8}}>
+                <div style={{fontSize:'.62rem',color:'var(--parchment-dark)',marginBottom:2}}>Progresso de Nível</div>
+                <XPBar xpState={sxp}/>
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="divider"><span className="divider-text">ESCOLHA O ANDAR</span></div>
         <div style={{display:'grid',gap:8,marginBottom:16}}>
@@ -1552,9 +1742,6 @@ function AchievementsScreen({onNavigate,profile}){
 function ProfileScreen({onNavigate,profile,setProfile}){
   const[nick,setNick]=useState(profile.nickname);
   const[notif,setNotif]=useState('');
-  const bond=loadBond('ibaraki_douji');
-  const xpState=loadServoXP('ibaraki_douji');
-  const npLvl=bondToNP(bond.level);
   const sv=profileSkillValues(profile.skills);
 
   function save(){
@@ -1668,22 +1855,31 @@ function ProfileScreen({onNavigate,profile,setProfile}){
           );
         })}
 
-        <div className="divider"><span className="divider-text">IBARAKI DOUJI</span></div>
-        {/* XP do Servo */}
-        <div style={{marginBottom:12}}>
-          <XPBar xpState={xpState}/>
-          <p style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:4,fontStyle:'italic'}}>
-            Combate +{XP_COMBAT_WIN} XP · Confiança +{XP_TRUST_EVENT} XP · Boss +{XP_BOSS_WIN} XP · Campanha completa +{XP_CAMPAIGN_COMPLETE} XP
-          </p>
-        </div>
-        {/* Bond */}
-        <div className="bond-section">
-          <div className="bond-label">Bond {bond.level} → {bond.level+1} &nbsp;|&nbsp; NP Nv.{npLvl}</div>
-          <Bar label="" current={bond.points} max={bondReq(bond.level)} type="np" showNumbers={true}/>
-          <p style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:4,fontStyle:'italic'}}>
-            Confiança +150 PB · Combate +30 PB
-          </p>
-        </div>
+        {/* Servos jogáveis desbloqueados — cada um com nível, bond e NP */}
+        {PLAYABLE_ROSTER.filter(r=>r.unlock===null||!!(profile.achievements&&profile.achievements[r.unlock])).map(r=>{
+          const def=PLAYABLE_SERVOS[r.id];
+          const sxp=loadServoXP(r.id);
+          const sbond=loadBond(r.id);
+          const snp=bondToNP(sbond.level);
+          return(
+            <div key={r.id}>
+              <div className="divider"><span className="divider-text">{def.name.toUpperCase()}</span></div>
+              <div style={{fontSize:'.7rem',color:'var(--red-bright)',marginBottom:6,letterSpacing:1}}>
+                {def.className} · Nv.{sxp.level} &nbsp;·&nbsp; ATK {def.getAtk(sxp.level)} · HP {def.getHp(sxp.level)}
+              </div>
+              <div style={{marginBottom:10}}>
+                <XPBar xpState={sxp}/>
+              </div>
+              <div className="bond-section">
+                <div className="bond-label">Bond {sbond.level} → {sbond.level+1} &nbsp;|&nbsp; NP Nv.{snp}</div>
+                <Bar label="" current={sbond.points} max={bondReq(sbond.level)} type="np" showNumbers={true}/>
+              </div>
+            </div>
+          );
+        })}
+        <p style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:8,fontStyle:'italic'}}>
+          Combate +{XP_COMBAT_WIN} XP · Confiança +{XP_TRUST_EVENT} XP · Boss +{XP_BOSS_WIN} XP · Bond: Confiança +150 · Combate +30
+        </p>
 
         <button className="btn btn-full" style={{marginTop:20}} onClick={()=>onNavigate('menu')}>← Voltar</button>
       </div>
@@ -2873,6 +3069,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
     // Guts (Continuação da Batalha da Qin): quantas revives restam
     gutsCharges:(SDEF.passiveSkills||[]).some(p=>p.effect&&p.effect.type==='guts')?1:0,
+    tempGuts:null, // Guts temporário da Lança de Haste Branca
+    evadeTurns:0, // evasão do servo (Olho da Mente do Deon)
   };
 
   function createBossInstance(){
@@ -3034,9 +3232,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // Se o HP zerar com Guts ativo: consome 1 carga e revive com 30% do HP Base.
   // Boss também ganha Barra de NP ao SER atingido (1.5× o ganho de ataque).
   // O parâmetro fxKind controla o visual do número flutuante ('dmg'/'crit'/'np').
-  function damageEnemy(e,dmg,fxKind='dmg'){
-    // Evade da Archer (Grimalkin): imune a dano enquanto durar
-    if(e.evadeTurns>0){
+  function damageEnemy(e,dmg,fxKind='dmg',sureHit=false){
+    // Evade da Archer (Grimalkin): imune a dano — mas Sure Hit (Fetch Failnaught) ignora
+    if(e.evadeTurns>0&&!sureHit){
       addLog(`💨 ${e.name} está intocável (Evade) — o ataque não a acerta!`,'enemy');
       spawnFx(e.instanceId,'IMUNE','miss');
       return e;
@@ -3058,6 +3256,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   }
 
   function applyDmgToServo(raw){
+    // Evasão do Servo (ex.: Olho da Mente do Deon): esquiva total do golpe
+    if((servo.evadeTurns||0)>0){
+      addLog(`👁️ ${SDEF.name} prevê o golpe e esquiva! (Evasão)`,'player');
+      spawnFx('servo','ESQUIVOU','miss');
+      return 0;
+    }
     const passiveMit=servo.attributes.endurance.points/10;
     let defUp=0,defDown=0;
     for(const b of servo.activeBuffs||[]){if(b.type==='defense_up')defUp+=b.value;}
@@ -3075,16 +3279,27 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(perkEffects.hpRegenPerTurn>0)hp=clamp(hp+perkEffects.hpRegenPerTurn,0,s.hpMax);
     // Perk: Poção de Mana — regen de NP por turno
     if(perkEffects.npRegenPercent>0)npBar=clamp(npBar+perkEffects.npRegenPercent,0,100);
+    // Passiva de regeneração de NP (Criação de Território da Sith)
+    const npRegenPassive=(SDEF.passiveSkills||[]).find(p=>p.effect&&p.effect.type==='np_regen');
+    if(npRegenPassive)npBar=clamp(npBar+npRegenPassive.effect.value,0,100);
     // Veneno (aplicado pelo Onmyoji Corrompido): dano por turno enquanto durar
     let poisonDmg=0;
     for(const d of s.activeDebuffs||[]){if(d.type==='poison')poisonDmg+=d.value;}
     if(poisonDmg>0){
       hp=Math.max(0,hp-poisonDmg);
-      addLog(`☠️ Veneno corrói Ibaraki: ${poisonDmg} de dano!`,'enemy');
+      addLog(`☠️ Veneno corrói ${SDEF.name}: ${poisonDmg} de dano!`,'enemy');
       spawnFx('servo',String(poisonDmg),'stun');
     }
+    // Guts temporário (Lança de Haste Branca): decrementa a janela; some se expirar sem uso
+    let tempGuts=s.tempGuts;
+    if(tempGuts&&(tempGuts.turns||0)>0){
+      const t=tempGuts.turns-1;
+      tempGuts=t>0?{...tempGuts,turns:t}:null;
+      if(!tempGuts)addLog(`🛡️ O Guts da Lança de Haste Branca se esvaneceu (não foi necessário).`,'system');
+    }
     return{...s,
-      hp,npBar,
+      hp,npBar,tempGuts,
+      evadeTurns:Math.max(0,(s.evadeTurns||0)-1), // evasão do servo (Deon) expira
       npLocked:Math.max(0,(s.npLocked||0)-1), // trava de NP da Archer (Blessed Scion)
       activeBuffs:(s.activeBuffs||[]).map(b=>({...b,turns:b.turns-1})).filter(b=>b.turns>0),
       activeDebuffs:(s.activeDebuffs||[]).map(d=>({...d,turns:d.turns-1})).filter(d=>d.turns>0),
@@ -3096,18 +3311,62 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const g=e.gutsState;
     let newGuts=g;
     if(g?.active){const t=g.turnsRemaining-1;newGuts=t<=0?{...g,charges:0,turnsRemaining:0,active:false}:{...g,turnsRemaining:t};}
+    // Dano de veneno/maldição (curse da Sith): dano por turno enquanto durar
+    let curseDmg=0;
+    for(const d of e.activeDebuffs||[]){if(d.type==='poison')curseDmg+=d.value;}
+    let curHp=e.currentHp;
+    if(curseDmg>0&&curHp>0){
+      curHp=Math.max(0,curHp-curseDmg);
+      addLog(`☠️ Maldição corrói ${e.name}: ${curseDmg} de dano!`,'player');
+      spawnFx(e.instanceId,String(curseDmg),'stun');
+    }
     // NOTA: stun NÃO é decrementado aqui — ele é consumido no loop do turno
-    // inimigo, DEPOIS da checagem "está atordoado?". Decrementar aqui fazia
-    // o stun de 1 turno expirar antes de ter efeito (bug corrigido).
+    // inimigo, DEPOIS da checagem "está atordoado?".
     return{...e,
+      currentHp:curHp,
       activeDebuffs:(e.activeDebuffs||[]).map(d=>({...d,turns:d.turns-1})).filter(d=>d.turns>0),
       activeBuffs:(e.activeBuffs||[]).map(b=>({...b,turns:b.turns-1})).filter(b=>b.turns>0),
       cooldowns:e.cooldowns?Object.fromEntries(Object.entries(e.cooldowns).map(([k,v])=>[k,Math.max(0,v-1)])):e.cooldowns,
       evadeTurns:Math.max(0,(e.evadeTurns||0)-1), // Evade da Archer expira após 1 turno
+      npSealed:Math.max(0,(e.npSealed||0)-1), // Selo de NP (Sucessora Abençoada da Sith)
       gutsState:newGuts,
     };
   }
   function checkWin(es){return es.every(e=>e.currentHp<=0);}
+
+  // Tenta reviver o Servo caído, na ordem: Guts temporário (Lança de Haste Branca) →
+  // Guts passivo (Continuação da Batalha) → Orbe Cromático. Muta `s` e retorna true se reviveu.
+  function tryReviveServo(s){
+    // 1) Guts TEMPORÁRIO da Lança de Haste Branca (revive 1x dentro da janela de turnos)
+    if(s.tempGuts&&(s.tempGuts.turns||0)>0){
+      const pct=s.tempGuts.revivePct;
+      s.tempGuts=null; // consome
+      s.hp=Math.max(1,Math.round(s.hpMax*pct/100));
+      addLog(`🛡️ LANÇA DE HASTE BRANCA! ${SDEF.name} resiste à queda e revive com ${pct}% de HP!`,'np');
+      spawnFx('servo','🛡️ GUTS','heal');
+      return true;
+    }
+    // 2) Guts PASSIVO (Continuação da Batalha da Qin)
+    const gutsPassive=(SDEF.passiveSkills||[]).find(p=>p.effect&&p.effect.type==='guts');
+    if(gutsPassive&&(s.gutsCharges||0)>0){
+      s.gutsCharges=(s.gutsCharges||0)-1;
+      s.hp=Math.max(1,Math.round(s.hpMax*gutsPassive.effect.revivePct/100));
+      addLog(`✨ CONTINUAÇÃO DA BATALHA! ${SDEF.name} se recusa a cair e revive com ${gutsPassive.effect.revivePct}% de HP!`,'np');
+      spawnFx('servo','✨ GUTS','heal');
+      return true;
+    }
+    // 3) Orbe Cromático (Perk, 1x por campanha)
+    const orbePct=perkEffects.orbeRevivePercent||0;
+    if(orbePct>0&&!camp.orbeUsed){
+      s.hp=Math.max(1,Math.round(s.hpMax*orbePct/100));
+      s.npBar=clamp(orbePct,0,100);
+      setCamp({...camp,orbeUsed:true});
+      addLog(`💠 ORBE CROMÁTICO! O Servo recusa a queda e revive com ${orbePct}% de HP e NP! (1x por campanha)`,'np');
+      spawnFx('servo',`💠 +${orbePct}%`,'heal');
+      return true;
+    }
+    return false;
+  }
 
   // Se o Servo estiver Atordoado (ex.: Injetar Veneno do Ninja), a ação que
   // encerraria o turno é consumida pelo atordoamento: decrementa e passa a vez.
@@ -3143,12 +3402,15 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       }
     }
     let dmg=getServoDmg(1,tgt);
-    const isCrit=rollChance(servo.attributes.luck.points);
+    // Chance de crítico = Sorte + bônus de buffs ativos (crit_up)
+    let critBonus=0;
+    for(const b of servo.activeBuffs||[]){if(b.type==='crit_up')critBonus+=b.value;}
+    const isCrit=rollChance(servo.attributes.luck.points+critBonus);
     if(isCrit)dmg=Math.round(dmg*1.5);
     dmg=applyDmgToEnemy(dmg,tgt);
     recordDamage(dmg); // estatística: maior dano dado
     const newEnemies=enemies.map((e,i)=>i!==selectedTarget?e:damageEnemy(e,dmg,isCrit?'crit':'dmg'));
-    addLog(`${isCrit?'🔥 CRÍTICO! ':''}Ibaraki ataca ${tgt.name}: ${dmg} dano`+(isCrit?' (×1.5)':''),'player');
+    addLog(`${isCrit?'🔥 CRÍTICO! ':''}${SDEF.name} ataca ${tgt.name}: ${dmg} dano`+(isCrit?' (×1.5)':''),'player');
     setServo(newServo);setEnemies(newEnemies);
     if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
     doEnemyTurn(newServo,newEnemies);
@@ -3198,6 +3460,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       addLog(`${skillDef.name}: Ataque +${eff.atkUp}% por ${eff.dur}t e +${eff.npGain}% de NP`,'player');
       spawnFx('servo',`+${eff.atkUp}% ATK`,'buff');
     } else if(et==='direct_dmg_antihero'){ // Qin: Abolição de Rufiões
+      // Buff de crítico por 3t (aplica mesmo sem alvo)
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'crit_up',value:eff.critUp,turns:eff.critDur,id:'abol_crit'}];
       const tgt=newEnemies[selectedTarget];
       if(tgt&&tgt.currentHp>0){
         let strDmg=servo.attackBase*(servo.attributes.strength.points/100)*(eff.strDmgPct/100);
@@ -3208,19 +3472,68 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         newEnemies=newEnemies.map((e,i)=>i===selectedTarget?damageEnemy(e,finalDmg,'crit'):e);
         newServo.npBar=clamp(newServo.npBar+servo.attributes.mana.gainPercent,0,100);
         recordDamage(finalDmg);
-        addLog(`${skillDef.name}: ${finalDmg} de dano em ${tgt.name}${isAntiHero?' (bônus vs Anti-Herói!)':''}`,'player');
+        addLog(`${skillDef.name}: ${finalDmg} de dano em ${tgt.name}${isAntiHero?' (bônus vs Anti-Herói!)':''} · Crítico +${eff.critUp}% por ${eff.critDur}t`,'player');
         spawnFx('servo',`${finalDmg}`,'crit');
-      } else { setNotif('Selecione um inimigo vivo!'); return; }
-    } else if(et==='buff_atk_fear'){ // Qin: Lança de Haste Branca
+      } else {
+        addLog(`${skillDef.name}: Crítico +${eff.critUp}% por ${eff.critDur}t`,'player');
+        spawnFx('servo',`+${eff.critUp}% CRIT`,'buff');
+      }
+    } else if(et==='buff_atk_fear_guts'){ // Qin: Lança de Haste Branca (com Guts temporário)
       newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'attack_up',value:eff.atkUp,turns:eff.dur,id:'lhb_atk'}];
+      // Guts temporário: revive 1x se morrer nos próximos 5 turnos; some se não usar
+      newServo.tempGuts={turns:eff.gutsTurns,revivePct:eff.gutsRevivePct};
       const tgt=newEnemies[selectedTarget];
       if(tgt&&tgt.currentHp>0){
         newEnemies=newEnemies.map((e,i)=>i!==selectedTarget?e:{...e,activeDebuffs:[...(e.activeDebuffs||[]),{type:'attack_down',value:eff.fearAtkDown,turns:eff.dur}]});
-        addLog(`${skillDef.name}: Ataque +${eff.atkUp}% e medo em ${tgt.name} (ATK -${eff.fearAtkDown}% por ${eff.dur}t)`,'player');
+        addLog(`${skillDef.name}: Ataque +${eff.atkUp}%, medo em ${tgt.name} (ATK -${eff.fearAtkDown}%) e Guts por ${eff.gutsTurns}t (revive ${eff.gutsRevivePct}%)`,'player');
       } else {
-        addLog(`${skillDef.name}: Ataque próprio +${eff.atkUp}% por ${eff.dur}t`,'player');
+        addLog(`${skillDef.name}: Ataque +${eff.atkUp}% e Guts por ${eff.gutsTurns}t (revive ${eff.gutsRevivePct}%)`,'player');
       }
-      spawnFx('servo',`+${eff.atkUp}% ATK`,'buff');
+      spawnFx('servo',`✨ GUTS ${eff.gutsTurns}t`,'buff');
+    } else if(et==='evade_defup'){ // Deon: Olho da Mente (Verdadeiro)
+      newServo.evadeTurns=(newServo.evadeTurns||0)+eff.evadeTurns;
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'defense_up',value:eff.defUp,turns:eff.dur,id:'olho_def'}];
+      addLog(`${skillDef.name}: Evasão por ${eff.evadeTurns}t e Defesa +${eff.defUp}% por ${eff.dur}t`,'player');
+      spawnFx('servo','👁️ EVASÃO','buff');
+    } else if(et==='cleanse_debuffres'){ // Deon: Deixe o Lírio Branco Brilhar
+      newServo.activeDebuffs=[];
+      newServo.stunned=0;
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'debuff_res',value:eff.debuffRes,turns:eff.dur,id:'lirio_res'}];
+      addLog(`${skillDef.name}: debuffs removidos e Resistência a debuff +${eff.debuffRes}% por ${eff.dur}t`,'player');
+      spawnFx('servo','⚜️ PURIFICADO','heal');
+    } else if(et==='heal_enemyatkdown'){ // Deon: Bela Aparência
+      const healed=Math.round(newServo.hpMax*eff.healPct/100);
+      newServo.hp=clamp(newServo.hp+healed,0,newServo.hpMax);
+      newEnemies=newEnemies.map(e=>e.currentHp>0?{...e,activeDebuffs:[...(e.activeDebuffs||[]),{type:'attack_down',value:eff.enemyAtkDown,turns:eff.dur}]}:e);
+      addLog(`${skillDef.name}: cura ${healed} HP e Ataque de todos os inimigos -${eff.enemyAtkDown}% por ${eff.dur}t`,'heal');
+      spawnFx('servo',`+${healed}`,'heal');
+    } else if(et==='buff_atk_invuln'){ // Sith: Grimalkin
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'attack_up',value:eff.atkUp,turns:eff.dur,id:'grim_atk'}];
+      newServo.evadeTurns=(newServo.evadeTurns||0)+eff.invulnTurns; // invencibilidade = esquiva total
+      addLog(`${skillDef.name}: Ataque +${eff.atkUp}% por ${eff.dur}t e Invencibilidade por ${eff.invulnTurns}t`,'player');
+      spawnFx('servo','😼 INVENCÍVEL','buff');
+    } else if(et==='enemyseal_npcharge'){ // Sith: Sucessora Abençoada
+      newServo.npBar=clamp(newServo.npBar+eff.npCharge,0,100);
+      const tgt=newEnemies[selectedTarget];
+      if(tgt&&tgt.currentHp>0){
+        newEnemies=newEnemies.map((e,i)=>i!==selectedTarget?e:{...e,npBar:0,npSealed:(e.npSealed||0)+eff.sealTurns});
+        addLog(`${skillDef.name}: NP de ${tgt.name} selado (${eff.sealTurns}t) e +${eff.npCharge}% de NP próprio`,'player');
+      } else {
+        addLog(`${skillDef.name}: +${eff.npCharge}% de NP próprio`,'player');
+      }
+      spawnFx('servo',`+${eff.npCharge}% NP`,'buff');
+    } else if(et==='lifedrain'){ // Sith: Sanguessuga de Fada
+      const tgt=newEnemies[selectedTarget];
+      if(tgt&&tgt.currentHp>0){
+        const drainDmg=Math.round(applyDmgToEnemy(servo.attackBase*(servo.attributes.strength.points/100)*(eff.strDmgPct/100),tgt));
+        newEnemies=newEnemies.map((e,i)=>i===selectedTarget?damageEnemy(e,drainDmg,'crit'):e);
+        const healed=Math.round(drainDmg*eff.healPctOfDmg/100);
+        newServo.hp=clamp(newServo.hp+healed,0,newServo.hpMax);
+        newServo.npBar=clamp(newServo.npBar+servo.attributes.mana.gainPercent,0,100);
+        recordDamage(drainDmg);
+        addLog(`${skillDef.name}: drena ${drainDmg} de vida de ${tgt.name} e cura ${healed} HP!`,'heal');
+        spawnFx('servo',`🩸 +${healed}`,'heal');
+      } else { setNotif('Selecione um inimigo vivo!'); return; }
     }
 
     setDialogue({text:SDEF.dialogue.skill,portrait:SDEF.assets.default});
@@ -3301,24 +3614,50 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     recordDamage(dmg);
 
     let newServo={...servo,npBar:0};
+    const isAoE=SDEF.np.isAoE;
+    const sureHit=SDEF.np.sureHit; // ignora evasão do inimigo (Baobhan)
     const newEnemies=enemies.map((e,i)=>{
-      if(i!==selectedTarget)return e;
-      let hit=damageEnemy(e,dmg,'np');
-      // NP da Ibaraki: aplica DEF down no alvo
+      if(e.currentHp<=0)return e;
+      // NP single-target atinge só o alvo; AoE (Fleur de Lis) atinge todos
+      if(!isAoE&&i!==selectedTarget)return e;
+      let hit=damageEnemy(e,dmg,'np',sureHit);
+      // NP da Ibaraki: DEF down no alvo
       if(npEt==='dmg_defdown'){
         hit={...hit,activeDebuffs:[...(hit.activeDebuffs||[]),{type:'defense_down',value:npDef.defDown,turns:SDEF.np.defDownDur}]};
       }
+      // NP do Deon (Fleur de Lis): ATK down + DEF down + chance de Charme em cada inimigo
+      if(npEt==='dmg_atkdef_charm'){
+        const debs=[...(hit.activeDebuffs||[]),
+          {type:'attack_down',value:npDef.atkDown,turns:SDEF.np.debuffDur},
+          {type:'defense_down',value:npDef.defDown,turns:SDEF.np.debuffDur}];
+        if(rollChance(npDef.charmChance)){
+          debs.push({type:'attack_down',value:100,turns:SDEF.np.charmDur,charm:true});
+        }
+        hit={...hit,activeDebuffs:debs};
+      }
+      // NP da Sith (Fetch Failnaught): Maldição (curse) = dano por turno forte
+      if(npEt==='dmg_curse'){
+        const curseDmg=Math.round(servo.attackBase*(servo.attributes.strength.points/100)*npDef.cursePctOfAtk/100);
+        const others=(hit.activeDebuffs||[]).filter(d=>d.type!=='poison');
+        hit={...hit,activeDebuffs:[...others,{type:'poison',value:curseDmg,turns:npDef.curseTurns,curse:true}]};
+      }
       return hit;
     });
-    // NP da Qin: buff de ATK próprio após o golpe
-    if(npEt==='dmg_selfbuff'){
+    // NP da Qin: buff de ATK próprio (+ crítico) após o golpe
+    if(npEt==='dmg_selfbuff'||npEt==='dmg_selfbuff_crit'){
       newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'attack_up',value:npDef.atkUp,turns:SDEF.np.selfBuffDur,id:'np_selfbuff'}];
+      if(npEt==='dmg_selfbuff_crit'&&npDef.critUp){
+        newServo.activeBuffs=[...newServo.activeBuffs,{type:'crit_up',value:npDef.critUp,turns:SDEF.np.selfBuffDur,id:'np_crit'}];
+      }
     }
     setDialogue({text:SDEF.dialogue.np,portrait:SDEF.assets.default});
     fireNpCutin(SDEF.assets.np,SDEF.np.name.toUpperCase(),SDEF.dialogue.np);
     const extraLog=npEt==='dmg_defdown'?` · DEF ↓${npDef.defDown}% por ${SDEF.np.defDownDur}t`
-      :npEt==='dmg_selfbuff'?` · ATK ↑${npDef.atkUp}% por ${SDEF.np.selfBuffDur}t`:'';
-    addLog(`⚡ ${SDEF.np.name.toUpperCase()} (NP Lv.${npLvl})! ${dmg} dano em ${tgt.name}${extraLog}`,'np');
+      :(npEt==='dmg_selfbuff'||npEt==='dmg_selfbuff_crit')?` · ATK ↑${npDef.atkUp}%${npDef.critUp?` · Crít ↑${npDef.critUp}%`:''} por ${SDEF.np.selfBuffDur}t`
+      :npEt==='dmg_atkdef_charm'?` · ATK ↓${npDef.atkDown}% · DEF ↓${npDef.defDown}% (todos) · ${npDef.charmChance}% de Charme`
+      :npEt==='dmg_curse'?` · Maldição: dano por turno por ${npDef.curseTurns}t`:'';
+    const alvoTxt=SDEF.np.isAoE?'todos os inimigos':tgt.name;
+    addLog(`⚡ ${SDEF.np.name.toUpperCase()} (NP Lv.${npLvl})! ${dmg} dano em ${alvoTxt}${extraLog}`,'np');
     setServo(newServo);setEnemies(newEnemies);
     if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
     doEnemyTurn(newServo,newEnemies);
@@ -3354,31 +3693,17 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     s.hp=clamp(s.hp,0,s.hpMax);
     // Morte por VENENO no tick (antes dos inimigos agirem) — respeita o Orbe
     if(s.hp<=0){
-      // Guts (Continuação da Batalha da Qin): revive 1x com % de HP
-      const gutsPassive=(SDEF.passiveSkills||[]).find(p=>p.effect&&p.effect.type==='guts');
-      if(gutsPassive&&(s.gutsCharges||0)>0){
-        s.gutsCharges=(s.gutsCharges||0)-1;
-        s.hp=Math.max(1,Math.round(s.hpMax*gutsPassive.effect.revivePct/100));
-        addLog(`✨ CONTINUAÇÃO DA BATALHA! ${SDEF.name} se recusa a cair e revive com ${gutsPassive.effect.revivePct}% de HP!`,'np');
-        spawnFx('servo',`✨ GUTS`,'heal');
-      } else {
-      const orbePct=perkEffects.orbeRevivePercent||0;
-      if(orbePct>0&&!camp.orbeUsed){
-        s.hp=Math.max(1,Math.round(s.hpMax*orbePct/100));
-        s.npBar=clamp(orbePct,0,100);
-        setCamp({...camp,orbeUsed:true});
-        addLog(`💠 ORBE CROMÁTICO! O Servo recusa a queda e revive com ${orbePct}% de HP e NP! (1x por campanha)`,'np');
-        spawnFx('servo',`💠 +${orbePct}%`,'heal');
-      } else {
+      if(!tryReviveServo(s)){
         setServo({...s});setEnemies(curEnemies);
         setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
         endCombat(false,s,curEnemies);return;
-      }
       }
     }
     // Durações (buffs/debuffs/guts/recargas) contam em turnos do JOGADOR:
     // todos os inimigos envelhecem seus efeitos a cada ciclo.
     let es=curEnemies.map(e=>e.currentHp>0?tickEnemyEffects(e):e);
+    // Se a maldição (curse da Sith) matou todos os inimigos, vitória imediata.
+    if(checkWin(es)){setEnemies(es);endCombat(true,curServo,es);return;}
 
     const n=es.length;
     let actedIdx=-1;
@@ -3402,7 +3727,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         const atkBase=nj.atkScaled*(nj.attributes.strength.points/100);
 
         // Prioridade 1: NP (alto dano + Evade)
-        if(nj.npBar>=100){
+        if(nj.npBar>=100&&!(nj.npSealed>0)){
           const raw=Math.round(atkBase*NINJA.np.dmgMult);
           const mit=applyDmgToServo(raw);
           s.hp=Math.max(0,s.hp-mit);
@@ -3464,7 +3789,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         let acted=false;
 
         // Prioridade 1: NP quando a barra enche e o jogador não está muito ferido
-        if(ar.npBar>=100){
+        if(ar.npBar>=100&&!(ar.npSealed>0)){
           const npDmg=applyDmgToServo(Math.round(ar.atkScaled*(ar.attributes.strength.points/100)*3));
           s.hp=Math.max(0,s.hp-npDmg);
           // 5 stacks de veneno (10% do ATK cada), 3 turnos
@@ -3584,7 +3909,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           spawnFx(qin.instanceId,'GUTS ×2','buff');
           break;
         }
-        if(qin.npBar>=100){
+        if(qin.npBar>=100&&!(qin.npSealed>0)){
           const eff=QIN.np.effect;
           es[i]={...qin,npBar:0,
             activeBuffs:[...(qin.activeBuffs||[]),
@@ -3684,28 +4009,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     }
     if(actedIdx>=0)enemyTurnPtr.current=(actedIdx+1)%n;
 
-    // Morte do Servo — com chance de revive pelo Orbe Cromático (1x/campanha)
+    // Morte do Servo — revive por tempGuts (Lança), Guts passivo (Continuação) ou Orbe
     if(s.hp<=0){
-      // Guts (Continuação da Batalha da Qin): revive 1x com % de HP
-      const gutsPassive=(SDEF.passiveSkills||[]).find(p=>p.effect&&p.effect.type==='guts');
-      if(gutsPassive&&(s.gutsCharges||0)>0){
-        s.gutsCharges=(s.gutsCharges||0)-1;
-        s.hp=Math.max(1,Math.round(s.hpMax*gutsPassive.effect.revivePct/100));
-        addLog(`✨ CONTINUAÇÃO DA BATALHA! ${SDEF.name} se recusa a cair e revive com ${gutsPassive.effect.revivePct}% de HP!`,'np');
-        spawnFx('servo',`✨ GUTS`,'heal');
-      } else {
-      const orbePct=perkEffects.orbeRevivePercent||0;
-      if(orbePct>0&&!camp.orbeUsed){
-        s.hp=Math.max(1,Math.round(s.hpMax*orbePct/100));
-        s.npBar=clamp(orbePct,0,100);
-        setCamp({...camp,orbeUsed:true});
-        addLog(`💠 ORBE CROMÁTICO! O Servo recusa a queda e revive com ${orbePct}% de HP e NP! (1x por campanha)`,'np');
-        spawnFx('servo',`💠 +${orbePct}%`,'heal');
-      } else {
+      if(!tryReviveServo(s)){
         setServo({...s});setEnemies(es);
         setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
         endCombat(false,s,es);return;
-      }
       }
     }
 
