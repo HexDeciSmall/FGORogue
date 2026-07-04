@@ -831,8 +831,8 @@ const QIN_PLAYABLE={
     battle:'A Cavalaria Branca cavalga comigo. Que venham!',
     lose:'Perdoe-me, Mestre... falhei com o senhor...',
     win:'A vitória é nossa. Que o Imperador esteja orgulhoso.',
-    np:'Vossa Majestade Imperial, honro vossos poemas! Canção da Lealdade Abnegada!',
-    skill:'É exatamente para isso que serve minha lança! Seiii!',
+    np:'Posso ser ingênua e sem instrução, mas já que você confiou em mim, darei tudo de mim! Os Poemas do Altruísmo e da Lealdade! Hah! Vamos nessa!',
+    skill:'Isso é para proteger o Mestre... preparem-se!',
     mapDone:'Onde houver bandidos, minha lança os expulsará. Sigamos, Mestre.',
   },
   assets:{
@@ -912,8 +912,8 @@ const DEON_PLAYABLE={
     battle:'Pela honra e pela coroa. En garde!',
     lose:'Perdoe-me... o lírio... se curva...',
     win:'A dança termina. A vitória é vossa, Mestre.',
-    np:'Contemplai a dança da lâmina... Fleur de Lis!',
-    skill:'Um cavaleiro nunca vacila.',
+    np:'Que o lírio da Família Real seja eterno... Flor de Lis!',
+    skill:'Sem problema, eu consigo lidar com isso.',
     mapDone:'Onde formos, servirei com lealdade inabalável.',
   },
   assets:{
@@ -989,16 +989,16 @@ const SITH_PLAYABLE={
     battle:'Hora de brincar! Sangrem para mim!',
     lose:'Impossível... eu sou a filha de Morgan...!',
     win:'Ahaha! Isso é tudo que sabem fazer? Que tédio.',
-    np:'Morram como marionetes... Fetch Failnaught!',
-    skill:'Não é adorável? Fufu.',
+    np:'Hehe... Ehehe, ahahaha! Fracote! Perdedor! Veja você morrer sem nem saber por quê! Fetch Failnaught!',
+    skill:'É um saco ter que fatiá-los pedaço por pedaço.',
     mapDone:'Que desperdício. Nem valeu a diversão. Vamos, Mestre.',
   },
   assets:{
-    default:'assets/servos/archer/archer_visu.jpg',
-    battle:'assets/servos/archer/archer_visu.jpg',
-    np:'assets/servos/archer/archer_boss.png',
-    win:'assets/servos/archer/archer_visu.jpg',
-    lose:'assets/servos/archer/archer_face.png',
+    default:'assets/servos/archer/sith_default.png',
+    battle:'assets/servos/archer/sith_default.png',
+    np:'assets/servos/archer/sith_laugh.png',
+    win:'assets/servos/archer/sith_smug.png',
+    lose:'assets/servos/archer/sith_angry.png',
     encounter:'assets/servos/archer/archer_encounter.jpg',
   },
 };
@@ -1348,7 +1348,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.49</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.50</p>
       </div>
     </div>
   );
