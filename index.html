@@ -348,6 +348,9 @@ function addServoXP(servoId,pts){
 }
 
 // ── IBARAKI DOUJI ────────────────────────────────────
+// Registro dos servos jogáveis, por id. Preenchido conforme cada servo é definido.
+const PLAYABLE_SERVOS={};
+
 const IBARAKI={
   id:'ibaraki_douji',name:'Ibaraki Douji',className:'Berserker',
   getAtk:lvl=>Math.round(linear(lvl,1606,9636)),
@@ -842,8 +845,8 @@ const QIN_PLAYABLE={
   },
 };
 
-// Registro dos servos jogáveis, por id. A Ibaraki é adicionada logo após sua definição.
-const PLAYABLE_SERVOS={qin_liangyu:QIN_PLAYABLE};
+// Registra a Qin como servo jogável
+PLAYABLE_SERVOS.qin_liangyu=QIN_PLAYABLE;
 
 // ── INIMIGOS COMUNS ──────────────────────────────────
 const ENEMIES_DATA={
@@ -1180,7 +1183,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.44</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.45</p>
       </div>
     </div>
   );
