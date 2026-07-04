@@ -410,6 +410,7 @@ const IBARAKI={
   assets:{
     default:'assets/servos/ibaraki/ibaraki_default.png',
     battle:'assets/servos/ibaraki/ibaraki_battle.png',
+    combat:'assets/servos/ibaraki/ibaraki_combat_bust.png',
     np:'assets/servos/ibaraki/ibaraki_np.png',
     win:'assets/servos/ibaraki/ibaraki_win.png',
     lose:'assets/servos/ibaraki/ibaraki_lose.png',
@@ -768,6 +769,7 @@ const QIN={
   assets:{
     default:'assets/servos/qin/qin_default.png',
     battle:'assets/servos/qin/qin_battle.png',
+    combat:'assets/servos/qin/qin_combat_bust.png',
     avatar:'assets/servos/qin/qin_avatar.png', // recorte do rosto da arte de batalha (chat)
     np:'assets/servos/qin/qin_np.png', // arte exclusiva do cut-in de Noble Phantasm
     encounter:'assets/servos/qin/qin_encounter.jpg',
@@ -838,6 +840,7 @@ const QIN_PLAYABLE={
   assets:{
     default:'assets/servos/qin/qin_default.png',
     battle:'assets/servos/qin/qin_battle.png',
+    combat:'assets/servos/qin/qin_combat_bust.png',
     np:'assets/servos/qin/qin_np.png',
     win:'assets/servos/qin/qin_default.png',
     lose:'assets/servos/qin/qin_battle.png',
@@ -919,6 +922,7 @@ const DEON_PLAYABLE={
   assets:{
     default:'assets/servos/deon/deon_profile.png',
     battle:'assets/servos/deon/deon_profile.png',
+    combat:'assets/servos/deon/deon_combat_bust.png',
     np:'assets/servos/deon/deon_np.png',
     win:'assets/servos/deon/deon_profile.png',
     lose:'assets/servos/deon/deon_pog.png',
@@ -996,6 +1000,7 @@ const SITH_PLAYABLE={
   assets:{
     default:'assets/servos/archer/sith_default.png',
     battle:'assets/servos/archer/sith_default.png',
+    combat:'assets/servos/archer/sith_combat_bust.png',
     np:'assets/servos/archer/sith_laugh.png',
     win:'assets/servos/archer/sith_smug.png',
     lose:'assets/servos/archer/sith_angry.png',
@@ -1372,7 +1377,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.56</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.58</p>
       </div>
     </div>
   );
@@ -2346,6 +2351,7 @@ const ARCHER={
   assets:{
     encounter:'assets/servos/archer/archer_encounter.jpg',
     battle:'assets/servos/archer/archer_boss.png',
+    combat:'assets/servos/archer/archer_corrompida_bust.png',
     np:'assets/servos/archer/archer_boss.png',
     face:'assets/servos/archer/archer_face.png', // rosto (avatar de chat nos diálogos)
     death:'assets/servos/archer/archer_death.jpg', // corpo caído (rescaldo do combate)
@@ -3277,6 +3283,16 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // ── Efeitos visuais flutuantes (dano/cura/buff/esquiva) ──
   const[fx,setFx]=useState([]);
   const enemyTurnPtr=useRef(0); // (legado) rotação round-robin
+  // Sprite (emoji) para inimigos comuns que não têm arte PNG própria.
+  function enemySprite(e){
+    const id=(e.id||e.name||'').toLowerCase();
+    const emoji=/morcego|bat/.test(id)?'🦇':/ghoul|zumbi/.test(id)?'🧟':/urso|bear/.test(id)?'🐻'
+      :/banshee|fantasma|espectro/.test(id)?'👻':/lobo|wolf/.test(id)?'🐺':/serpente|cobra|snake/.test(id)?'🐍'
+      :/aranha|spider/.test(id)?'🕷️':/bandido|ladr|rufi|arruaceiro/.test(id)?'🗡️':/glutao|ogro/.test(id)?'👹'
+      :/samurai|ronin/.test(id)?'⚔️':/onmyoji|mago|feiticeiro/.test(id)?'🔮':/dhampir|vampiro/.test(id)?'🧛':'👾';
+    // Retorna um data-URI SVG com o emoji grande (funciona como <img src>)
+    return 'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="88" height="88"><text x="50%" y="54%" font-size="60" text-anchor="middle" dominant-baseline="middle">${emoji}</text></svg>`);
+  }
 
   // ─── TURN ORDER (iniciativa estilo D&D) ───────────────
   // Cada combatente rola iniciativa = Agilidade + dado(1-20). Ordena do maior
@@ -3417,20 +3433,22 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     return out;
   }
 
-  function applyDmgToServo(raw){
-    // Evasão do Servo (ex.: Olho da Mente do Deon): esquiva total do golpe
-    if((servo.evadeTurns||0)>0){
-      addLog(`👁️ ${SDEF.name} prevê o golpe e esquiva! (Evasão)`,'player');
+  function applyDmgToServo(raw,target){
+    const tgt=target||servo; // alvo do golpe (default: servo ativo)
+    const tdef=PLAYABLE_SERVOS[tgt.id]||SDEF;
+    // Evasão do Servo alvo (ex.: Olho da Mente do Deon): esquiva total do golpe
+    if((tgt.evadeTurns||0)>0){
+      addLog(`👁️ ${tdef.name} prevê o golpe e esquiva! (Evasão)`,'player');
       spawnFx('servo','ESQUIVOU','miss');
       return 0;
     }
-    const passiveMit=servo.attributes.endurance.points/10;
+    const passiveMit=tgt.attributes.endurance.points/10;
     let defUp=0,defDown=0;
-    for(const b of servo.activeBuffs||[]){if(b.type==='defense_up')defUp+=b.value;}
+    for(const b of tgt.activeBuffs||[]){if(b.type==='defense_up')defUp+=b.value;}
     if(camp.planBonus?.defUp)defUp+=camp.planBonus.defUp;
     // Fleur de Lis (Saber): +15% DEF durante todo o combate do boss
     if(camp.saberBuff)defUp+=SABER_NP.defUp;
-    for(const d of servo.activeDebuffs||[]){if(d.type==='defense_down')defDown+=d.value;}
+    for(const d of tgt.activeDebuffs||[]){if(d.type==='defense_down')defDown+=d.value;}
     return Math.round(raw*(1-clamp(passiveMit+defUp-defDown,0,95)/100));
   }
 
@@ -3927,13 +3945,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // IMPORTANTE: `fromPtr` é passado explicitamente ao longo da cadeia porque o
   // estado `orderPtr` fica "congelado" na closure durante ações encadeadas via
   // setTimeout (o React não re-renderiza entre elas). Ler do estado causaria loop.
-  function stepOrder(curServo,curEnemies,fromPtr){
+  function stepOrder(curServo,curEnemies,fromPtr,justDiedIdx){
     const order=turnOrder;
     let ptr=(fromPtr==null?orderPtr:fromPtr);
+    const isDead=(i,mm)=>i===justDiedIdx||!mm||mm.defeated||mm.hp<=0;
     // Verifica se há ALGUM servo vivo (usando o estado mais recente disponível)
     const anyServoAlive=party.some((m,i)=>{
       const mm=(i===activeIdx&&curServo)?curServo:m;
-      return mm&&!mm.defeated&&mm.hp>0;
+      return !isDead(i,mm);
     });
     // Se nenhum servo está vivo, é derrota — NUNCA reagenda inimigo (evita o loop).
     if(!anyServoAlive){
@@ -3945,16 +3964,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       if(ptr===0){ setTurn(t=>t+1); addLog(`── Nova rodada ──`,'system'); }
       const entry=order[ptr];
       if(entry.kind==='servo'){
-        // Vida do servo: usa o estado ATUAL (curServo se for o ativo; senão a party).
         const idx=entry.ref;
         const m=(idx===activeIdx&&curServo)?curServo:party[idx];
-        if(!m||m.defeated||m.hp<=0)continue; // caiu: pula
-        enemyChainLock.current=false; // vez do jogador: libera a trava
+        if(isDead(idx,m))continue; // caiu: pula
+        enemyChainLock.current=false;
         setOrderPtr(ptr);
         setActiveIdx(idx);
         return; // espera o input do jogador
       } else {
-        // Inimigo: precisa estar vivo
         const ei=curEnemies.findIndex(e=>e.instanceId===entry.ref&&e.currentHp>0);
         if(ei<0)continue; // morto: pula
         setOrderPtr(ptr);
@@ -3967,7 +3984,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     enemyChainLock.current=false;
     const aliveIdx=party.findIndex((m,i)=>{
       const mm=(i===activeIdx&&curServo)?curServo:m;
-      return mm&&!mm.defeated&&mm.hp>0;
+      return !isDead(i,mm);
     });
     if(aliveIdx>=0){
       const pos=order.findIndex(o=>o.kind==='servo'&&o.ref===aliveIdx);
@@ -3979,11 +3996,21 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // Executa a ação de UM inimigo específico (por instanceId). Depois, avança a fila.
   function runOneEnemyAction(enemyId,curServo,curEnemiesIn,curPtr){
     if(result)return;
-    let s={...curServo};
     let es=[...curEnemiesIn];
     const idx=es.findIndex(e=>e.instanceId===enemyId&&e.currentHp>0);
-    if(idx<0){ stepOrder(s,es,curPtr); return; } // já morreu; segue a fila
-    doEnemyAction(idx,s,es,curPtr);
+    if(idx<0){ stepOrder(curServo,es,curPtr); return; } // já morreu; segue a fila
+    // ── ALVO ALEATÓRIO ── o inimigo sorteia entre os servos VIVOS da party.
+    // Monta a lista de servos vivos (usa curServo para o ativo, estado mais fresco).
+    const alive=[];
+    party.forEach((m,i)=>{
+      const mm=(i===activeIdx&&curServo)?curServo:m;
+      if(mm&&!mm.defeated&&mm.hp>0)alive.push({idx:i,servo:mm});
+    });
+    if(alive.length===0){ stepOrder(curServo,es,curPtr); return; }
+    const pick=alive[Math.floor(Math.random()*alive.length)];
+    const targetServo={...pick.servo};
+    const targetIdx=pick.idx;
+    doEnemyAction(idx,targetServo,es,curPtr,targetIdx);
   }
 
   // (mantida por compatibilidade com chamadas legadas; encaminha ao orquestrador)
@@ -3991,9 +4018,13 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     advanceTurnOrder(curServo,curEnemies);
   }
 
-  // Ação de um inimigo específico (índice em `es`). Contém a IA de cada tipo.
-  function doEnemyAction(actIdx,s,es,curPtr){
+  // Ação de um inimigo específico (índice em `es`). `s` é o servo ALVO sorteado,
+  // `targetIdx` é a posição dele na party. Contém a IA de cada tipo.
+  function doEnemyAction(actIdx,s,es,curPtr,targetIdx){
     const n=es.length;
+    const tgtIdx=(targetIdx==null?activeIdx:targetIdx);
+    const tgtDef=PLAYABLE_SERVOS[s.id]||SDEF; // definição do servo ALVO
+    const tgtName=tgtDef.name; // nome do servo que está sendo atacado
     act:{
       const i=actIdx;
       const e=es[i];
@@ -4016,7 +4047,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         // Prioridade 1: NP (alto dano + Evade)
         if(nj.npBar>=100&&!(nj.npSealed>0)){
           const raw=Math.round(atkBase*NINJA.np.dmgMult);
-          const mit=applyDmgToServo(raw);
+          const mit=applyDmgToServo(raw,s);
           s.hp=Math.max(0,s.hp-mit);
           nj.evadeTurns=NINJA.np.evadeTurns;
           nj.npBar=0;
@@ -4029,7 +4060,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         // Prioridade 2: Injetar Veneno (alto dano + atordoa 1t)
         else if((nj.cooldowns?.veneno||0)<=0){
           const sk=NINJA.skills.veneno;
-          const mit=applyDmgToServo(Math.round(atkBase*sk.dmgMult));
+          const mit=applyDmgToServo(Math.round(atkBase*sk.dmgMult),s);
           s.hp=Math.max(0,s.hp-mit);
           s.stunned=(s.stunned||0)+sk.stunTurns; // atordoa o Servo
           nj.cooldowns={...nj.cooldowns,veneno:sk.cd};
@@ -4043,7 +4074,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           const sk=NINJA.skills.shurikens;
           let total=0;
           for(let h=0;h<sk.hits;h++){
-            const mit=applyDmgToServo(Math.round(atkBase*sk.dmgMult));
+            const mit=applyDmgToServo(Math.round(atkBase*sk.dmgMult),s);
             s.hp=Math.max(0,s.hp-mit);total+=mit;
           }
           nj.cooldowns={...nj.cooldowns,shurikens:sk.cd};
@@ -4059,7 +4090,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             addLog(`💨 Ibaraki esquiva do golpe do ninja!`,'player');
             spawnFx('servo','ESQUIVOU','miss');
           } else {
-            const mit=applyDmgToServo(Math.round(atkBase));
+            const mit=applyDmgToServo(Math.round(atkBase),s);
             s.hp=Math.max(0,s.hp-mit);
             addLog(`${nj.name} golpeia: ${mit} de dano!`,'enemy');
             spawnFx('servo',String(mit),'dmg');
@@ -4077,7 +4108,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
         // Prioridade 1: NP quando a barra enche e o jogador não está muito ferido
         if(ar.npBar>=100&&!(ar.npSealed>0)){
-          const npDmg=applyDmgToServo(Math.round(ar.atkScaled*(ar.attributes.strength.points/100)*3));
+          const npDmg=applyDmgToServo(Math.round(ar.atkScaled*(ar.attributes.strength.points/100)*3),s);
           s.hp=Math.max(0,s.hp-npDmg);
           // 5 stacks de veneno (10% do ATK cada), 3 turnos
           const pDmg=Math.round(ar.atkScaled*ARCHER.np.poisonPctOfAtk/100)*ARCHER.np.poisonStacks;
@@ -4143,7 +4174,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             spawnFx('servo','ESQUIVOU','miss');continue;
           }
           const raw=Math.round(ar.atkScaled*(ar.attributes.strength.points/100)*(1+atkUp/100));
-          const mit=applyDmgToServo(raw);
+          const mit=applyDmgToServo(raw,s);
           s.hp=Math.max(0,s.hp-mit);
           s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
           addLog(`${ar.name} dispara: ${mit} de dano!`,'enemy');
@@ -4158,7 +4189,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         if(nitro.charging){
           // Turno do disparo: solta o míssil (dano em área ~4.5×)
           const missileRaw=Math.round(nitro.atkScaled*(nitro.attributes.strength.points/100)*NITRO.missile.multiplier);
-          const mitMissile=applyDmgToServo(missileRaw);
+          const mitMissile=applyDmgToServo(missileRaw,s);
           s.hp=Math.max(0,s.hp-mitMissile);
           s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
           es[i]={...nitro,charging:false,missileCd:NITRO.missile.cooldown};
@@ -4175,7 +4206,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         } else {
           // Ataque básico fraco + decrementa a recarga do míssil
           const raw=Math.round(nitro.atkScaled*(nitro.attributes.strength.points/100));
-          const mit=applyDmgToServo(raw);
+          const mit=applyDmgToServo(raw,s);
           s.hp=Math.max(0,s.hp-mit);
           s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
           es[i]={...nitro,missileCd:(nitro.missileCd||0)-1};
@@ -4245,19 +4276,19 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           const qinCrit=rollChance(qin.attributes.luck.points/2+critBuff);
           if(qinCrit)qinDmgBase=Math.round(qinDmgBase*1.5);
           const qinFinal=s.className==='Berserker'?Math.round(qinDmgBase*1.5):qinDmgBase;
-          const qinMit=applyDmgToServo(qinFinal);
+          const qinMit=applyDmgToServo(qinFinal,s);
           s.hp=Math.max(0,s.hp-qinMit);
           // Tomar dano gera NP pro Servo (1.5× o ganho de ataque, estilo FGO)
           s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
           es[i]={...qin,npBar:clamp(qin.npBar+(qin.attributes?.mana?.gainPercent||1.7),0,100)};
-          addLog(`${qinCrit?'🔥 CRÍTICO! ':''}Qin ataca Ibaraki: ${qinMit} dano${s.className==='Berserker'?' (+Anti-Berserker×1.5)':''}!`,'enemy');
+          addLog(`${qinCrit?'🔥 CRÍTICO! ':''}Qin ataca ${tgtName}: ${qinMit} dano${s.className==='Berserker'?' (+Anti-Berserker×1.5)':''}!`,'enemy');
           spawnFx('servo',String(qinMit),qinCrit?'crit':'dmg');
         }
       } else {
         // Inimigo comum — o Servo pode esquivar (Agility)
         const dodgeCh=5+Math.max(0,(servo.attributes.agility.points-e.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0)+(servoEvadePassive);
         if(rollChance(dodgeCh)){
-          addLog(`💨 ${SDEF.name} esquiva do ataque de ${e.name}! (${dodgeCh.toFixed(1)}%)`,'player');
+          addLog(`💨 ${tgtName} esquiva do ataque de ${e.name}! (${dodgeCh.toFixed(1)}%)`,'player');
           spawnFx('servo','ESQUIVOU','miss');
         } else {
           // "Medo" (Lança de Haste Branca da Qin): reduz o ATK do inimigo
@@ -4267,7 +4298,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           let dmgBase=Math.round(e.damage*(1-fearReduction/100));
           const isCrit=e.critChance&&rollChance(e.critChance);
           if(isCrit)dmgBase=Math.round(dmgBase*1.5);
-          const rawDmg=applyDmgToServo(dmgBase);
+          const rawDmg=applyDmgToServo(dmgBase,s);
           s.hp=Math.max(0,s.hp-rawDmg);
           // Tomar dano gera NP pro Servo (1.5× o ganho de ataque)
           s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
@@ -4278,7 +4309,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             const poisonDmg=Math.round(e.atkScaled*e.poison.pctOfAtk/100);
             const others=(s.activeDebuffs||[]).filter(d=>d.type!=='poison');
             s.activeDebuffs=[...others,{type:'poison',value:poisonDmg,turns:e.poison.turns}];
-            addLog(`☠️ ${e.name} envenena ${SDEF.name}! ${poisonDmg}/turno por ${e.poison.turns} turnos.`,'enemy');
+            addLog(`☠️ ${e.name} envenena ${tgtName}! ${poisonDmg}/turno por ${e.poison.turns} turnos.`,'enemy');
             spawnFx('servo','☠️ VENENO','stun');
           }
           if(e.vampirism){
@@ -4286,7 +4317,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             s.hp=Math.max(0,s.hp-drain);
             const selfHeal=Math.round(e.maxHp*e.vampirism.healPctOfMaxHp/100);
             es[i]={...es[i],currentHp:Math.min(e.maxHp,es[i].currentHp+selfHeal)};
-            addLog(`🩸 ${e.name} drena a vitalidade de ${SDEF.name}! +${drain} de dano · +${selfHeal} HP ao Dhampir.`,'enemy');
+            addLog(`🩸 ${e.name} drena a vitalidade de ${tgtName}! +${drain} de dano · +${selfHeal} HP ao Dhampir.`,'enemy');
             spawnFx('servo',`🩸 ${drain}`,'stun');
             spawnFx(e.instanceId,`+${selfHeal}`,'heal');
           }
@@ -4298,28 +4329,41 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     setEnemies(es);
     if(checkWin(es)){endCombat(true,s,es);return;}
 
-    // Morte do Servo ativo por causa deste ataque
+    // Salva o servo ALVO (que tomou o dano) no seu índice na party
+    setParty(prev=>prev.map((m,i)=>i===tgtIdx?s:m));
+
+    // Morte do servo alvo por causa deste ataque
     if(s.hp<=0){
       if(!tryReviveServo(s)){
+        // Marca o alvo como derrotado no índice dele
+        setParty(prev=>prev.map((m,i)=>i===tgtIdx?{...s,hp:0,defeated:true}:m));
+        const tdef=PLAYABLE_SERVOS[s.id]||IBARAKI;
         if(isParty){
-          if(partyHandleDeath(s)){
-            setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
+          // Verifica se ainda há servos vivos (excluindo o que acabou de cair)
+          const survivors=party.filter((m,i)=>i!==tgtIdx&&!m.defeated&&m.hp>0);
+          if(survivors.length===0){
+            setDialogue({text:tdef.dialogue.lose,portrait:tdef.assets.lose||tdef.assets.default});
             endCombat(false,s,es);return;
           }
-          // servo caiu mas a party segue: partyHandleDeath já trocou o ativo.
-          // Devolve o controle ao jogador (novo servo na frente) sem reagendar inimigo.
+          addLog(`💀 ${tdef.name} foi derrotado!`,'system');
+          // Se o ativo caiu, troca para um sobrevivente
+          if(tgtIdx===activeIdx){
+            const nextIdx=party.findIndex((m,i)=>i!==tgtIdx&&!m.defeated&&m.hp>0);
+            if(nextIdx>=0)setActiveIdx(nextIdx);
+          }
           enemyChainLock.current=false;
-          return;
+          // Continua a fila (o servo morto será pulado via justDiedIdx)
+          stepOrder(null,es,curPtr,tgtIdx);return;
         }
         setServo({...s});
-        setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
+        setDialogue({text:tdef.dialogue.lose,portrait:tdef.assets.lose||tdef.assets.default});
         endCombat(false,s,es);return;
       }
+      // Reviveu: salva o estado revivido
+      setParty(prev=>prev.map((m,i)=>i===tgtIdx?s:m));
     }
-    // O servo ativo (que tomou o dano) é persistido
-    setServo(s);
     // Continua a fila de iniciativa: próximo combatente
-    stepOrder(s,es,curPtr);
+    stepOrder(tgtIdx===activeIdx?s:null,es,curPtr);
   }
 
   // ─── FIM DE COMBATE ────────────────────────────────
@@ -4461,105 +4505,109 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
         {/* Conteúdo principal do combate */}
         <div style={{flex:1,minWidth:0}}>
-        {/* Fileira da PARTY (Torre): os 3 servos, clique para trocar quem está na frente */}
-        {isParty&&(
-          <div style={{display:'flex',gap:6,marginBottom:8}}>
-            {party.map((m,i)=>{
-              const mdef=PLAYABLE_SERVOS[m.id]||IBARAKI;
-              const dead=m.defeated||m.hp<=0;
-              const active=i===activeIdx;
-              return(
-                <button key={i} onClick={()=>switchServo(i)} disabled={dead||active}
-                  style={{flex:1,padding:'6px 4px',borderRadius:4,textAlign:'left',
-                    background:active?'rgba(201,162,39,0.18)':dead?'rgba(20,20,20,0.6)':'rgba(0,0,0,0.3)',
-                    border:`1px solid ${active?'var(--gold)':dead?'#333':'var(--gold-dim)'}`,
-                    cursor:dead||active?'default':'pointer',opacity:dead?0.45:1,position:'relative'}}>
-                  <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:3}}>
-                    <img src={mdef.assets.default} alt="" style={{width:24,height:24,objectFit:'cover',objectPosition:'center 20%',borderRadius:3,filter:dead?'grayscale(1)':'none'}} onError={e=>{e.target.style.display='none';}}/>
-                    <span style={{fontSize:'.58rem',color:active?'var(--gold)':'var(--parchment)',fontFamily:'Cinzel,serif',lineHeight:1.1,overflow:'hidden'}}>{mdef.name.split(' ')[0]}{dead?' 💀':active?' ⚔️':''}</span>
+        {/* ═══════════ ARENA DE COMBATE (estilo FGO) ═══════════ */}
+        {/* Inimigos no TOPO — sprites grandes, clicáveis para mirar */}
+        <div style={{display:'flex',gap:8,justifyContent:'center',flexWrap:'wrap',marginBottom:10,minHeight:120,alignItems:'flex-end'}}>
+          {enemies.map((e,i)=>{
+            const dead=e.currentHp<=0;
+            const sel=i===selectedTarget&&!dead;
+            const bossArt=e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:QIN.assets.combat||QIN.assets.default;
+            return(
+              <div key={e.instanceId} onClick={()=>!dead&&setSelectedTarget(i)}
+                className={fx.some(f=>f.targetId===e.instanceId&&(f.kind==='dmg'||f.kind==='crit'))?'shake':''}
+                style={{position:'relative',cursor:dead?'default':'pointer',opacity:dead?0.3:1,
+                  width:e.isBoss?128:88,textAlign:'center',transition:'transform .15s',
+                  filter:dead?'grayscale(1)':sel?'drop-shadow(0 0 8px var(--gold))':'none'}}>
+                {fx.filter(f=>f.targetId===e.instanceId).map(f=>(
+                  <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'0%',zIndex:5}}>{f.text}</span>
+                ))}
+                {(e.stunned||0)>0&&<span style={{position:'absolute',top:2,left:'50%',transform:'translateX(-50%)',fontSize:'.55rem',background:'rgba(80,40,120,.9)',color:'#fff',padding:'1px 5px',borderRadius:8,zIndex:4}}>ATORD.</span>}
+                <img src={e.isBoss?bossArt:(e.sprite||enemySprite(e))} alt={e.name}
+                  style={{width:'100%',height:e.isBoss?128:88,objectFit:'contain',
+                    filter:sel?'none':'none',transform:sel?'scale(1.06)':'scale(1)',transition:'transform .15s'}}
+                  onError={ev=>{ev.target.style.visibility='hidden';}}/>
+                <div style={{marginTop:2}}>
+                  <div style={{fontSize:'.6rem',color:sel?'var(--gold)':'var(--parchment)',fontFamily:'Cinzel,serif',lineHeight:1.1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{dead?'✝ '+e.name:e.name}</div>
+                  <div style={{height:5,background:'rgba(0,0,0,0.5)',borderRadius:3,overflow:'hidden',margin:'2px auto',width:'90%'}}>
+                    <div style={{height:'100%',width:`${clamp((e.currentHp/e.maxHp)*100,0,100)}%`,background:'var(--red-bright)',transition:'width .3s'}}/>
                   </div>
-                  <div style={{height:4,background:'rgba(0,0,0,0.5)',borderRadius:2,overflow:'hidden',marginBottom:2}}>
-                    <div style={{height:'100%',width:`${clamp(m.hp/m.hpMax*100,0,100)}%`,background:m.hp/m.hpMax<0.3?'var(--red-bright)':'#5a9a5a'}}/>
-                  </div>
-                  <div style={{height:3,background:'rgba(0,0,0,0.5)',borderRadius:2,overflow:'hidden'}}>
-                    <div style={{height:'100%',width:`${clamp(m.npBar,0,100)}%`,background:'var(--gold)'}}/>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Status do Servo */}
-        <div className={`panel${fx.some(f=>f.targetId==='servo'&&(f.kind==='dmg'||f.kind==='crit'))?' shake':''}`} style={{marginBottom:10,padding:14}}>
-          {fx.filter(f=>f.targetId==='servo').map(f=>(
-            <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'30%'}}>{f.text}</span>
-          ))}
-          <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
-            <Portrait src={dialogue.portrait||SDEF.assets.default} alt={SDEF.name} style={{width:64,height:84}}/>
-            <div style={{flex:1}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
-                <span className="cinzel" style={{color:'var(--gold)',fontSize:'.8rem',letterSpacing:2}}>
-                  {SDEF.name.toUpperCase()} <span style={{color:'var(--red-bright)',fontSize:'.7rem'}}>{SDEF.className} · Nv.{servoLvl}</span>
-                </span>
-                <span style={{fontSize:'.7rem',color:'var(--parchment-dark)'}}>Turno {turn}</span>
-              </div>
-              <Bar label="HP" current={servo.hp} max={servo.hpMax} type="hp"/>
-              <Bar label="NP" current={servo.npBar} max={100} type="np"/>
-              {(servo.activeBuffs||[]).length>0&&(
-                <div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:4}}>
-                  {servo.activeBuffs.map((b,i)=>(
-                    <span key={i} style={{fontSize:'.6rem',background:'rgba(201,162,39,0.2)',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'2px 6px',color:'var(--gold)'}}>
-                      {b.type==='attack_up'?`ATK+${b.value}%`:b.type==='defense_up'?`DEF+${b.value}%`:b.type==='np_damage_up'?`NP+${b.value}%`:b.type} {b.turns}t
-                    </span>
-                  ))}
-                  {(servo.activeDebuffs||[]).map((d,i)=>(
-                    <span key={i} style={{fontSize:'.6rem',background:'rgba(139,26,26,0.3)',border:'1px solid var(--red)',borderRadius:10,padding:'2px 6px',color:'#ff8080'}}>
-                      DEF-{d.value}% {d.turns}t
-                    </span>
-                  ))}
+                  <div style={{fontSize:'.52rem',color:'var(--parchment-dark)'}}>{Math.max(0,e.currentHp)}/{e.maxHp}</div>
+                  {e.isBoss&&e.gutsState?.active&&<div style={{fontSize:'.5rem',color:'#ffd080'}}>GUTS ×{e.gutsState.charges}</div>}
+                  {(e.activeDebuffs||[]).slice(0,2).map((d,j)=>(<span key={j} style={{fontSize:'.5rem',color:'#ff8080',display:'block'}}>{d.type==='attack_down'?'ATK':'DEF'}-{d.value}%</span>))}
                 </div>
-              )}
-            </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Servos da PARTY embaixo — bustos GRANDES (estilo FGO). Clique troca o ativo. */}
+        <div style={{display:'flex',gap:6,justifyContent:'center',alignItems:'flex-end',marginBottom:8}}>
+          {party.map((m,i)=>{
+            const mdef=PLAYABLE_SERVOS[m.id]||IBARAKI;
+            const dead=m.defeated||m.hp<=0;
+            const active=i===activeIdx;
+            const isTurn=isServoTurn&&active;
+            return(
+              <div key={i} onClick={()=>!dead&&!active&&switchServo(i)}
+                className={fx.some(f=>f.targetId==='servo'&&active&&(f.kind==='dmg'||f.kind==='crit'))?'shake':''}
+                style={{position:'relative',flex:isParty?'1':'0 0 auto',maxWidth:isParty?170:220,
+                  cursor:dead||active?'default':'pointer',opacity:dead?0.35:active?1:0.72,
+                  transition:'all .2s',transform:active?'translateY(-4px)':'none'}}>
+                {active&&fx.filter(f=>f.targetId==='servo').map(f=>(
+                  <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'10%',zIndex:5}}>{f.text}</span>
+                ))}
+                {/* Busto grande */}
+                <div style={{position:'relative',borderRadius:'6px 6px 0 0',overflow:'hidden',
+                  border:`2px solid ${active?'var(--gold)':dead?'#333':'var(--gold-dim)'}`,borderBottom:'none',
+                  boxShadow:isTurn?'0 0 14px rgba(201,162,39,0.55)':'none',background:'linear-gradient(180deg,rgba(40,20,20,.2),rgba(20,10,10,.6))'}}>
+                  <img src={mdef.assets.combat||mdef.assets.default} alt={mdef.name}
+                    style={{width:'100%',height:isParty?130:170,objectFit:'cover',objectPosition:'center top',
+                      filter:dead?'grayscale(1) brightness(0.6)':'none',display:'block'}}
+                    onError={ev=>{ev.target.src=mdef.assets.default;}}/>
+                  {dead&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2rem'}}>💀</div>}
+                  {active&&<div style={{position:'absolute',top:3,right:3,fontSize:'.6rem',background:'var(--gold)',color:'#1a0e0e',padding:'1px 5px',borderRadius:6,fontFamily:'Cinzel,serif'}}>ATIVO</div>}
+                </div>
+                {/* Barra de HP/NP sob o busto */}
+                <div style={{background:'rgba(0,0,0,0.55)',border:`2px solid ${active?'var(--gold)':dead?'#333':'var(--gold-dim)'}`,borderTop:'none',borderRadius:'0 0 6px 6px',padding:'3px 5px'}}>
+                  <div style={{fontSize:'.55rem',color:active?'var(--gold)':'var(--parchment)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',textAlign:'center'}}>{mdef.name.split(' ')[0]}</div>
+                  <div style={{height:5,background:'rgba(0,0,0,0.6)',borderRadius:3,overflow:'hidden',margin:'2px 0'}}>
+                    <div style={{height:'100%',width:`${clamp(m.hp/m.hpMax*100,0,100)}%`,background:m.hp/m.hpMax<0.3?'var(--red-bright)':'#5a9a5a',transition:'width .3s'}}/>
+                  </div>
+                  <div style={{height:3,background:'rgba(0,0,0,0.6)',borderRadius:2,overflow:'hidden'}}>
+                    <div style={{height:'100%',width:`${clamp(m.npBar,0,100)}%`,background:'var(--gold)',transition:'width .3s'}}/>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* HUD do servo ativo: nome, nível, buffs, diálogo */}
+        <div className="panel" style={{marginBottom:10,padding:'8px 12px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span className="cinzel" style={{color:'var(--gold)',fontSize:'.8rem',letterSpacing:2}}>
+              {SDEF.name.toUpperCase()} <span style={{color:'var(--red-bright)',fontSize:'.7rem'}}>{SDEF.className} · Nv.{servoLvl}</span>
+            </span>
+            <span style={{fontSize:'.7rem',color:'var(--parchment-dark)'}}>Turno {turn}</span>
           </div>
+          <div style={{marginTop:4}}>
+            <Bar label="HP" current={servo.hp} max={servo.hpMax} type="hp"/>
+            <Bar label="NP" current={servo.npBar} max={100} type="np"/>
+          </div>
+          {(servo.activeBuffs||[]).length>0&&(
+            <div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:4}}>
+              {servo.activeBuffs.map((b,i)=>(
+                <span key={i} style={{fontSize:'.6rem',background:'rgba(201,162,39,0.2)',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'2px 6px',color:'var(--gold)'}}>
+                  {b.type==='attack_up'?`ATK+${b.value}%`:b.type==='defense_up'?`DEF+${b.value}%`:b.type==='np_damage_up'?`NP+${b.value}%`:b.type==='crit_up'?`CRIT+${b.value}%`:b.type} {b.turns}t
+                </span>
+              ))}
+            </div>
+          )}
           {dialogue.text&&(
-            <div className="dialogue-text" style={{marginTop:8,fontSize:'.8rem',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:8}}>
+            <div className="dialogue-text" style={{marginTop:6,fontSize:'.78rem',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:6}}>
               <em>"{dialogue.text}"</em>
             </div>
           )}
-        </div>
-
-        {/* Inimigos */}
-        <div className="enemy-group">
-          {enemies.map((e,i)=>(
-            <div key={e.instanceId}
-              className={`enemy-card${e.currentHp<=0?' dead':''}${i===selectedTarget&&e.currentHp>0?' selected':''}${(e.stunned||0)>0?' stunned':''}`}
-              onClick={()=>e.currentHp>0&&setSelectedTarget(i)}>
-              {(e.stunned||0)>0&&<span className="stun-badge">ATORD.</span>}
-              {fx.filter(f=>f.targetId===e.instanceId).map(f=>(
-                <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'12%'}}>{f.text}</span>
-              ))}
-              {e.isBoss&&(
-                <img src={e.isNinja?NINJA.assets.battle:e.isArcher?ARCHER.assets.battle:e.isNitro?NITRO.assets.battle:QIN.assets.default} alt={e.name}
-                  style={{width:74,height:74,objectFit:'cover',objectPosition:'center 10%',borderRadius:2,border:'1px solid var(--red)',display:'block',margin:'0 auto 6px',background:'rgba(0,0,0,.35)'}}
-                  onError={ev=>{ev.target.style.display='none';}}/>
-              )}
-              <div className="enemy-name">{e.name}</div>
-              <div className="enemy-hp">{Math.max(0,e.currentHp)}/{e.maxHp}</div>
-              <div style={{height:4,background:'rgba(0,0,0,0.4)',borderRadius:2,marginTop:4,overflow:'hidden'}}>
-                <div style={{height:'100%',width:`${clamp((e.currentHp/e.maxHp)*100,0,100)}%`,background:'var(--red-bright)',borderRadius:2,transition:'width .3s'}}/>
-              </div>
-              {e.isBoss&&e.gutsState?.active&&(
-                <div style={{fontSize:'.55rem',color:'#ffd080',marginTop:3}}>GUTS ×{e.gutsState.charges} ({e.gutsState.turnsRemaining}t)</div>
-              )}
-              {(e.activeDebuffs||[]).map((d,j)=>(
-                <span key={j} style={{display:'block',fontSize:'.55rem',color:'#ff8080'}}>DEF-{d.value}% {d.turns}t</span>
-              ))}
-              {(e.activeBuffs||[]).map((b,j)=>(
-                <span key={j} style={{display:'block',fontSize:'.55rem',color:'#ffd080'}}>{b.type==='attack_up'?`ATK+${b.value}%`:'buff'} {b.turns}t</span>
-              ))}
-            </div>
-          ))}
         </div>
 
         {/* Ações */}
