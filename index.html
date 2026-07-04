@@ -1018,6 +1018,56 @@ const PLAYABLE_ROSTER=[
   {id:'sith_archer',short:'archer',unlock:'defeat_archer'},
 ];
 
+// ══════════════════════════════════════════════════════
+// GACHA — Invocação de Servos limitados (exclusivos do gacha)
+// ══════════════════════════════════════════════════════
+// Custo por invocação e estrutura data-driven dos servos limitados.
+// Para adicionar um servo: crie o objeto em GACHA_SERVOS e liste o id no
+// `pool` do(s) banner(s) desejado(s). O banner "Noite de Expurgo" junta todos.
+const GACHA_PULL_COST=50; // SQ por giro (1 giro = 1 servo)
+
+// Catálogo dos servos limitados do gacha. VAZIO por ora — popular depois.
+// Formato de cada servo (igual aos jogáveis, + art de vitrine full):
+// { id, name, className, rarity, getAtk, getHp, attributes, passiveSkills,
+//   activeSkills, np, dialogue, assets:{ default, combat, np, full, ... } }
+const GACHA_SERVOS={};
+
+// Os 4 banners. `pool` = ids de GACHA_SERVOS que aparecem no banner.
+// `rateUp` (opcional) = id com chance aumentada (usado no "Especial").
+const GACHA_BANNERS=[
+  {id:'summer',name:'Summer',subtitle:'Servos de Verão',
+   theme:'#3aa0c0',art:null,pool:[]},
+  {id:'gudaguda',name:'Gudaguda',subtitle:'Servos do Evento Gudaguda',
+   theme:'#c0863a',art:null,pool:[]},
+  {id:'especial',name:'Especial',subtitle:'Banner rotativo — sempre um Servo em rate up',
+   theme:'#c0a03a',art:null,pool:[],rateUp:null},
+  {id:'expurgo',name:'Noite de Expurgo',subtitle:'Invocação caótica entre todos os banners',
+   theme:'#8b1a4a',art:null,pool:'ALL'}, // 'ALL' = junta o pool de todos os outros banners
+];
+
+// Resolve o pool efetivo de um banner (o "Noite de Expurgo" agrega todos).
+function resolveBannerPool(banner){
+  if(banner.pool==='ALL'){
+    const all=new Set();
+    GACHA_BANNERS.forEach(b=>{ if(b.pool!=='ALL')(b.pool||[]).forEach(id=>all.add(id)); });
+    return[...all];
+  }
+  return banner.pool||[];
+}
+
+// Sorteia UM servo do banner (respeita rate up do "Especial", se houver).
+function rollGacha(banner){
+  const pool=resolveBannerPool(banner);
+  if(pool.length===0)return null; // banner sem servos ainda
+  // Rate up: o servo em destaque tem peso dobrado
+  const weighted=[];
+  pool.forEach(id=>{
+    weighted.push(id);
+    if(banner.rateUp&&id===banner.rateUp)weighted.push(id); // peso extra
+  });
+  return weighted[Math.floor(Math.random()*weighted.length)];
+}
+
 // ── INIMIGOS COMUNS ──────────────────────────────────
 const ENEMIES_DATA={
   morcego:{id:'morcego',name:'Morcego Gigante',hp:900,atk:480,agility:55,strPts:30},
@@ -1068,6 +1118,7 @@ function loadProfile(){
     codex:{}, // id do personagem → true quando descoberto no Álbum
     skills:{manaBuster:1,transf:1,veneno:1,tormento:1,ossos:1},
     towerSkills:{carisma:0}, // skills exclusivas da Torre (0 = não comprada)
+    gachaOwned:[], // ids dos servos limitados obtidos no gacha
     perks:{energizador:0,pocaoMana:0,pactoEscudo:0,contosEpicos:0,orbeCromatico:0},
     equippedPerks:['energizador','pocaoMana','pactoEscudo']};
   try{
@@ -1079,6 +1130,7 @@ function loadProfile(){
     return{...def,...saved,
       skills:{...def.skills,...(saved.skills||{})},
       towerSkills:{...def.towerSkills,...(saved.towerSkills||{})},
+      gachaOwned:saved.gachaOwned||[],
       perks:{...def.perks,...(saved.perks||{})},
       stats:{...def.stats,...(saved.stats||{})},
       achievements:{...def.achievements,...(saved.achievements||{})},
@@ -1355,6 +1407,171 @@ function XPBar({xpState}){
 // ══════════════════════════════════════════════════════
 // MENU
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// GACHA — Tela de invocação (banners + vitrine rotativa)
+// ══════════════════════════════════════════════════════
+function GachaScreen({onNavigate,profile,setProfile}){
+  const[view,setView]=useState('banners'); // 'banners' | 'pull'
+  const[banner,setBanner]=useState(null);
+  const[sq,setSq]=useState(profile.sq||0);
+  const[spinning,setSpinning]=useState(false);
+  const[reelIndex,setReelIndex]=useState(0); // qual arte está no centro da vitrine
+  const[result,setResult]=useState(null); // servo obtido {id,new}
+  const[notif,setNotif]=useState('');
+  const spinRef=useRef(null);
+
+  function openBanner(b){
+    setBanner(b);setResult(null);setReelIndex(0);setView('pull');
+  }
+
+  function doPull(){
+    if(spinning)return;
+    const pool=resolveBannerPool(banner);
+    if(pool.length===0){setNotif('Este banner ainda não tem Servos disponíveis.');return;}
+    const fresh=loadProfile();
+    if((fresh.sq||0)<GACHA_PULL_COST){setNotif(`Saint Quartz insuficiente! Precisa de ${GACHA_PULL_COST} SQ.`);return;}
+    // Debita o SQ imediatamente (atômico)
+    const afterCost={...fresh,sq:fresh.sq-GACHA_PULL_COST};
+    saveProfile(afterCost);setProfile(afterCost);setSq(afterCost.sq);
+    // Sorteia o resultado ANTES de girar (a vitrine só encena)
+    const wonId=rollGacha(banner);
+    setResult(null);setSpinning(true);
+    // Anima a vitrine girando pelo pool e parando no servo sorteado
+    const winPos=pool.indexOf(wonId);
+    let ticks=0;
+    const totalTicks=24+winPos+pool.length*2; // gira várias voltas e para no alvo
+    clearInterval(spinRef.current);
+    spinRef.current=setInterval(()=>{
+      ticks++;
+      setReelIndex(t=>(t+1)%pool.length);
+      // Desacelera perto do fim
+      if(ticks>=totalTicks){
+        clearInterval(spinRef.current);
+        setReelIndex(winPos<0?0:winPos);
+        // Registra o servo obtido
+        const owned=afterCost.gachaOwned||[];
+        const isNew=!owned.includes(wonId);
+        const p2={...afterCost,gachaOwned:isNew?[...owned,wonId]:owned};
+        saveProfile(p2);setProfile(p2);
+        setResult({id:wonId,isNew});
+        setSpinning(false);
+      }
+    },70+Math.min(ticks*2,120)); // acelera->desacelera aproximado
+  }
+
+  useEffect(()=>()=>clearInterval(spinRef.current),[]);
+
+  // ── VISTA 1: grade dos 4 banners ──
+  if(view==='banners'){
+    return(
+      <div className="screen" style={{padding:'20px 12px'}}>
+        {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
+        <div className="panel" style={{maxWidth:640}}>
+          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:4}}>⛩️ INVOCAÇÃO</h2>
+          <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:6}}>
+            Invoque Servos lendários que não aparecem na história. Cada giro custa {GACHA_PULL_COST} SQ e concede um Servo do banner.
+          </p>
+          <div style={{textAlign:'right',marginBottom:14,color:'var(--gold)',fontSize:'.85rem',fontFamily:'Cinzel,serif'}}>💠 {sq} SQ</div>
+
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            {GACHA_BANNERS.map(b=>{
+              const pool=resolveBannerPool(b);
+              return(
+                <button key={b.id} onClick={()=>openBanner(b)}
+                  style={{position:'relative',borderRadius:6,overflow:'hidden',cursor:'pointer',
+                    border:`2px solid ${b.theme}`,minHeight:150,textAlign:'left',
+                    background:`linear-gradient(160deg, ${b.theme}22, rgba(0,0,0,0.6))`}}>
+                  {b.art
+                    ?<img src={b.art} alt={b.name} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.55}} onError={e=>{e.target.style.display='none';}}/>
+                    :null}
+                  <div style={{position:'relative',padding:'14px 12px',height:'100%',display:'flex',flexDirection:'column',justifyContent:'flex-end'}}>
+                    <div className="cinzel" style={{color:'#fff',fontSize:'1.05rem',letterSpacing:1,textShadow:'0 2px 8px #000'}}>{b.name}</div>
+                    <div style={{fontSize:'.66rem',color:'var(--parchment)',marginTop:3,textShadow:'0 1px 4px #000'}}>{b.subtitle}</div>
+                    <div style={{fontSize:'.6rem',color:b.theme,marginTop:6,fontFamily:'Cinzel,serif'}}>
+                      {pool.length>0?`${pool.length} Servo(s)`:'Em breve'}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <button className="btn btn-full" style={{marginTop:18}} onClick={()=>onNavigate('menu')}>← Voltar</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── VISTA 2: vitrine rotativa do banner escolhido ──
+  const pool=resolveBannerPool(banner);
+  const centerId=pool[reelIndex];
+  const centerServo=centerId&&GACHA_SERVOS[centerId];
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
+      <div className="panel" style={{maxWidth:520,textAlign:'center'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+          <h2 className="cinzel" style={{color:banner.theme,fontSize:'1rem',letterSpacing:2}}>{banner.name}</h2>
+          <span style={{color:'var(--gold)',fontSize:'.8rem',fontFamily:'Cinzel,serif'}}>💠 {sq} SQ</span>
+        </div>
+        <p style={{fontSize:'.68rem',color:'var(--parchment-dark)',marginBottom:14}}>{banner.subtitle}</p>
+
+        {/* VITRINE (cilindro) */}
+        <div style={{position:'relative',height:300,borderRadius:8,overflow:'hidden',
+          border:`2px solid ${banner.theme}`,background:'radial-gradient(circle at 50% 40%, rgba(255,255,255,0.06), rgba(0,0,0,0.7))',
+          display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14}}>
+          {/* Marcadores de "seleção" no centro */}
+          <div style={{position:'absolute',top:0,bottom:0,left:'50%',width:2,background:`${banner.theme}66`,transform:'translateX(-50%)'}}/>
+          {pool.length===0?(
+            <div style={{color:'var(--parchment-dark)',fontSize:'.85rem',fontStyle:'italic',padding:20}}>
+              🚧 Este banner ainda não tem Servos.<br/>Em breve!
+            </div>
+          ):result&&!spinning?(
+            // Resultado final: servo grande em destaque
+            <div style={{animation:'cutinZoom .6s ease'}}>
+              {(()=>{const sv=GACHA_SERVOS[result.id];return(
+                <>
+                  <img src={sv?.assets?.full||sv?.assets?.combat||sv?.assets?.default} alt={sv?.name}
+                    style={{maxHeight:230,maxWidth:'90%',objectFit:'contain',filter:'drop-shadow(0 0 20px '+banner.theme+')'}}
+                    onError={e=>{e.target.style.display='none';}}/>
+                  <div className="cinzel" style={{color:'var(--gold)',fontSize:'1.1rem',marginTop:6}}>{sv?.name||result.id}</div>
+                </>
+              );})()}
+            </div>
+          ):(
+            // Vitrine girando (ou parada num servo)
+            <div style={{transition:spinning?'none':'transform .2s',opacity:spinning?0.85:1}}>
+              {centerServo?(
+                <img src={centerServo.assets?.full||centerServo.assets?.combat||centerServo.assets?.default} alt=""
+                  style={{maxHeight:240,maxWidth:'90%',objectFit:'contain',filter:spinning?'blur(1px)':'none'}}
+                  onError={e=>{e.target.style.display='none';}}/>
+              ):(
+                <div style={{fontSize:'3rem'}}>❓</div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {result&&!spinning&&(
+          <div style={{marginBottom:12,padding:'8px',borderRadius:4,background:'rgba(201,162,39,0.12)',border:'1px solid var(--gold-dim)'}}>
+            <span style={{color:'var(--gold)',fontSize:'.85rem',fontFamily:'Cinzel,serif'}}>
+              {result.isNew?'✨ NOVO SERVO OBTIDO!':'Servo obtido (duplicado)'}
+            </span>
+          </div>
+        )}
+
+        <button className="btn btn-full btn-red" disabled={spinning||pool.length===0||sq<GACHA_PULL_COST}
+          style={{fontSize:'.95rem',padding:'14px',opacity:(spinning||pool.length===0||sq<GACHA_PULL_COST)?0.5:1}}
+          onClick={doPull}>
+          {spinning?'🎲 Invocando...':`⟳ Invocar — ${GACHA_PULL_COST} SQ`}
+        </button>
+        <button className="btn btn-full" style={{marginTop:8}} disabled={spinning}
+          onClick={()=>{setView('banners');setResult(null);}}>← Trocar de Banner</button>
+      </div>
+    </div>
+  );
+}
+
 function MenuScreen({onNavigate,profile}){
   return(
     <div className="screen">
@@ -1372,12 +1589,13 @@ function MenuScreen({onNavigate,profile}){
         )}
         <button className="btn btn-full" onClick={()=>onNavigate('campaign')}>⚔️ &nbsp; Iniciar Campanha</button>
         <button className="btn btn-full btn-red" onClick={()=>onNavigate('tower')}>🗼 &nbsp; Torre de Desafios</button>
+        <button className="btn btn-full" onClick={()=>onNavigate('gacha')}>⛩️ &nbsp; Invocação</button>
         <button className="btn btn-full" onClick={()=>onNavigate('profile')}>📜 &nbsp; Perfil</button>
         <button className="btn btn-full" onClick={()=>onNavigate('shop')}>🏪 &nbsp; Loja de Perks</button>
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.58</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.60</p>
       </div>
     </div>
   );
@@ -1627,17 +1845,17 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
   const[partySel,setPartySel]=useState(['ibaraki']);
   const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE};
   const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer'};
-  const SERVOS=[
-    {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',art:IBARAKI.assets.default,ready:true,
-     unlock:null},
-    {id:'qin',name:'Qin Liangyu',classe:'Lancer',art:QIN.assets.default,ready:true,
-     unlock:'defeat_qin'},
-    {id:'deon',name:"Chevalier D'Eon",classe:'Saber',art:DEON.assets.profile,ready:true,
-     unlock:'defeat_nitro'},
-    {id:'archer',name:'Baobhan Sith',classe:'Archer',art:ARCHER.assets.face,ready:true,
-     unlock:'defeat_archer'},
-  ];
   const done=profile.achievements||{};
+  const SERVOS=[
+    {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',art:IBARAKI.assets.default,
+     ready:true,unlock:null},
+    {id:'qin',name:'Qin Liangyu',classe:'Lancer',art:QIN.assets.default,
+     ready:!!done.defeat_qin,unlock:'defeat_qin'},
+    {id:'deon',name:"Chevalier D'Eon",classe:'Saber',art:DEON.assets.profile,
+     ready:!!done.defeat_nitro,unlock:'defeat_nitro'},
+    {id:'archer',name:'Baobhan Sith',classe:'Archer',art:ARCHER.assets.face,
+     ready:!!done.defeat_archer,unlock:'defeat_archer'},
+  ];
 
   // Adiciona/remove um servo da party (máx 3, sem repetir)
   function toggleServo(id){
@@ -1684,31 +1902,36 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
           Toque para adicionar/remover. O primeiro é o Líder (entra na frente). Mínimo 1, máximo 3.
         </p>
 
-        <div style={{display:'grid',gap:8,marginBottom:16}}>
+        <div className="divider"><span className="divider-text">A ESCALADA</span></div>
+        <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:12,textAlign:'center'}}>
+          Suba andar por andar numa escalada contínua. Vença o boss de cada andar para avançar ao próximo. Se cair, a escalada recomeça do topo... digo, da base.
+        </p>
+        <div style={{display:'flex',flexDirection:'column-reverse',gap:6,marginBottom:16}}>
           {TOWER_ORDER.map((mid,i)=>{
             const map=TOWER_MAPS[mid];
-            const unlockAch=TOWER_UNLOCK[mid];
-            // O 1º andar (Floresta) sempre disponível; os demais exigem ter vencido o boss na Campanha.
-            const unlocked=i===0||!!done[unlockAch];
             return(
-              <button key={mid} disabled={!unlocked||partySel.length<1} onClick={()=>unlocked&&partySel.length>=1&&onStart(partySel.map(id=>TOWER_SERVO_OBJ[id]),mid)}
-                style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 14px',
-                  background:'rgba(120,40,40,0.1)',border:`1px solid ${unlocked?'var(--red)':'rgba(120,120,120,0.25)'}`,
-                  borderRadius:3,cursor:unlocked?'pointer':'not-allowed',opacity:unlocked?1:0.5}}>
+              <div key={mid} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',
+                background:i===0?'rgba(201,162,39,0.12)':'rgba(120,40,40,0.08)',
+                border:`1px solid ${i===0?'var(--gold)':'var(--red)'}`,borderRadius:3}}>
                 <div style={{textAlign:'left'}}>
-                  <div className="cinzel" style={{color:unlocked?'var(--parchment)':'var(--parchment-dark)',fontSize:'.9rem',letterSpacing:1}}>
-                    {unlocked?'':'🔒 '}Andar {i+1} — {map.name}
+                  <div className="cinzel" style={{color:i===0?'var(--gold)':'var(--parchment)',fontSize:'.88rem',letterSpacing:1}}>
+                    Andar {i+1} — {map.name}
                   </div>
-                  <div style={{fontSize:'.68rem',color:'var(--parchment-dark)',marginTop:2}}>
-                    {unlocked?'20 fases · boss na fase 20':'Vença este boss na Campanha para liberar'}
+                  <div style={{fontSize:'.66rem',color:'var(--parchment-dark)',marginTop:2}}>
+                    20 fases · boss na fase 20{i===0?' · ponto de partida':''}
                   </div>
                 </div>
-                {unlocked&&<span style={{color:'var(--red-bright)',fontSize:'1.2rem'}}>⚔️</span>}
-              </button>
+                <span style={{fontSize:'1.1rem'}}>{i===0?'🚪':'🔺'}</span>
+              </div>
             );
           })}
         </div>
 
+        <button className="btn btn-full btn-red" style={{marginBottom:8,fontSize:'.9rem',padding:'14px'}}
+          disabled={partySel.length<1}
+          onClick={()=>partySel.length>=1&&onStart(partySel.map(id=>TOWER_SERVO_OBJ[id]),TOWER_ORDER[0])}>
+          🗼 &nbsp; Iniciar Escalada {partySel.length<1?'(monte a party!)':`(${partySel.length} servo${partySel.length>1?'s':''})`}
+        </button>
         <button className="btn btn-full btn-red" style={{marginBottom:8}} onClick={onOpenShop}>🏪 &nbsp; Loja da Torre</button>
         <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar</button>
       </div>
@@ -2961,7 +3184,9 @@ function MapScreen({camp,onChoosePath,onNavigate}){
     <div className="screen">
       <div className="panel" style={{maxWidth:600}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
-          <h2 className="cinzel" style={{color:'var(--gold)',fontSize:'.9rem',letterSpacing:3}}>{curMap.name.toUpperCase()}</h2>
+          <h2 className="cinzel" style={{color:'var(--gold)',fontSize:'.9rem',letterSpacing:3}}>
+            {camp.towerMode?`🗼 ANDAR ${camp.towerFloor||1} · `:''}{curMap.name.toUpperCase()}
+          </h2>
           <span style={{color:'var(--parchment-dark)',fontSize:'.75rem'}}>Fase {phase}/{maxPhases}</span>
         </div>
         <Bar label="HP" current={servo.hp} max={servo.hpMax} type="hp"/>
@@ -4754,7 +4979,9 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   function startTower(partyServos,mapId){
     setProfile(incRuns());
     const leader=partyServos[0];
-    setCamp(buildCampForMap(leader,mapId,null,true,partyServos));
+    const c=buildCampForMap(leader,mapId,null,true,partyServos);
+    c.towerFloor=1; // começa no Andar 1 (escalada contínua)
+    setCamp(c);
     setStage('map');
   }
 
@@ -4946,8 +5173,34 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
 
   function onBossWin(updatedCamp){
     setCamp(updatedCamp);
-    // Modo Torre: vencer o boss (fase 20) encerra a run com vitória, sem história.
-    if(updatedCamp.towerMode){finishCampaign(updatedCamp,true);return;}
+    // Modo Torre (escalada contínua): vencer o boss do andar emenda no próximo.
+    if(updatedCamp.towerMode){
+      const curIdx=TOWER_ORDER.indexOf(updatedCamp.mapId);
+      const nextMid=TOWER_ORDER[curIdx+1];
+      if(nextMid){
+        // Sobe para o próximo andar, carregando a party (HP/NP atuais) e as moedas.
+        setStage('towerClimb');
+        setTimeout(()=>{
+          const carriedParty=(updatedCamp.party||[]).map(m=>({...m}));
+          const next=buildCampForMap(carriedParty[0],nextMid,null,true,
+            carriedParty.map(m=>PLAYABLE_SERVOS[m.id]||IBARAKI));
+          // Preserva HP/NP/estado de cada membro e as moedas acumuladas
+          next.party=next.party.map((nm,i)=>{
+            const prev=carriedParty[i];
+            return prev?{...nm,hp:prev.defeated?0:prev.hp,npBar:prev.npBar,defeated:!!prev.defeated}:nm;
+          });
+          next.servo=next.party[0];
+          next.sqEarned=updatedCamp.sqEarned;next.qpEarned=updatedCamp.qpEarned;
+          next.xpEarned=updatedCamp.xpEarned;next.bondEarned=updatedCamp.bondEarned;
+          next.towerFloor=(updatedCamp.towerFloor||1)+1;
+          setCamp(next);
+          setStage('map');
+        },2600);
+        return;
+      }
+      // Último andar vencido: escalada completa!
+      finishCampaign(updatedCamp,true);return;
+    }
     const mapId=updatedCamp.mapId||'bosque';
     if(mapId==='bosque'){setStage('bossWinStory');return;}
     if(mapId==='tennobara'){setStage('nitroWinStory');return;} // Nitro → mapa 3
@@ -5045,6 +5298,26 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='select')return <ServoSelectScreen onNavigate={onNavigate} onStartCampaign={startCampaign}/>;
   if(stage==='towerSelect')return <TowerSelectScreen onNavigate={onNavigate} onStart={startTower} profile={profile} setProfile={setProfile} onOpenShop={()=>setStage('towerShop')}/>;
   if(stage==='towerShop')return <TowerShopScreen profile={profile} setProfile={setProfile} onBack={()=>setStage('towerSelect')}/>;
+  if(stage==='towerClimb'){
+    const nextIdx=TOWER_ORDER.indexOf(camp.mapId)+1;
+    const nextFloor=(camp.towerFloor||1)+1;
+    const nextName=(TOWER_MAPS[TOWER_ORDER[nextIdx]]||{}).name||'???';
+    return(
+      <div className="screen">
+        <div className="panel" style={{textAlign:'center',maxWidth:460}}>
+          <div style={{fontSize:'2.5rem',marginBottom:12}}>🗼</div>
+          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:8}}>ANDAR CONQUISTADO!</h2>
+          <p style={{color:'var(--parchment)',fontSize:'.85rem',marginBottom:6}}>Você venceu o boss e sobe na Torre...</p>
+          <div className="cinzel" style={{color:'var(--red-bright)',fontSize:'1.3rem',letterSpacing:2,margin:'14px 0'}}>
+            ANDAR {nextFloor} — {nextName}
+          </div>
+          <p style={{color:'var(--parchment-dark)',fontSize:'.72rem',fontStyle:'italic'}}>
+            Sua party mantém o HP e NP atuais. A escalada continua...
+          </p>
+        </div>
+      </div>
+    );
+  }
   if(stage==='story')return <StoryScreen profile={profile} onFinish={()=>setStage('introEncounter')}/>;
   // Splash da Ibaraki entre a conversa inicial e o mapa 1
   if(stage==='introEncounter')return <SplashScreen art={IBARAKI.assets.encounter} title="IBARAKI DOUJI" sub="Oni-Berserker — Bosque dos Caminhos Cegos" onFinish={()=>setStage('map')}/>;
@@ -5200,6 +5473,7 @@ function App(){
   if(screen==='menu')return <MenuScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='profile')return <ProfileScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='shop')return <ShopScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
+  if(screen==='gacha')return <GachaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='achievements')return <AchievementsScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='codex')return <CodexScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='config')return <ConfigScreen onNavigate={navigate}/>;
