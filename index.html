@@ -1140,6 +1140,62 @@ function rollGacha(banner){
   return weighted[Math.floor(Math.random()*weighted.length)];
 }
 
+// ══════════════════════════════════════════════════════
+// ÁLBUM DE TRADUÇÃO — feed de comics traduzidos (rede social)
+// ══════════════════════════════════════════════════════
+// Cada "post" é publicado por um PERFIL (o personagem em foco da comic).
+// Os posts têm 1+ páginas (imagens) e tags (autor, personagem) para busca.
+// As imagens ficam na pasta `comics/` (fora de assets, sem conflito).
+//
+// COMO ADICIONAR uma comic:
+// 1. Coloque as imagens em `comics/` (ex.: comics/sith1.jpg, sith2.jpg...)
+// 2. Adicione (ou reutilize) um perfil em COMIC_PROFILES
+// 3. Adicione um post em COMIC_POSTS apontando as páginas e as tags
+//
+// Perfis dos "autores" do feed (o personagem em foco publica o post).
+const COMIC_PROFILES={
+  baobhan_sith:{
+    name:'Baobhan Sith',
+    handle:'@baobhan_sith',
+    avatar:'comics/sith_social.png', // avatar do perfil (troque pela arte)
+  },
+  // Adicione mais perfis aqui conforme for traduzindo outros personagens.
+};
+
+// Posts do feed. `pages` = lista de imagens (1 = página única; várias = multi-página).
+// `tags` = { autor, personagens[] } usados na busca/filtro.
+const COMIC_POSTS=[
+  {
+    id:'sith_rayshift',
+    profile:'baobhan_sith', // quem "publica" (personagem em foco)
+    caption:'Baobhan Sith e o convite para a próxima Rayshift...',
+    date:'',
+    tags:{ autor:'', personagens:['Baobhan Sith','Ritsuka Fujimaru'] },
+    // Páginas em ordem. Placeholder por ora — troque pelos arquivos reais.
+    pages:[
+      'comics/_placeholder.svg',
+      'comics/_placeholder.svg',
+      'comics/_placeholder.svg',
+      'comics/_placeholder.svg',
+      'comics/_placeholder.svg',
+      'comics/_placeholder.svg',
+      'comics/_placeholder.svg',
+      'comics/_placeholder.svg',
+    ],
+  },
+  // Adicione mais posts aqui.
+];
+
+// Extrai todas as tags únicas (autores + personagens) para os filtros de busca.
+function allComicTags(){
+  const autores=new Set(),personagens=new Set();
+  COMIC_POSTS.forEach(p=>{
+    if(p.tags?.autor)autores.add(p.tags.autor);
+    (p.tags?.personagens||[]).forEach(c=>personagens.add(c));
+  });
+  return{autores:[...autores],personagens:[...personagens]};
+}
+
 // ── INIMIGOS COMUNS ──────────────────────────────────
 const ENEMIES_DATA={
   morcego:{id:'morcego',name:'Morcego Gigante',hp:900,atk:480,agility:55,strPts:30},
@@ -1482,6 +1538,151 @@ function XPBar({xpState}){
 // ══════════════════════════════════════════════════════
 // GACHA — Tela de invocação (banners + vitrine rotativa)
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// ÁLBUM DE TRADUÇÃO — tela do feed (rede social)
+// ══════════════════════════════════════════════════════
+function ComicAlbumScreen({onNavigate}){
+  const[search,setSearch]=useState('');
+  const[activeTag,setActiveTag]=useState(null); // {tipo:'personagem'|'autor', valor}
+  const[viewer,setViewer]=useState(null); // {post, pageIdx} quando abre uma página em tela cheia
+  const tags=allComicTags();
+
+  // Filtra os posts pela busca de texto e pela tag ativa
+  const posts=COMIC_POSTS.filter(p=>{
+    const prof=COMIC_PROFILES[p.profile]||{};
+    if(activeTag){
+      if(activeTag.tipo==='autor'&&p.tags?.autor!==activeTag.valor)return false;
+      if(activeTag.tipo==='personagem'&&!(p.tags?.personagens||[]).includes(activeTag.valor))return false;
+    }
+    if(search.trim()){
+      const q=search.toLowerCase();
+      const hay=[prof.name,prof.handle,p.caption,p.tags?.autor,...(p.tags?.personagens||[])].join(' ').toLowerCase();
+      if(!hay.includes(q))return false;
+    }
+    return true;
+  });
+
+  // Visualizador de página em tela cheia (qualidade total, sem redução)
+  if(viewer){
+    const{post,pageIdx}=viewer;
+    const total=post.pages.length;
+    return(
+      <div className="screen" style={{padding:0,background:'rgba(0,0,0,0.95)'}}>
+        <div style={{position:'fixed',top:0,left:0,right:0,display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 14px',background:'rgba(0,0,0,0.7)',zIndex:10}}>
+          <span style={{color:'var(--parchment)',fontSize:'.8rem'}}>Página {pageIdx+1} de {total}</span>
+          <button className="btn btn-sm" onClick={()=>setViewer(null)}>✕ Fechar</button>
+        </div>
+        <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'56px 8px 60px'}}>
+          <img src={post.pages[pageIdx]} alt={`Página ${pageIdx+1}`}
+            style={{maxWidth:'100%',height:'auto',borderRadius:4,boxShadow:'0 4px 24px rgba(0,0,0,0.6)'}}/>
+        </div>
+        {total>1&&(
+          <div style={{position:'fixed',bottom:0,left:0,right:0,display:'flex',justifyContent:'center',gap:10,padding:'10px',background:'rgba(0,0,0,0.7)',zIndex:10}}>
+            <button className="btn btn-sm" disabled={pageIdx<=0} onClick={()=>setViewer({post,pageIdx:pageIdx-1})} style={{opacity:pageIdx<=0?0.4:1}}>← Anterior</button>
+            <button className="btn btn-sm" disabled={pageIdx>=total-1} onClick={()=>setViewer({post,pageIdx:pageIdx+1})} style={{opacity:pageIdx>=total-1?0.4:1}}>Próxima →</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return(
+    <div className="screen" style={{padding:'16px 10px',alignItems:'flex-start'}}>
+      <div style={{maxWidth:560,width:'100%',margin:'0 auto'}}>
+        {/* Cabeçalho */}
+        <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
+          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:4}}>📖 ÁLBUM DE TRADUÇÃO</h2>
+          <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:10}}>
+            Traduções de comics da franquia. Role o feed ou busque por autor ou personagem.
+          </p>
+          {/* Busca */}
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="🔍 Buscar por autor, personagem ou texto..."
+            style={{width:'100%',padding:'8px 10px',borderRadius:4,border:'1px solid var(--gold-dim)',
+              background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.78rem',marginBottom:8}}/>
+          {/* Filtros por tag */}
+          {(tags.personagens.length>0||tags.autores.length>0)&&(
+            <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+              {activeTag&&(
+                <button onClick={()=>setActiveTag(null)}
+                  style={{fontSize:'.66rem',padding:'3px 8px',borderRadius:12,border:'1px solid var(--red)',background:'rgba(139,26,26,0.3)',color:'#ff9090',cursor:'pointer'}}>✕ Limpar filtro</button>
+              )}
+              {tags.personagens.map(c=>(
+                <button key={'c'+c} onClick={()=>setActiveTag({tipo:'personagem',valor:c})}
+                  style={{fontSize:'.66rem',padding:'3px 8px',borderRadius:12,cursor:'pointer',
+                    border:`1px solid ${activeTag?.valor===c?'var(--gold)':'var(--gold-dim)'}`,
+                    background:activeTag?.valor===c?'rgba(201,162,39,0.25)':'rgba(0,0,0,0.25)',color:'var(--gold)'}}>👤 {c}</button>
+              ))}
+              {tags.autores.map(a=>(
+                <button key={'a'+a} onClick={()=>setActiveTag({tipo:'autor',valor:a})}
+                  style={{fontSize:'.66rem',padding:'3px 8px',borderRadius:12,cursor:'pointer',
+                    border:`1px solid ${activeTag?.valor===a?'var(--gold)':'var(--gold-dim)'}`,
+                    background:activeTag?.valor===a?'rgba(201,162,39,0.25)':'rgba(0,0,0,0.25)',color:'var(--parchment)'}}>✍️ {a}</button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Feed de posts */}
+        {posts.length===0?(
+          <div className="panel" style={{textAlign:'center',padding:30,color:'var(--parchment-dark)',fontSize:'.8rem'}}>
+            Nenhuma tradução encontrada.
+          </div>
+        ):posts.map(post=>{
+          const prof=COMIC_PROFILES[post.profile]||{name:'???',handle:'',avatar:null};
+          const multi=post.pages.length>1;
+          return(
+            <div key={post.id} className="panel" style={{marginBottom:14,padding:0,overflow:'hidden'}}>
+              {/* Cabeçalho do post: avatar + nome do personagem em foco */}
+              <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px'}}>
+                <div style={{width:44,height:44,borderRadius:'50%',overflow:'hidden',border:'2px solid var(--gold-dim)',flexShrink:0,background:'rgba(0,0,0,0.3)'}}>
+                  {prof.avatar&&<img src={prof.avatar} alt={prof.name} style={{width:'100%',height:'100%',objectFit:'cover'}} onError={e=>{e.target.style.display='none';}}/>}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:'.85rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{prof.name}</div>
+                  <div style={{fontSize:'.66rem',color:'var(--parchment-dark)'}}>{prof.handle}{post.date?` · ${post.date}`:''}</div>
+                </div>
+                {multi&&<span style={{fontSize:'.6rem',color:'var(--parchment-dark)',background:'rgba(0,0,0,0.3)',padding:'2px 7px',borderRadius:10}}>📄 {post.pages.length} págs</span>}
+              </div>
+
+              {/* Legenda */}
+              {post.caption&&<div style={{padding:'0 12px 10px',fontSize:'.78rem',color:'var(--parchment)'}}>{post.caption}</div>}
+
+              {/* Páginas: primeira grande + miniaturas se houver mais */}
+              <div>
+                <img src={post.pages[0]} alt="Página 1" onClick={()=>setViewer({post,pageIdx:0})}
+                  style={{width:'100%',height:'auto',display:'block',cursor:'pointer'}}/>
+                {multi&&(
+                  <div style={{display:'flex',gap:4,padding:8,overflowX:'auto'}}>
+                    {post.pages.slice(1).map((pg,i)=>(
+                      <img key={i} src={pg} alt={`Página ${i+2}`} onClick={()=>setViewer({post,pageIdx:i+1})}
+                        style={{height:80,width:'auto',borderRadius:3,cursor:'pointer',flexShrink:0,border:'1px solid var(--gold-dim)'}}/>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Tags do post (clicáveis para filtrar) */}
+              <div style={{display:'flex',flexWrap:'wrap',gap:6,padding:'8px 12px 12px'}}>
+                {post.tags?.autor&&(
+                  <button onClick={()=>setActiveTag({tipo:'autor',valor:post.tags.autor})}
+                    style={{fontSize:'.64rem',padding:'2px 8px',borderRadius:10,cursor:'pointer',border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.25)',color:'var(--parchment)'}}>✍️ {post.tags.autor}</button>
+                )}
+                {(post.tags?.personagens||[]).map(c=>(
+                  <button key={c} onClick={()=>setActiveTag({tipo:'personagem',valor:c})}
+                    style={{fontSize:'.64rem',padding:'2px 8px',borderRadius:10,cursor:'pointer',border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.25)',color:'var(--gold)'}}>👤 {c}</button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        <button className="btn btn-full" style={{marginTop:6,marginBottom:20}} onClick={()=>onNavigate('menu')}>← Voltar ao Menu</button>
+      </div>
+    </div>
+  );
+}
+
 function GachaScreen({onNavigate,profile,setProfile}){
   const[view,setView]=useState('banners'); // 'banners' | 'pull'
   const[banner,setBanner]=useState(null);
@@ -1662,12 +1863,13 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('campaign')}>⚔️ &nbsp; Iniciar Campanha</button>
         <button className="btn btn-full btn-red" onClick={()=>onNavigate('tower')}>🗼 &nbsp; Torre de Desafios</button>
         <button className="btn btn-full" onClick={()=>onNavigate('gacha')}>⛩️ &nbsp; Invocação</button>
+        <button className="btn btn-full" onClick={()=>onNavigate('comics')}>📖 &nbsp; Álbum de Tradução</button>
         <button className="btn btn-full" onClick={()=>onNavigate('profile')}>📜 &nbsp; Perfil</button>
         <button className="btn btn-full" onClick={()=>onNavigate('shop')}>🏪 &nbsp; Loja de Perks</button>
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.63</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.65</p>
       </div>
     </div>
   );
@@ -1957,7 +2159,7 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
      ready:!!done.defeat_nitro,unlock:'defeat_nitro'},
     {id:'archer',name:'Baobhan Sith',classe:'Archer',art:ARCHER.assets.face,
      ready:!!done.defeat_archer,unlock:'defeat_archer'},
-    {id:'kiara',name:'Sessyoin Kiara',classe:'Moon Cancer',art:GACHA_SERVOS.kiara_summer.assets.combat,
+    {id:'kiara',name:'Sessyoin Kiara',classe:'Moon Cancer',art:GACHA_SERVOS.kiara_summer.assets.default,
      ready:owned.includes('kiara_summer'),unlock:'gacha',lockText:'Banner Pull'},
   ];
 
@@ -5608,6 +5810,7 @@ function App(){
   if(screen==='profile')return <ProfileScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='shop')return <ShopScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='gacha')return <GachaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
+  if(screen==='comics')return <ComicAlbumScreen onNavigate={navigate}/>;
   if(screen==='achievements')return <AchievementsScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='codex')return <CodexScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='config')return <ConfigScreen onNavigate={navigate}/>;
