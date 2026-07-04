@@ -1104,13 +1104,226 @@ GACHA_SERVOS.kiara_summer={
 // Registra os servos do gacha no motor de combate (para skills/NP funcionarem)
 PLAYABLE_SERVOS.kiara_summer=GACHA_SERVOS.kiara_summer;
 
+// ── SCÁTHACH-SKADI (Ruler) — Banner Summer ──
+// Suporte ofensiva: buffs de ataque/crítico, carga de NP e NP AoE que
+// reduz a barra de NP dos inimigos. Rainha do gelo em traje de verão.
+GACHA_SERVOS.skadi_summer={
+  id:'skadi_summer',name:'Scáthach-Skadi',className:'Ruler',
+  rarity:5,banner:'summer',
+  getAtk:lvl=>Math.round(linear(lvl,1636,10586)),
+  getHp:lvl=>Math.round(linear(lvl,2266,15457)),
+  attributes:{
+    strength:{rank:'C',points:rankToPoints('C')},
+    agility:{rank:'B',points:rankToPoints('B')},
+    luck:{rank:'A',points:rankToPoints('A')},
+    endurance:{rank:'C',points:rankToPoints('C')},
+    mana:{rank:'A',points:rankToPoints('A'),gainPercent:manaGain('A')},
+    np:{rank:'A+',points:rankToPoints('A+')},
+  },
+  // ── PASSIVAS ──
+  passiveSkills:[
+    {id:'magicres',name:'Resistência Mágica A',effect:{type:'debuff_res',value:25}},
+    {id:'itemconstruct',name:'Construção de Item A',effect:{type:'atk_passive',value:10}},
+    {id:'territory',name:'Criação de Território A',effect:{type:'np_regen',value:3}},
+  ],
+  // ── SKILLS ATIVAS ── adaptadas das 3 do FGO (suporte→auto-buff no nosso motor)
+  activeSkills:[
+    // Runa Primordial (Verão): grande buff de ATK + crítico
+    {id:'runa',name:'Runa Primordial (Verão)',rank:'A',
+      desc:'Grande aumento de Ataque e Crítico por 3 turnos',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:0,critUp:linear(lvl,30,50),atkUp:linear(lvl,20,40),dur:3}),
+      getCD:lvl=>stdCD(lvl,7,6,5)},
+    // Sorvete de Verão: buff de ataque + cura leve (o "buff à party")
+    {id:'sorvete',name:'Sorvete de Verão',rank:'C',
+      desc:'Aumenta o Ataque e recupera um pouco de HP',
+      effectType:'buff_atk_heal',
+      getEffect:lvl=>({atkUp:linear(lvl,15,25),healPct:linear(lvl,10,20),dur:3}),
+      getCD:lvl=>stdCD(lvl,7,6,5)},
+    // Perdida em Pensamentos: carga massiva de NP + crit up
+    {id:'pensamentos',name:'Perdida em Pensamentos numa Noite de Verão',rank:'A+',
+      desc:'Carrega bastante a Barra de NP e aumenta o Crítico',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,30,50),critUp:linear(lvl,15,25),atkUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+  ],
+  // ── NP: Gate of Aegir (AoE) — dano em todos + reduz NP dos inimigos ──
+  np:{
+    name:'Gate of Aegir',type:'Anti-Army',isAoE:true,effectType:'dmg_npdrain',
+    levels:{
+      1:{dmgPct:450,npDrain:10},2:{dmgPct:600,npDrain:15},3:{dmgPct:675,npDrain:20},
+      4:{dmgPct:712.5,npDrain:25},5:{dmgPct:750,npDrain:30},
+    },
+  },
+  dialogue:{
+    summon:'Ruler, Scáthach-Skadi. Mudei para um Espírito de traje de banho... a própria Scáthach me ensinou. Cuide bem de mim, Mestre.',
+    battle:'O verão é a estação perfeita para sorvete. Mas primeiro... vamos acabar com isso.',
+    lose:'Ara... parece que exagerei no descanso...',
+    win:'Foi um bom exercício. Agora, que tal um sorvete?',
+    np:'As runas primordiais se abrem... que as profundezas geladas os engulam. Gate of Aegir!',
+    skill:'Deixe comigo. A rainha do gelo cuidará disso.',
+    mapDone:'O caminho está livre. Vamos aproveitar o resto do verão, Mestre.',
+  },
+  assets:{
+    default:'assets/servos/skadi/skadi_profile.png',
+    battle:'assets/servos/skadi/skadi_profile.png',
+    combat:'assets/servos/skadi/skadi_combat.png',
+    np:'assets/servos/skadi/skadi_combat.png',
+    full:'assets/servos/skadi/skadi_full.png',
+  },
+};
+PLAYABLE_SERVOS.skadi_summer=GACHA_SERVOS.skadi_summer;
+
+// ── OKITA SOUJI (Saber) — Banner Gudaguda ──
+// Atacante single-target de crítico. Capitã do Shinsengumi, gênio da espada.
+// NP Mumyou Sandanzuki ignora defesa mas pode atordoá-la depois (fiel ao FGO).
+GACHA_SERVOS.okita_saber={
+  id:'okita_saber',name:'Okita Souji',className:'Saber',
+  rarity:5,banner:'gudaguda',
+  getAtk:lvl=>Math.round(linear(lvl,1786,11562)),
+  getHp:lvl=>Math.round(linear(lvl,1897,12938)),
+  attributes:{
+    strength:{rank:'B',points:rankToPoints('B')},
+    agility:{rank:'A',points:rankToPoints('A')},
+    luck:{rank:'C',points:rankToPoints('C')},
+    endurance:{rank:'D',points:rankToPoints('D')},
+    mana:{rank:'C',points:rankToPoints('C'),gainPercent:manaGain('C')},
+    np:{rank:'B',points:rankToPoints('B')},
+  },
+  // ── PASSIVAS ──
+  passiveSkills:[
+    {id:'magicres',name:'Resistência Mágica E',effect:{type:'debuff_res',value:10}},
+    {id:'riding',name:'Montaria A',effect:{type:'evade_passive',value:12}},
+    {id:'crit',name:'Instinto de Espadachim',effect:{type:'crit_passive',value:15}},
+  ],
+  // ── SKILLS ATIVAS ── as 3 do FGO
+  activeSkills:[
+    // Shukuchi (Redução de Distância): burst de ATK + crítico
+    {id:'shukuchi',name:'Shukuchi',rank:'B',
+      desc:'Grande aumento de Ataque e Crítico por 1 turno (burst)',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:0,critUp:linear(lvl,30,50),atkUp:linear(lvl,30,50),dur:1}),
+      getCD:lvl=>stdCD(lvl,6,5,4)},
+    // Olho da Mente (Falso): evasão 1t + crit up 3t
+    {id:'mindseye',name:'Olho da Mente (Falso)',rank:'A',
+      desc:'Ganha Evasão por 1 turno e aumenta o Crítico por 3 turnos',
+      effectType:'evade_critup',
+      getEffect:lvl=>({evadeTurns:1,critUp:linear(lvl,20,40),critDur:3}),
+      getCD:lvl=>stdCD(lvl,7,6,5)},
+    // Constituição Fraca: carrega NP mas com leve demérito (a tosse)
+    {id:'weakconst',name:'Constituição Fraca',rank:'-',
+      desc:'Carrega a Barra de NP e afia o Crítico (mas a saúde é frágil)',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,20,40),critUp:linear(lvl,10,20),atkUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,7,6,5)},
+  ],
+  // ── NP: Mumyou Sandanzuki — single-target, ignora defesa, DEF down + auto-atordoa ──
+  np:{
+    name:'Mumyou Sandanzuki',type:'Anti-Personnel',isAoE:false,effectType:'dmg_defdown_selfstun',sureHit:true,
+    levels:{
+      1:{dmgPct:900,defDown:30,defDownDur:3,stunChance:60},
+      2:{dmgPct:1200,defDown:30,defDownDur:3,stunChance:60},
+      3:{dmgPct:1350,defDown:30,defDownDur:3,stunChance:60},
+      4:{dmgPct:1425,defDown:30,defDownDur:3,stunChance:60},
+      5:{dmgPct:1500,defDown:30,defDownDur:3,stunChance:60},
+    },
+  },
+  dialogue:{
+    summon:'Capitã da Primeira Divisão do Shinsengumi, Okita Souji. Desculpe aparecer sem avisar!',
+    battle:'Cruzar espadas é vida ou morte, não é?',
+    lose:'Grande vitória para a Okita-san~! Meu corpo está bem, ainda posso continuar... cough!?',
+    win:'Okita-san daishouri! Sem problemas, ainda tenho forças para... (gurgle)',
+    np:'Primeiro passo, supersônico. Segundo passo, sem distância. Terceiro passo... lâmina absoluta! Mumyou Sandanzuki!',
+    skill:'Deixa comigo. Um golpe basta.',
+    mapDone:'Vitória para a Okita-san! Vamos seguir, Mestre.',
+  },
+  assets:{
+    default:'assets/servos/okita/okita_profile.png',
+    battle:'assets/servos/okita/okita_profile.png',
+    combat:'assets/servos/okita/okita_combat.png',
+    np:'assets/servos/okita/okita_combat.png',
+    full:'assets/servos/okita/okita_full.png',
+  },
+};
+PLAYABLE_SERVOS.okita_saber=GACHA_SERVOS.okita_saber;
+
+// ── OKITA SOUJI ALTER (Alter Ego) — Banner Gudaguda ──
+// A "Majin Okita" — versão Counter Guardian de cabelos brancos. Atacante AoE
+// devastadora, com NP em todos os inimigos e invencibilidade. Sem a tosse.
+GACHA_SERVOS.okita_alter={
+  id:'okita_alter',name:'Okita Souji Alter',className:'Alter Ego',
+  rarity:5,banner:'gudaguda',
+  getAtk:lvl=>Math.round(linear(lvl,1911,12369)),
+  getHp:lvl=>Math.round(linear(lvl,1782,12157)),
+  attributes:{
+    strength:{rank:'A',points:rankToPoints('A')},
+    agility:{rank:'A',points:rankToPoints('A')},
+    luck:{rank:'C',points:rankToPoints('C')},
+    endurance:{rank:'B',points:rankToPoints('B')},
+    mana:{rank:'B',points:rankToPoints('B'),gainPercent:manaGain('B')},
+    np:{rank:'A',points:rankToPoints('A')},
+  },
+  // ── PASSIVAS ──
+  passiveSkills:[
+    {id:'magicres',name:'Resistência Mágica B',effect:{type:'debuff_res',value:17}},
+    {id:'crit',name:'Espada Demoníaca',effect:{type:'crit_passive',value:15}},
+    {id:'atk',name:'Majin (Deus Humano)',effect:{type:'atk_passive',value:15}},
+  ],
+  // Alter Ego: vantagem contra a "cavalaria" (adaptado: Lancers no nosso motor)
+  // ── SKILLS ATIVAS ── as 3 do FGO (foco em dano + carga + invencibilidade)
+  activeSkills:[
+    // Extremo (Kyokuchi): grande buff de ATK + crítico por 3 turnos
+    {id:'kyokuchi',name:'Extremo',rank:'A',
+      desc:'Grande aumento de Ataque e Crítico por 3 turnos',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:0,critUp:linear(lvl,20,40),atkUp:linear(lvl,30,50),dur:3}),
+      getCD:lvl=>stdCD(lvl,7,6,5)},
+    // Persistência: carrega NP + crit up
+    {id:'persist',name:'Persistência',rank:'A',
+      desc:'Carrega bastante a Barra de NP e aumenta o Crítico',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:30,critUp:linear(lvl,20,40),atkUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,7,6,5)},
+    // Inabalável: Invencibilidade (evasão) por vários turnos + buff de NP
+    {id:'unwavering',name:'Inabalável',rank:'A+',
+      desc:'Ganha Invencibilidade por 2 turnos e reforça o dano do NP',
+      effectType:'invuln_npdmg',
+      getEffect:lvl=>({evadeTurns:2,npDmgUp:linear(lvl,20,40),dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+  ],
+  // ── NP: Zettou Mukyuissen — AoE, remove buffs defensivos dos inimigos ──
+  np:{
+    name:'Zettou Mukyuissen',type:'Anti-Army',isAoE:true,effectType:'dmg_removedef',
+    levels:{
+      1:{dmgPct:500},2:{dmgPct:650},3:{dmgPct:725},4:{dmgPct:762.5},5:{dmgPct:800},
+    },
+  },
+  dialogue:{
+    summon:'Alter Ego, Okita Souji Alter. Majin Série 9. Não espere gentileza de mim.',
+    battle:'Vou cortar tudo. Sem hesitação.',
+    lose:'Então... este era o meu limite... que decepção.',
+    win:'Daishouri. Nada resta em pé diante da minha lâmina.',
+    np:'A luz que supera o sol e a lua... desapareçam. Zettou... Mukyuissen!',
+    skill:'Isto acaba agora.',
+    mapDone:'Ninguém mais se levanta. Sigamos, Mestre.',
+  },
+  assets:{
+    default:'assets/servos/okita_alter/okita_alter_profile.png',
+    battle:'assets/servos/okita_alter/okita_alter_profile.png',
+    combat:'assets/servos/okita_alter/okita_alter_combat.png',
+    np:'assets/servos/okita_alter/okita_alter_combat.png',
+    full:'assets/servos/okita_alter/okita_alter_full.png',
+  },
+};
+PLAYABLE_SERVOS.okita_alter=GACHA_SERVOS.okita_alter;
+
 // Os 4 banners. `pool` = ids de GACHA_SERVOS que aparecem no banner.
 // `rateUp` (opcional) = id com chance aumentada (usado no "Especial").
 const GACHA_BANNERS=[
   {id:'summer',name:'Summer',subtitle:'Servos de Verão',
-   theme:'#3aa0c0',art:'assets/banners/summer.jpg',pool:['kiara_summer']},
+   theme:'#3aa0c0',art:'assets/banners/summer.jpg',pool:['kiara_summer','skadi_summer']},
   {id:'gudaguda',name:'Gudaguda',subtitle:'Servos do Evento Gudaguda',
-   theme:'#c0863a',art:null,pool:[]},
+   theme:'#c0863a',art:null,pool:['okita_saber','okita_alter']},
   {id:'especial',name:'Especial',subtitle:'Banner rotativo — sempre um Servo em rate up',
    theme:'#c0a03a',art:null,pool:[],rateUp:null},
   {id:'expurgo',name:'Noite de Expurgo',subtitle:'Invocação caótica entre todos os banners',
@@ -1159,6 +1372,11 @@ const COMIC_PROFILES={
     handle:'@baobhan_sith',
     avatar:'comics/sith_social.png', // avatar do perfil (troque pela arte)
   },
+  sakamoto_ryoma:{
+    name:'Sakamoto Ryoma',
+    handle:'@sakamoto_ryoma',
+    avatar:'comics/ryoma_social.png',
+  },
   // Adicione mais perfis aqui conforme for traduzindo outros personagens.
 };
 
@@ -1182,6 +1400,15 @@ const COMIC_POSTS=[
     tags:{
       autor:'@IZit_unk',
       personagens:['Baobhan Sith','Fujimaru Ritsuka','Melusine','Barghest','Morgan Le Fay','Oberon','Castoria'],
+    },
+  },
+  {
+    id:'ryoma_comic',
+    profile:'sakamoto_ryoma',
+    pages:comicPages('Ryo',18), // comics/Ryo1.jpg ... comics/Ryo18.jpg
+    tags:{
+      autor:'@cln0621uan1',
+      personagens:['Sakamoto Ryoma','Oryou','Fujimaru Ritsuka'],
     },
   },
   // Adicione mais posts aqui.
@@ -1868,7 +2095,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.66</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.70</p>
       </div>
     </div>
   );
@@ -2145,8 +2372,8 @@ function CodexScreen({onNavigate,profile}){
 function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
   // Party: até 3 servos distintos (ids curtos). O 1º escolhido é o líder.
   const[partySel,setPartySel]=useState(['ibaraki']);
-  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE,kiara:GACHA_SERVOS.kiara_summer};
-  const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',kiara:'kiara_summer'};
+  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE,kiara:GACHA_SERVOS.kiara_summer,skadi:GACHA_SERVOS.skadi_summer,okita:GACHA_SERVOS.okita_saber,okita_alter:GACHA_SERVOS.okita_alter};
+  const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',kiara:'kiara_summer',skadi:'skadi_summer',okita:'okita_saber',okita_alter:'okita_alter'};
   const done=profile.achievements||{};
   const owned=profile.gachaOwned||[];
   const SERVOS=[
@@ -2160,6 +2387,12 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
      ready:!!done.defeat_archer,unlock:'defeat_archer'},
     {id:'kiara',name:'Sessyoin Kiara',classe:'Moon Cancer',art:GACHA_SERVOS.kiara_summer.assets.default,
      ready:owned.includes('kiara_summer'),unlock:'gacha',lockText:'Banner Pull'},
+    {id:'skadi',name:'Scáthach-Skadi',classe:'Ruler',art:GACHA_SERVOS.skadi_summer.assets.default,
+     ready:owned.includes('skadi_summer'),unlock:'gacha',lockText:'Banner Pull'},
+    {id:'okita',name:'Okita Souji',classe:'Saber',art:GACHA_SERVOS.okita_saber.assets.default,
+     ready:owned.includes('okita_saber'),unlock:'gacha',lockText:'Banner Pull'},
+    {id:'okita_alter',name:'Okita Souji Alter',classe:'Alter Ego',art:GACHA_SERVOS.okita_alter.assets.default,
+     ready:owned.includes('okita_alter'),unlock:'gacha',lockText:'Banner Pull'},
   ];
 
   // Adiciona/remove um servo da party (máx 3, sem repetir)
@@ -4316,6 +4549,22 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       newServo.activeDebuffs=[];
       addLog(`${skillDef.name}: Evasão por ${eff.evadeTurns}t e remove todos os efeitos negativos!`,'player');
       spawnFx('servo','EVADE + LIMPO','buff');
+    } else if(et==='buff_atk_heal'){ // Skadi: Sorvete de Verão — ATK + cura
+      const healed=Math.round(newServo.hpMax*eff.healPct/100);
+      newServo.hp=clamp(newServo.hp+healed,0,newServo.hpMax);
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'attack_up',value:eff.atkUp,turns:eff.dur,id:'sorvete_atk'}];
+      addLog(`${skillDef.name}: Ataque +${eff.atkUp}% por ${eff.dur}t e cura ${healed} HP`,'heal');
+      spawnFx('servo',`+${healed}`,'heal');
+    } else if(et==='evade_critup'){ // Okita: Olho da Mente (Falso) — evasão + crit up
+      newServo.evadeTurns=Math.max(newServo.evadeTurns||0,eff.evadeTurns);
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'crit_up',value:eff.critUp,turns:eff.critDur,id:'okita_crit'}];
+      addLog(`${skillDef.name}: Evasão por ${eff.evadeTurns}t e Crítico +${eff.critUp}% por ${eff.critDur}t`,'player');
+      spawnFx('servo','EVADE + CRIT','buff');
+    } else if(et==='invuln_npdmg'){ // Okita Alter: Inabalável — invencibilidade + NP dmg
+      newServo.evadeTurns=Math.max(newServo.evadeTurns||0,eff.evadeTurns);
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'np_damage_up',value:eff.npDmgUp,turns:eff.dur,id:'alter_np'}];
+      addLog(`${skillDef.name}: Invencibilidade por ${eff.evadeTurns}t e dano de NP +${eff.npDmgUp}% por ${eff.dur}t`,'player');
+      spawnFx('servo','INVENCÍVEL','buff');
     }
     setServo(newServo);setEnemies(newEnemies);
     if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
@@ -4406,6 +4655,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       if(npEt==='dmg_defdown'){
         hit={...hit,activeDebuffs:[...(hit.activeDebuffs||[]),{type:'defense_down',value:npDef.defDown,turns:SDEF.np.defDownDur}]};
       }
+      // NP da Okita (Mumyou Sandanzuki): DEF down forte no alvo
+      if(npEt==='dmg_defdown_selfstun'){
+        hit={...hit,activeDebuffs:[...(hit.activeDebuffs||[]),{type:'defense_down',value:npDef.defDown,turns:npDef.defDownDur}]};
+      }
       // NP do Deon (Fleur de Lis): ATK down + DEF down + chance de Charme em cada inimigo
       if(npEt==='dmg_atkdef_charm'){
         const debs=[...(hit.activeDebuffs||[]),
@@ -4422,6 +4675,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         const others=(hit.activeDebuffs||[]).filter(d=>d.type!=='poison');
         hit={...hit,activeDebuffs:[...others,{type:'poison',value:curseDmg,turns:npDef.curseTurns,curse:true}]};
       }
+      // NP da Skadi (Gate of Aegir): drena a barra de NP dos inimigos
+      if(npEt==='dmg_npdrain'&&hit.npBar!=null){
+        hit={...hit,npBar:clamp(hit.npBar-npDef.npDrain,0,100)};
+      }
+      // NP da Okita Alter (Zettou Mukyuissen): remove buffs defensivos dos inimigos
+      if(npEt==='dmg_removedef'){
+        hit={...hit,activeBuffs:(hit.activeBuffs||[]).filter(b=>b.type!=='defense_up')};
+      }
       return hit;
     });
     // NP da Qin: buff de ATK próprio (+ crítico) após o golpe
@@ -4431,12 +4692,20 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         newServo.activeBuffs=[...newServo.activeBuffs,{type:'crit_up',value:npDef.critUp,turns:SDEF.np.selfBuffDur,id:'np_crit'}];
       }
     }
+    // NP da Okita (Mumyou Sandanzuki): chance de se atordoar após o golpe (a tosse)
+    let okitaStunned=false;
+    if(npEt==='dmg_defdown_selfstun'&&rollChance(npDef.stunChance)){
+      newServo.stunned=(newServo.stunned||0)+1;
+      okitaStunned=true;
+    }
     setDialogue({text:SDEF.dialogue.np,portrait:SDEF.assets.default});
     fireNpCutin(SDEF.assets.np,SDEF.np.name.toUpperCase(),SDEF.dialogue.np);
     const extraLog=npEt==='dmg_defdown'?` · DEF ↓${npDef.defDown}% por ${SDEF.np.defDownDur}t`
       :(npEt==='dmg_selfbuff'||npEt==='dmg_selfbuff_crit')?` · ATK ↑${npDef.atkUp}%${npDef.critUp?` · Crít ↑${npDef.critUp}%`:''} por ${SDEF.np.selfBuffDur}t`
       :npEt==='dmg_atkdef_charm'?` · ATK ↓${npDef.atkDown}% · DEF ↓${npDef.defDown}% (todos) · ${npDef.charmChance}% de Charme`
-      :npEt==='dmg_curse'?` · Maldição: dano por turno por ${npDef.curseTurns}t`:'';
+      :npEt==='dmg_curse'?` · Maldição: dano por turno por ${npDef.curseTurns}t`
+      :npEt==='dmg_defdown_selfstun'?` · DEF ↓${npDef.defDown}% por ${npDef.defDownDur}t${okitaStunned?' · 😵 Okita se atordoou!':''}`
+      :npEt==='dmg_npdrain'?` · NP dos inimigos ↓${npDef.npDrain}%`:'';
     const alvoTxt=SDEF.np.isAoE?'todos os inimigos':tgt.name;
     addLog(`⚡ ${SDEF.np.name.toUpperCase()} (NP Lv.${npLvl})! ${dmg} dano em ${alvoTxt}${extraLog}`,'np');
     setServo(newServo);setEnemies(newEnemies);
