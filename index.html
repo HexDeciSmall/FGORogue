@@ -1032,11 +1032,83 @@ const GACHA_PULL_COST=50; // SQ por giro (1 giro = 1 servo)
 //   activeSkills, np, dialogue, assets:{ default, combat, np, full, ... } }
 const GACHA_SERVOS={};
 
+// ── SESSYOIN KIARA (Moon Cancer) — Banner Summer ──
+// Servo limitado do gacha. Sobrevivência (Guts + regen + evade) e NP AoE forte.
+GACHA_SERVOS.kiara_summer={
+  id:'kiara_summer',name:'Sessyoin Kiara',className:'Moon Cancer',
+  rarity:5,banner:'summer',
+  getAtk:lvl=>Math.round(linear(lvl,1719,11128)),
+  getHp:lvl=>Math.round(linear(lvl,2249,15336)),
+  attributes:{
+    strength:{rank:'C',points:rankToPoints('C')},
+    agility:{rank:'C',points:rankToPoints('C')},
+    luck:{rank:'B',points:rankToPoints('B')},
+    endurance:{rank:'A+',points:rankToPoints('A+')},
+    mana:{rank:'A+',points:rankToPoints('A+'),gainPercent:manaGain('A')},
+    np:{rank:'A+',points:rankToPoints('A+')},
+  },
+  // ── PASSIVAS ──
+  passiveSkills:[
+    {id:'territory',name:'Criação de Território EX',effect:{type:'atk_passive',value:25}},
+    {id:'otherworldly',name:'Criação de Outro Mundo EX',effect:{type:'np_regen',value:1}},
+    {id:'manifest',name:'Manifestação Independente E',effect:{type:'crit_passive',value:20}},
+    {id:'logos',name:'Logos Eater D',effect:{type:'def_passive',value:30}},
+    // Moon Cancer: vantagem de classe contra Casters (1.5x)
+    {id:'anticaster',name:'Anti-Caster',effect:{type:'vs_class',cls:'Caster',value:50}},
+  ],
+  // ── SKILLS ATIVAS ── fiéis às 3 do FGO
+  activeSkills:[
+    // Mermaid's Flesh EX: Guts 1x + regen HP/turno (3t) + NP dmg up
+    {id:'mermaid',name:'Carne de Sereia',rank:'EX',
+      desc:'Ganha Guts, regenera HP por 3 turnos e aumenta o dano de NP',
+      effectType:'regen_guts_npdmg',
+      getEffect:lvl=>({regen:1000+100*(lvl-1),regenDur:3,npDmgUp:20,gutsRevivePct:50}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Divine Power (Ink) A: +NP bar + crit up + atk up (3t)
+    {id:'divine',name:'Poder Divino (Tinta)',rank:'A',
+      desc:'Carrega a Barra de NP, aumenta Crítico e Ataque por 3 turnos',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:20+(lvl-1),critUp:20+(lvl-1),atkUp:20+(lvl-1),dur:3}),
+      getCD:lvl=>stdCD(lvl,7,6,5)},
+    // Clam Palace A++: Evade 3t + remove debuffs
+    {id:'clam',name:'Palácio de Conchas',rank:'A++',
+      desc:'Ganha Evasão por 3 turnos e remove todos os efeitos negativos',
+      effectType:'evade_cleanse',
+      getEffect:lvl=>({evadeTurns:3}),
+      getCD:lvl=>stdCD(lvl,7,6,5)},
+  ],
+  // ── NP: Nirmāṇarati Heaven's Foam (AoE, atinge todos) ──
+  np:{
+    name:"Nirmāṇarati Heaven's Foam",type:'Anti-Army',isAoE:true,effectType:'dmg',
+    levels:{
+      1:{dmgPct:450},2:{dmgPct:600},3:{dmgPct:675},4:{dmgPct:712.5},5:{dmgPct:750},
+    },
+  },
+  dialogue:{
+    summon:'Moon Cancer, Sessyoin Kiara. Venha... deixe-me guiá-lo à salvação absoluta.',
+    battle:'Que comecem as festividades do verão.',
+    lose:'Ara... que pena. A espuma retorna ao mar...',
+    win:'Fufu... a salvação é doce, não é?',
+    np:'Meu voto é isento de qualquer falsidade... Todas as dúvidas e lamentações retornarão ao mar como espuma. Maitrī e o Buda se manifestarão... Nirmāṇarati, a Espuma do Céu.',
+    skill:'O tão aguardado solstício de verão! Que comecem as festividades!',
+    mapDone:'A maré nos leva adiante. Sigamos, Mestre.',
+  },
+  assets:{
+    default:'assets/servos/kiara/kiara_profile.png',
+    battle:'assets/servos/kiara/kiara_profile.png',
+    combat:'assets/servos/kiara/kiara_combat.png',
+    np:'assets/servos/kiara/kiara_combat.png',
+    full:'assets/servos/kiara/kiara_full.png',
+  },
+};
+// Registra os servos do gacha no motor de combate (para skills/NP funcionarem)
+PLAYABLE_SERVOS.kiara_summer=GACHA_SERVOS.kiara_summer;
+
 // Os 4 banners. `pool` = ids de GACHA_SERVOS que aparecem no banner.
 // `rateUp` (opcional) = id com chance aumentada (usado no "Especial").
 const GACHA_BANNERS=[
   {id:'summer',name:'Summer',subtitle:'Servos de Verão',
-   theme:'#3aa0c0',art:null,pool:[]},
+   theme:'#3aa0c0',art:'assets/banners/summer.jpg',pool:['kiara_summer']},
   {id:'gudaguda',name:'Gudaguda',subtitle:'Servos do Evento Gudaguda',
    theme:'#c0863a',art:null,pool:[]},
   {id:'especial',name:'Especial',subtitle:'Banner rotativo — sempre um Servo em rate up',
@@ -1595,7 +1667,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.60</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.63</p>
       </div>
     </div>
   );
@@ -1727,6 +1799,35 @@ const CODEX=[
      {label:'Mana',rank:'C'},{label:'Sorte',rank:'A'},{label:'NP',rank:'C'},
    ],
    va:'Chiwa Saito'},
+  {id:'kiara',cat:'servo',name:'Sessyoin Kiara',classe:'Moon Cancer',
+   art:'assets/servos/kiara/kiara_profile.png',
+   reveal:p=>(p.gachaOwned||[]).includes('kiara_summer'),
+   info:'Uma Pseudo-Serva imbuída com Yaobikuni do folclore japonês. Bodhisattva demoníaca que ergue e brinca com todos os seres vivos na palma da mão. Fala de "Amor" e "Salvação", mas busca apenas o próprio prazer. Obtida na Invocação (banner Summer).',
+   details:[
+     {title:'IDENTIDADE',body:'Ela afirma ser uma Pseudo-Serva imbuída com Yaobikuni, do folclore japonês.\n\nKiara possui o aspecto de Yaobikuni ("sacerdotisa budista de oitocentos anos") devido a ter comido carne de sereia ao encontrar por acaso um cardume de sereias enquanto retornava à superfície do fundo da Fossa das Marianas. De forma análoga, a lenda de Yaobikuni é a de uma freira do folclore japonês que comeu a carne de uma sereia, vagando pelo país com juventude perpétua e imortalidade por oitocentos anos. A razão de Kiara para consumir as sereias se deve à sua fascinação por "A Pequena Sereia".'},
+     {title:'SHEN',body:'Shen é uma Besta Divina do folclore chinês e japonês. É uma amêijoa gigante que reside no fundo do mar, cuja respiração, ao subir à superfície, produz miragens — o termo japonês que engloba miragens e Fata Morgana se traduz literalmente como "torre de respiração de Shen". Seu fóssil está localizado na Fossa das Marianas, devorado e fundido por Kiara, que estava mortalmente ferida.'},
+     {title:'APARÊNCIA',body:'Uma deslumbrante e estonteante Sessyoin Kiara. Se você, sem pensar, mergulhar em sua situação peculiar, se verá submerso em sua beleza.'},
+     {title:'PERSONALIDADE',body:'Kiara se tornou Yaobikuni, em vez de se transformar completamente.\n\n"Os seres vivos deste mundo são para mim. Bons, maus, não importa. Quem quer que sejam, eu cuidarei deles, os confortarei, os amarei e muito mais…"\n\nO "Amor" de que Kiara fala é unicamente para seu próprio prazer. Esse amor gigantesco se alinha a um certo desejo de salvar os outros, mas ela não vai além de brincar de forma infernal com aqueles que a reconhecem. Uma existência diabólica que possui a capacidade de uma Salvadora, mas busca apenas o próprio prazer... essa é Sessyoin Kiara.\n\n…Ainda… muita coisa está acontecendo desta vez, então ela está um pouco mais normal e mais atenta ao que acontece ao seu redor. Com a presença de Yaobikuni, ela pode ter adquirido um certo grau de "autocontrole".'},
+     {title:'HABILIDADES DE CLASSE',items:[
+       {name:'Criação de Território',rank:'EX',text:'Devido à aquisição de algum Mistério, ela pode criar espíritos além do mundo presente.'},
+       {name:'Criação de Outro Mundo',rank:'EX',text:'Ela possui a habilidade de criar um mundo fantasma sobre o mundo mundano, uma vez que tenha incorporado a capacidade de miragem de uma aberração abissal.'},
+       {name:'Manifestação Independente',rank:'E',text:'Assim como em sua versão normal, ela deliberadamente reduz o nível desta habilidade. Mesmo rebaixada, ela ainda lhe concede resistência contra efeitos como Morte Instantânea e Encantamento; foi o que lhe permitiu sobreviver à Maldição da Morte Instantânea da máscara.'},
+       {name:'Devoradora de Logos',rank:'D',text:'Uma característica especial do Paraíso do Prazer. Seres inteligentes são vistos como brinquedos por ela. Seu rank foi rebaixado em relação ao da Kiara normal.'},
+     ]},
+     {title:'HABILIDADES PESSOAIS',items:[
+       {name:'Palácio das Conchas',rank:'A',text:'O sopro da Besta Divina das profundezas — Shen, que dizem fazer emergir um castelo maravilhoso... aquilo que pode manifestar miragens. Semelhante ao Ilusionismo de Merlin, é uma ilusão ainda mais vil que corrompe completamente as pessoas. Inflige Enfeitiçamento, remove bônus defensivos e concede Esquiva aos aliados. Aqueles enfeitiçados não podem evitar seus ataques nem atacá-la, presos na ilusão.'},
+       {name:'Poder Divino (Tinta)',rank:'B',text:'É por ciúme do tempo dela com BB? Originalmente era o Poder Divino normal, mas parece que ela viu o Poder Divino chique e estiloso de Katsushika Hokusai (Saber) e o copiou. Sobe a B+~A com "Carne de Sereia".'},
+       {name:'Carne de Sereia',rank:'EX',text:'A habilidade de se tornar imortal após comer a carne de uma sereia. No Japão, a sereia era apenas "um peixe com aparência humana", sem alma. Comer um peixe sem alma não a internaria num hospício nem arruinaria seu voto de não ferir os outros... mesmo que comesse um cardume inteiro. Em sua interpretação, Andersen criou uma história onde as sereias tinham inteligência humana, mas permaneciam sem alma.'},
+     ]},
+     {title:'FANTASMA NOBRE',items:[
+       {name:"Nirmāṇarati — Espuma do Céu",text:'A Bodhisattva Kiara, agora demoníaca, ergue e brinca com todos os seres vivos na palma da mão. É uma subclasse de seu antigo Fantasma Nobre. Tendo consumido as ilusões de nível mestre da Besta Divina Shen, ela gera um mundo alternativo em grande escala — "O Abismo Profundo de Sessyoin".\n\nEla captura os alvos com a "Cidade Ilusória de Shen" e degrada a fronteira entre o "Real" e o "Imaginário". Uma vez em "satisfação completa apesar da ilusão", os alvos decidem abraçá-la por completo e deixam de ser criaturas vivas da realidade. Depois, não resta nada senão limpar essas ilusões como o lixo que são, dissipando-as no nada com um sorriso terno.\n\nKerakuten, o paraíso do prazer, é expresso tanto como "Divino" quanto como "Mundano" — um mundo de prazer divino. "Elas aparecem acima do solo como castelos que lembram zonas de prostituição, atraindo as pessoas para a Cidade Ilusória. Sowaka, sowaka."'},
+     ]},
+   ],
+   params:[
+     {label:'Força',rank:'C'},{label:'Resistência',rank:'A+'},{label:'Agilidade',rank:'C'},
+     {label:'Mana',rank:'A+'},{label:'Sorte',rank:'B'},{label:'NP',rank:'A+'},
+   ],
+   va:'Tanaka Rie'},
   {id:'oldman',cat:'npc',name:'Homem Idoso',classe:'Viajante',
    art:null,
    reveal:p=>!!(p.achievements&&p.achievements.defeat_archer)||(p.stats&&p.stats.runs||0)>3,
@@ -1843,9 +1944,10 @@ function CodexScreen({onNavigate,profile}){
 function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
   // Party: até 3 servos distintos (ids curtos). O 1º escolhido é o líder.
   const[partySel,setPartySel]=useState(['ibaraki']);
-  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE};
-  const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer'};
+  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE,kiara:GACHA_SERVOS.kiara_summer};
+  const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',kiara:'kiara_summer'};
   const done=profile.achievements||{};
+  const owned=profile.gachaOwned||[];
   const SERVOS=[
     {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',art:IBARAKI.assets.default,
      ready:true,unlock:null},
@@ -1855,6 +1957,8 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
      ready:!!done.defeat_nitro,unlock:'defeat_nitro'},
     {id:'archer',name:'Baobhan Sith',classe:'Archer',art:ARCHER.assets.face,
      ready:!!done.defeat_archer,unlock:'defeat_archer'},
+    {id:'kiara',name:'Sessyoin Kiara',classe:'Moon Cancer',art:GACHA_SERVOS.kiara_summer.assets.combat,
+     ready:owned.includes('kiara_summer'),unlock:'gacha',lockText:'Banner Pull'},
   ];
 
   // Adiciona/remove um servo da party (máx 3, sem repetir)
@@ -1891,7 +1995,7 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
                   :<div style={{width:44,height:44,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.4rem',background:'rgba(0,0,0,0.3)',borderRadius:3}}>🔒</div>}
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:'.8rem',color:unlocked?'var(--gold)':'var(--parchment-dark)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.name}</div>
-                  <div style={{fontSize:'.65rem',color:'var(--parchment-dark)'}}>{unlocked?s.classe:'Em breve'}</div>
+                  <div style={{fontSize:'.65rem',color:'var(--parchment-dark)'}}>{unlocked?s.classe:(s.lockText||'Em breve')}</div>
                 </div>
                 {inParty&&<span style={{position:'absolute',top:4,right:6,fontSize:'.7rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{selIdx===0?'★ Líder':`#${selIdx+1}`}</span>}
               </button>
@@ -3612,6 +3716,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(camp.saberBuff)atkUp+=SABER_NP.atkUp;
     // Skill da Torre — Carisma: +ATK passivo permanente
     if(towerAtkUp>0)atkUp+=towerAtkUp;
+    // Passiva de ataque (ex.: Criação de Território da Kiara)
+    for(const p of servo.passiveSkills||[]){if(p.effect.type==='atk_passive')atkUp+=p.effect.value;}
     return Math.round(dmg*(1+atkUp/100)*mult);
   }
 
@@ -3670,6 +3776,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const passiveMit=tgt.attributes.endurance.points/10;
     let defUp=0,defDown=0;
     for(const b of tgt.activeBuffs||[]){if(b.type==='defense_up')defUp+=b.value;}
+    // Passiva de defesa (ex.: Logos Eater da Kiara)
+    for(const p of (tgt.passiveSkills||[])){if(p.effect&&p.effect.type==='def_passive')defUp+=p.effect.value;}
     if(camp.planBonus?.defUp)defUp+=camp.planBonus.defUp;
     // Fleur de Lis (Saber): +15% DEF durante todo o combate do boss
     if(camp.saberBuff)defUp+=SABER_NP.defUp;
@@ -3694,6 +3802,13 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       hp=Math.max(0,hp-poisonDmg);
       addLog(`☠️ Veneno corrói ${SDEF.name}: ${poisonDmg} de dano!`,'enemy');
       spawnFx('servo',String(poisonDmg),'stun');
+    }
+    // Regeneração de HP por turno (ex.: Mermaid's Flesh da Kiara)
+    let regenTotal=0;
+    for(const b of s.activeBuffs||[]){if(b.type==='regen')regenTotal+=b.value;}
+    if(regenTotal>0&&hp>0){
+      hp=clamp(hp+regenTotal,0,s.hpMax);
+      spawnFx('servo',`+${regenTotal}`,'heal');
     }
     // Guts temporário (Lança de Haste Branca): decrementa a janela; some se expirar sem uso
     let tempGuts=s.tempGuts;
@@ -3845,6 +3960,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Chance de crítico = Sorte + bônus de buffs ativos (crit_up)
     let critBonus=0;
     for(const b of servo.activeBuffs||[]){if(b.type==='crit_up')critBonus+=b.value;}
+    // Passiva de crítico (ex.: Manifestação Independente da Kiara)
+    for(const p of servo.passiveSkills||[]){if(p.effect.type==='crit_passive')critBonus+=p.effect.value;}
     const isCrit=rollChance(servo.attributes.luck.points+critBonus);
     if(isCrit)dmg=Math.round(dmg*1.5);
     dmg=applyDmgToEnemy(dmg,tgt);
@@ -3979,9 +4096,26 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         addLog(`${skillDef.name}: drena ${drainDmg} de vida de ${tgt.name} e cura ${healed} HP!`,'heal');
         spawnFx('servo',`🩸 +${healed}`,'heal');
       } else { setNotif('Selecione um inimigo vivo!'); return; }
+    } else if(et==='regen_guts_npdmg'){ // Kiara: Mermaid's Flesh — Guts + regen HP + NP dmg
+      newServo.tempGuts={turns:99,revivePct:eff.gutsRevivePct||50}; // Guts (dura até ser usado)
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),
+        {type:'regen',value:eff.regen,turns:eff.regenDur,id:'mermaid_regen'},
+        {type:'np_damage_up',value:eff.npDmgUp,turns:eff.regenDur,id:'mermaid_np'}];
+      addLog(`${skillDef.name}: Guts + regen ${eff.regen} HP/turno e NP +${eff.npDmgUp}% por ${eff.regenDur}t`,'heal');
+      spawnFx('servo','GUTS + REGEN','buff');
+    } else if(et==='npcharge_crit_atk'){ // Kiara: Divine Power (Ink)
+      newServo.npBar=clamp(newServo.npBar+eff.npGain,0,100);
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),
+        {type:'crit_up',value:eff.critUp,turns:eff.dur,id:'ink_crit'},
+        {type:'attack_up',value:eff.atkUp,turns:eff.dur,id:'ink_atk'}];
+      addLog(`${skillDef.name}: +${eff.npGain}% NP · Crítico +${eff.critUp}% · Ataque +${eff.atkUp}% por ${eff.dur}t`,'player');
+      spawnFx('servo',`+${eff.npGain}% NP`,'buff');
+    } else if(et==='evade_cleanse'){ // Kiara: Clam Palace — Evade + remove debuffs
+      newServo.evadeTurns=Math.max(newServo.evadeTurns||0,eff.evadeTurns);
+      newServo.activeDebuffs=[];
+      addLog(`${skillDef.name}: Evasão por ${eff.evadeTurns}t e remove todos os efeitos negativos!`,'player');
+      spawnFx('servo','EVADE + LIMPO','buff');
     }
-
-    setDialogue({text:SDEF.dialogue.skill,portrait:SDEF.assets.default});
     setServo(newServo);setEnemies(newEnemies);
     if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
     // Skills são AÇÕES LIVRES (estilo FGO): não passam o turno.
