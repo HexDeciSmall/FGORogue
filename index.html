@@ -1372,7 +1372,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.55</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.56</p>
       </div>
     </div>
   );
@@ -3916,8 +3916,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     let es=curEnemies.map(e=>e.currentHp>0?tickEnemyEffects(e):e);
     setEnemies(es);
     if(checkWin(es)){endCombat(true,s,es);return;}
-    // Passa a vez para o próximo combatente VIVO na fila (a partir da posição atual)
-    stepOrder(s,es,orderPtr);
+    // Posição do servo ATIVO na fila (deriva na hora — não confia no orderPtr assíncrono)
+    let fromPos=turnOrder.findIndex(o=>o.kind==='servo'&&o.ref===activeIdx);
+    if(fromPos<0)fromPos=orderPtr;
+    // Passa a vez para o próximo combatente VIVO na fila
+    stepOrder(s,es,fromPos);
   }
 
   // Avança o ponteiro da fila até o próximo combatente vivo e resolve a vez dele.
@@ -3927,7 +3930,16 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   function stepOrder(curServo,curEnemies,fromPtr){
     const order=turnOrder;
     let ptr=(fromPtr==null?orderPtr:fromPtr);
-    const partySnapshot=party;
+    // Verifica se há ALGUM servo vivo (usando o estado mais recente disponível)
+    const anyServoAlive=party.some((m,i)=>{
+      const mm=(i===activeIdx&&curServo)?curServo:m;
+      return mm&&!mm.defeated&&mm.hp>0;
+    });
+    // Se nenhum servo está vivo, é derrota — NUNCA reagenda inimigo (evita o loop).
+    if(!anyServoAlive){
+      enemyChainLock.current=false;
+      return; // o fluxo de morte já tratou o endCombat
+    }
     for(let guard=0;guard<order.length+1;guard++){
       ptr=(ptr+1)%order.length;
       if(ptr===0){ setTurn(t=>t+1); addLog(`── Nova rodada ──`,'system'); }
@@ -3935,7 +3947,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       if(entry.kind==='servo'){
         // Vida do servo: usa o estado ATUAL (curServo se for o ativo; senão a party).
         const idx=entry.ref;
-        const m=(idx===activeIdx&&curServo)?curServo:partySnapshot[idx];
+        const m=(idx===activeIdx&&curServo)?curServo:party[idx];
         if(!m||m.defeated||m.hp<=0)continue; // caiu: pula
         enemyChainLock.current=false; // vez do jogador: libera a trava
         setOrderPtr(ptr);
@@ -3946,20 +3958,21 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         const ei=curEnemies.findIndex(e=>e.instanceId===entry.ref&&e.currentHp>0);
         if(ei<0)continue; // morto: pula
         setOrderPtr(ptr);
-        const actPtr=ptr; // captura o ponteiro DESTA ação para encadear corretamente
+        const actPtr=ptr;
         setTimeout(()=>runOneEnemyAction(entry.ref,curServo,curEnemies,actPtr),650);
         return;
       }
     }
-    // Ninguém encontrado no loop — proteção contra travamento.
+    // Loop completou sem achar ninguém: devolve a vez a um servo vivo (nunca inimigo).
     enemyChainLock.current=false;
-    if(checkWin(curEnemies)){endCombat(true,curServo,curEnemies);return;}
-    // Se o servo ativo ainda está vivo, devolve a vez a ele (evita loop de inimigo).
-    const activeAlive=(curServo&&curServo.hp>0)||party.some(m=>!m.defeated&&m.hp>0);
-    if(activeAlive){
-      const idx=party.findIndex(m=>!m.defeated&&m.hp>0);
-      if(idx>=0){setActiveIdx(idx);}
-      return;
+    const aliveIdx=party.findIndex((m,i)=>{
+      const mm=(i===activeIdx&&curServo)?curServo:m;
+      return mm&&!mm.defeated&&mm.hp>0;
+    });
+    if(aliveIdx>=0){
+      const pos=order.findIndex(o=>o.kind==='servo'&&o.ref===aliveIdx);
+      if(pos>=0)setOrderPtr(pos);
+      setActiveIdx(aliveIdx);
     }
   }
 
@@ -4293,8 +4306,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
             endCombat(false,s,es);return;
           }
-          // servo caiu mas a party segue — continua a fila
-          stepOrder(servo,es,curPtr);return;
+          // servo caiu mas a party segue: partyHandleDeath já trocou o ativo.
+          // Devolve o controle ao jogador (novo servo na frente) sem reagendar inimigo.
+          enemyChainLock.current=false;
+          return;
         }
         setServo({...s});
         setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
