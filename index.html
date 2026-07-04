@@ -1372,7 +1372,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.54</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.55</p>
       </div>
     </div>
   );
@@ -3300,6 +3300,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   }
   const[turnOrder,setTurnOrder]=useState(()=>rollInitiative(initialParty,initialEnemiesRef.current||[]));
   const[orderPtr,setOrderPtr]=useState(0); // posição atual na fila de iniciativa
+  const enemyChainLock=useRef(false); // trava: impede cadeias de turno inimigo simultâneas
   // É a vez de um servo agir? (senão, os botões de ação ficam bloqueados)
   const curOrderEntry=turnOrder[orderPtr];
   const isServoTurn=!curOrderEntry||curOrderEntry.kind==='servo';
@@ -3895,6 +3896,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // passa o controle ao jogador (troca o ativo). Se é um inimigo, ele age e a
   // fila avança de novo (com um pequeno delay para dar para acompanhar).
   function advanceTurnOrder(curServo,curEnemies){
+    // Trava de reentrância: se já há uma cadeia de turno em andamento, ignora
+    // (impede que ações duplicadas do jogador disparem timers empilhados).
+    if(enemyChainLock.current)return;
+    enemyChainLock.current=true;
     // Persiste o estado do servo que acabou de agir
     let s=tickServoEffects({...curServo});
     s.hp=clamp(s.hp,0,s.hpMax);
@@ -3928,10 +3933,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       if(ptr===0){ setTurn(t=>t+1); addLog(`── Nova rodada ──`,'system'); }
       const entry=order[ptr];
       if(entry.kind==='servo'){
-        // O servo dessa entrada precisa estar vivo para agir
+        // Vida do servo: usa o estado ATUAL (curServo se for o ativo; senão a party).
         const idx=entry.ref;
-        const m=partySnapshot[idx];
+        const m=(idx===activeIdx&&curServo)?curServo:partySnapshot[idx];
         if(!m||m.defeated||m.hp<=0)continue; // caiu: pula
+        enemyChainLock.current=false; // vez do jogador: libera a trava
         setOrderPtr(ptr);
         setActiveIdx(idx);
         return; // espera o input do jogador
@@ -3945,8 +3951,16 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         return;
       }
     }
-    // Ninguém para agir (todos inimigos mortos?) — reavalia
+    // Ninguém encontrado no loop — proteção contra travamento.
+    enemyChainLock.current=false;
     if(checkWin(curEnemies)){endCombat(true,curServo,curEnemies);return;}
+    // Se o servo ativo ainda está vivo, devolve a vez a ele (evita loop de inimigo).
+    const activeAlive=(curServo&&curServo.hp>0)||party.some(m=>!m.defeated&&m.hp>0);
+    if(activeAlive){
+      const idx=party.findIndex(m=>!m.defeated&&m.hp>0);
+      if(idx>=0){setActiveIdx(idx);}
+      return;
+    }
   }
 
   // Executa a ação de UM inimigo específico (por instanceId). Depois, avança a fila.
