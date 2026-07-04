@@ -1372,7 +1372,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.52</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.53</p>
       </div>
     </div>
   );
@@ -3252,11 +3252,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   const SDEF=PLAYABLE_SERVOS[servo.id]||IBARAKI;
   const servoLvl=servo.level||(loadServoXP(SDEF.id)).level;
   const servoEvadePassive=(SDEF.passiveSkills||[]).reduce((a,p)=>a+((p.effect&&p.effect.type==='evade_passive')?p.effect.value:0),0);
-  const[enemies,setEnemies]=useState(
-    isBoss?[createBossInstance()]
-    :fixedEnemies?fixedEnemies
-    :genEncounterForMap(camp.mapId||'bosque',camp.phase,camp.towerHpMult||1,camp.towerAtkMult||1)
-  );
+  // Inimigos iniciais gerados UMA vez (reusados pelo estado e pela iniciativa)
+  const initialEnemiesRef=useRef(null);
+  if(initialEnemiesRef.current===null){
+    initialEnemiesRef.current=isBoss?[createBossInstance()]
+      :fixedEnemies?fixedEnemies
+      :genEncounterForMap(camp.mapId||'bosque',camp.phase,camp.towerHpMult||1,camp.towerAtkMult||1);
+  }
+  const[enemies,setEnemies]=useState(initialEnemiesRef.current);
   const[selectedTarget,setSelectedTarget]=useState(0);
   const[log,setLog]=useState([]);
   const[turn,setTurn]=useState(1);
@@ -3273,7 +3276,34 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   // ── Efeitos visuais flutuantes (dano/cura/buff/esquiva) ──
   const[fx,setFx]=useState([]);
-  const enemyTurnPtr=useRef(0); // rotação round-robin: qual inimigo age no próximo turno
+  const enemyTurnPtr=useRef(0); // (legado) rotação round-robin
+
+  // ─── TURN ORDER (iniciativa estilo D&D) ───────────────
+  // Cada combatente rola iniciativa = Agilidade + dado(1-20). Ordena do maior
+  // para o menor; a ordem é FIXA durante todo o combate. A fila alterna entre
+  // servos e inimigos conforme a iniciativa — não é mais "1 servo, 1 inimigo".
+  function rollInitiative(partyArr,enemyArr){
+    const entries=[];
+    partyArr.forEach((m,i)=>{
+      if(m.defeated||m.hp<=0)return;
+      const agi=(m.attributes?.agility?.points)||30;
+      entries.push({kind:'servo',ref:i,init:agi+1+Math.floor(Math.random()*20),name:(PLAYABLE_SERVOS[m.id]||IBARAKI).name});
+    });
+    enemyArr.forEach((e,i)=>{
+      if(e.currentHp<=0)return;
+      const agi=e.agility||e.attributes?.agility?.points||25;
+      entries.push({kind:'enemy',ref:e.instanceId,init:agi+1+Math.floor(Math.random()*20),name:e.name});
+    });
+    // Maior iniciativa primeiro; empate desempata a favor dos servos
+    entries.sort((a,b)=>b.init-a.init||(a.kind==='servo'?-1:1));
+    return entries;
+  }
+  const[turnOrder,setTurnOrder]=useState(()=>rollInitiative(initialParty,initialEnemiesRef.current||[]));
+  const[orderPtr,setOrderPtr]=useState(0); // posição atual na fila de iniciativa
+  // É a vez de um servo agir? (senão, os botões de ação ficam bloqueados)
+  const curOrderEntry=turnOrder[orderPtr];
+  const isServoTurn=!curOrderEntry||curOrderEntry.kind==='servo';
+
   function spawnFx(targetId,text,kind='dmg'){
     const id=Date.now()+Math.random();
     const left=22+Math.random()*50; // posição horizontal variada p/ números não se sobreporem
@@ -3302,6 +3332,18 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         :{text:SDEF.dialogue.battle,portrait:SDEF.assets.default}
       );
       addLog(`── Turno 1 · Fase ${camp.phase} ──`,'system');
+      // Anuncia a ordem de iniciativa
+      addLog(`⚑ Ordem de iniciativa: ${turnOrder.map(o=>o.name.split(' ')[0]).join(' → ')}`,'system');
+      // A fila começa no índice 0. Se o primeiro for um servo, posiciona o ativo
+      // nele e espera o jogador. Se for um inimigo, ele age primeiro.
+      const first=turnOrder[0];
+      if(first){
+        if(first.kind==='servo'){
+          setActiveIdx(first.ref);
+        } else {
+          setTimeout(()=>runOneEnemyAction(first.ref,party[activeIdx],enemies),900);
+        }
+      }
       setIntroShown(true);
     }
   },[]);
@@ -3538,6 +3580,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // ─── AÇÕES DO JOGADOR ─────────────────────────────
   function doBasicAttack(){
     if(result)return;
+    if(!isServoTurn){setNotif('Aguarde sua vez na ordem de iniciativa!');return;}
     if(servoStunnedThisTurn())return;
     const tgt=enemies[selectedTarget];
     if(!tgt||tgt.currentHp<=0){setNotif('Selecione um inimigo vivo!');return;}
@@ -3756,6 +3799,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   function doNP(){
     if(result)return;
+    if(!isServoTurn){setNotif('Aguarde sua vez na ordem de iniciativa!');return;}
     if((servo.npLocked||0)>0){setNotif(`NP travado pela Archer! (${servo.npLocked} turno(s) restante(s))`);return;}
     if(servo.npBar<100){setNotif('Barra de NP não está cheia!');return;}
     if(servoStunnedThisTurn())return;
@@ -3846,46 +3890,91 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // jogador, apenas UM inimigo age (rotação round-robin na ordem de Agility).
   // Isso evita morte por spam de golpes no 1º turno em grupos grandes.
   // Se o inimigo da vez estiver Atordoado, o lado inimigo perde o turno inteiro.
-  function doEnemyTurn(curServo,curEnemies){
+  // ─── ORQUESTRADOR DO TURN ORDER ───────────────────────
+  // Avança a fila de iniciativa a partir de orderPtr. Se o próximo é um servo,
+  // passa o controle ao jogador (troca o ativo). Se é um inimigo, ele age e a
+  // fila avança de novo (com um pequeno delay para dar para acompanhar).
+  function advanceTurnOrder(curServo,curEnemies){
+    // Persiste o estado do servo que acabou de agir
     let s=tickServoEffects({...curServo});
     s.hp=clamp(s.hp,0,s.hpMax);
-    // Morte por VENENO no tick (antes dos inimigos agirem) — respeita o Orbe
     if(s.hp<=0){
       if(!tryReviveServo(s)){
         if(isParty){
-          // Party: servo cai, mas a run segue se houver vivos
-          if(partyHandleDeath(s)){
-            setEnemies(curEnemies);
-            setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
-            endCombat(false,s,curEnemies);return;
-          }
+          if(partyHandleDeath(s)){setEnemies(curEnemies);setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});endCombat(false,s,curEnemies);return;}
           setEnemies(curEnemies);
-          return; // trocou de servo; jogador continua a agir
+        } else {
+          setServo({...s});setEnemies(curEnemies);setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});endCombat(false,s,curEnemies);return;
         }
-        setServo({...s});setEnemies(curEnemies);
-        setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
-        endCombat(false,s,curEnemies);return;
+      } else { setServo(s); }
+    } else { setServo(s); }
+    let es=curEnemies.map(e=>e.currentHp>0?tickEnemyEffects(e):e);
+    setEnemies(es);
+    if(checkWin(es)){endCombat(true,s,es);return;}
+    // Passa a vez para o próximo combatente VIVO na fila
+    stepOrder(s,es);
+  }
+
+  // Avança o ponteiro da fila até o próximo combatente vivo e resolve a vez dele.
+  function stepOrder(curServo,curEnemies){
+    let order=turnOrder;
+    let ptr=orderPtr;
+    const partySnapshot=party;
+    for(let guard=0;guard<order.length+1;guard++){
+      ptr=(ptr+1)%order.length;
+      if(ptr===0){ setTurn(t=>t+1); addLog(`── Nova rodada ──`,'system'); }
+      const entry=order[ptr];
+      if(entry.kind==='servo'){
+        // O servo dessa entrada precisa estar vivo para agir
+        const idx=entry.ref;
+        const m=partySnapshot[idx];
+        if(!m||m.defeated||m.hp<=0)continue; // caiu: pula
+        setOrderPtr(ptr);
+        setActiveIdx(idx);
+        return; // espera o input do jogador
+      } else {
+        // Inimigo: precisa estar vivo
+        const ei=curEnemies.findIndex(e=>e.instanceId===entry.ref&&e.currentHp>0);
+        if(ei<0)continue; // morto: pula
+        setOrderPtr(ptr);
+        // Deixa o inimigo agir após um pequeno delay (visual)
+        setTimeout(()=>runOneEnemyAction(entry.ref,curServo,curEnemies),650);
+        return;
       }
     }
-    // Durações (buffs/debuffs/guts/recargas) contam em turnos do JOGADOR:
-    // todos os inimigos envelhecem seus efeitos a cada ciclo.
-    let es=curEnemies.map(e=>e.currentHp>0?tickEnemyEffects(e):e);
-    // Se a maldição (curse da Sith) matou todos os inimigos, vitória imediata.
-    if(checkWin(es)){setEnemies(es);endCombat(true,curServo,es);return;}
+    // Ninguém para agir (todos inimigos mortos?) — reavalia
+    if(checkWin(curEnemies)){endCombat(true,curServo,curEnemies);return;}
+  }
 
+  // Executa a ação de UM inimigo específico (por instanceId). Depois, avança a fila.
+  function runOneEnemyAction(enemyId,curServo,curEnemiesIn){
+    if(result)return;
+    let s={...curServo};
+    let es=[...curEnemiesIn];
+    const idx=es.findIndex(e=>e.instanceId===enemyId&&e.currentHp>0);
+    if(idx<0){ stepOrder(s,es); return; } // já morreu; segue a fila
+    doEnemyAction(idx,s,es);
+  }
+
+  // (mantida por compatibilidade com chamadas legadas; encaminha ao orquestrador)
+  function doEnemyTurn(curServo,curEnemies){
+    advanceTurnOrder(curServo,curEnemies);
+  }
+
+  // Ação de um inimigo específico (índice em `es`). Contém a IA de cada tipo.
+  function doEnemyAction(actIdx,s,es){
     const n=es.length;
-    let actedIdx=-1;
-    for(let step=0;step<n;step++){
-      const i=(enemyTurnPtr.current+step)%n;
+    act:{
+      const i=actIdx;
       const e=es[i];
-      if(e.currentHp<=0)continue;
-      actedIdx=i;
+      if(!e||e.currentHp<=0){stepOrder(s,es);return;}
 
       if((e.stunned||0)>0){
         addLog(`${e.name} está Atordoado e perde o turno!`,'system');
         spawnFx(e.instanceId,'ATORDOADO','stun');
         es[i]={...es[i],stunned:es[i].stunned-1};
-        break;
+        setEnemies(es);
+        stepOrder(s,es);return;
       }
 
       if(e.isNinja){
@@ -4017,7 +4106,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         for(const b of ar.activeBuffs||[]){if(b.type==='attack_up')atkUp+=b.value;}
         const hits=ARCHER.doubleAttack?2:1;
         for(let h=0;h<hits;h++){
-          if(s.hp<=0)break;
+          if(s.hp<=0)break act;
           const dodge=5+Math.max(0,(servo.attributes.agility.points-ar.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0);
           if(rollChance(dodge)){
             addLog(`💨 Ibaraki esquiva de um golpe de ${ar.name}!`,'player');
@@ -4075,7 +4164,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           };
           addLog(`Qin — Abolidor Ruffian! Guts×2 (5t), Defesa +30%`,'enemy');
           spawnFx(qin.instanceId,'GUTS ×2','buff');
-          break;
+          break act;
         }
         if(qin.npBar>=100&&!(qin.npSealed>0)){
           const eff=QIN.np.effect;
@@ -4089,7 +4178,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           addLog(`⚡ QIN NP — ${QIN.np.name}! ATK+${eff.atkUp}% · DEF+${eff.defUp}% · Imunidade a Debuffs`,'np');
           setDialogue({text:QIN.dialogue.np,portrait:QIN.assets.default});
           fireNpCutin(QIN.assets.np,QIN.np.name.toUpperCase(),QIN.dialogue.np);
-          break;
+          break act;
         }
         if(hpPct<60&&(qin.cooldowns?.soldado||0)===0){
           const healed=Math.round(qin.maxHp*0.17);
@@ -4097,7 +4186,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             npBar:clamp(qin.npBar+50,0,100),cooldowns:{...qin.cooldowns,soldado:6}};
           addLog(`Qin — Aspecto do Soldado: +${healed} HP, +50% NP`,'enemy');
           spawnFx(qin.instanceId,`+${healed}`,'heal');
-          break;
+          break act;
         }
         if((qin.cooldowns?.lanca||0)===0&&!(qin.activeBuffs||[]).some(b=>b.id==='lanca_eixo')){
           es[i]={...qin,
@@ -4106,7 +4195,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           };
           addLog(`Qin — Lança de Eixo Branco: ATK+16% por 3t`,'enemy');
           spawnFx(qin.instanceId,'+16% ATK','buff');
-          break;
+          break act;
         }
         // Ataque básico da Qin — Ibaraki pode esquivar; Qin pode critar
         const dodgeChQ=5+Math.max(0,(servo.attributes.agility.points-qin.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0);
@@ -4173,31 +4262,32 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           }
         }
       }
-      break;
     }
-    if(actedIdx>=0)enemyTurnPtr.current=(actedIdx+1)%n;
 
-    // Morte do Servo — revive por tempGuts (Lança), Guts passivo (Continuação) ou Orbe
+    // Persiste o resultado da ação deste inimigo
+    setEnemies(es);
+    if(checkWin(es)){endCombat(true,s,es);return;}
+
+    // Morte do Servo ativo por causa deste ataque
     if(s.hp<=0){
       if(!tryReviveServo(s)){
         if(isParty){
-          setEnemies(es);
           if(partyHandleDeath(s)){
             setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
             endCombat(false,s,es);return;
           }
-          setTurn(t=>t+1);
-          return; // trocou de servo; segue o combate
+          // servo caiu mas a party segue — continua a fila
+          stepOrder(servo,es);return;
         }
-        setServo({...s});setEnemies(es);
+        setServo({...s});
         setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
         endCombat(false,s,es);return;
       }
     }
-
-    setTurn(t=>t+1);
-    setServo({...s});setEnemies(es);
-    addLog(`── Turno ${turn+1} ──`,'system');
+    // O servo ativo (que tomou o dano) é persistido
+    setServo(s);
+    // Continua a fila de iniciativa: próximo combatente
+    stepOrder(s,es);
   }
 
   // ─── FIM DE COMBATE ────────────────────────────────
@@ -4304,7 +4394,41 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         </div>
       )}
 
-      <div style={{maxWidth:800,width:'100%'}}>
+      <div style={{maxWidth:840,width:'100%',display:'flex',gap:10,alignItems:'flex-start'}}>
+        {/* ─── TURN ORDER (iniciativa) — coluna à esquerda ─── */}
+        <div style={{flexShrink:0,width:74,position:'sticky',top:12}}>
+          <div style={{fontSize:'.58rem',color:'var(--gold)',textAlign:'center',fontFamily:'Cinzel,serif',letterSpacing:1,marginBottom:5}}>ORDEM</div>
+          <div style={{display:'flex',flexDirection:'column',gap:4}}>
+            {turnOrder.map((o,i)=>{
+              const isCur=i===orderPtr;
+              let alive=true,art=null,label=o.name.split(' ')[0];
+              if(o.kind==='servo'){
+                const m=party[o.ref]; alive=m&&!m.defeated&&m.hp>0;
+                art=(PLAYABLE_SERVOS[m?.id]||IBARAKI).assets.default;
+              } else {
+                const e=enemies.find(x=>x.instanceId===o.ref); alive=e&&e.currentHp>0;
+              }
+              return(
+                <div key={i} style={{display:'flex',alignItems:'center',gap:4,padding:'3px 4px',borderRadius:4,
+                  background:isCur?'rgba(201,162,39,0.22)':'rgba(0,0,0,0.3)',
+                  border:`1px solid ${isCur?'var(--gold)':o.kind==='servo'?'var(--gold-dim)':'var(--red)'}`,
+                  opacity:alive?1:0.35}}>
+                  {o.kind==='servo'&&art
+                    ?<img src={art} alt="" style={{width:20,height:20,objectFit:'cover',objectPosition:'center 20%',borderRadius:3,filter:alive?'none':'grayscale(1)'}} onError={ev=>{ev.target.style.display='none';}}/>
+                    :<span style={{fontSize:'.7rem'}}>{o.kind==='servo'?'⚔️':'👹'}</span>}
+                  <div style={{minWidth:0,flex:1}}>
+                    <div style={{fontSize:'.52rem',color:o.kind==='servo'?'var(--gold)':'#ff9090',lineHeight:1.1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{alive?label:'✝'}</div>
+                    <div style={{fontSize:'.48rem',color:'var(--parchment-dark)'}}>ini {o.init}</div>
+                  </div>
+                  {isCur&&<span style={{fontSize:'.55rem',color:'var(--gold)'}}>▶</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Conteúdo principal do combate */}
+        <div style={{flex:1,minWidth:0}}>
         {/* Fileira da PARTY (Torre): os 3 servos, clique para trocar quem está na frente */}
         {isParty&&(
           <div style={{display:'flex',gap:6,marginBottom:8}}>
@@ -4408,13 +4532,19 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
         {/* Ações */}
         <div className="panel" style={{padding:12}}>
+          {!isServoTurn&&(
+            <div style={{textAlign:'center',fontSize:'.7rem',color:'#ff9090',marginBottom:8,fontStyle:'italic'}}>
+              ⏳ Vez do inimigo... (você pode usar skills, que são ações livres)
+            </div>
+          )}
           <div className="skills-row">
-            <button className="skill-btn" onClick={doBasicAttack}>
+            <button className="skill-btn" onClick={doBasicAttack} disabled={!isServoTurn}
+              style={{opacity:isServoTurn?1:0.4}}>
               ⚔️ Atacar
               <span className="skill-cd">{liveEnemies.length} alvo(s) vivo(s)</span>
             </button>
-            <button className="skill-btn" onClick={doFlee} disabled={isBoss}
-              style={isBoss?{opacity:.35}:{}}>
+            <button className="skill-btn" onClick={doFlee} disabled={isBoss||!isServoTurn}
+              style={(isBoss||!isServoTurn)?{opacity:.35}:{}}>
               💨 Fugir
               <span className="skill-cd">{isBoss?'Impossível!':`${Math.round(fleeChance)}% chance`}</span>
             </button>
@@ -4427,8 +4557,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                 </button>
               );
             })}
-            <button className={`btn btn-np`} onClick={doNP} disabled={!npReady}
-              style={{opacity:npReady?1:0.4,minWidth:100}}>
+            <button className={`btn btn-np`} onClick={doNP} disabled={!npReady||!isServoTurn}
+              style={{opacity:(npReady&&isServoTurn)?1:0.4,minWidth:100}}>
               ⚡ NP{npReady?' PRONTO!':''}
               <span className="skill-cd" style={{display:'block',marginTop:3}}>
                 {npReady?SDEF.np.name+'!':`${Math.round(100-servo.npBar)}% restante`}
@@ -4462,6 +4592,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             <div key={entry.id} className={`log-entry ${entry.type}`}>{entry.text}</div>
           ))}
         </div>
+        </div>{/* fim do conteúdo principal (coluna direita) */}
       </div>
     </div>
   );
