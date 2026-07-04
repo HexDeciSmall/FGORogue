@@ -367,19 +367,22 @@ const IBARAKI={
   activeSkills:[
     {id:'natureza',name:'Natureza Demoníaca',rank:'A',
       desc:'Ataque+NP ↑ por 3 turnos',
+      effectType:'buff_atk_npdmg',
       getEffect:lvl=>({atkUp:linear(lvl,10,20),npDmgUp:linear(lvl,10,30),dur:3}),
       getCD:lvl=>stdCD(lvl)},
     {id:'rampage',name:'Rampage de Oni',rank:'A+',
       desc:'Cura HP + remove debuffs + dano a 1 inimigo',
+      effectType:'heal_cleanse_dmg',
       getEffect:lvl=>({healPct:linear(lvl,10,60),strDmgPct:linear(lvl,6,60)}),
       getCD:lvl=>stdCD(lvl)},
     {id:'forma',name:'Mudança de Forma',rank:'A',
       desc:'Defesa ↑ por 3 turnos',
+      effectType:'buff_def',
       getEffect:lvl=>({defUp:linear(lvl,30,60),dur:3}),
       getCD:lvl=>stdCD(lvl)},
   ],
   np:{
-    name:'Rashōmon Daiengi',type:'Anti-Army',isAoE:false,
+    name:'Rashōmon Daiengi',type:'Anti-Army',isAoE:false,effectType:'dmg_defdown',
     levels:{
       1:{dmgPct:600,defDown:20},2:{dmgPct:800,defDown:25},
       3:{dmgPct:1000,defDown:30},4:{dmgPct:1200,defDown:35},5:{dmgPct:1400,defDown:40},
@@ -412,6 +415,8 @@ const IBARAKI={
 };
 
 // ── EXPRESSÕES DA IBARAKI (para os diálogos da história) ──
+// Registra a Ibaraki como servo jogável (junto com os demais em PLAYABLE_SERVOS)
+PLAYABLE_SERVOS.ibaraki_douji=IBARAKI;
 // Para adicionar uma expressão nova: solte o PNG em assets/servos/ibaraki/
 // e acrescente uma linha aqui. Depois é só usar a chave no roteiro (expr:'...').
 const IBARAKI_EXPRESSIONS={
@@ -766,6 +771,80 @@ const QIN={
   },
 };
 
+// ══════════════════════════════════════════════════════
+// QIN LIANGYU — VERSÃO JOGÁVEL (Torre de Desafios)
+// ══════════════════════════════════════════════════════
+// Kit traduzido fielmente da ficha. Skills de Classe = passivas;
+// Skills Pessoais = ativas (effectType genérico); NP = ataque supremo.
+const QIN_PLAYABLE={
+  id:'qin_liangyu',name:'Qin Liangyu',className:'Lancer',
+  getAtk:lvl=>Math.round(linear(lvl,1382,8295)),
+  getHp:lvl=>Math.round(linear(lvl,2142,13387)),
+  attributes:{
+    strength:{rank:'C',points:rankToPoints('C')},
+    agility:{rank:'A',points:rankToPoints('A')},
+    luck:{rank:'A',points:rankToPoints('A')},
+    endurance:{rank:'B',points:rankToPoints('B')},
+    mana:{rank:'D',points:rankToPoints('D'),gainPercent:manaGain('D')},
+    np:{rank:'B',points:rankToPoints('B')},
+  },
+  // ── SKILLS DE CLASSE (PASSIVAS) ──
+  passiveSkills:[
+    // Resistência Mágica C: resiste a debuffs
+    {id:'magic_res',name:'Resistência Mágica C',effect:{type:'debuff_res',value:20}},
+    // Continuação da Batalha C+: Guts — revive 1x com 30% de HP ao ser derrotada
+    {id:'battle_cont',name:'Continuação da Batalha C+',effect:{type:'guts',revivePct:30}},
+  ],
+  // ── SKILLS PESSOAIS (ATIVAS) ── effectType define como o motor aplica
+  activeSkills:[
+    {id:'soldado_leal',name:'Natureza de Soldado Leal',rank:'B',
+      desc:'Ataque ↑ e ganho de NP ↑ por 3 turnos',
+      effectType:'buff_atk_np',
+      getEffect:lvl=>({atkUp:linear(lvl,20,30),npGain:linear(lvl,20,40),dur:3}),
+      getCD:lvl=>stdCD(lvl)},
+    {id:'abolicao',name:'Abolição de Rufiões',rank:'A',
+      desc:'Dano direto a 1 inimigo (+dano vs Anti-Heróis)',
+      effectType:'direct_dmg_antihero',
+      getEffect:lvl=>({strDmgPct:linear(lvl,30,60),antiHeroBonus:50}),
+      getCD:lvl=>stdCD(lvl)},
+    {id:'lanca_branca',name:'Lança de Haste Branca',rank:'B',
+      desc:'Ataque próprio ↑ e incute medo (ATK inimigo ↓) por 3t',
+      effectType:'buff_atk_fear',
+      getEffect:lvl=>({atkUp:linear(lvl,15,25),fearAtkDown:linear(lvl,15,30),dur:3}),
+      getCD:lvl=>stdCD(lvl)},
+  ],
+  // ── NP (ATAQUE SUPREMO) ──
+  // Canção da Lealdade Abnegada: dano ST forte + buff próprio (os 4 poemas do Imperador)
+  np:{
+    name:'Canção da Lealdade Abnegada',type:'Anti-Unit',isAoE:false,effectType:'dmg_selfbuff',
+    levels:{
+      1:{dmgPct:650,atkUp:30},2:{dmgPct:850,atkUp:35},
+      3:{dmgPct:1050,atkUp:40},4:{dmgPct:1250,atkUp:45},5:{dmgPct:1450,atkUp:50},
+    },
+    selfBuffDur:3,
+  },
+  dialogue:{
+    summon:'Lancer, Qin Liangyu. Minha lança e minha lealdade são vossas, Mestre.',
+    battle:'A Cavalaria Branca cavalga comigo. Que venham!',
+    lose:'Perdoe-me, Mestre... falhei com o senhor...',
+    win:'A vitória é nossa. Que o Imperador esteja orgulhoso.',
+    np:'Vossa Majestade Imperial, honro vossos poemas! Canção da Lealdade Abnegada!',
+    skill:'É exatamente para isso que serve minha lança! Seiii!',
+    mapDone:'Onde houver bandidos, minha lança os expulsará. Sigamos, Mestre.',
+  },
+  assets:{
+    default:'assets/servos/qin/qin_default.png',
+    battle:'assets/servos/qin/qin_battle.png',
+    np:'assets/servos/qin/qin_np.png',
+    win:'assets/servos/qin/qin_default.png',
+    lose:'assets/servos/qin/qin_battle.png',
+    encounter:'assets/servos/qin/qin_encounter.jpg',
+  },
+};
+
+// Registro dos servos jogáveis, por id. A Ibaraki é adicionada logo após sua definição.
+const PLAYABLE_SERVOS={qin_liangyu:QIN_PLAYABLE};
+
 // ── INIMIGOS COMUNS ──────────────────────────────────
 const ENEMIES_DATA={
   morcego:{id:'morcego',name:'Morcego Gigante',hp:900,atk:480,agility:55,strPts:30},
@@ -1101,7 +1180,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.43</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.44</p>
       </div>
     </div>
   );
@@ -1348,11 +1427,13 @@ function CodexScreen({onNavigate,profile}){
 // ══════════════════════════════════════════════════════
 function TowerSelectScreen({onNavigate,onStart,profile}){
   const[servo,setServo]=useState('ibaraki');
+  // Mapa do id curto (usado na seleção) para o objeto jogável real
+  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE};
   // Servos jogáveis: Ibaraki já pronta; os demais serão liberados ao ajustar suas skills.
   const SERVOS=[
     {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',art:IBARAKI.assets.default,ready:true,
      unlock:null},
-    {id:'qin',name:'Qin Liangyu',classe:'Lancer',art:QIN.assets.default,ready:false,
+    {id:'qin',name:'Qin Liangyu',classe:'Lancer',art:QIN.assets.default,ready:true,
      unlock:'defeat_qin'},
     {id:'deon',name:"Chevalier D'Eon",classe:'Saber',art:DEON.assets.profile,ready:false,
      unlock:'defeat_nitro'},
@@ -1399,7 +1480,7 @@ function TowerSelectScreen({onNavigate,onStart,profile}){
             // O 1º andar (Floresta) sempre disponível; os demais exigem ter vencido o boss na Campanha.
             const unlocked=i===0||!!done[unlockAch];
             return(
-              <button key={mid} disabled={!unlocked} onClick={()=>unlocked&&onStart(IBARAKI,mid)}
+              <button key={mid} disabled={!unlocked} onClick={()=>unlocked&&onStart(TOWER_SERVO_OBJ[servo]||IBARAKI,mid)}
                 style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 14px',
                   background:'rgba(120,40,40,0.1)',border:`1px solid ${unlocked?'var(--red)':'rgba(120,120,120,0.25)'}`,
                   borderRadius:3,cursor:unlocked?'pointer':'not-allowed',opacity:unlocked?1:0.5}}>
@@ -2758,13 +2839,17 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
 // COMBATE
 // ══════════════════════════════════════════════════════
 function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfile,fixedEnemies}){
-  const xpState=loadServoXP(IBARAKI.id);
+  // Servo ativo desta run (Ibaraki na Campanha; qualquer jogável na Torre)
+  const SDEF=PLAYABLE_SERVOS[camp.servo.id]||IBARAKI;
+  // Esquiva passiva (ex.: Montaria) somada das passivas do servo ativo
+  const servoEvadePassive=(SDEF.passiveSkills||[]).reduce((a,p)=>a+((p.effect&&p.effect.type==='evade_passive')?p.effect.value:0),0);
+  const xpState=loadServoXP(SDEF.id);
   const servoLvl=xpState.level;
   // Perks passivas EQUIPADAS do Mestre — carregadas do profile uma vez por combate
   const perkEffects=getPerkEffects(profile);
 
   // Buff da Aria (Fase 6): +10% HP extra (temporário) no próximo combate.
-  const ariaHpBonus=camp.planBonus?.hpUp?Math.round((camp.servo.hpMax||IBARAKI.getHp(servoLvl))*(camp.planBonus.hpUp/100)):0;
+  const ariaHpBonus=camp.planBonus?.hpUp?Math.round((camp.servo.hpMax||SDEF.getHp(servoLvl))*(camp.planBonus.hpUp/100)):0;
   // Buffs iniciais vindos do evento Planejar Rota do mapa 3 (plan3)
   const planNpGain=camp.planBonus?.npGain||0;
   const planAtkBuff=camp.planBonus?.atkTurns
@@ -2773,15 +2858,18 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   const initServo={
     ...camp.servo,
     level:servoLvl,
-    attackBase:IBARAKI.getAtk(servoLvl),
-    hpMax:(camp.servo.hpMax||IBARAKI.getHp(servoLvl))+ariaHpBonus,
+    attackBase:SDEF.getAtk(servoLvl),
+    hpMax:(camp.servo.hpMax||SDEF.getHp(servoLvl))+ariaHpBonus,
     hp:camp.servo.hp+ariaHpBonus,
     npBar:clamp((camp.servo.npBar||0)+planNpGain,0,100),
     // Cada combate começa "limpo": buffs/debuffs e recargas resetam.
     // (exceto o buff temporário de ATK do Planejar Rota, se houver)
     activeBuffs:planAtkBuff,activeDebuffs:[],stunned:0,
-    cooldowns:{natureza:0,rampage:0,forma:0},
+    // Cooldowns das skills ativas do servo atual (0 = pronta)
+    cooldowns:Object.fromEntries((SDEF.activeSkills||[]).map(s=>[s.id,0])),
     profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
+    // Guts (Continuação da Batalha da Qin): quantas revives restam
+    gutsCharges:(SDEF.passiveSkills||[]).some(p=>p.effect&&p.effect.type==='guts')?1:0,
   };
 
   function createBossInstance(){
@@ -2893,7 +2981,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         :isArcherBoss?{text:ARCHER.dialogue.intro,portrait:ARCHER.assets.battle}
         :isNitroBoss?{text:NITRO.dialogue.intro,portrait:NITRO.assets.battle}
         :isBoss?{text:QIN.dialogue.intro,portrait:QIN.assets.default}
-        :{text:IBARAKI.dialogue.battle,portrait:IBARAKI.assets.default}
+        :{text:SDEF.dialogue.battle,portrait:SDEF.assets.default}
       );
       addLog(`── Turno 1 · Fase ${camp.phase} ──`,'system');
       setIntroShown(true);
@@ -3066,22 +3154,23 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   function doSkill(skillId){
     if(result)return;
     if((servo.cooldowns[skillId]||0)>0){setNotif('Skill em recarga!');return;}
-    const skillDef=IBARAKI.activeSkills.find(s=>s.id===skillId);
+    const skillDef=(SDEF.activeSkills||[]).find(s=>s.id===skillId);
     if(!skillDef)return;
     const lvl=1;
     const eff=skillDef.getEffect(lvl);
     const cd=skillDef.getCD(lvl);
+    const et=skillDef.effectType;
     let newServo={...servo,cooldowns:{...servo.cooldowns,[skillId]:cd}};
     let newEnemies=[...enemies];
 
-    if(skillId==='natureza'){
+    // ── Efeitos genéricos por tipo (compartilhados entre servos) ──
+    if(et==='buff_atk_npdmg'){ // Ibaraki: Natureza Demoníaca
       newServo.activeBuffs=[...(newServo.activeBuffs||[]),
         {type:'attack_up',value:eff.atkUp,turns:eff.dur,id:'nat_atk'},
-        {type:'np_damage_up',value:eff.npDmgUp,turns:eff.dur,id:'nat_np'},
-      ];
-      addLog(`Natureza Demoníaca: Ataque +${eff.atkUp}% e NP +${eff.npDmgUp}% por ${eff.dur}t`,'player');
+        {type:'np_damage_up',value:eff.npDmgUp,turns:eff.dur,id:'nat_np'}];
+      addLog(`${skillDef.name}: Ataque +${eff.atkUp}% e NP +${eff.npDmgUp}% por ${eff.dur}t`,'player');
       spawnFx('servo',`+${eff.atkUp}% ATK`,'buff');
-    } else if(skillId==='rampage'){
+    } else if(et==='heal_cleanse_dmg'){ // Ibaraki: Rampage
       const healed=Math.round(newServo.hpMax*eff.healPct/100);
       newServo.hp=clamp(newServo.hp+healed,0,newServo.hpMax);
       newServo.activeDebuffs=[];
@@ -3091,25 +3180,50 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         const strDmg=Math.round(servo.attackBase*(servo.attributes.strength.points/100)*(eff.strDmgPct/100));
         const finalDmg=applyDmgToEnemy(strDmg,tgt);
         newEnemies=newEnemies.map((e,i)=>i===selectedTarget?damageEnemy(e,finalDmg):e);
-        // Causou dano = ação de ataque → gera Barra de NP (regra da spec)
         newServo.npBar=clamp(newServo.npBar+servo.attributes.mana.gainPercent,0,100);
-        addLog(`Rampage de Oni: cura ${healed} HP, remove debuffs, ${finalDmg} dano em ${tgt.name}`,'heal');
+        addLog(`${skillDef.name}: cura ${healed} HP, remove debuffs, ${finalDmg} dano em ${tgt.name}`,'heal');
       } else {
-        addLog(`Rampage de Oni: cura ${healed} HP e remove debuffs`,'heal');
+        addLog(`${skillDef.name}: cura ${healed} HP e remove debuffs`,'heal');
       }
-    } else if(skillId==='forma'){
-      newServo.activeBuffs=[...(newServo.activeBuffs||[]),
-        {type:'defense_up',value:eff.defUp,turns:eff.dur,id:'forma_def'},
-      ];
-      addLog(`Mudança de Forma: Defesa +${eff.defUp}% por ${eff.dur}t`,'player');
+    } else if(et==='buff_def'){ // Ibaraki: Mudança de Forma
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'defense_up',value:eff.defUp,turns:eff.dur,id:'forma_def'}];
+      addLog(`${skillDef.name}: Defesa +${eff.defUp}% por ${eff.dur}t`,'player');
       spawnFx('servo',`+${eff.defUp}% DEF`,'buff');
+    } else if(et==='buff_atk_np'){ // Qin: Natureza de Soldado Leal
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'attack_up',value:eff.atkUp,turns:eff.dur,id:'sl_atk'}];
+      newServo.npBar=clamp(newServo.npBar+eff.npGain,0,100);
+      addLog(`${skillDef.name}: Ataque +${eff.atkUp}% por ${eff.dur}t e +${eff.npGain}% de NP`,'player');
+      spawnFx('servo',`+${eff.atkUp}% ATK`,'buff');
+    } else if(et==='direct_dmg_antihero'){ // Qin: Abolição de Rufiões
+      const tgt=newEnemies[selectedTarget];
+      if(tgt&&tgt.currentHp>0){
+        let strDmg=servo.attackBase*(servo.attributes.strength.points/100)*(eff.strDmgPct/100);
+        // Bônus contra Anti-Heróis (a Ibaraki é Anti-Heroína; bandidos também contam)
+        const isAntiHero=tgt.isBoss&&tgt.id==='ibaraki_douji'||/bandido|ladr|rufi|arruaceiro|glutao/i.test(tgt.name||'');
+        if(isAntiHero)strDmg*=(1+eff.antiHeroBonus/100);
+        const finalDmg=Math.round(applyDmgToEnemy(strDmg,tgt));
+        newEnemies=newEnemies.map((e,i)=>i===selectedTarget?damageEnemy(e,finalDmg,'crit'):e);
+        newServo.npBar=clamp(newServo.npBar+servo.attributes.mana.gainPercent,0,100);
+        recordDamage(finalDmg);
+        addLog(`${skillDef.name}: ${finalDmg} de dano em ${tgt.name}${isAntiHero?' (bônus vs Anti-Herói!)':''}`,'player');
+        spawnFx('servo',`${finalDmg}`,'crit');
+      } else { setNotif('Selecione um inimigo vivo!'); return; }
+    } else if(et==='buff_atk_fear'){ // Qin: Lança de Haste Branca
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'attack_up',value:eff.atkUp,turns:eff.dur,id:'lhb_atk'}];
+      const tgt=newEnemies[selectedTarget];
+      if(tgt&&tgt.currentHp>0){
+        newEnemies=newEnemies.map((e,i)=>i!==selectedTarget?e:{...e,activeDebuffs:[...(e.activeDebuffs||[]),{type:'attack_down',value:eff.fearAtkDown,turns:eff.dur}]});
+        addLog(`${skillDef.name}: Ataque +${eff.atkUp}% e medo em ${tgt.name} (ATK -${eff.fearAtkDown}% por ${eff.dur}t)`,'player');
+      } else {
+        addLog(`${skillDef.name}: Ataque próprio +${eff.atkUp}% por ${eff.dur}t`,'player');
+      }
+      spawnFx('servo',`+${eff.atkUp}% ATK`,'buff');
     }
 
-    setDialogue({text:IBARAKI.dialogue.skill,portrait:IBARAKI.assets.default});
+    setDialogue({text:SDEF.dialogue.skill,portrait:SDEF.assets.default});
     setServo(newServo);setEnemies(newEnemies);
     if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
     // Skills são AÇÕES LIVRES (estilo FGO): não passam o turno.
-    // Só Atacar, NP ou Fugir encerram o turno do jogador.
   }
 
   function doProfileSkill(skillKey){
@@ -3174,25 +3288,34 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const tgt=enemies[selectedTarget];
     if(!tgt||tgt.currentHp<=0){setNotif('Selecione um inimigo vivo!');return;}
     const npLvl=servo.npLevel||1;
-    const npDef=IBARAKI.np.levels[npLvl];
+    const npDef=SDEF.np.levels[npLvl];
+    const npEt=SDEF.np.effectType;
     let dmg=servo.attackBase*(servo.attributes.strength.points/100);
     if(servo.className==='Berserker')dmg*=1.08;
     let npUp=0;
     for(const b of servo.activeBuffs||[]){if(b.type==='np_damage_up')npUp+=b.value;}
     dmg=Math.round(applyDmgToEnemy(dmg*(1+npUp/100)*(npDef.dmgPct/100),tgt));
-    recordDamage(dmg); // estatística: maior dano dado (o NP costuma ser o pico)
+    recordDamage(dmg);
 
+    let newServo={...servo,npBar:0};
     const newEnemies=enemies.map((e,i)=>{
       if(i!==selectedTarget)return e;
-      // NP não é esquivável — mas respeita o Guts do boss
       let hit=damageEnemy(e,dmg,'np');
-      hit={...hit,activeDebuffs:[...(hit.activeDebuffs||[]),{type:'defense_down',value:npDef.defDown,turns:IBARAKI.np.defDownDur}]};
+      // NP da Ibaraki: aplica DEF down no alvo
+      if(npEt==='dmg_defdown'){
+        hit={...hit,activeDebuffs:[...(hit.activeDebuffs||[]),{type:'defense_down',value:npDef.defDown,turns:SDEF.np.defDownDur}]};
+      }
       return hit;
     });
-    const newServo={...servo,npBar:0};
-    setDialogue({text:IBARAKI.dialogue.np,portrait:IBARAKI.assets.default});
-    fireNpCutin(IBARAKI.assets.np,'RASHŌMON DAIENGI',IBARAKI.dialogue.np);
-    addLog(`⚡ RASHŌMON DAIENGI (NP Lv.${npLvl})! ${dmg} dano em ${tgt.name} · DEF ↓${npDef.defDown}% por ${IBARAKI.np.defDownDur}t`,'np');
+    // NP da Qin: buff de ATK próprio após o golpe
+    if(npEt==='dmg_selfbuff'){
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'attack_up',value:npDef.atkUp,turns:SDEF.np.selfBuffDur,id:'np_selfbuff'}];
+    }
+    setDialogue({text:SDEF.dialogue.np,portrait:SDEF.assets.default});
+    fireNpCutin(SDEF.assets.np,SDEF.np.name.toUpperCase(),SDEF.dialogue.np);
+    const extraLog=npEt==='dmg_defdown'?` · DEF ↓${npDef.defDown}% por ${SDEF.np.defDownDur}t`
+      :npEt==='dmg_selfbuff'?` · ATK ↑${npDef.atkUp}% por ${SDEF.np.selfBuffDur}t`:'';
+    addLog(`⚡ ${SDEF.np.name.toUpperCase()} (NP Lv.${npLvl})! ${dmg} dano em ${tgt.name}${extraLog}`,'np');
     setServo(newServo);setEnemies(newEnemies);
     if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
     doEnemyTurn(newServo,newEnemies);
@@ -3228,6 +3351,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     s.hp=clamp(s.hp,0,s.hpMax);
     // Morte por VENENO no tick (antes dos inimigos agirem) — respeita o Orbe
     if(s.hp<=0){
+      // Guts (Continuação da Batalha da Qin): revive 1x com % de HP
+      const gutsPassive=(SDEF.passiveSkills||[]).find(p=>p.effect&&p.effect.type==='guts');
+      if(gutsPassive&&(s.gutsCharges||0)>0){
+        s.gutsCharges=(s.gutsCharges||0)-1;
+        s.hp=Math.max(1,Math.round(s.hpMax*gutsPassive.effect.revivePct/100));
+        addLog(`✨ CONTINUAÇÃO DA BATALHA! ${SDEF.name} se recusa a cair e revive com ${gutsPassive.effect.revivePct}% de HP!`,'np');
+        spawnFx('servo',`✨ GUTS`,'heal');
+      } else {
       const orbePct=perkEffects.orbeRevivePercent||0;
       if(orbePct>0&&!camp.orbeUsed){
         s.hp=Math.max(1,Math.round(s.hpMax*orbePct/100));
@@ -3237,8 +3368,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         spawnFx('servo',`💠 +${orbePct}%`,'heal');
       } else {
         setServo({...s});setEnemies(curEnemies);
-        setDialogue({text:IBARAKI.dialogue.lose,portrait:IBARAKI.assets.lose||IBARAKI.assets.default});
+        setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
         endCombat(false,s,curEnemies);return;
+      }
       }
     }
     // Durações (buffs/debuffs/guts/recargas) contam em turnos do JOGADOR:
@@ -3507,14 +3639,17 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           spawnFx('servo',String(qinMit),qinCrit?'crit':'dmg');
         }
       } else {
-        // Inimigo comum — Ibaraki pode esquivar (Agility)
-        const dodgeCh=5+Math.max(0,(servo.attributes.agility.points-e.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0);
+        // Inimigo comum — o Servo pode esquivar (Agility)
+        const dodgeCh=5+Math.max(0,(servo.attributes.agility.points-e.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0)+(servoEvadePassive);
         if(rollChance(dodgeCh)){
-          addLog(`💨 Ibaraki esquiva do ataque de ${e.name}! (${dodgeCh.toFixed(1)}%)`,'player');
+          addLog(`💨 ${SDEF.name} esquiva do ataque de ${e.name}! (${dodgeCh.toFixed(1)}%)`,'player');
           spawnFx('servo','ESQUIVOU','miss');
         } else {
+          // "Medo" (Lança de Haste Branca da Qin): reduz o ATK do inimigo
+          let fearReduction=0;
+          for(const d of e.activeDebuffs||[]){if(d.type==='attack_down')fearReduction+=d.value;}
           // Crítico (Samurai Errante): critChance% de chance de ×1.5
-          let dmgBase=e.damage;
+          let dmgBase=Math.round(e.damage*(1-fearReduction/100));
           const isCrit=e.critChance&&rollChance(e.critChance);
           if(isCrit)dmgBase=Math.round(dmgBase*1.5);
           const rawDmg=applyDmgToServo(dmgBase);
@@ -3526,21 +3661,17 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           // Veneno (Onmyoji Corrompido): chance de aplicar dano-por-turno
           if(e.poison&&rollChance(e.poison.chance)){
             const poisonDmg=Math.round(e.atkScaled*e.poison.pctOfAtk/100);
-            // Não empilha: renova o veneno se já houver
             const others=(s.activeDebuffs||[]).filter(d=>d.type!=='poison');
             s.activeDebuffs=[...others,{type:'poison',value:poisonDmg,turns:e.poison.turns}];
-            addLog(`☠️ ${e.name} envenena Ibaraki! ${poisonDmg}/turno por ${e.poison.turns} turnos.`,'enemy');
+            addLog(`☠️ ${e.name} envenena ${SDEF.name}! ${poisonDmg}/turno por ${e.poison.turns} turnos.`,'enemy');
             spawnFx('servo','☠️ VENENO','stun');
           }
-          // Vampirismo (Dhampir): PRIMEIRO o ataque padrão (já aplicado acima),
-          // DEPOIS o dreno adicional — dana 5% do HP MÁX do Servo (ignora defesa)
-          // e cura 15% do HP máximo do próprio Dhampir. Inimigo bem chatinho.
           if(e.vampirism){
             const drain=Math.round(s.hpMax*e.vampirism.dmgPctOfServoMaxHp/100);
             s.hp=Math.max(0,s.hp-drain);
             const selfHeal=Math.round(e.maxHp*e.vampirism.healPctOfMaxHp/100);
             es[i]={...es[i],currentHp:Math.min(e.maxHp,es[i].currentHp+selfHeal)};
-            addLog(`🩸 ${e.name} drena a vitalidade de Ibaraki! +${drain} de dano · +${selfHeal} HP ao Dhampir.`,'enemy');
+            addLog(`🩸 ${e.name} drena a vitalidade de ${SDEF.name}! +${drain} de dano · +${selfHeal} HP ao Dhampir.`,'enemy');
             spawnFx('servo',`🩸 ${drain}`,'stun');
             spawnFx(e.instanceId,`+${selfHeal}`,'heal');
           }
@@ -3552,6 +3683,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
     // Morte do Servo — com chance de revive pelo Orbe Cromático (1x/campanha)
     if(s.hp<=0){
+      // Guts (Continuação da Batalha da Qin): revive 1x com % de HP
+      const gutsPassive=(SDEF.passiveSkills||[]).find(p=>p.effect&&p.effect.type==='guts');
+      if(gutsPassive&&(s.gutsCharges||0)>0){
+        s.gutsCharges=(s.gutsCharges||0)-1;
+        s.hp=Math.max(1,Math.round(s.hpMax*gutsPassive.effect.revivePct/100));
+        addLog(`✨ CONTINUAÇÃO DA BATALHA! ${SDEF.name} se recusa a cair e revive com ${gutsPassive.effect.revivePct}% de HP!`,'np');
+        spawnFx('servo',`✨ GUTS`,'heal');
+      } else {
       const orbePct=perkEffects.orbeRevivePercent||0;
       if(orbePct>0&&!camp.orbeUsed){
         s.hp=Math.max(1,Math.round(s.hpMax*orbePct/100));
@@ -3561,8 +3700,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         spawnFx('servo',`💠 +${orbePct}%`,'heal');
       } else {
         setServo({...s});setEnemies(es);
-        setDialogue({text:IBARAKI.dialogue.lose,portrait:IBARAKI.assets.lose||IBARAKI.assets.default});
+        setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
         endCombat(false,s,es);return;
+      }
       }
     }
 
@@ -3577,9 +3717,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
     if(won){
       // XP e Bond por vitória em combate — salvos IMEDIATAMENTE
-      const newBond=addBond(IBARAKI.id,30);
+      const newBond=addBond(SDEF.id,30);
       const xpGain=isBoss?XP_BOSS_WIN:XP_COMBAT_WIN;
-      const newXP=addServoXP(IBARAKI.id,xpGain);
+      const newXP=addServoXP(SDEF.id,xpGain);
 
       // SQ e QP depositados IMEDIATAMENTE (leitura atômica do storage)
       // Perk "Contos Épicos de um Vagabundo": multiplica a obtenção de SQ e QP
@@ -3616,7 +3756,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         planBonus:null,
       };
 
-      setDialogue({text:IBARAKI.dialogue.win,portrait:IBARAKI.assets.win||IBARAKI.assets.default});
+      setDialogue({text:SDEF.dialogue.win,portrait:SDEF.assets.win||SDEF.assets.default});
       addLog(`✦ Vitória! +${sqGain} SQ · +${qpGain} QP · +${xpGain} XP · +30 Bond`+(newXP.level>servoLvl?` · ✨ SERVO Nv.${newXP.level}!`:''),'system');
       setCamp(updatedCamp);
       setTimeout(()=>onWin(updatedCamp),2000);
@@ -3636,7 +3776,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           setNotif(`💰 O Ladrão roubou ${roubo} QP!`);
         }
       }
-      setDialogue({text:IBARAKI.dialogue.lose,portrait:IBARAKI.assets.lose||IBARAKI.assets.default});
+      setDialogue({text:SDEF.dialogue.lose,portrait:SDEF.assets.lose||SDEF.assets.default});
       setTimeout(()=>onLose({...camp,servo:finalServo}),1500);
     }
   }
@@ -3657,7 +3797,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             {result==='win'?'VITÓRIA':result==='fled'?'FUGIU!':'DERROTA'}
           </div>
           <p style={{color:'var(--parchment-dark)',fontStyle:'italic',textAlign:'center',maxWidth:360}}>
-            {result==='win'?IBARAKI.dialogue.win:result==='fled'?'Vivendo para lutar outro dia... Sem recompensas desta vez.':IBARAKI.dialogue.lose}
+            {result==='win'?SDEF.dialogue.win:result==='fled'?'Vivendo para lutar outro dia... Sem recompensas desta vez.':SDEF.dialogue.lose}
           </p>
         </div>
       )}
@@ -3679,11 +3819,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'30%'}}>{f.text}</span>
           ))}
           <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
-            <Portrait src={dialogue.portrait||IBARAKI.assets.default} alt="Ibaraki" style={{width:64,height:84}}/>
+            <Portrait src={dialogue.portrait||SDEF.assets.default} alt={SDEF.name} style={{width:64,height:84}}/>
             <div style={{flex:1}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
                 <span className="cinzel" style={{color:'var(--gold)',fontSize:'.8rem',letterSpacing:2}}>
-                  IBARAKI DOUJI <span style={{color:'var(--red-bright)',fontSize:'.7rem'}}>Berserker · Nv.{servoLvl}</span>
+                  {SDEF.name.toUpperCase()} <span style={{color:'var(--red-bright)',fontSize:'.7rem'}}>{SDEF.className} · Nv.{servoLvl}</span>
                 </span>
                 <span style={{fontSize:'.7rem',color:'var(--parchment-dark)'}}>Turno {turn}</span>
               </div>
@@ -3757,7 +3897,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
               💨 Fugir
               <span className="skill-cd">{isBoss?'Impossível!':`${Math.round(fleeChance)}% chance`}</span>
             </button>
-            {IBARAKI.activeSkills.map(sk=>{
+            {(SDEF.activeSkills||[]).map(sk=>{
               const cd=servo.cooldowns[sk.id]||0;
               return(
                 <button key={sk.id} className="skill-btn" onClick={()=>doSkill(sk.id)} disabled={cd>0}>
@@ -3770,7 +3910,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
               style={{opacity:npReady?1:0.4,minWidth:100}}>
               ⚡ NP{npReady?' PRONTO!':''}
               <span className="skill-cd" style={{display:'block',marginTop:3}}>
-                {npReady?'Rashōmon!':`${Math.round(100-servo.npBar)}% restante`}
+                {npReady?SDEF.np.name+'!':`${Math.round(100-servo.npBar)}% restante`}
               </span>
             </button>
           </div>
