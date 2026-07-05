@@ -2122,7 +2122,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.77</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.78</p>
       </div>
     </div>
   );
@@ -4133,8 +4133,17 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const lvl=(loadServoXP(def.id)).level;
     // Bônus da Aria/plan só se aplicam ao líder na Campanha (não há party lá).
     const hpBonus=isLeader?ariaHpBonus:0;
-    const buffs=isLeader?planAtkBuff:[];
     const npAdd=isLeader?planNpGain:0;
+    // Monta os buffs VISÍVEIS na HUD a partir do planBonus (descanso/preparar).
+    let buffs=[];
+    if(isLeader){
+      buffs=[...planAtkBuff];
+      // planBonus simples (sem atkTurns): vira buff visível de ATK/DEF por 3 turnos
+      if(camp.planBonus&&!camp.planBonus.atkTurns){
+        if(camp.planBonus.atkUp)buffs.push({type:'attack_up',value:camp.planBonus.atkUp,turns:3,id:'plan_atk'});
+        if(camp.planBonus.defUp)buffs.push({type:'defense_up',value:camp.planBonus.defUp,turns:3,id:'plan_def'});
+      }
+    }
     return{
       ...m,
       level:lvl,
@@ -4261,6 +4270,17 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       addLog(`── Turno 1 · Fase ${camp.phase} ──`,'system');
       // Anuncia a ordem de iniciativa
       addLog(`⚑ Ordem de iniciativa: ${turnOrder.map(o=>o.name.split(' ')[0]).join(' → ')}`,'system');
+      // Feedback dos bônus de descanso/preparar levados para este combate
+      const leader0=party[0];
+      const planBuffs=(leader0?.activeBuffs||[]).filter(b=>b.id==='plan_atk'||b.id==='plan_def'||b.id==='plan3_atk');
+      if(planBuffs.length>0){
+        const parts=planBuffs.map(b=>b.type==='attack_up'?`ATK +${b.value}%`:b.type==='defense_up'?`DEF +${b.value}%`:`+${b.value}%`);
+        addLog(`✨ Preparação: ${parts.join(' · ')} ativo(s) neste combate!`,'player');
+        setTimeout(()=>spawnFx('servo','PREPARADO!','buff'),400);
+      }
+      if(planNpGain>0){
+        addLog(`✨ Preparação: começou com +${planNpGain}% de NP!`,'player');
+      }
       // A fila começa no índice 0. Se o primeiro for um servo, posiciona o ativo
       // nele e espera o jogador. Se for um inimigo, ele age primeiro.
       const first=turnOrder[0];
@@ -4288,9 +4308,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     }
     let atkUp=0;
     for(const b of servo.activeBuffs||[]){if(b.type==='attack_up')atkUp+=b.value;}
-    // planBonus.atkUp só conta aqui se NÃO for o buff temporário do plan3
-    // (esse já entra via activeBuffs 'plan3_atk', evitando dupla contagem)
-    if(camp.planBonus?.atkUp&&!camp.planBonus?.atkTurns)atkUp+=camp.planBonus.atkUp;
+    // (O bônus de ATK do descanso/preparar agora entra via activeBuffs 'plan_atk'/'plan3_atk',
+    //  visível na HUD — não é mais somado aqui, evitando dupla contagem.)
     // Perk: Energizador de Raiz — bônus de ATK passivo permanente
     if(perkEffects.atkUpPercent>0)atkUp+=perkEffects.atkUpPercent;
     // Fleur de Lis (Saber): +15% ATK durante todo o combate do boss
@@ -4359,7 +4378,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     for(const b of tgt.activeBuffs||[]){if(b.type==='defense_up')defUp+=b.value;}
     // Passiva de defesa (ex.: Logos Eater da Kiara)
     for(const p of (tgt.passiveSkills||[])){if(p.effect&&p.effect.type==='def_passive')defUp+=p.effect.value;}
-    if(camp.planBonus?.defUp)defUp+=camp.planBonus.defUp;
+    // (O bônus de DEF do descanso/preparar agora entra via activeBuffs 'plan_def', visível na HUD.)
     // Fleur de Lis (Saber): +15% DEF durante todo o combate do boss
     if(camp.saberBuff)defUp+=SABER_NP.defUp;
     for(const d of tgt.activeDebuffs||[]){if(d.type==='defense_down')defDown+=d.value;}
