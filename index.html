@@ -2122,7 +2122,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.78</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.79</p>
       </div>
     </div>
   );
@@ -2863,8 +2863,13 @@ function ProfileScreen({onNavigate,profile,setProfile}){
         })}
 
         {/* Servos jogáveis desbloqueados — cada um com nível, bond e NP */}
-        {PLAYABLE_ROSTER.filter(r=>r.unlock===null||!!(profile.achievements&&profile.achievements[r.unlock])).map(r=>{
+        {[
+          // Servos base (desbloqueados por conquista) + servos do gacha possuídos
+          ...PLAYABLE_ROSTER.filter(r=>r.unlock===null||!!(profile.achievements&&profile.achievements[r.unlock])),
+          ...(profile.gachaOwned||[]).filter(id=>GACHA_SERVOS[id]).map(id=>({id,short:id,unlock:null})),
+        ].map(r=>{
           const def=PLAYABLE_SERVOS[r.id];
+          if(!def)return null;
           const sxp=loadServoXP(r.id);
           const sbond=loadBond(r.id);
           const snp=bondToNP(sbond.level);
