@@ -382,6 +382,14 @@ function addServoXP(servoId,pts){
   return s;
 }
 
+// Sobe exatamente 1 nível (recompensa fixa de história), respeitando o teto (nível 10).
+function levelUpServo(servoId){
+  let s=loadServoXP(servoId);
+  if(s.level<10){s.level++;s.xp=0;}
+  saveServoXP(servoId,s);
+  return s;
+}
+
 // ── IBARAKI DOUJI ────────────────────────────────────
 // Registro dos servos jogáveis, por id. Preenchido conforme cada servo é definido.
 const PLAYABLE_SERVOS={};
@@ -891,6 +899,18 @@ const STORY_MAP5_F8={
     {type:'master',text:'Minamoto....'},
     {type:'narration',text:'As informações sobre o Clã Minamoto são bem vastas; de fato começaram na Era Heian. O que se pode estabelecer com isso é que estão por volta do ano 794–1185 d.C.'},
     {type:'okuni',expr:'think',name:'CHIGURE (?)',text:'Então, a dica de ouro: no centro da cidade tem um posto avançado do Clã Genji. Vá até lá quando se sentir preparado e resolva as coisas. Desejo-lhe sorte.'},
+  ],
+};
+
+// Fase 12: treino/entrosamento da party num campo de arroz. Recompensa: +1 nível e +1 bond.
+const STORY_MAP5_F12={
+  start:[
+    {type:'narration',text:'Em um campo de arroz nas proximidades de Kurikara.'},
+    {type:'master',text:'Do pouco que a Chigure falou, os inimigos no centro da cidade são mais fortes e mais numerosos.'},
+    {type:'master',text:'Vamos verificar o que cada um pode fazer, para conseguirmos nos entrosar no meio da batalha sem atrapalhar um ao outro.'},
+    {type:'ibaraki',expr:'exp1',text:'Deixe todos comigo. Em alguns minutos a cidade vai estar limpa.'},
+    {type:'archer',expr:'sith_ow',text:'Confiança demais leva à ruína. Como uma fada, sei muito bem o tamanho da queda pela confiança excessiva.'},
+    {type:'narration',text:'Passam o tempo até chegar o fim da tarde.'},
   ],
 };
 
@@ -1873,6 +1893,11 @@ function addBond(servoId,pts){
   while(b.points>=req){b.points-=req;b.level++;req=bondReq(b.level);}
   saveBond(servoId,b);return b;
 }
+// Sobe exatamente 1 nível de Bond (recompensa fixa de história).
+function bondUpServo(servoId){
+  let b=loadBond(servoId);b.level++;b.points=0;
+  saveBond(servoId,b);return b;
+}
 
 // Cooldown escalonado das skills avançadas (desbloqueadas na Fase 3 do mapa 3)
 function tormentoCD(lvl){return lvl>=10?7:lvl>=6?8:9;}
@@ -2325,7 +2350,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.88</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.90</p>
       </div>
     </div>
   );
@@ -4345,6 +4370,11 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
     // Deposita QP imediatamente (leitura fresca) e sincroniza o estado do App
     const updatedProfile=depositQP(qpGain);
     if(setProfile)setProfile(updatedProfile);
+    // IMPORTANTE: o combate lê camp.party (quando há party). Sincroniza o líder
+    // (party[0]) com o servo curado, senão o HP/NP recuperado é ignorado na luta.
+    if(newCamp.party&&newCamp.party.length){
+      newCamp.party=[{...newCamp.party[0],hp:newCamp.servo.hp,npBar:newCamp.servo.npBar,hpMax:newCamp.servo.hpMax},...newCamp.party.slice(1)];
+    }
     finalCampRef.current=newCamp;
     setResult(msg);setCamp(newCamp);setDone(true);
   }
@@ -6333,7 +6363,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap5&&nextPhase===4){setCamp(advanced);setStage('map5F4');return;}
     if(isMap5&&nextPhase===6){setCamp(advanced);setStage('map5F6');return;}
     if(isMap5&&nextPhase===8){setCamp(advanced);setStage('map5F8');return;}
-    if(isMap5&&[12,14,15,17].includes(nextPhase)){
+    if(isMap5&&nextPhase===12){setCamp(advanced);setStage('map5F12');return;}
+    if(isMap5&&[14,15,17].includes(nextPhase)){
       setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map5Fixed');return;
     }
     setCamp(advanced);setStage('map');
@@ -6344,6 +6375,17 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   }
 
   // Fim da sequência da Fase 2: recupera 50% HP + Bond, mostra a vila, vai ao mapa
+  // Aplica mudanças ao líder (servo) e sincroniza party[0], já que o combate lê camp.party.
+  // Evita o bug de HP/NP curado ser ignorado no combate quando há party.
+  function withLeaderPatch(baseCamp,patch){
+    const newServo={...baseCamp.servo,...patch};
+    const out={...baseCamp,servo:newServo};
+    if(baseCamp.party&&baseCamp.party.length){
+      out.party=[{...baseCamp.party[0],...patch},...baseCamp.party.slice(1)];
+    }
+    return out;
+  }
+
   function afterSaberIntro(){
     const heal=Math.round(camp.servo.hpMax*0.50);
     const newBond=addBond(IBARAKI.id,80);
@@ -6365,9 +6407,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   // Fim da Fase 12 (Chá da Tarde): +10% ATK e +20% HP recuperado no próximo combate.
   function afterTeaEvent(){
     const heal=Math.round(camp.servo.hpMax*0.20);
-    setCamp({...camp,
-      servo:{...camp.servo,hp:clamp(camp.servo.hp+heal,0,camp.servo.hpMax)},
-      planBonus:{atkUp:10,defUp:0,hpUp:0}});
+    const patched=withLeaderPatch(camp,{hp:clamp(camp.servo.hp+heal,0,camp.servo.hpMax)});
+    setCamp({...patched,planBonus:{atkUp:10,defUp:0,hpUp:0}});
     setStage('map');
   }
 
@@ -6403,9 +6444,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   // Fim da Fase 14 (despedida): +30% HP recuperado, +20% NP e +10% ATK (3t) no próximo combate.
   function afterFarewell(){
     const heal=Math.round(camp.servo.hpMax*0.30);
-    setCamp({...camp,
-      servo:{...camp.servo,hp:clamp(camp.servo.hp+heal,0,camp.servo.hpMax)},
-      planBonus:{atkUp:10,atkTurns:3,npGain:20}});
+    const patched=withLeaderPatch(camp,{hp:clamp(camp.servo.hp+heal,0,camp.servo.hpMax)});
+    setCamp({...patched,planBonus:{atkUp:10,atkTurns:3,npGain:20}});
     setStage('map');
   }
 
@@ -6490,6 +6530,17 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
 
   // Após o diálogo de vitória contra o Ninja Genji: segue para o Mapa 5 (Kurikara),
   // carregando a party de 2 (Ibaraki + Sith) com o estado atual.
+  // Recompensa da Fase 12 do mapa 5: +1 nível e +1 bond para toda a party.
+  function applyF12Reward(){
+    const members=(camp.party&&camp.party.length)?camp.party:[camp.servo];
+    members.forEach(m=>{
+      const def=PLAYABLE_SERVOS[m.id]||IBARAKI;
+      levelUpServo(def.id);
+      bondUpServo(def.id);
+    });
+    setStage('map');
+  }
+
   function onGenjiWinContinue(){
     const carriedParty=(camp.party||[camp.servo]).map(m=>({...m}));
     const next=buildCampForMap(carriedParty[0],'kurikara_city',null,false,
@@ -6691,6 +6742,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map5F4')return <StoryScreen profile={profile} script={STORY_MAP5_F4} finishLabel="Descansar na pousada →" onFinish={()=>{setCamp(c=>({...c,innUnlocked:true}));setStage('map');}}/>;
   if(stage==='map5F6')return <StoryScreen profile={profile} script={STORY_MAP5_F6} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
   if(stage==='map5F8')return <StoryScreen profile={profile} script={STORY_MAP5_F8} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map5F12')return <StoryScreen profile={profile} script={STORY_MAP5_F12} finishLabel="✦ Treino concluído: +1 Nível e +1 Bond!" onFinish={applyF12Reward}/>;
   if(stage==='map5Fixed')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
