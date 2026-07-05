@@ -203,6 +203,7 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .dmg-float.heal{color:#7ddc7d;text-shadow:0 0 8px rgba(0,0,0,.95),0 0 14px rgba(80,220,80,.35)}
 .dmg-float.miss{color:#d8d8d8;font-size:.7rem;letter-spacing:2px}
 .dmg-float.stun{color:#c07ce0;font-size:.7rem;letter-spacing:1px}
+.dmg-float.poison{color:#b84cf0;font-weight:700;text-shadow:0 0 10px rgba(0,0,0,.95),0 0 18px rgba(160,60,220,.7)}
 .dmg-float.buff{color:var(--gold);font-size:.72rem;letter-spacing:1px}
 @keyframes panelShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
 .shake{animation:panelShake .4s ease}
@@ -290,6 +291,26 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .cs-flash{position:absolute;inset:0;background:#fff;z-index:4;opacity:0;animation:csFlash 1.3s ease-out forwards}
 @keyframes csFlash{0%,55%{opacity:0}62%{opacity:.95}100%{opacity:0}}
 .cs-label{position:absolute;bottom:18%;left:0;right:0;text-align:center;z-index:5;font-family:'Cinzel',serif;color:#ff4040;letter-spacing:6px;font-size:clamp(.9rem,3vw,1.4rem);text-shadow:0 0 20px rgba(0,0,0,.9),0 0 40px rgba(255,20,20,.6);animation:nmFade 1s ease .3s both}
+/* Pacto com a Baobhan Sith — mais intenso que o Selo de Comando */
+.sith-contract-fx{position:fixed;inset:0;z-index:850;display:flex;align-items:center;justify-content:center;background:#100;overflow:hidden;pointer-events:none}
+.sc2-glow{position:absolute;width:60vmin;height:60vmin;border-radius:50%;background:radial-gradient(circle,rgba(255,30,60,.95),rgba(200,0,30,.5) 45%,transparent 72%);animation:sc2Glow 1.8s ease-out forwards}
+.sc2-seal{position:absolute;font-family:'Cinzel',serif;font-size:18vmin;color:#ff1840;text-shadow:0 0 40px rgba(255,20,50,.98),0 0 80px rgba(220,0,40,.8);animation:sc2Seal 1.8s ease-out forwards;z-index:2}
+.sc2-slash{position:absolute;top:0;left:-20%;width:140%;height:100%;z-index:3;pointer-events:none}
+.sc2-slash::before,.sc2-slash::after{content:'';position:absolute;background:linear-gradient(90deg,transparent,#fff 45%,#ffd0d8 50%,#fff 55%,transparent);box-shadow:0 0 28px rgba(255,255,255,.95),0 0 56px rgba(255,40,80,.9)}
+.sc2-slash::before{top:46%;left:0;right:0;height:6px;transform-origin:center;animation:csSlashH 1.8s ease-out forwards;opacity:0}
+.sc2-slash::after{top:0;bottom:0;left:50%;width:5px;transform-origin:center;animation:csSlashV 1.8s ease-out .15s forwards;opacity:0}
+.sc2-slash2::before{top:54%;animation-delay:.3s}
+.sc2-slash2::after{left:44%;animation-delay:.45s}
+.sc2-flash{position:absolute;inset:0;background:#fff;z-index:4;opacity:0;animation:sc2Flash 1.8s ease-out forwards}
+.sc2-label{position:absolute;bottom:16%;left:0;right:0;text-align:center;z-index:5;font-family:'Cinzel',serif;color:#ff2850;letter-spacing:8px;font-size:clamp(1rem,3.4vw,1.6rem);text-shadow:0 0 24px rgba(0,0,0,.95),0 0 48px rgba(255,20,60,.7);animation:nmFade 1.1s ease .4s both}
+@keyframes sc2Glow{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.1)}100%{opacity:.6;transform:scale(1.4)}}
+@keyframes sc2Seal{0%{opacity:0;transform:scale(2) rotate(-12deg)}35%{opacity:1;transform:scale(1) rotate(0)}100%{opacity:.9;transform:scale(1.05)}}
+@keyframes sc2Flash{0%,40%{opacity:0}50%{opacity:.95}58%{opacity:.2}66%{opacity:.85}100%{opacity:0}}
+/* Névoa de veneno roxo (combate especial dos ladrões, Fase 9 mapa 4) */
+.poison-overlay{position:fixed;inset:0;z-index:60;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 60%,rgba(140,40,200,.28),rgba(80,10,140,.18) 50%,transparent 78%);
+  mix-blend-mode:screen;animation:poisonPulse 2.4s ease-in-out infinite}
+@keyframes poisonPulse{0%,100%{opacity:.5}50%{opacity:.95}}
 </style>
 </head>
 <body>
@@ -736,7 +757,46 @@ const STORY_MAP4_APPARITION={
   ],
 };
 
-// ── FASE FIXA 18 DO MAPA 3: a memória (sonho-lembrança + flashback do trauma) ──
+// ── FASE FIXA 9 DO MAPA 4: os ladrões, e o pacto com a Baobhan Sith ──
+// Parte A: diálogo antes do combate contra os 3 ladrões.
+const STORY_MAP4_BANDITS_PRE={
+  start:[
+    {type:'master',text:'Muitos bandidos nessa região, não?'},
+    {type:'ibaraki',expr:'exp1',text:'Sim..... mas decepcionante..... fracos até demais...'},
+    {type:'master',text:'Sinceramente é um alívio, mas o que mais me assusta é a Archer atrás da gente. Se ela quiser vingança?'},
+    {type:'ibaraki',expr:'exp2',text:'Tem medo de dormir, é? Haha, comigo aqui ela vai ser atropelada novamente.'},
+    {type:'master',text:'Aham, sei.'},
+  ],
+};
+// Parte B: diálogo depois do combate — a Sith aparece e faz o "pacto".
+// Expressões da Archer: default(séria), sith_ow(observando), sith_pis(provocando), sith_ahh(rindo/zombando).
+const STORY_MAP4_BANDITS_POS={
+  start:[
+    {type:'archer',expr:'sith_ow',text:'Saiba que não fiz isso por você.'},
+    {type:'narration',text:'Aquela estranha Archer aparece atrás dos três batedores de carteira, enquanto ambos desabam no chão convulsionando, até que param sem vida.'},
+    {type:'ibaraki',expr:'expDerrota',text:'Aghhh!'},
+    {type:'master_think',text:'Ela acabou de se assustar com ela....? Até então ela não estava se gabando de ter derrotado ela?'},
+    {type:'archer',expr:'sith_pis',text:'Agradeça. Se ajoelhe.'},
+    {type:'narration',text:'Ibaraki finalmente conseguiu se recuperar do susto.'},
+    {type:'ibaraki',expr:'exp2',text:'Jamais! Só ajoelharia para minha Shuten querida!'},
+    {type:'master_think',text:'Shuten? Faz sentido, Ibaraki e Shuten são Onis reconhecidos, qualquer um na era moderna sabe sobre as duas. Ou quase...'},
+    {type:'narration',text:'Nesse momento Ibaraki retira sua espada e aponta para a Archer.'},
+    {type:'archer',expr:'default',text:'Não vim lutar, mas verificar algo. Você, quem é você?'},
+    {type:'master',text:'Eu sou ----'},
+    {type:'ibaraki',expr:'exp1',text:'O mestre é o mestre.'},
+    {type:'archer',expr:'sith_ow',text:'Um mestre...? Certo....'},
+    {type:'master_think',text:'Novamente não pude falar meu nome?!'},
+    {type:'archer',expr:'sith_pis',text:'Espero que você tenha mana.'},
+  ],
+};
+// Parte C: falas da Sith após o contrato (flashbang vermelho).
+const STORY_MAP4_SITH_CONTRACT={
+  start:[
+    {type:'archer',expr:'sith_ahh',text:'Servo, Archer. Baobhan Sith veio em resposta ao seu chamado. Juro jamais desonrar meu nome de cavaleiro. ...Como se fosse verdade! Kyahahahahaha! Você realmente não sabe nada sobre mim, não é!? Que engraçado! Talvez eu até goste de você! Enfim, vamos ser amigos. Afinal, eu também defendo a justiça.'},
+  ],
+};
+
+
 // Sequência em fases visuais (não é chat comum): sonho calmo → glitch → despertar.
 // NOTA DE CONTINUIDADE: a "mulher nojenta com quatro subordinados" mencionada aqui
 // é uma VILÃ DISTINTA (a ser apresentada futuramente) — NÃO é a Archer Corrompida.
@@ -2122,7 +2182,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.79</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.80</p>
       </div>
     </div>
   );
@@ -3269,6 +3329,10 @@ const ARCHER={
     face:'assets/servos/archer/archer_face.png', // rosto (avatar de chat nos diálogos)
     death:'assets/servos/archer/archer_death.jpg', // corpo caído (rescaldo do combate)
     visu:'assets/servos/archer/archer_visu.jpg', // versão "mais viva" (aparição na Fase 6 do mapa 4)
+    // Expressões da Baobhan Sith "viva" (Fase 9 em diante)
+    ow:'assets/servos/archer/sith_ow.png', // observando / séria
+    pis:'assets/servos/archer/sith_pis.png', // provocando / piscando
+    ahh:'assets/servos/archer/sith_ahh.png', // rindo / zombando
   },
 };
 
@@ -3482,8 +3546,26 @@ function genFixedEnemies(mapId,enemyId,count,phase){
 }
 
 // ══════════════════════════════════════════════════════
-// EFEITO DO SELO DE COMANDO (vitória contra a Archer)
+// EFEITO DO CONTRATO COM A BAOBHAN SITH (flashbang vermelho intenso)
 // ══════════════════════════════════════════════════════
+function SithContractFX({onFinish}){
+  useEffect(()=>{
+    const t=setTimeout(onFinish,1800); // um pouco mais longo e intenso que o selo
+    return()=>clearTimeout(t);
+  },[]);
+  return(
+    <div className="sith-contract-fx">
+      <div className="sc2-glow"/>
+      <div className="sc2-seal">令</div>
+      <div className="sc2-slash"/>
+      <div className="sc2-slash sc2-slash2"/>
+      <div className="sc2-flash"/>
+      <div className="sc2-label">PACTO SELADO</div>
+    </div>
+  );
+}
+
+
 function CommandSealFX({onFinish}){
   useEffect(()=>{
     const t=setTimeout(onFinish,1350); // dura ~1.3s e segue para o diálogo de vitória
@@ -3767,14 +3849,30 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
         </div>
       </div>
     );
-    if(m.type==='archer')return(
-      <div key={i} className="chat-msg left">
-        <img className="chat-avatar" src={ARCHER.assets.face} alt="???"
-          style={{borderColor:'rgba(224,64,128,.5)'}}
-          onError={ev=>{ev.target.style.display='none';}}/>
+    if(m.type==='archer'){
+      const expImg=m.expr==='sith_ow'?ARCHER.assets.ow
+        :m.expr==='sith_pis'?ARCHER.assets.pis
+        :m.expr==='sith_ahh'?ARCHER.assets.ahh
+        :ARCHER.assets.face;
+      // Depois que ela se revela (expressões novas), o nome muda para BAOBHAN SITH
+      const revealed=m.expr&&m.expr.startsWith('sith_');
+      return(
+        <div key={i} className="chat-msg left">
+          <img className="chat-avatar" src={expImg} alt="???"
+            style={{borderColor:'rgba(224,64,128,.5)'}}
+            onError={ev=>{ev.target.onerror=null;ev.target.src=ARCHER.assets.face;}}/>
+          <div className="chat-body">
+            <div className="chat-name" style={{color:'#e04080'}}>{revealed?'BAOBHAN SITH':'MULHER DE OLHOS PÁLIDOS'}</div>
+            <div className="chat-bubble" style={{borderColor:'rgba(224,64,128,.5)',color:'#e88',fontStyle:'italic'}}>{m.text}</div>
+          </div>
+        </div>
+      );
+    }
+    if(m.type==='master_think')return(
+      <div key={i} className="chat-msg right">
         <div className="chat-body">
-          <div className="chat-name" style={{color:'#e04080'}}>MULHER DE OLHOS PÁLIDOS</div>
-          <div className="chat-bubble" style={{borderColor:'rgba(224,64,128,.5)',color:'#e88',fontStyle:'italic'}}>{m.text}</div>
+          <div className="chat-name" style={{color:'var(--parchment-dark)'}}>MESTRE (pensando)</div>
+          <div className="chat-bubble" style={{fontStyle:'italic',opacity:0.85,borderStyle:'dashed'}}>{m.text}</div>
         </div>
       </div>
     );
@@ -4052,7 +4150,7 @@ function EventScreen({camp,type,onFinish,setCamp,setProfile}){
 // ══════════════════════════════════════════════════════
 // COMBATE
 // ══════════════════════════════════════════════════════
-function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfile,fixedEnemies}){
+function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfile,fixedEnemies,banditPoison}){
   // Perks passivas EQUIPADAS do Mestre — carregadas do profile uma vez por combate
   const perkEffects=getPerkEffects(profile);
   // Bônus das skills da Torre (só valem em runs da Torre de Desafios)
@@ -4285,6 +4383,15 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       }
       if(planNpGain>0){
         addLog(`✨ Preparação: começou com +${planNpGain}% de NP!`,'player');
+      }
+      // Combate especial dos ladrões (Fase 9): chuva de golpes envenenados roxos
+      if(banditPoison){
+        addLog('☠️ Uma névoa roxa envolve os ladrões... veneno!','system');
+        enemies.forEach((e,ei)=>{
+          for(let k=0;k<4;k++){
+            setTimeout(()=>spawnFx(e.instanceId,`-${300+Math.floor(Math.random()*500)}`,'poison'),300+ei*180+k*260);
+          }
+        });
       }
       // A fila começa no índice 0. Se o primeiro for um servo, posiciona o ativo
       // nele e espera o jogador. Se for um inimigo, ele age primeiro.
@@ -5447,6 +5554,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   return(
     <div className="screen" style={{padding:'12px'}}>
+      {banditPoison&&<div className="poison-overlay"/>}
       {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
 
       {result&&(
@@ -5855,8 +5963,9 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap3&&nextPhase===12){setCamp(advanced);setStage('map3Scream');return;}
     if(isMap3&&nextPhase===14){setCamp(advanced);setStage('map3Farewell');return;}
     if(isMap3&&nextPhase===18){setCamp(advanced);setStage('map3Memory');return;}
-    // Fases fixas do mapa 4: 1 (rescaldo, na entrada), 6 (aparição). 9, 12, 15 são ganchos.
+    // Fases fixas do mapa 4: 1 (rescaldo, na entrada), 6 (aparição), 9 (ladrões + Sith). 12, 15 são ganchos.
     if(isMap4&&nextPhase===6){setCamp(advanced);setStage('map4Apparition');return;}
+    if(isMap4&&nextPhase===9){setCamp(advanced);setStage('map4BanditsPre');return;}
     setCamp(advanced);setStage('map');
   }
 
@@ -5910,6 +6019,17 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     setStage('map');
   }
 
+  // A Baobhan Sith se junta à party (Fase 9 do mapa 4). Daqui em diante, a
+  // Campanha passa a ter 2 servos: Ibaraki (líder) + Sith. A Sith entra no
+  // nível dela, HP cheio (como recém-invocada).
+  function afterSithJoins(){
+    const sithMember=buildPartyMember(SITH_PLAYABLE); // nível dela, HP cheio
+    const leader=camp.party&&camp.party[0]?camp.party[0]:camp.servo;
+    const newParty=[leader,sithMember];
+    setCamp({...camp,party:newParty,servo:newParty[0],sithJoined:true});
+    setStage('map');
+  }
+
   // Fim da Fase 14 (despedida): +30% HP recuperado, +20% NP e +10% ATK (3t) no próximo combate.
   function afterFarewell(){
     const heal=Math.round(camp.servo.hpMax*0.30);
@@ -5928,6 +6048,17 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     // Preserva HP/NP do combate e segue para o diálogo do homem idoso
     setCamp({...updatedCamp,phase:12});
     setStage('map3OldMan');
+  }
+
+  // Fase 9 do mapa 4: combate contra 3 ladrões (batedores de carteira).
+  function startBandits(){
+    scriptedFightRef.current=genFixedEnemies('kurikara','ladrao',3,camp.phase);
+    setStage('map4BanditsFight');
+  }
+  function onBanditsWin(updatedCamp){
+    // Preserva o estado e segue para o diálogo pós-combate (a Sith aparece)
+    setCamp({...updatedCamp,phase:9});
+    setStage('map4BanditsPos');
   }
 
   function finishCampaign(updatedCamp,viaBoss){
@@ -6132,6 +6263,12 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map4Aftermath')return <StoryScreen profile={profile} script={STORY_MAP4_AFTERMATH} finishLabel="Prosseguir →" onFinish={()=>setStage('map')}/>;
   // Fase fixa 6 do mapa 4: a aparição da Archer "mais viva"
   if(stage==='map4Apparition')return <StoryScreen profile={profile} script={STORY_MAP4_APPARITION} finishLabel="Prosseguir →" onFinish={afterApparition}/>;
+  // Fase fixa 9 do mapa 4: os ladrões e o pacto com a Baobhan Sith
+  if(stage==='map4BanditsPre')return <StoryScreen profile={profile} script={STORY_MAP4_BANDITS_PRE} finishLabel="⚔️ Enfrentar os ladrões" onFinish={startBandits}/>;
+  if(stage==='map4BanditsFight')return <CombatScreen camp={camp} isBoss={false} fixedEnemies={scriptedFightRef.current} banditPoison={true} onWin={onBanditsWin} onLose={onCombatLose} onFlee={onBanditsWin} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
+  if(stage==='map4BanditsPos')return <StoryScreen profile={profile} script={STORY_MAP4_BANDITS_POS} finishLabel="Continuar →" onFinish={()=>setStage('map4SithFlash')}/>;
+  if(stage==='map4SithFlash')return <SithContractFX onFinish={()=>setStage('map4SithContract')}/>;
+  if(stage==='map4SithContract')return <StoryScreen profile={profile} script={STORY_MAP4_SITH_CONTRACT} finishLabel="✦ Baobhan Sith se junta a você!" onFinish={afterSithJoins}/>;
   if(stage==='archerLoseStory')return <StoryScreen profile={profile} script={STORY_ARCHER_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   // Cadeia de transição Bosque → Vila de Tennobara
   if(stage==='map2Leave')return <StoryScreen profile={profile} script={STORY_MAP2_LEAVE} finishLabel="Continuar →" onFinish={()=>setStage('map2TitleCard')}/>;
