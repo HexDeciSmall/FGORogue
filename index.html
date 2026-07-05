@@ -466,6 +466,17 @@ const IBARAKI_EXPRESSIONS={
   exp4:'assets/servos/ibaraki/ibaraki_exp4.png', // Expressão 4: brava / gritando
 };
 
+// Expressões da Okuni (disfarçada de "Takefusa Chigure" no Mapa 5)
+const OKUNI_EXPRESSIONS={
+  normal:'assets/servos/okuni/okuni_normal.png',       // neutra / sorriso leve
+  fofa:'assets/servos/okuni/okuni_fofa.png',           // olhos fechados, fofa
+  feliz:'assets/servos/okuni/okuni_feliz.png',         // corada, feliz
+  brava:'assets/servos/okuni/okuni_brava.png',         // boca aberta, exaltada
+  preocupada:'assets/servos/okuni/okuni_preocupada.png', // apreensiva
+  think:'assets/servos/okuni/okuni_think.png',         // piscando / pensando
+  off:'assets/servos/okuni/okuni_off.png',             // olhos fechados, séria/desligada
+};
+
 // ── ROTEIRO: DIÁLOGO INICIAL DA CAMPANHA ──
 // Tipos de mensagem: narration | master | masterAction | ibaraki (com expr) | choice
 const STORY_INTRO={
@@ -793,6 +804,137 @@ const STORY_MAP4_BANDITS_POS={
 const STORY_MAP4_SITH_CONTRACT={
   start:[
     {type:'archer',expr:'sith_ahh',text:'Servo, Archer. Baobhan Sith veio em resposta ao seu chamado. Juro jamais desonrar meu nome de cavaleiro. ...Como se fosse verdade! Kyahahahahaha! Você realmente não sabe nada sobre mim, não é!? Que engraçado! Talvez eu até goste de você! Enfim, vamos ser amigos. Afinal, eu também defendo a justiça.'},
+  ],
+};
+
+// ── FASE FIXA 12 DO MAPA 4: a sondagem da Sith sobre a natureza do Mestre ──
+const STORY_MAP4_PROBE={
+  start:[
+    {type:'archer',expr:'sith_ow',text:'Você não é humano, né? Um homúnculo? Ou algo assim?'},
+    {type:'master',text:'???'},
+    {type:'master',text:'Nasci, cresci como um humano.'},
+    {type:'archer',expr:'sith_pis',text:'Eeh... Mentiras têm pernas curtas.'},
+    {type:'narration',text:'Depois dessa pergunta da Archer, a Ibaraki estranhamente começou a andar lentamente e, de forma incomum, prestando atenção na conversa.'},
+    {type:'archer',expr:'sith_ow',text:'Me diga, qual sua memória mais vívida?'},
+    {type:'master',text:'Hmm.... deixa eu pensar.....'},
+    {type:'narration',text:'As memórias da infância, dos dias de escola, não parecem chegar — algo como um redemoinho de cenas, mas nenhuma podia ser chamada de vívida, ou em que todos os detalhes pudessem ser lembrados.'},
+    {type:'master',text:'Hmmmm, talvez sejam os dias de caminhada. Não lembro de algo muito característico.'},
+    {type:'narration',text:'Um clima estranho ficou rondando os três por um tempo.'},
+  ],
+};
+
+// ── FASES FIXAS DO MAPA 5: KURIKARA (cidade, era Heian) ──
+// Fase 1: entrada na cidade, as servas viram forma espiritual e falam por telepatia.
+const STORY_MAP5_F1={
+  start:[
+    {type:'narration',text:'Assim que entram na cidade, as duas servas — Archer e Berserker — se desmaterializam e ficam em forma espiritual.'},
+    {type:'archer',expr:'sith_pis',telepathy:true,text:'Oh, até que você é inteligente. Duas garotas de orelhas pontudas e vestimentas estranhas seriam mal vistas na cidade.'},
+    {type:'ibaraki',expr:'exp2',telepathy:true,text:'Tsch. Preciso mostrar minha pose dominante para essa ralé humana. Essa forma não me agrada.'},
+    {type:'master',telepathy:true,text:'Melhor ficar quietinhas na minha mente, ou vão achar que sou um maluco ouvindo vozes. Essa forma espiritual vai me garantir um quarto bom — e vocês nem precisam dormir.'},
+    {type:'archer',expr:'sith_ow',telepathy:true,text:'Definitivamente.'},
+    {type:'ibaraki',expr:'exp1',telepathy:true,text:'Qualquer sinal de combate, eu apareço!'},
+  ],
+};
+
+// Fase 4: a pousada Kogarashi-kan e a estranha "Takefusa Chigure" (Okuni disfarçada).
+const STORY_MAP5_F4={
+  start:[
+    {type:'narration',text:'Depois de andar pela cidade procurando por informações, finalmente encontraram uma pousada chamada "Kogarashi-kan", gerenciada por um guerreiro aposentado chamado Takefusa — que nunca teve filhos ou esposa.'},
+    {type:'image',src:'assets/servos/okuni/okuni_encounter.jpg'},
+    {type:'master',text:'Ehh... Gostaria de um quarto. O Sr. Takefusa está?'},
+    {type:'okuni',expr:'feliz',name:'GAROTA DESCONHECIDA',text:'Prazer! O Sr. Takefusa saiu em uma viagem e não vai voltar nunca mais! Prazer, meu nome é Cas-.... Perdão, meu nome é Takefusa Chigure.'},
+    {type:'master',text:'Certo, certo. É uma parente dele?'},
+    {type:'okuni',expr:'fofa',name:'TAKEFUSA CHIGURE (?)',text:'Sim! Sou a filha dele!'},
+    {type:'master',text:'....... Algo não está certo.....'},
+    {type:'okuni',expr:'brava',name:'CHIGURE (?)',text:'Que nada! Deseja um quarto?!'},
+    {type:'okuni',expr:'preocupada',name:'CHIGURE (?)',text:'?????'},
+    {type:'okuni',expr:'think',name:'CHIGURE (?)',text:'?????'},
+    {type:'master',text:'Quero......'},
+    {type:'narration',text:'A pequena garota se arrasta até o balcão, pega alguns papéis e uma plaqueta de madeira, e começa a escrever rapidamente um monte de coisas. Parecia não entender o que estava fazendo, mas eram, de fato, movimentos sérios.'},
+    {type:'okuni',expr:'off',name:'CHIGURE (?)',text:'Me passe seus dados.'},
+    {type:'master',text:'Meu nome é ---'},
+    {type:'okuni',expr:'normal',name:'CHIGURE (?)',text:'Certo, certo, não precisa me dizer, vou pôr aqui. E tome a chave: quarto para três, né?'},
+    {type:'master',text:'...... Para um. Só tem eu aqui.'},
+    {type:'okuni',expr:'think',name:'CHIGURE (?)',text:'Então é assim que vai brincar.... Certo, quarto para um. Tome a chave.'},
+    {type:'archer',expr:'sith_ow',telepathy:true,text:'Mestre, você percebeu, né?'},
+    {type:'master',telepathy:true,text:'Óbvio.'},
+    {type:'ibaraki',expr:'exp2',telepathy:true,text:'Do que estão falando?'},
+    {type:'master',text:'......'},
+    {type:'archer',expr:'sith_ow',text:'........'},
+  ],
+};
+
+// Fase 6: durante a noite, a Sith reflete sobre a Okuni ser um servo e o mistério do Mestre.
+const STORY_MAP5_F6={
+  start:[
+    {type:'narration',text:'Durante a noite.'},
+    {type:'archer',expr:'sith_ow',text:'Mesmo durante essas noites, ela não tentou te matar. Não saber das intenções de alguém é o pior dos males.'},
+    {type:'master',text:'Exato. Tive um encontro com o Saber na vila; ele não estava agressivo, e mantivemos uma pacífica aliança.'},
+    {type:'ibaraki',expr:'exp2',text:'Aquela garota é um servo?'},
+    {type:'archer',expr:'sith_ow',text:'.....'},
+    {type:'archer',expr:'sith_pis',text:'As regras sobre as invocações podem ter mudado.'},
+    {type:'master',text:'Infelizmente não lembro como entrei nessa enrascada. Quando me dei conta, já estava ligado a essa pirralha.'},
+    {type:'ibaraki',expr:'exp4',text:'Grrrr.....'},
+  ],
+};
+
+// Fase 8: Chigure (Okuni) dá informações sobre o Clã Genji/Minamoto e aponta o objetivo.
+const STORY_MAP5_F8={
+  start:[
+    {type:'okuni',expr:'fofa',name:'CHIGURE (?)',text:'Então, dormiu bem? Nada de safadeza durante a noite — as paredes são finas.'},
+    {type:'master',text:'???? Que tipo de safadeza seria feita com um cara sozinho no quarto?'},
+    {type:'okuni',expr:'feliz',name:'CHIGURE (?)',text:'Fazendo de difícil, né?'},
+    {type:'okuni',expr:'normal',name:'CHIGURE (?)',text:'Mas fique tranquilo, seu segredo está bem protegido. E tenho informações privilegiadas para te dar.'},
+    {type:'master',text:'Certo. Sobre o que seria?'},
+    {type:'okuni',expr:'off',name:'CHIGURE (?)',text:'Você está fugindo dos caras do Clã Genji, correto? Mas saiba: Genji são os Minamotos. Ou o começo deles.'},
+    {type:'okuni',expr:'preocupada',name:'CHIGURE (?)',text:'Em Nara e Kyoto uma certa pessoa começou a fazer uma bagunça. As coisas estão quentes por aquele lado, então recomendo não ir para lá. Mas as chamas certamente vão queimar todo o Japão — talvez esperar até chegarem aqui dê no mesmo.'},
+    {type:'master',text:'Minamoto....'},
+    {type:'narration',text:'As informações sobre o Clã Minamoto são bem vastas; de fato começaram na Era Heian. O que se pode estabelecer com isso é que estão por volta do ano 794–1185 d.C.'},
+    {type:'okuni',expr:'think',name:'CHIGURE (?)',text:'Então, a dica de ouro: no centro da cidade tem um posto avançado do Clã Genji. Vá até lá quando se sentir preparado e resolva as coisas. Desejo-lhe sorte.'},
+  ],
+};
+
+// ── FASE FIXA 15 DO MAPA 4: a chegada a Kurikara e o Clã Genji ──
+// Parte A: a cidade à vista, antes da entrada.
+const STORY_MAP4_ARRIVAL={
+  start:[
+    {type:'narration',text:'Depois de vários dias caminhando em um ritmo tranquilo, mas com muitos embates, chegou ao fim: a cidade de Kurikara podia ser vista.'},
+    {type:'master',text:'Foi bom enfrentar um monte de bandido — chegar na cidade pelo menos com uma grana boa.'},
+    {type:'ibaraki',expr:'exp1',text:'Mestre, você fala como um verdadeiro Oni!'},
+    {type:'archer',expr:'sith_ow',text:'.....'},
+  ],
+};
+// Parte B: o homem encapuzado do Clã Genji na entrada — leva ao combate contra o boss.
+const STORY_MAP4_GENJI_GATE={
+  start:[
+    {type:'narration',text:'Ao chegar na entrada da cidade, um homem suspeito estava lhes esperando.'},
+    {type:'ninja',text:'Você aí. Parado.'},
+    {type:'master',text:'Desculpe, não corto para esse lado.'},
+    {type:'archer',expr:'sith_ow',text:'......'},
+    {type:'ibaraki',expr:'exp2',text:'......'},
+    {type:'ninja',text:'........'},
+    {type:'ninja',text:'Vocês vieram do sul. Identifiquem-se.'},
+    {type:'master',text:'Meu nome é ---'},
+    {type:'ibaraki',expr:'exp1',text:'Ibaraki Douji! Do Monte Ooe. Libere a entrada, seu degrau para a minha grandeza.'},
+    {type:'master',text:'Viemos da vila ao sul, procuramos uma hospedagem.'},
+    {type:'ninja',text:'Paguem o tributo ao Clã Genji.'},
+    {type:'narration',text:'Ele saca a sua lâmina e parte para cima deles, sem explicação nenhuma.'},
+  ],
+};
+// Parte C: derrota contra o Ninja Genji.
+const STORY_MAP4_GENJI_LOSE={
+  start:[
+    {type:'narration',text:'Um homem tão veloz que pode derrotar dois servos — o Clã Genji tem ótimas pessoas no RH para contratar alguém assim.'},
+    {type:'shuten',text:'Nunca imaginei que o rancoroso $#@%¨& iria ser usado para limpar o chão, fufufu. Comece novamente.'},
+  ],
+};
+// Parte D: vitória contra o Ninja Genji.
+const STORY_MAP4_GENJI_WIN={
+  start:[
+    {type:'narration',text:'Ibaraki sai triunfante, e pode ser vista arrancando a carteira do homem.'},
+    {type:'ibaraki',expr:'exp1',text:'Mestre, uma boa porrada abre todas as portas.'},
+    {type:'archer',expr:'sith_ow',text:'.....'},
+    {type:'master',text:'......'},
   ],
 };
 
@@ -1683,6 +1825,7 @@ const ACHIEVEMENTS=[
   {id:'defeat_nitro',name:'Derrote o Nitro-Type',desc:'Destrua o Samurai Mecanizado na Vila de Tennobara.',qp:4000,sq:15,icon:'⚙️'},
   {id:'defeat_archer',name:'Derrote a Archer Corrompida',desc:'Silencie a Fada Carniceira do Caminho Tortuoso.',qp:10000,sq:20,icon:'🏹'},
   {id:'defeat_ninja',name:'Derrote o Ninja do Clã Genji',desc:'Supere o assassino dos Arredores de Kurikara.',qp:15000,sq:26,icon:'🥷'},
+  {id:'defeat_gosanjo',name:'Derrote o Go-Sanjo Falso',desc:'Dissipe a Sombra que veste a face de um imperador, em Kurikara.',qp:25000,sq:40,icon:'🏯'},
 ];
 
 // Concede uma conquista (se ainda não obtida): paga a recompensa e marca no profile.
@@ -2182,7 +2325,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.80</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.88</p>
       </div>
     </div>
   );
@@ -3291,7 +3434,47 @@ const NINJA={
   },
 };
 
-// ── BOSS DO MAPA 3: Archer Corrompida ──
+// ── BOSS DO MAPA 5: Go-Sanjo Falso: Sombra ──
+// Boss superior: ataca até 3x por turno em alvos aleatórios. Alta velocidade,
+// alto dano, alta defesa. HP não é altíssimo, mas o maior do elenco de bosses
+// "normais" (é um mapa avançado). A mecânica de múltiplos golpes é o diferencial.
+const GOSANJO={
+  id:'gosanjo_shadow',name:'Go-Sanjo Falso: Sombra',className:'Assassin',isBoss:true,
+  hp:52000,attack:2200,
+  attributes:{
+    strength:{rank:'A',points:50},
+    agility:{rank:'A+',points:60}, // altíssima velocidade — quase sempre age primeiro
+    luck:{rank:'B',points:40},
+    endurance:{rank:'A',points:50}, // defesa alta
+    mana:{rank:'B',points:40,gainPercent:2.0},
+    np:{rank:'A',points:50},
+  },
+  npRegenPerTurn:5,
+  defensePassive:30, // mitigação passiva alta (alta defesa)
+  // Mecânica principal: MÚLTIPLOS ATAQUES por turno em alvos aleatórios.
+  multiStrike:{minHits:2,maxHits:3,dmgMult:0.85}, // 2-3 golpes/turno, cada um em alvo aleatório
+  skills:{
+    // Dança das Sombras: rajada de cortes (o multi-ataque reforçado)
+    danca:{cd:5,dmgMult:1.1,hits:3},
+    // Selo Umbral: atordoa um alvo por 1 turno
+    selo:{cd:6,dmgMult:0.8,stunTurns:1},
+  },
+  // NP Corte Triplo das Sombras: dano pesado em todos + reduz defesa
+  np:{name:'Sanmen Kage-giri',dmgMult:2.4,isAoE:true,defDown:20,defDownTurns:3},
+  dialogue:{
+    intro:'Eu sou a sombra que veste a face de um imperador. Três lâminas, um só destino: o seu fim.',
+    danca:'Dancem comigo até a morte!',
+    selo:'Selado. Não se mova.',
+    np:'Que as três sombras se cruzem... Sanmen Kage-giri!',
+    defeated:'Uma sombra... não passa de... sombra... afinal...',
+  },
+  assets:{
+    encounter:'assets/servos/gosanjo/gosanjo_encounter.jpg',
+    battle:'assets/servos/gosanjo/gosanjo_combat.jpg',
+    combat:'assets/servos/gosanjo/gosanjo_combat.jpg',
+    np:'assets/servos/gosanjo/gosanjo_encounter.jpg',
+  },
+};
 // Boss final: rápida, ataca 2x por turno (Riding), com kit de controle pesado.
 // Muito letal — exige Servo Nv.10 e boas Perks. HP moderado (é ágil, não tanque).
 const ARCHER={
@@ -3408,6 +3591,20 @@ const ENEMIES_MAP4={
     description:'Brutamontes de apetite insaciável. HP enorme, mas lentíssimo e previsível.'},
 };
 
+// ── INIMIGOS DO MAPA 5: Kurikara (forças do Clã Genji, era Heian) ──
+const ENEMIES_MAP5={
+  vassalo:{id:'vassalo',name:'Vassalo do Clã Genji',hp:6800,atk:3400,agility:28,strPts:44,
+    description:'Soldado comum do Clã Genji. Ataque básico e firme, mas lento em campo.'},
+  lider:{id:'lider',name:'Líder de Esquadrão',hp:7600,atk:3800,agility:72,strPts:46,
+    description:'Comanda pelotões nas ruas de Kurikara. Ataque mediano, porém muito veloz.'},
+  guerreiro:{id:'guerreiro',name:'Guerreiro Enfurecido',hp:16000,atk:5200,agility:30,strPts:58,
+    defensePassive:25, // mitigação passiva (defesa alta)
+    description:'Berserker de armadura pesada. Dano alto, defesa alta e muito HP — uma muralha furiosa.'},
+  onmyoji:{id:'onmyoji',name:'Mestre Onmyoji',hp:5200,atk:2600,agility:60,strPts:38,
+    isSupport:true, // buffa aliados e pode atordoar
+    description:'Feiticeiro do Clã. Pouca vida, mas fortalece os aliados e atordoa com selos espirituais.'},
+};
+
 // ══════════════════════════════════════════════════════
 // MAPA 3 — CAMINHO TORTUOSO (inimigos)
 // ══════════════════════════════════════════════════════
@@ -3483,6 +3680,15 @@ const MAPS={
     fixedPhases:[1,6,9,12,15],
     boss:'ninja_genji',
   },
+  kurikara_city:{
+    id:'kurikara_city',name:'Kurikara',phases:18,
+    enemies:ENEMIES_MAP5,
+    // Fases fixas: 1, 4, 6, 8, 12, 14, 15, 17 (roteiros a definir pelo autor).
+    // Boss Go-Sanjo Falso: Sombra é o clímax da Fase 18.
+    intro:null,introFinishLabel:'⚔️ Adentrar Kurikara',
+    fixedPhases:[1,4,6,8,12,14,15,17],
+    boss:'gosanjo_shadow',
+  },
 };
 
 // ══════════════════════════════════════════════════════
@@ -3499,7 +3705,7 @@ const TOWER_MAPS={
     towerHpMult:1.5,towerAtkMult:1.4},
   tortuoso:{id:'tortuoso',name:'Caminho',phases:20,enemies:ENEMIES_MAP3,boss:'archer_corrupted',
     towerHpMult:1.5,towerAtkMult:1.4},
-  kurikara:{id:'kurikara',name:'Redondezas',phases:20,enemies:ENEMIES_MAP4,boss:'ninja_genji',
+  kurikara:{id:'kurikara',name:'Redondezas',phases:15,enemies:ENEMIES_MAP4,boss:'ninja_genji',
     towerHpMult:1.5,towerAtkMult:1.4},
 };
 const TOWER_ORDER=['bosque','tennobara','tortuoso','kurikara'];
@@ -3825,8 +4031,8 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
       <div key={i} className="chat-msg left">
         <img className="chat-avatar" src={IBARAKI_EXPRESSIONS[m.expr]||IBARAKI.assets.default} alt="Ibaraki"/>
         <div className="chat-body">
-          <div className="chat-name">IBARAKI DOUJI</div>
-          <div className="chat-bubble">{m.text}</div>
+          <div className="chat-name">IBARAKI DOUJI{m.telepathy?' 💭':''}</div>
+          <div className="chat-bubble" style={m.telepathy?{fontStyle:'italic',opacity:0.9,borderStyle:'dashed',background:'rgba(40,30,60,0.35)'}:undefined}>{m.telepathy?'『'+m.text+'』':m.text}</div>
         </div>
       </div>
     );
@@ -3862,8 +4068,8 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
             style={{borderColor:'rgba(224,64,128,.5)'}}
             onError={ev=>{ev.target.onerror=null;ev.target.src=ARCHER.assets.face;}}/>
           <div className="chat-body">
-            <div className="chat-name" style={{color:'#e04080'}}>{revealed?'BAOBHAN SITH':'MULHER DE OLHOS PÁLIDOS'}</div>
-            <div className="chat-bubble" style={{borderColor:'rgba(224,64,128,.5)',color:'#e88',fontStyle:'italic'}}>{m.text}</div>
+            <div className="chat-name" style={{color:'#e04080'}}>{revealed?'BAOBHAN SITH':'MULHER DE OLHOS PÁLIDOS'}{m.telepathy?' 💭':''}</div>
+            <div className="chat-bubble" style={{borderColor:'rgba(224,64,128,.5)',color:'#e88',fontStyle:'italic',...(m.telepathy?{borderStyle:'dashed',opacity:0.9,background:'rgba(50,25,45,0.35)'}:{})}}>{m.telepathy?'『'+m.text+'』':m.text}</div>
           </div>
         </div>
       );
@@ -3873,6 +4079,26 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
         <div className="chat-body">
           <div className="chat-name" style={{color:'var(--parchment-dark)'}}>MESTRE (pensando)</div>
           <div className="chat-bubble" style={{fontStyle:'italic',opacity:0.85,borderStyle:'dashed'}}>{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='okuni')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={OKUNI_EXPRESSIONS[m.expr]||OKUNI_EXPRESSIONS.normal} alt="Chigure"
+          style={{borderColor:'rgba(230,150,60,.55)'}}
+          onError={ev=>{ev.target.onerror=null;ev.target.src=OKUNI_EXPRESSIONS.normal;}}/>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#e6963c'}}>{m.name||'GAROTA DESCONHECIDA'}</div>
+          <div className="chat-bubble" style={{borderColor:'rgba(230,150,60,.45)'}}>{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='ninja')return(
+      <div key={i} className="chat-msg left">
+        <div className="chat-avatar-q" style={{color:'#8a9ab0',borderColor:'rgba(120,140,170,.5)',background:'rgba(30,40,55,.5)'}}>忍</div>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#9ab0cc'}}>HOMEM ENCAPUZADO</div>
+          <div className="chat-bubble" style={{borderColor:'rgba(120,140,170,.45)'}}>{m.text}</div>
         </div>
       </div>
     );
@@ -3920,9 +4146,10 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
       <div key={i} className="chat-msg right">
         <div className="chat-avatar-q">?</div>
         <div className="chat-body">
-          <div className="chat-name">{masterName}{m.type==='masterThought'?' (pensa)':''}</div>
-          <div className={`chat-bubble${(m.type==='masterAction'||m.type==='masterThought')?' action':''}`}>
-            {m.type==='masterAction'?`— ${m.text} —`:m.type==='masterThought'?`( ${m.text} )`:m.text}
+          <div className="chat-name">{masterName}{m.type==='masterThought'?' (pensa)':m.telepathy?' 💭':''}</div>
+          <div className={`chat-bubble${(m.type==='masterAction'||m.type==='masterThought')?' action':''}`}
+            style={m.telepathy?{fontStyle:'italic',opacity:0.9,borderStyle:'dashed',background:'rgba(40,40,60,0.35)'}:undefined}>
+            {m.type==='masterAction'?`— ${m.text} —`:m.type==='masterThought'?`( ${m.text} )`:m.telepathy?'『'+m.text+'』':m.text}
           </div>
         </div>
       </div>
@@ -3963,11 +4190,28 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
 // ══════════════════════════════════════════════════════
 // MAPA
 // ══════════════════════════════════════════════════════
+// Temas dos caminhos (labels dos botões de direção) por mapa.
+const PATH_THEMES={
+  _default:[['left','🌲','Floresta Densa'],['center','🛤️','Caminho Largo'],['right','🌙','Clareira Sombria']],
+  bosque:[['left','🌲','Floresta Densa'],['center','🛤️','Caminho Largo'],['right','🌙','Clareira Sombria']],
+  tennobara:[['left','🏘️','Beco da Vila'],['center','⛩️','Praça do Templo'],['right','🏚️','Casario Abandonado']],
+  tortuoso:[['left','🌫️','Trilha Enevoada'],['center','🪨','Desfiladeiro'],['right','🕸️','Atalho Sombrio']],
+  kurikara:[['left','🏯','Arredores'],['center','🛤️','Estrada Real'],['right','🌾','Campos Ermos']],
+  // Mapa 5 — Kurikara (cidade, era Heian): distritos, ruas e avenidas.
+  kurikara_city:[['left','🏘️','Distrito dos Artesãos'],['center','🏮','Avenida Suzaku'],['right','🍶','Ruas do Mercado']],
+};
+
 function MapScreen({camp,onChoosePath,onNavigate}){
   const{servo,phase,maxPhases}=camp;
   const curMap=(camp.towerMode?TOWER_MAPS[camp.mapId]:MAPS[camp.mapId])||MAPS.bosque;
   // Torre: boss só na última fase (20). Campanha: últimas 2 fases levam ao boss.
-  const isBossPhase=camp.towerMode?(phase>=maxPhases):(phase>=maxPhases-1);
+  // No mapa 4 (Kurikara), o boss é disparado pela sequência fixa da Fase 15
+  // (chegada → portão do Clã Genji), então o botão automático de boss não aparece.
+  // No mapa 5 (Kurikara cidade), o boss é o clímax da Fase 18 (a 17 é fixa de história).
+  const isBossPhase=camp.towerMode?(phase>=maxPhases)
+    :(camp.mapId==='kurikara')?false
+    :(camp.mapId==='kurikara_city')?(phase>=maxPhases)
+    :(phase>=maxPhases-1);
   return(
     <div className="screen">
       <div className="panel" style={{maxWidth:600}}>
@@ -3993,15 +4237,24 @@ function MapScreen({camp,onChoosePath,onNavigate}){
             <button className="btn btn-red btn-full" onClick={()=>onChoosePath('boss')}>⚔️ Enfrentar o Boss</button>
           </div>
         ):(
-          <div className="path-choice">
-            {[['left','🌲','Floresta Densa'],['center','🛤️','Caminho Largo'],['right','🌙','Clareira Sombria']].map(([dir,icon,label])=>(
-              <button key={dir} className="path-btn" onClick={()=>onChoosePath(dir)}>
-                <span className="path-icon">{icon}</span>
-                {dir==='left'?'⬅ Esquerda':dir==='center'?'⬆ Centro':'➡ Direita'}
-                <div className="path-hint">{label}</div>
+          <>
+            {camp.innUnlocked&&(
+              <button className="btn btn-full" style={{marginBottom:14,border:'1px solid var(--gold)',background:'rgba(201,162,39,0.12)',color:'var(--gold)'}}
+                onClick={()=>onChoosePath('inn')}>
+                🏮 Descansar no Kogarashi-kan &nbsp;·&nbsp; <span style={{fontSize:'.8rem'}}>5 SQ</span>
+                <div style={{fontSize:'.65rem',color:'var(--parchment-dark)',marginTop:2,fontWeight:'normal'}}>Recupera 40% HP · +20% Defesa no próximo combate</div>
               </button>
-            ))}
-          </div>
+            )}
+            <div className="path-choice">
+              {(PATH_THEMES[camp.mapId]||PATH_THEMES._default).map(([dir,icon,label])=>(
+                <button key={dir} className="path-btn" onClick={()=>onChoosePath(dir)}>
+                  <span className="path-icon">{icon}</span>
+                  {dir==='left'?'⬅ Esquerda':dir==='center'?'⬆ Centro':'➡ Direita'}
+                  <div className="path-hint">{label}</div>
+                </button>
+              ))}
+            </div>
+          </>
         )}
         <div style={{marginTop:12,fontSize:'.7rem',color:'var(--parchment-dark)',textAlign:'center'}}>
           Combate: +{XP_COMBAT_WIN} XP · +500 QP · +30 Bond &nbsp;|&nbsp; Evento: +250 QP &nbsp;|&nbsp; Boss: +{XP_BOSS_WIN} XP · +1500 QP
@@ -4177,6 +4430,19 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       atkScaled:Math.round(b.atkScaled*atkM),
       damage:Math.round((b.damage||0)*atkM),
     });
+    if(mid==='kurikara_city'){
+      return T({
+        ...GOSANJO,instanceId:'gosanjo_boss',
+        maxHp:GOSANJO.hp,currentHp:GOSANJO.hp,
+        atkScaled:GOSANJO.attack,
+        damage:Math.round(GOSANJO.attack*(GOSANJO.attributes.strength.points/100)),
+        agility:GOSANJO.attributes.agility.points,
+        npBar:0,activeBuffs:[],activeDebuffs:[],
+        cooldowns:{danca:2,selo:3},
+        evadeTurns:0,
+        isGosanjo:true,isBoss:true,
+      });
+    }
     if(mid==='kurikara'){
       return T({
         ...NINJA,instanceId:'ninja_boss',
@@ -4440,6 +4706,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Mitigação passiva fixa do Nitro-Type (tanque blindado)
     if(enemy.passiveMitigation){
       const mit=clamp(enemy.passiveMitigation-defDown,0,90); // NP reduz a mitigação dele
+      dmg=dmg*(1-mit/100);
+    }
+    // Mitigação passiva por defesa alta (Go-Sanjo, Guerreiro Enfurecido)
+    if(enemy.defensePassive){
+      const mit=clamp(enemy.defensePassive-defDown,0,85);
       dmg=dmg*(1-mit/100);
     }
     // Mitigação temporária da Archer (buff do Fae Vampirism)
@@ -5205,6 +5476,84 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           }
         }
         es[i]=nj;
+      } else if(e.isGosanjo){
+        // ── IA do Go-Sanjo Falso: Sombra (boss do mapa 5) ──
+        // Mecânica: MÚLTIPLOS ATAQUES por turno, cada golpe em um alvo aleatório.
+        let gs={...es[i]};
+        gs.npBar=clamp((gs.npBar||0)+GOSANJO.npRegenPerTurn,0,100);
+        const atkBase=gs.atkScaled*(gs.attributes.strength.points/100);
+        // Helper: sorteia um servo vivo da party como alvo
+        const pickAliveTarget=()=>{
+          const alive=[];
+          party.forEach((m,idx)=>{
+            const mm=(idx===targetIdx)?s:(idx===activeIdx?servo:m);
+            if(mm&&!mm.defeated&&mm.hp>0)alive.push({idx,servo:mm});
+          });
+          return alive.length?alive[Math.floor(Math.random()*alive.length)]:null;
+        };
+        // Aplica dano a um alvo específico (por índice na party), respeitando mitigação
+        const hitTarget=(tinfo,raw,fxKind='dmg')=>{
+          if(!tinfo)return;
+          const mit=applyDmgToServo(raw,tinfo.servo);
+          if(tinfo.idx===targetIdx){s.hp=Math.max(0,s.hp-mit);}
+          setParty(prev=>prev.map((m,idx)=>idx===tinfo.idx?{...m,hp:Math.max(0,m.hp-mit),npBar:clamp((m.npBar||0)+servo.attributes.mana.gainPercent,0,100)}:m));
+          const tdef=PLAYABLE_SERVOS[tinfo.servo.id]||SDEF;
+          addLog(`${gs.name} corta ${tdef.name.split(' ')[0]}: ${mit} de dano!`,'enemy');
+          spawnFx(tinfo.idx===activeIdx?'servo':tinfo.servo.instanceId||'servo',String(mit),fxKind);
+        };
+
+        // Prioridade 1: NP (dano AoE em todos + reduz defesa)
+        if(gs.npBar>=100){
+          gs.npBar=0;
+          addLog(`⚡ ${GOSANJO.np.name}! As três sombras cruzam toda a party!`,'np');
+          setDialogue({text:GOSANJO.dialogue.np,portrait:GOSANJO.assets.battle});
+          fireNpCutin(GOSANJO.assets.np,GOSANJO.np.name.toUpperCase(),GOSANJO.dialogue.np);
+          const raw=Math.round(atkBase*GOSANJO.np.dmgMult);
+          party.forEach((m,idx)=>{
+            const mm=(idx===targetIdx)?s:(idx===activeIdx?servo:m);
+            if(mm&&!mm.defeated&&mm.hp>0){
+              const mit=applyDmgToServo(raw,mm);
+              if(idx===targetIdx)s.hp=Math.max(0,s.hp-mit);
+              setParty(prev=>prev.map((pm,pi)=>pi===idx?{...pm,hp:Math.max(0,pm.hp-mit),activeDebuffs:[...(pm.activeDebuffs||[]),{type:'defense_down',value:GOSANJO.np.defDown,turns:GOSANJO.np.defDownTurns}]}:pm));
+              spawnFx(idx===activeIdx?'servo':mm.instanceId||'servo',String(mit),'np');
+            }
+          });
+        }
+        // Prioridade 2: Dança das Sombras (rajada reforçada de 3 cortes)
+        else if((gs.cooldowns?.danca||0)<=0){
+          gs.cooldowns={...gs.cooldowns,danca:GOSANJO.skills.danca.cd};
+          addLog(`🌑 Dança das Sombras! ${gs.name} desfere uma rajada de cortes!`,'enemy');
+          setDialogue({text:GOSANJO.dialogue.danca,portrait:GOSANJO.assets.battle});
+          const hits=GOSANJO.skills.danca.hits;
+          for(let k=0;k<hits;k++){
+            const t=pickAliveTarget();
+            hitTarget(t,Math.round(atkBase*GOSANJO.skills.danca.dmgMult),'crit');
+          }
+        }
+        // Prioridade 3: Selo Umbral (atordoa um alvo)
+        else if((gs.cooldowns?.selo||0)<=0){
+          gs.cooldowns={...gs.cooldowns,selo:GOSANJO.skills.selo.cd};
+          const t=pickAliveTarget();
+          if(t){
+            hitTarget(t,Math.round(atkBase*GOSANJO.skills.selo.dmgMult),'dmg');
+            setParty(prev=>prev.map((m,idx)=>idx===t.idx?{...m,stunned:(m.stunned||0)+GOSANJO.skills.selo.stunTurns}:m));
+            if(t.idx===targetIdx)s.stunned=(s.stunned||0)+GOSANJO.skills.selo.stunTurns;
+            addLog(`🔯 Selo Umbral! ${(PLAYABLE_SERVOS[t.servo.id]||SDEF).name.split(' ')[0]} foi atordoado!`,'enemy');
+            setDialogue({text:GOSANJO.dialogue.selo,portrait:GOSANJO.assets.battle});
+            spawnFx(t.idx===activeIdx?'servo':t.servo.instanceId||'servo','🔯 ATORDOADO','stun');
+          }
+        }
+        // Padrão: múltiplos ataques básicos (2-3 golpes) em alvos aleatórios
+        else{
+          const ms=GOSANJO.multiStrike;
+          const nHits=ms.minHits+Math.floor(Math.random()*(ms.maxHits-ms.minHits+1));
+          addLog(`${gs.name} ataca ${nHits}x em sequência!`,'enemy');
+          for(let k=0;k<nHits;k++){
+            const t=pickAliveTarget();
+            hitTarget(t,Math.round(atkBase*ms.dmgMult),'dmg');
+          }
+        }
+        es[i]=gs;
       } else if(e.isArcher){
         // ── IA da Archer Corrompida (boss final) ──
         let ar={...es[i]};
@@ -5494,7 +5843,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       if(isBoss&&(camp.mapId||'bosque')==='bosque')newProfile=markQinDefeated();
       // Conquista por derrotar cada boss (paga QP+SQ uma vez)
       if(isBoss){
-        const achId={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja'}[camp.mapId||'bosque'];
+        const achId={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja',kurikara_city:'defeat_gosanjo'}[camp.mapId||'bosque'];
         if(achId){
           const res=grantAchievement(achId);
           if(res.granted){
@@ -5619,7 +5968,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           {enemies.map((e,i)=>{
             const dead=e.currentHp<=0;
             const sel=i===selectedTarget&&!dead;
-            const bossArt=e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:QIN.assets.combat||QIN.assets.default;
+            const bossArt=e.isGosanjo?(GOSANJO.assets.combat||GOSANJO.assets.battle):e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:QIN.assets.combat||QIN.assets.default;
             return(
               <div key={e.instanceId} onClick={()=>!dead&&setSelectedTarget(i)}
                 className={fx.some(f=>f.targetId===e.instanceId&&(f.kind==='dmg'||f.kind==='crit'))?'shake':''}
@@ -5794,6 +6143,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   const[camp,setCamp]=useState(null);
   const[eventType,setEventType]=useState(null);
   const[campResult,setCampResult]=useState(null);
+  const[notif,setNotif]=useState('');
   const scriptedFightRef=useRef(null); // guarda inimigos de combates roteirizados (ex: Fase 12)
 
   // Cria o estado de campanha para um mapa específico, preservando HP/NP/moedas
@@ -5872,6 +6222,15 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(dir==='boss'){
       // Modo Torre: boss direto ao combate, sem diálogos de história
       setStage(camp.towerMode?'boss':'bossStory');
+      return;
+    }
+    // Descansar na pousada Kogarashi-kan (Mapa 5): custa 5 SQ.
+    if(dir==='inn'){
+      const fresh=loadProfile();
+      if((fresh.sq||0)<5){setNotif('Saint Quartz insuficiente! O descanso custa 5 SQ.');return;}
+      const p={...fresh,sq:fresh.sq-5};
+      saveProfile(p);setProfile(p);
+      setStage('map5Inn');
       return;
     }
     const mapId=camp.mapId||'bosque';
@@ -5966,6 +6325,17 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     // Fases fixas do mapa 4: 1 (rescaldo, na entrada), 6 (aparição), 9 (ladrões + Sith). 12, 15 são ganchos.
     if(isMap4&&nextPhase===6){setCamp(advanced);setStage('map4Apparition');return;}
     if(isMap4&&nextPhase===9){setCamp(advanced);setStage('map4BanditsPre');return;}
+    if(isMap4&&nextPhase===12){setCamp(advanced);setStage('map4Probe');return;}
+    if(isMap4&&nextPhase===15){setCamp(advanced);setStage('map4Arrival');return;}
+    // Mapa 5 (Kurikara cidade): fases fixas 1,4,6,8,12,14,15,17 (roteiros a definir).
+    const isMap5=(baseCamp.mapId||'bosque')==='kurikara_city';
+    if(isMap5&&nextPhase===1){setCamp(advanced);setStage('map5F1');return;}
+    if(isMap5&&nextPhase===4){setCamp(advanced);setStage('map5F4');return;}
+    if(isMap5&&nextPhase===6){setCamp(advanced);setStage('map5F6');return;}
+    if(isMap5&&nextPhase===8){setCamp(advanced);setStage('map5F8');return;}
+    if(isMap5&&[12,14,15,17].includes(nextPhase)){
+      setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map5Fixed');return;
+    }
     setCamp(advanced);setStage('map');
   }
 
@@ -6111,8 +6481,24 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mapId==='bosque'){setStage('bossWinStory');return;}
     if(mapId==='tennobara'){setStage('nitroWinStory');return;} // Nitro → mapa 3
     if(mapId==='tortuoso'){setStage('commandSeal');return;} // Archer → Selo → mapa 4
-    // Mapa 4 (Ninja) é o último por ora: vencer o boss encerra a jornada.
+    // Mapa 4 (Ninja Genji): vencer o boss mostra o diálogo de vitória da Ibaraki.
+    if(mapId==='kurikara'){setStage('map4GenjiWin');return;}
+    // Mapa 5 (Go-Sanjo Falso): último mapa por ora — vencer encerra a jornada.
+    if(mapId==='kurikara_city'){finishCampaign(updatedCamp,true);return;}
     finishCampaign(updatedCamp,true);
+  }
+
+  // Após o diálogo de vitória contra o Ninja Genji: segue para o Mapa 5 (Kurikara),
+  // carregando a party de 2 (Ibaraki + Sith) com o estado atual.
+  function onGenjiWinContinue(){
+    const carriedParty=(camp.party||[camp.servo]).map(m=>({...m}));
+    const next=buildCampForMap(carriedParty[0],'kurikara_city',null,false,
+      carriedParty.map(m=>PLAYABLE_SERVOS[m.id]||IBARAKI));
+    next.party=carriedParty;
+    next.servo=carriedParty[0];
+    next.sithJoined=true;
+    setCamp(next);
+    setStage('map4Map5Transition');
   }
 
   // Chamado após a narração de vitória contra o boss.
@@ -6178,7 +6564,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     const mid=finalCamp.mapId||'bosque';
     if(mid==='tortuoso'){setStage('archerLoseStory');return;}
     if(mid==='tennobara'){setStage('nitroLoseStory');return;}
-    if(mid==='kurikara'){setStage('result');return;} // Ninja: sem diálogo de derrota ainda
+    if(mid==='kurikara'){setStage('map4GenjiLose');return;} // Ninja: diálogo de derrota (Shuten)
     setStage('bossLoseStory');
   }
 
@@ -6232,6 +6618,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(camp.mapId==='bosque')return <StoryScreen profile={profile} script={STORY_BOSS_INTRO} finishLabel="⚔️ Iniciar o Confronto" onFinish={()=>setStage('bossEncounter')}/>;
     if(camp.mapId==='tortuoso')return <StoryScreen profile={profile} script={STORY_MAP3_ARCHER_INTRO} finishLabel="⚔️ Encarar o horror" onFinish={()=>setStage('archerEncounter')}/>;
     if(camp.mapId==='kurikara')return <SplashScreen art={NINJA.assets.encounter} title="NINJA DO CLÃ GENJI" sub="Assassino — Arredores de Kurikara" onFinish={()=>setStage('boss')}/>;
+    if(camp.mapId==='kurikara_city')return <SplashScreen art={GOSANJO.assets.encounter} title="GO-SANJO FALSO: SOMBRA" sub="A Sombra que Veste a Face de um Imperador" onFinish={()=>setStage('boss')}/>;
     return <SplashScreen art={NITRO.assets.encounter} title="⚙️ NITRO-TYPE" sub="Samurai Mecanizado — Ameaça Anacrônica" onFinish={()=>setStage('boss')}/>;
   }
   // Splash da Archer (após o diálogo pré-boss)
@@ -6269,6 +6656,69 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map4BanditsPos')return <StoryScreen profile={profile} script={STORY_MAP4_BANDITS_POS} finishLabel="Continuar →" onFinish={()=>setStage('map4SithFlash')}/>;
   if(stage==='map4SithFlash')return <SithContractFX onFinish={()=>setStage('map4SithContract')}/>;
   if(stage==='map4SithContract')return <StoryScreen profile={profile} script={STORY_MAP4_SITH_CONTRACT} finishLabel="✦ Baobhan Sith se junta a você!" onFinish={afterSithJoins}/>;
+  if(stage==='map4Probe')return <StoryScreen profile={profile} script={STORY_MAP4_PROBE} finishLabel="Prosseguir →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map4Arrival')return <StoryScreen profile={profile} script={STORY_MAP4_ARRIVAL} finishLabel="Entrar em Kurikara →" onFinish={()=>setStage('map4GenjiGate')}/>;
+  if(stage==='map4GenjiGate')return <StoryScreen profile={profile} script={STORY_MAP4_GENJI_GATE} finishLabel="⚔️ Enfrentar o Clã Genji" onFinish={()=>setStage('bossStory')}/>;
+  if(stage==='map4GenjiWin')return <StoryScreen profile={profile} script={STORY_MAP4_GENJI_WIN} finishLabel="Continuar →" onFinish={onGenjiWinContinue}/>;
+  if(stage==='map4GenjiLose')return <StoryScreen profile={profile} script={STORY_MAP4_GENJI_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
+  if(stage==='map5Inn'){
+    const heal=Math.round((camp.servo.hpMax||0)*0.40);
+    return(
+      <div className="screen">
+        {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
+        <div className="panel" style={{textAlign:'center',maxWidth:460}}>
+          <img src="assets/servos/okuni/okuni_encounter.jpg" alt="Kogarashi-kan"
+            style={{width:'100%',maxHeight:'34vh',objectFit:'cover',objectPosition:'center 20%',borderRadius:6,marginBottom:12,border:'1px solid rgba(230,150,60,.4)'}}
+            onError={e=>{e.target.style.display='none';}}/>
+          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>🏮 KOGARASHI-KAN</h2>
+          <p style={{color:'var(--parchment)',fontSize:'.82rem',marginBottom:6}}>
+            Você repousa no quarto da pousada. Chigure traz um chá morno com um sorriso atrapalhado, e o cansaço se desfaz.
+          </p>
+          <p style={{color:'#8fd68f',fontSize:'.78rem',marginBottom:2}}>Recuperou {heal} HP (40%).</p>
+          <p style={{color:'var(--gold)',fontSize:'.78rem',marginBottom:16}}>+20% de Defesa no próximo combate.</p>
+          <button className="btn btn-red btn-full" onClick={()=>{
+            const healed=Math.round((camp.servo.hpMax||0)*0.40);
+            const leader={...camp.servo,hp:clamp(camp.servo.hp+healed,0,camp.servo.hpMax)};
+            const newParty=(camp.party&&camp.party.length)?[leader,...camp.party.slice(1)]:[leader];
+            setCamp({...camp,servo:leader,party:newParty,planBonus:{...(camp.planBonus||{}),defUp:20}});
+            setStage('map');
+          }}>Prosseguir →</button>
+        </div>
+      </div>
+    );
+  }
+  if(stage==='map5F1')return <StoryScreen profile={profile} script={STORY_MAP5_F1} finishLabel="Explorar a cidade →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map5F4')return <StoryScreen profile={profile} script={STORY_MAP5_F4} finishLabel="Descansar na pousada →" onFinish={()=>{setCamp(c=>({...c,innUnlocked:true}));setStage('map');}}/>;
+  if(stage==='map5F6')return <StoryScreen profile={profile} script={STORY_MAP5_F6} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map5F8')return <StoryScreen profile={profile} script={STORY_MAP5_F8} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map5Fixed')return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2rem',marginBottom:10}}>📜</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>KURIKARA — FASE {camp.pendingFixedPhase}</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',fontStyle:'italic',marginBottom:16}}>
+          [ Cena fixa a ser escrita ]<br/>
+          Esta é uma fase fixa de história do Mapa 5. O roteiro será adicionado aqui depois.
+        </p>
+        <button className="btn btn-red btn-full" onClick={()=>setStage('map')}>Prosseguir →</button>
+      </div>
+    </div>
+  );
+  if(stage==='map4Map5Transition')return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2.5rem',marginBottom:12}}>🏯</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:8}}>KURIKARA</h2>
+        <p style={{color:'var(--parchment)',fontSize:'.85rem',marginBottom:6}}>
+          Passado o portão, a cidade se abre diante de vocês — ruas movimentadas, lampiões de papel, o cheiro de incenso e de sangue. O coração do domínio do Clã Genji.
+        </p>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.75rem',fontStyle:'italic',marginTop:14}}>
+          Algo antigo e errado observa das sombras dos telhados...
+        </p>
+        <button className="btn btn-red btn-full" style={{marginTop:20}} onClick={()=>setStage('map5F1')}>⚔️ Adentrar Kurikara</button>
+      </div>
+    </div>
+  );
   if(stage==='archerLoseStory')return <StoryScreen profile={profile} script={STORY_ARCHER_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   // Cadeia de transição Bosque → Vila de Tennobara
   if(stage==='map2Leave')return <StoryScreen profile={profile} script={STORY_MAP2_LEAVE} finishLabel="Continuar →" onFinish={()=>setStage('map2TitleCard')}/>;
