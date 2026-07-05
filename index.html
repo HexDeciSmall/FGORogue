@@ -137,9 +137,22 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 /* ── Responsive ── */
 @media(max-width:600px){
   .path-choice{grid-template-columns:1fr}
-  .skills-row{gap:6px}
-  .skill-btn{min-width:80px;font-size:.65rem}
   .enemy-group{gap:6px}
+  /* Combate no celular: skills enquadradas em grade compacta (sem scroll feio) */
+  .combat-actions{padding:8px !important}
+  .combat-actions .skills-row{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr; /* 3 colunas fixas */
+    gap:5px;margin:8px 0;
+  }
+  .combat-actions .skill-btn,.combat-actions .btn-np{
+    min-width:0 !important;width:100%;padding:6px 4px;font-size:.6rem;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:44px;line-height:1.15;
+  }
+  .combat-actions .skill-cd{font-size:.52rem;margin-top:2px}
+  .combat-actions .divider{margin:8px 0}
+  .combat-actions .divider-text{font-size:.6rem}
 }
 
 /* ── Animações de dano ── */
@@ -1161,8 +1174,8 @@ GACHA_SERVOS.skadi_summer={
     battle:'O verão é a estação perfeita para sorvete. Mas primeiro... vamos acabar com isso.',
     lose:'Ara... parece que exagerei no descanso...',
     win:'Foi um bom exercício. Agora, que tal um sorvete?',
-    np:'As runas primordiais se abrem... que as profundezas geladas os engulam. Gate of Aegir!',
-    skill:'Deixe comigo. A rainha do gelo cuidará disso.',
+    np:'Meus sentimentos distantes... meu amor pelos deuses que ainda permanecem. De agora em diante, uma luz deslumbrante preencherá toda a área. Portão de Ægir! Ahahahaha!',
+    skill:'Devo refrescar você ou devo congelar você?',
     mapDone:'O caminho está livre. Vamos aproveitar o resto do verão, Mestre.',
   },
   assets:{
@@ -1234,8 +1247,8 @@ GACHA_SERVOS.okita_saber={
     battle:'Cruzar espadas é vida ou morte, não é?',
     lose:'Grande vitória para a Okita-san~! Meu corpo está bem, ainda posso continuar... cough!?',
     win:'Okita-san daishouri! Sem problemas, ainda tenho forças para... (gurgle)',
-    np:'Primeiro passo, supersônico. Segundo passo, sem distância. Terceiro passo... lâmina absoluta! Mumyou Sandanzuki!',
-    skill:'Deixa comigo. Um golpe basta.',
+    np:'Primeiro passo, mais rápido que o som... Segundo passo, sofrimento infinito... Terceiro passo, a espada absoluta! Mumyou, Sandanzuki!',
+    skill:'Minha lâmina perfurará o inimigo!',
     mapDone:'Vitória para a Okita-san! Vamos seguir, Mestre.',
   },
   assets:{
@@ -1294,7 +1307,7 @@ GACHA_SERVOS.okita_alter={
   ],
   // ── NP: Zettou Mukyuissen — AoE, remove buffs defensivos dos inimigos ──
   np:{
-    name:'Zettou Mukyuissen',type:'Anti-Army',isAoE:true,effectType:'dmg_removedef',
+    name:'Zekken Mukyusandan',type:'Anti-Army',isAoE:true,effectType:'dmg_removedef',
     levels:{
       1:{dmgPct:500},2:{dmgPct:650},3:{dmgPct:725},4:{dmgPct:762.5},5:{dmgPct:800},
     },
@@ -1304,8 +1317,8 @@ GACHA_SERVOS.okita_alter={
     battle:'Vou cortar tudo. Sem hesitação.',
     lose:'Então... este era o meu limite... que decepção.',
     win:'Daishouri. Nada resta em pé diante da minha lâmina.',
-    np:'A luz que supera o sol e a lua... desapareçam. Zettou... Mukyuissen!',
-    skill:'Isto acaba agora.',
+    np:'Eu perfurarei o mundo infinito... Eu cortarei o fio do destino com esta luz ilimitada! Zekken, Mukyusandan!!!',
+    skill:'(ZZZ)... (Gasp!?) Eu não estou dormindo... não estou dormindo... dormir... Eu estava dormindo!',
     mapDone:'Ninguém mais se levanta. Sigamos, Mestre.',
   },
   assets:{
@@ -1324,7 +1337,7 @@ const GACHA_BANNERS=[
   {id:'summer',name:'Summer',subtitle:'Servos de Verão',
    theme:'#3aa0c0',art:'assets/banners/summer.jpg',pool:['kiara_summer','skadi_summer']},
   {id:'gudaguda',name:'Gudaguda',subtitle:'Servos do Evento Gudaguda',
-   theme:'#c0863a',art:null,pool:['okita_saber','okita_alter']},
+   theme:'#c0863a',art:'assets/banners/gudaguda.jpg',pool:['okita_saber','okita_alter']},
   {id:'especial',name:'Especial',subtitle:'Banner rotativo — sempre um Servo em rate up',
    theme:'#c0a03a',art:null,pool:[],rateUp:null},
   {id:'expurgo',name:'Noite de Expurgo',subtitle:'Invocação caótica entre todos os banners',
@@ -2109,7 +2122,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.71</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.77</p>
       </div>
     </div>
   );
@@ -2119,6 +2132,28 @@ function MenuScreen({onNavigate,profile}){
 // Cada personagem tem categoria (servo/mestre/npc), arte e informações.
 // 'reveal' recebe o profile e decide se já foi descoberto pelo jogador.
 const CODEX=[
+  // ── O MESTRE (o jogador) ──
+  {id:'mestre_player',cat:'mestre',name:'O Mestre',classe:'Invocador',
+   art:'assets/servos/ibaraki/ibaraki_default.png',
+   reveal:()=>true,
+   info:'Um estranho no ninho. Não se lembra de como chegou ao bosque, e desperta perdido com poucas lembranças. Preso a um servo emocionalmente desequilibrado e de temperamento explosivo, precisa sobreviver aos Caminhos Cegos — sem saber quem é, nem por que sua conexão com a Mana é tão anormalmente alta.',
+   details:[
+     {title:'HISTÓRIA',body:'Um estranho no ninho. Ele não se lembra muito de como chegou ao local — apenas se viu perdido no bosque, com poucas lembranças e uma névoa densa onde deveria estar seu passado. Está preso ao lado de um servo emocionalmente desequilibrado e de temperamento explosivo, uma Oni que tanto pode salvá-lo quanto devorá-lo.\n\nAlgo nele não é normal. Sua conexão com a Mana é alta demais para um humano comum, como se seu próprio corpo fosse um catalisador — o sangue, a carne, os fluidos, tudo parece carregar um poder que ele não compreende. Fragmentos soltos o perseguem: um frasco estranho que alguém lhe entregou, vozes distorcidas na memória, uma sensação de que seus ossos não são bem os seus. Quem o trouxe até aqui? O que ele foi antes de esquecer? Cada passo pelo bosque parece menos uma jornada de fuga e mais um retorno a algo que ele preferiria não lembrar.'},
+     {title:'SKILLS DE MESTRE',body:'Habilidades que o Mestre usa em combate como ações livres. As três primeiras estão sempre disponíveis; as duas últimas permanecem seladas até que algo dentro dele desperte.',items:[
+       {name:'Mana Buster',rank:'C',text:'Através de uma conexão estranha com "@$%=%", ele pode infundir a própria mana no servo para gerar um aumento exponencial de energia, causando alto poder de dano.'},
+       {name:'Transferência de Mana',rank:'D',text:'Através da conexão com um servo, ele pode infundir mana através do contato físico.'},
+       {name:'Veneno de Brasilisco',rank:'E',text:'Ao chegar no bosque, alguém lhe deu um estranho frasco com um líquido atordoante. Mas quem daria algo assim a ele? E quando? Ele não se lembra.'},
+       {name:'Tormento',rank:'B',text:'🔒 SELADA — Desconforto! Ódio! Rancor... por que tudo isso aparece em sua mente? Na era atual as coisas não são mais tranquilas? E o pacifismo? Mas isso causa dano não só a si mesmo — provoca uma enorme queimação no inimigo, um calor agonizante e desconfortável.',locked:true},
+       {name:'Ossos que não são meus',rank:'B+',text:'🔒 SELADA — Seus ossos estão rangendo. Uma sensação de que algo está errado, parecem diferentes: maiores, mais fortes. Mas de uma coisa ele pode ter certeza: ele só cai uma vez.',locked:true},
+     ]},
+     {title:'PERKS',body:'Bênçãos passivas adquiridas na Loja. As três primeiras estão disponíveis desde o início; as duas últimas só se revelam após derrotar Qin Liangyu no Bosque.',items:[
+       {name:'Energizador de Raiz',rank:'EX',text:'Sua conexão com a Mana é muito alta, até mesmo para um humano. Com isso, ele pode fortalecer um servo muito além do normal.'},
+       {name:'Poção de Mana',rank:'B',text:'Seu sangue escorre com um bom cheiro, sua carne tem sabor, seus fluidos são como um tempero.'},
+       {name:'Pacto do Escudo',rank:'C-',text:'Qualquer servo perto de seu corpo se sente mais novo, renovado. Algo diz que isso terá um preço — pactos são caros, e quando cobrados podem ser no pior momento.'},
+       {name:'Contos Épicos de um Vagabundo',rank:'A--',text:'🔒 SELADA (derrote Qin Liangyu) — "Do chão de batalha e do ventre da fome, / Onde a prece e a terra não guardam o nome, / A raiva e a dor, em silêncio ardente, / Uniram os mortos de forma temente. / Mil almas sem paz, num grito que cega, / Num corpo de ossos que a vida renega."',locked:true},
+       {name:'Orbe Cromático',rank:'A',text:'🔒 SELADA (derrote Qin Liangyu) — Uma mulher que foi derrotada só tem a si mesma para se salvar. Mas é quando suas garras se tornam mais afiadas: a mesma mulher que um dia caiu em desgraça agora planeja algo macabro, uma vingança usando até mesmo os piores métodos da história.',locked:true},
+     ]},
+   ]},
   // ── SERVOS ──
   {id:'ibaraki',cat:'servo',name:'Ibaraki Douji',classe:'Berserker',
    art:'assets/servos/ibaraki/ibaraki_default.png',
@@ -2270,6 +2305,89 @@ const CODEX=[
      {label:'Mana',rank:'A+'},{label:'Sorte',rank:'B'},{label:'NP',rank:'A+'},
    ],
    va:'Tanaka Rie'},
+  {id:'skadi',cat:'servo',name:'Scáthach-Skadi',classe:'Ruler',
+   art:'assets/servos/skadi/skadi_profile.png',
+   reveal:p=>(p.gachaOwned||[]).includes('skadi_summer'),
+   info:'A Formidável Rainha. A Deusa do Gelo e da Neve. Fusão de Skadi e Scáthach criada por Odin no Lostbelt nórdico, a última Deusa Escandinava. Sob o título de rainha esconde a tristeza de ter deixado seus filhos para trás. Obtida na Invocação (banner Summer).',
+   details:[
+     {title:'IDENTIDADE',body:'Scáthach-Skadi era uma fusão de Skadi e Scáthach criada por Odin no Lostbelt nórdico durante o Ragnarok, antes de morrer enquanto selava Surtr.\n\nUma Serva originária da Lostbelt Escandinava. Uma "pessoa completamente diferente" em comparação com a Scáthach da história comum da humanidade, reconhecida como a única deusa na Lostbelt, cuja natureza é mais próxima de ser uma rainha. Scáthach e Skadi não são perfeitamente iguais em existências, mas influenciam-se mutuamente e o termo "misturadas" é usado. Ela, que existia no Lostbelt como "Scáthach-Skaði", tem uma taxa de mistura particularmente alta com Skaði, portanto tem muitos atributos da Noiva dos Deuses.'},
+     {title:'SKAÐI (SKADI)',body:'Os Jötun nórdicos que se originaram da heroína celta Scáthach, a deusa da montanha — muitas das características de Skaði são reveladas. Este lado de Skadi deveria ser expresso como "a Skadi com alguma da natureza de Scáthach".\n\nO nome Skadi deriva do nórdico antigo e significa "aquela que marca". De acordo com os "Ditos de Grímnir" da Edda Poética, ela era filha do "abominável gigante Þjazi" e vivia no antigo palácio do Reino de Þrymheimr. Após se casar com os deuses nórdicos, foi chamada de "a Bela Noiva dos Deuses". Também é chamada de Öndurguð (Deus do Esqui) e Öndurdís (Deusa do Esqui), mestra da caça nas montanhas e do esqui.\n\nSegundo o "Heimskringla", Skadi se divorciou do Vanir Njörðr e se casou novamente com Odin. Embora seja solteira no mundo de Fate/Grand Order, isso deve ser notado, pois ficará profundamente gravado na posteridade.'},
+     {title:'APARÊNCIA',body:'Scáthach-Skadi tem olhos vermelhos e um rosto emoldurado por longos cabelos roxo-escuros que descem pelas costas. Um pequeno adorno de cabeça enfeita sua testa, e ela veste um vestido esvoaçante em tons de roxo e branco, com detalhes em pele nos ombros e no peito, e mangas longas em formato de sino. Usa luvas justas que se estendem até a parte superior dos braços. A parte inferior do vestido apresenta fendas.\n\nComparada à Scáthach, que tem inclinação para as artes marciais, Skadi tem mais gordura corporal, o que faz com que uma certa parte dela seja maior.'},
+     {title:'PERSONALIDADE',body:'Neste mundo atual, ela não tem o rosto de uma mentora capaz de criar uma guerreira, nem é mestra em artes marciais. Ao contrário da Lanceira Scáthach, mais acessível, frases como "Pisei em alguma coisa?", "Oh, que jovem (humana)" e "Devo te receber ou devo te matar?" são típicas de sua natureza divina. "Sopre. Seja como uma nevasca. E os seres vivos morrerão." "Sorria. Seja como a eterna primavera. E a vida brotará gloriosamente." Ambas se aplicam a ela.\n\nA Formidável Rainha. A Deusa do Gelo e da Neve. Contudo... enquanto governava a Lostbelt, sentia tristeza por "ter deixado alguém para trás", mas a escondia. Amada pelos outros deuses, após a morte deles no clímax do Ragnarök tornou-se "a última Deusa Escandinava da Lostbelt". Na verdade, ela é proporcionalmente forte, pura e afetuosa. Quem aprofunda o relacionamento com ela começa a ver um rosto diferente do de uma rainha... sua verdadeira personalidade. Mesmo que seu título de "Mãe da Escandinávia" caia, ela ainda é uma garota.\n\nSeu alinhamento "Caótico" é autoproclamado. Como Serva de Chaldea, lembra-se perfeitamente de suas ações na Lostbelt, fonte de profunda tristeza. Em sua visão, não apenas falhou em proteger seus filhos, mas seu próprio amor por eles só os fez sofrer mais. Ela diz que sua capacidade de amar morreu com a Lostbelt, e foi com muita dificuldade que se reconciliou com o que fez para preservá-la.'},
+     {title:'HABILIDADES DE CLASSE',items:[
+       {name:'Criação de Território',rank:'EX',text:'Como rainha, reproduz seu castelo em qualquer lugar. Após o Ragnarök, direcionou a maior parte de seu poder para extinguir as chamas que ameaçavam o mundo, cobrindo a Escandinávia com neve e gelo carregados de magia — refúgios que os gigantes não podiam tocar. Cada pedaço de neve e gelo faz parte dela: ela sabe, vê e ouve tudo em seu domínio.'},
+       {name:'Construção de Itens',rank:'A',text:'Cria muitas coisas com sua mana — de remédios milagrosos a equipamentos e sementes de árvores, todos frios ao toque. Graças ao sangue de Ymir, produziu em massa cem Enviados a partir das três Valquírias sobreviventes, mantendo gigantes e humanos sob controle por milhares de anos.'},
+       {name:'Núcleo Divino da Deusa',rank:'A',text:'Simboliza seu status como deusa; habilidade composta que inclui Divindade. Por possuir atributos tanto de deusa quanto de gigante, foi classificada como Rank A em vez de EX. Filha do gigante Þjazi, possui a Autoridade para controlar gigantes através de máscaras imbuídas com sua energia.'},
+     ]},
+     {title:'HABILIDADES PESSOAIS',items:[
+       {name:'Runa Primordial',rank:'—',text:'Controla livremente as runas nórdicas originais criadas por Odin, cujo poder transcende a compreensão humana. Pode lançar maldições divinas capazes de imobilizar por completo, inscrever uma runa da morte inescapável, manter núcleos espirituais danificados unidos e invocar Escudos de Ferro Divinos.'},
+       {name:'Nevasca Congelante',rank:'B',text:'Representa seu atributo como deusa das montanhas geladas — os ventos frios do norte que congelam toda a criação. Normalmente parte de sua Autoridade divina; se usada em rank A ou superior, o núcleo espiritual da Rainha Scathach se despedaçaria, por isso é limitada ao rank B.'},
+       {name:'Sabedoria do Grande Deus',rank:'B+',text:'Como "a bela noiva dos deuses", seu corpo possui as bênçãos e proteção dos deuses nórdicos. Baseada na sabedoria que Odin obteve ao abdicar de um olho. Semelhante, mas diferente da "Sabedoria de Dún Scáith" de Scáthach.'},
+     ]},
+     {title:'FANTASMA NOBRE',items:[
+       {name:'Portão de Skye',text:'O Portão que Leva à Terra Assombrada, Repleta de Morte. Skadi, sendo essencialmente a personalidade de Skadi, não entende claramente por que o usa — apenas percebe que a proteção divina dos deuses nórdicos é empregada através do poder originário de Scáthach.\n\nInvoca um portal gigante para a Terra das Sombras, mas em vez de sugar os inimigos, invoca a Fortaleza das Sombras, que concede bênçãos e sorte aos aliados dentro de seu alcance. Isso permite que os afetados derrotem inimigos poderosos mesmo quando normalmente impotentes. Empregado corretamente numa Guerra do Santo Graal, provocaria uma mudança de poder surpreendente.'},
+     ]},
+   ],
+   params:[
+     {label:'Força',rank:'E'},{label:'Resistência',rank:'C'},{label:'Agilidade',rank:'D'},
+     {label:'Mana',rank:'EX'},{label:'Sorte',rank:'A+'},{label:'NP',rank:'A'},
+   ],
+   va:'Noto Mamiko'},
+  {id:'okita',cat:'servo',name:'Okita Souji',classe:'Saber',
+   art:'assets/servos/okita/okita_profile.png',
+   reveal:p=>(p.gachaOwned||[]).includes('okita_saber'),
+   info:'Capitã da primeira unidade do Shinsengumi, admirada como o espadachim gênio mais forte do fim do período Edo. Assassina de sangue frio com um lado alegre e afeiçoado a crianças. Seu desejo pelo Graal: lutar até o fim ao lado dos camaradas. Obtida na Invocação (banner Gudaguda).',
+   details:[
+     {title:'IDENTIDADE',body:'Okita Souji era o capitão da primeira unidade do Shinsengumi, uma organização de ordem pública mais ativa em Kyoto nos últimos dias do período Edo. Mesmo entre os Shinsengumi, temidos como um bando de espadachins mestres, aquele admirado como o espadachim gênio mais forte era Okita.'},
+     {title:'HISTÓRIA',body:'Durante a infância, ainda aprendiz no Shieikan (dojo do estilo Tennen Rishin-ryuu em Ichigaya, Edo), Okita conheceu Hijikata Toshizo e Kondo Isami, futuras figuras centrais do Shinsengumi. Era habilidosa o suficiente para servir como treinadora principal do Shieikan ainda jovem, sem ninguém superior em talento com a espada.\n\nKondo juntou-se ao Roshigumi como guarda-costas do Shogun, e Okita foi à Capital Imperial com Hijikata. Após a dissolução do Roshigumi, Kondo formou o Shinsengumi, e Okita foi encarregada de capitã da primeira unidade. Brincava com as crianças da capital, que a chamavam carinhosamente de Souji. Foi uma dos que assassinaram Serizawa Kamo — e quem desferiu o golpe fatal. Amiga íntima de Yamanami Keisuke, esteve ao lado dele em seu seppuku.\n\nDemonstrando suas habilidades em conflitos como o Incidente de Ikedaya, o nome do Shinsengumi ecoou por Kyoto na era Bakumatsu. Mas o corpo de Okita foi afetado por uma doença, e sua condição deteriorou-se gradualmente até retirar-se para tratamento. Morreu no quarto ano da era Keio, em Sendagaya, sem saber da morte de Kondo, decapitado dois meses antes.\n\n"Fizemos juramentos sobre nossas espadas juntos, corremos juntos através dos tempos e lutamos juntos." "Mesmo que uma morte sem sentido esteja por vir no final, eu queria que fosse assim." "————Não. Agora é a hora."'},
+     {title:'APARÊNCIA',body:'Okita Souji é uma personagem feminina na história e se parece com o Rei Arthur. Uma garota de meados da adolescência, que veste roupas japonesas da moda. Para esconder seu traje original, chamativo demais, Okita normalmente usa um quimono estilo Taisho com hakama e botas longas de couro.'},
+     {title:'PERSONALIDADE',body:'Okita possui tanto a faceta de uma assassina de sangue frio quanto um lado alegre e afeiçoado a crianças. Com aqueles que perdoam essa mentalidade, demonstra uma simpatia quase infantil. Como quase não teve relacionamentos amorosos em vida, tem dificuldade em falar sobre o assunto. Também é claramente alheia a certas coisas, como o fato de Hijikata ser um Berserker, ou que o Shinsengumi é famoso o suficiente para ser identificado facilmente.\n\nNo mundo de Fate/type Redline, Okita é consideravelmente mais implacável e pragmática, descrita como vazia por Assassin. Seu objetivo é a vitória de seu Mestre, Kanata, declarando-se sua espada — mas considera todos os outros como indivíduos a serem deixados para trás ou eliminados, em contraste com sua invocação em Chaldea.\n\nO desejo de Okita pelo Santo Graal é "lutar até o fim" — seu desejo mais precioso em vida, não realizado. Mesmo como Espírito Heroico, ela se arrepende de não ter lutado até o fim com seus camaradas e tem a impressão errada de si mesma como uma fracassada entre os soldados do Shinsengumi.'},
+     {title:'HABILIDADES DE CLASSE',items:[
+       {name:'Resistência Mágica',rank:'E',text:'A classe Saber costuma ter alta Resistência Mágica, mas por ter vivido numa época com pouco Mistério, a dela é muito fraca — apenas um acréscimo simbólico para identificar sua Classe. "Será que as pessoas sequer usavam Magia durante o Bakumatsu...? Talvez Feng Shui eles usassem..."'},
+       {name:'Montaria',rank:'E',text:'Concedida a todos os Sabers, mas como não há registro de que Okita tenha usado uma montaria, recebeu-a no nível mais baixo.'},
+     ]},
+     {title:'HABILIDADES PESSOAIS',items:[
+       {name:'Olho da Mente (Falso)',rank:'A',text:'A habilidade de evitar o perigo por instinto ou sexto sentido, prevendo-o por talento natural. Também concede resistência à obstrução da visão. Poderia ter sido morta pela técnica copiada do Jigen-Ryu de Okada Izou se não fosse por esta habilidade.'},
+       {name:'Constituição Fraca',rank:'A',text:'Fraqueza natural, constituição frágil. Como resultado da impressão deixada à posteridade e da doença em vida, recebeu uma maldição semelhante à de Monstro Inocente. Todas as suas ações acarretam o risco de uma queda repentina de status. A taxa de ativação não é tão alta, mas se ativar em combate, os riscos são imensuráveis.'},
+       {name:'Lâmina Absoluta',rank:'A',text:'Melhoria de Constituição Fraca.'},
+       {name:'Terra Reduzida',rank:'B→B+',text:'Técnica para reduzir instantaneamente a distância até o oponente. A caminhada suprema que muitas artes marciais tentam alcançar — não pura velocidade, mas a combinação perfeita de técnicas de caminhada, movimentos defensivos, respiração e pontos cegos. No nível máximo (A), tornaria-se um salto dimensional do reino do Xianshu (Senjutsu).'},
+     ]},
+     {title:'FANTASMAS NOBRES',items:[
+       {name:'Casaco dos Juramentos',text:'O principal Fantasma Nobre de Okita é seu casaco. Simplesmente ao usá-lo, os Parâmetros e as armas de Okita são aprimorados.'},
+       {name:'Impulso Triplo Sem Luz (Mumyou Sandanzuki)',text:'Um trunfo extremamente poderoso. Com três passos, ela distorce o espaço, eliminando a distância até o oponente. Permitiu derrotar Oda Nobunaga (que luta à distância) na primeira luta, e matar Mori Nagayoshi destruindo o núcleo de sua armadura. Okita implanta este NP mais rápido que o Gáe Bolg de Cú Chulainn — mas como este inverte a causalidade, ao lutarem de verdade acabam se matando simultaneamente.'},
+       {name:'Bandeira da Sinceridade',text:'O último Fantasma Nobre de Okita. Na segunda luta com Oda Nobunaga, sua Constituição Fraca é ativada. Mesmo enfraquecida, Okita derrota o Arqueiro Demoníaco novamente, agora com sua Bandeira da Sinceridade.'},
+     ]},
+   ],
+   params:[
+     {label:'Força',rank:'C'},{label:'Resistência',rank:'E'},{label:'Agilidade',rank:'A+'},
+     {label:'Mana',rank:'E'},{label:'Sorte',rank:'D'},{label:'NP',rank:'C'},
+   ],
+   va:'Yuuki Aoi'},
+  {id:'okita_alter',cat:'servo',name:'Okita Souji Alter',classe:'Alter Ego',
+   art:'assets/servos/okita_alter/okita_alter_profile.png',
+   reveal:p=>(p.gachaOwned||[]).includes('okita_alter'),
+   info:'A Majin Okita. Um alter ego de Okita Souji, Contra-Guardiã formada através da base espiritual de Sakura Saber. Criada com um Grafo Sagrado deteriorado, programada para se autodestruir a fim de aniquilar grandes ameaças ao Mundo. Obtida na Invocação (banner Gudaguda).',
+   details:[
+     {title:'IDENTIDADE',body:'Okita Souji (Alter), também conhecida como Devil Okita Souji Alternative (Majin Okita Sōji Orutanatibu) e Okita Alter. O grupo de mestres espadachins Shinsengumi tornou-se lendário no período Bakumatsu, e Okita Souji era considerada a mais forte entre eles — e ela é um alter ego de Okita Souji. É uma Contra-Guardiã formada através da base espiritual de Sakura Saber, recebendo um Santo Graal cheio de Sete Servos e sendo apoiada pela Contra-Força.\n\nEm Fate/Grand Order, sua história foi reconfigurada para revelar que Okita Souji nasceu prematuramente e teria morrido logo após o nascimento, mas as orações de sua irmã permitiram que ela fizesse um contrato com o Mundo, que destinou seu corpo para ser usado como uma Guardiã de Contra-Ataque. Esta versão de Okita tinha um Grafo Sagrado intencionalmente deteriorado, programado para se autodestruir a fim de garantir a destruição de uma grande ameaça ao Mundo, mesmo que isso significasse sua própria morte.'},
+     {title:'APARÊNCIA',body:'Ela aparece como uma jovem adulta com longos cabelos brancos, presos em um coque lateral com borlas vermelhas. Veste um vestido vermelho e preto que lembra um quimono curto e um longo casaco de estilo europeu, com gola alta fechada por uma borla de corda. Parece usar meias compridas.'},
+     {title:'HABILIDADES DE CLASSE',items:[
+       {name:'Resistência Mágica',rank:'B',text:'Como, ao contrário da Okita real, foi criada com o propósito de lutar contra seres paranormais, mantém uma Resistência Mágica adequada para a Classe Saber. Aliás, ela também superou sua doença. Injusto? Sim, eu entendo o que você quer dizer, mas mesmo assim...'},
+       {name:'Ação Independente',rank:'A',text:'Como uma Guardiã de Contra-Ataque, é possível agir de forma independente. O rank alto se deve ao fato de ela ter sido projetada para se manifestar em circunstâncias desesperadoras e aniquilar o alvo sozinha ou desaparecer levando-o consigo.'},
+     ]},
+     {title:'HABILIDADES PESSOAIS',items:[
+       {name:'Terra Mais Distante',rank:'A',text:'A forma suprema de caminhar, que permite movimento completo em todas as formas de espaço.'},
+       {name:'Persistência',rank:'B→B+',text:'Uma luz constante ilumina seu caminho em uma batalha travada sem pausa. Essa luz prova que suas memórias daquele dia são reais.'},
+       {name:'Infinitude',rank:'A→A+',text:'Uma luz infinita ilumina o mundo inteiro. A aurora dourada que destrói Mara.'},
+     ]},
+     {title:'FANTASMA NOBRE',items:[
+       {name:'Espada Absoluta — Três Estágios Infinitos (Zekken Mukyusandan)',text:'Um ataque realizado com sua espada Rengoku, capaz de aniquilar ou remover do mundo aquilo que não deveria existir, ou que não pode ser permitido existir. Durante a Estranha História do Santo Graal da Capital Imperial, usou-o para destruir o Demônio de Maxwell e o Neo Führer.\n\nIncalculável, indiscutível, infinito — essas três características se combinam na natureza da espada. Na Singularidade Imperial de Tóquio, é mostrado que Okita pode acessar um reino de vazio infinito: um ponto onde nada existe antes ou além dele, um reino em branco que ela chama de infinito. Lá, derrota o Rei Demônio do Sexto Céu — Akechi Mitsuhide sozinha.'},
+     ]},
+   ],
+   params:[
+     {label:'Força',rank:'B'},{label:'Resistência',rank:'C'},{label:'Agilidade',rank:'A'},
+     {label:'Mana',rank:'B'},{label:'Sorte',rank:'C'},{label:'NP',rank:'A'},
+   ],
+   va:'Yuuki Aoi'},
   {id:'oldman',cat:'npc',name:'Homem Idoso',classe:'Viajante',
    art:null,
    reveal:p=>!!(p.achievements&&p.achievements.defeat_archer)||(p.stats&&p.stats.runs||0)>3,
@@ -2325,12 +2443,27 @@ function CodexScreen({onNavigate,profile}){
                   <div key={si} style={{marginTop:14}}>
                     <div className="cinzel" style={{color:'var(--red-bright)',fontSize:'.8rem',letterSpacing:2,marginBottom:6,borderBottom:'1px solid var(--gold-dim)',paddingBottom:4}}>{sec.title}</div>
                     {sec.body&&<p style={{fontSize:'.82rem',color:'var(--parchment)',lineHeight:1.7,marginBottom:sec.items?8:0,whiteSpace:'pre-line'}}>{sec.body}</p>}
-                    {sec.items&&sec.items.map((it,ii)=>(
-                      <div key={ii} style={{fontSize:'.8rem',color:'var(--parchment)',lineHeight:1.6,marginBottom:6,paddingLeft:10,borderLeft:'2px solid rgba(201,162,39,0.35)'}}>
-                        {it.name&&<span style={{color:'var(--gold)',fontWeight:'bold'}}>{it.name}{it.rank?` (${it.rank})`:''}: </span>}
-                        {it.text}
-                      </div>
-                    ))}
+                    {sec.items&&sec.items.map((it,ii)=>{
+                      // Itens marcados como 'locked' ficam esmaecidos e com texto oculto
+                      // até serem desbloqueados no perfil (skills avançadas ou perks da Qin).
+                      const advOk=profile.advSkillsUnlocked;
+                      const qinOk=!!(profile.achievements&&profile.achievements.defeat_qin);
+                      // Skills avançadas (Tormento/Ossos) usam advSkillsUnlocked; perks da Qin usam defeat_qin
+                      const isSkill=sec.title==='SKILLS DE MESTRE';
+                      const unlocked=!it.locked||(isSkill?advOk:qinOk);
+                      return(
+                        <div key={ii} style={{fontSize:'.8rem',lineHeight:1.6,marginBottom:6,paddingLeft:10,
+                          borderLeft:`2px solid ${it.locked&&!unlocked?'rgba(120,120,120,0.3)':'rgba(201,162,39,0.35)'}`,
+                          opacity:it.locked&&!unlocked?0.55:1}}>
+                          {it.name&&<span style={{color:it.locked&&!unlocked?'var(--parchment-dark)':'var(--gold)',fontWeight:'bold'}}>{it.name}{it.rank?` (${it.rank})`:''}: </span>}
+                          <span style={{color:'var(--parchment)'}}>
+                            {it.locked&&!unlocked
+                              ?'🔒 Habilidade selada. Continue sua jornada para desbloqueá-la.'
+                              :(it.locked?it.text.replace(/^🔒 SELADA[^—]*—\s*/,''):it.text)}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
                 {known&&c.params&&(
@@ -5454,7 +5587,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         </div>
 
         {/* Ações */}
-        <div className="panel" style={{padding:12}}>
+        <div className="panel combat-actions" style={{padding:12}}>
           {!isServoTurn&&(
             <div style={{textAlign:'center',fontSize:'.7rem',color:'#ff9090',marginBottom:8,fontStyle:'italic'}}>
               ⏳ Vez do inimigo... (você pode usar skills, que são ações livres)
