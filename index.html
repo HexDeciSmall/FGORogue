@@ -2414,7 +2414,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.97</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.98</p>
       </div>
     </div>
   );
@@ -3493,15 +3493,18 @@ function ConfigScreen({onNavigate}){
 // ══════════════════════════════════════════════════════
 // SELEÇÃO DE SERVO
 // ══════════════════════════════════════════════════════
-function ServoSelectScreen({onNavigate,onStartCampaign}){
+function ServoSelectScreen({onNavigate,onStartCampaign,profile}){
   const bond=loadBond('ibaraki_douji');
   const xpState=loadServoXP('ibaraki_douji');
   const npLvl=bondToNP(bond.level);
+  const done=(profile&&profile.achievements)||{};
+  const[selMap,setSelMap]=useState('bosque');
+  const selInfo=CAMPAIGN_CHECKPOINTS.find(c=>c.mapId===selMap)||CAMPAIGN_CHECKPOINTS[0];
   return(
     <div className="screen">
       <div className="panel" style={{maxWidth:560}}>
         <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:8}}>✦ INVOCAR SERVO ✦</h2>
-        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:20,fontStyle:'italic'}}>Bosque dos Caminhos Cegos — 12 fases</p>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:16,fontStyle:'italic'}}>{selInfo.name} — {selInfo.phases} fases</p>
         <div style={{display:'flex',gap:16,alignItems:'flex-start',border:'1px solid var(--gold-dim)',borderRadius:3,padding:16,marginBottom:16}}>
           <Portrait src={IBARAKI.assets.default} alt="Ibaraki Douji" style={{width:90,height:120}}/>
           <div style={{flex:1}}>
@@ -3517,7 +3520,34 @@ function ServoSelectScreen({onNavigate,onStartCampaign}){
             </div>
           </div>
         </div>
-        <button className="btn btn-full" onClick={()=>onStartCampaign(IBARAKI)}>⚔️ &nbsp; Invocar e Partir</button>
+
+        {/* CHECKPOINTS — pular para mapas já conquistados */}
+        <div className="divider"><span className="divider-text">PONTO DE PARTIDA</span></div>
+        <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:16}}>
+          {CAMPAIGN_CHECKPOINTS.map((cp,i)=>{
+            const unlocked=cp.unlock===null||!!done[cp.unlock];
+            const isSel=selMap===cp.mapId;
+            return(
+              <button key={cp.mapId} onClick={()=>unlocked&&setSelMap(cp.mapId)} disabled={!unlocked}
+                style={{textAlign:'left',padding:'10px 12px',borderRadius:3,cursor:unlocked?'pointer':'not-allowed',
+                  border:`1px solid ${isSel?'var(--gold)':'var(--gold-dim)'}`,
+                  background:isSel?'rgba(201,162,39,0.14)':'rgba(26,10,0,0.4)',
+                  opacity:unlocked?1:0.45,transition:'all .2s'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontFamily:'Cinzel,serif',fontSize:'.82rem',color:isSel?'var(--gold)':'var(--parchment)'}}>
+                    {unlocked?'':'🔒 '}{i+1}. {cp.name}
+                  </span>
+                  <span style={{fontSize:'.62rem',color:'var(--parchment-dark)'}}>
+                    {cp.party2?'⚔️×2 · ':''}Boss: {cp.boss}
+                  </span>
+                </div>
+                {!unlocked&&<div style={{fontSize:'.62rem',color:'var(--parchment-dark)',marginTop:2,fontStyle:'italic'}}>Derrote o boss anterior para liberar</div>}
+              </button>
+            );
+          })}
+        </div>
+
+        <button className="btn btn-full" onClick={()=>onStartCampaign(IBARAKI,selMap)}>⚔️ &nbsp; Invocar e Partir</button>
         <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar</button>
       </div>
     </div>
@@ -3837,6 +3867,16 @@ const TOWER_MAPS={
 const TOWER_ORDER=['bosque','tennobara','tortuoso','kurikara'];
 // Qual conquista libera cada mapa/servo da Torre
 const TOWER_UNLOCK={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja'};
+
+// Checkpoints da Campanha: cada mapa libera ao derrotar o boss do mapa anterior.
+// O primeiro (bosque) está sempre disponível. Party de 2 (Ibaraki+Sith) nos mapas 4 e 5.
+const CAMPAIGN_CHECKPOINTS=[
+  {mapId:'bosque',name:'Bosque dos Caminhos Cegos',phases:12,unlock:null,boss:'Qin Liangyu'},
+  {mapId:'tennobara',name:'Vila de Tennobara',phases:16,unlock:'defeat_qin',boss:'Nitro-Type'},
+  {mapId:'tortuoso',name:'Caminho Tortuoso',phases:19,unlock:'defeat_nitro',boss:'Baobhan Sith'},
+  {mapId:'kurikara',name:'Arredores de Kurikara',phases:16,unlock:'defeat_archer',boss:'Ninja Genji',party2:true},
+  {mapId:'kurikara_city',name:'Kurikara (Cidade)',phases:18,unlock:'defeat_ninja',boss:'Go-Sanjo Falso',party2:true},
+];
 
 // Gera um encontro usando a tabela de inimigos do mapa atual.
 // hpMult/atkMult (>1) amplificam os inimigos no modo Torre de Desafios.
@@ -6516,10 +6556,21 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     };
   }
 
-  function startCampaign(servo){
+  function startCampaign(servo,mapId='bosque'){
     setProfile(incRuns()); // conta cada nova run iniciada
-    setCamp(buildCampForMap(servo,'bosque'));
-    setStage('story');
+    const cp=CAMPAIGN_CHECKPOINTS.find(c=>c.mapId===mapId);
+    // Mapas com party de 2 (Kurikara e cidade): já entram com Ibaraki + Sith.
+    if(cp&&cp.party2){
+      const c=buildCampForMap(servo,mapId,null,false,[IBARAKI,SITH_PLAYABLE]);
+      c.sithJoined=true;
+      setCamp(c);
+      // Pula a intro do bosque; entra direto no mapa (checkpoint = começo do mapa).
+      setStage('map');
+      return;
+    }
+    setCamp(buildCampForMap(servo,mapId));
+    // Só o bosque tem a intro-história; os demais entram direto no mapa.
+    setStage(mapId==='bosque'?'story':'map');
   }
 
   // Inicia uma run da Torre de Desafios (roguelike puro) com a party (até 3 servos).
@@ -6923,7 +6974,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
 
   const curMap=camp?MAPS[camp.mapId]:MAPS.bosque;
 
-  if(stage==='select')return <ServoSelectScreen onNavigate={onNavigate} onStartCampaign={startCampaign}/>;
+  if(stage==='select')return <ServoSelectScreen onNavigate={onNavigate} onStartCampaign={startCampaign} profile={profile}/>;
   if(stage==='towerSelect')return <TowerSelectScreen onNavigate={onNavigate} onStart={startTower} profile={profile} setProfile={setProfile} onOpenShop={()=>setStage('towerShop')}/>;
   if(stage==='towerShop')return <TowerShopScreen profile={profile} setProfile={setProfile} onBack={()=>setStage('towerSelect')}/>;
   if(stage==='towerClimb'){
