@@ -2414,7 +2414,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.98</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.99</p>
       </div>
     </div>
   );
@@ -3527,6 +3527,8 @@ function ServoSelectScreen({onNavigate,onStartCampaign,profile}){
           {CAMPAIGN_CHECKPOINTS.map((cp,i)=>{
             const unlocked=cp.unlock===null||!!done[cp.unlock];
             const isSel=selMap===cp.mapId;
+            // O boss só é mostrado se o jogador JÁ o derrotou (senão vira spoiler).
+            const bossBeaten=cp.bossAch&&!!done[cp.bossAch];
             return(
               <button key={cp.mapId} onClick={()=>unlocked&&setSelMap(cp.mapId)} disabled={!unlocked}
                 style={{textAlign:'left',padding:'10px 12px',borderRadius:3,cursor:unlocked?'pointer':'not-allowed',
@@ -3538,7 +3540,7 @@ function ServoSelectScreen({onNavigate,onStartCampaign,profile}){
                     {unlocked?'':'🔒 '}{i+1}. {cp.name}
                   </span>
                   <span style={{fontSize:'.62rem',color:'var(--parchment-dark)'}}>
-                    {cp.party2?'⚔️×2 · ':''}Boss: {cp.boss}
+                    {cp.party2?'⚔️×2 · ':''}{cp.phases} fases
                   </span>
                 </div>
                 {!unlocked&&<div style={{fontSize:'.62rem',color:'var(--parchment-dark)',marginTop:2,fontStyle:'italic'}}>Derrote o boss anterior para liberar</div>}
