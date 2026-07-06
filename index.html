@@ -904,6 +904,60 @@ const STORY_MAP5_F8={
   ],
 };
 
+// Fase 15: Chigure vende informações (10 SQ que o jogador recupera) sobre o ritual e o Go-Sanjo.
+const STORY_MAP5_F15={
+  start:[
+    {type:'narration',text:'Sons de passos se aproximam do quarto.'},
+    {type:'okuni',expr:'feliz',name:'CHIGURE (?)',text:'Toc, toc.'},
+    {type:'master',text:'Um momento, saindo.'},
+    {type:'narration',text:'A serva suspeita estava esperando na porta, com uma expressão de pura felicidade no rosto.'},
+    {type:'okuni',expr:'fofa',name:'CHIGURE (?)',text:'Me dê dez daquela moeda rara que você tem, e terá uma informação mais quente que o Monte Vesúvio em 79 d.C.'},
+    {type:'master',text:'....... Certo.'},
+    {type:'narration',text:'Você entrega dez Saint Quartz à garota.'},
+    {type:'okuni',expr:'brava',name:'CHIGURE (?)',text:'Oooh! Realmente tem delas! Então vou te dar as informações que meu irmãozão conseguiu.'},
+    {type:'okuni',expr:'off',name:'CHIGURE (?)',text:'O Clã Minamoto teve um embate fervoroso em Nara, mas não foram eles os causadores. Aparentemente, alguém fez um ritual macabro usando centenas de seres humanos — o que resultou no estado atual daquela cidade. Pessoas corrompidas, fantasmas... essas coisas que têm aparecido fora dos muros.'},
+    {type:'master',text:'Tem informação do tal indivíduo?'},
+    {type:'okuni',expr:'preocupada',name:'CHIGURE (?)',text:'Infelizmente não. Mas alguns do Clã Minamoto se dividiram no conflito — pelo que deu para ver, alguns se corromperam naquele lugar e voltaram estranhos.'},
+    {type:'okuni',expr:'think',name:'CHIGURE (?)',text:'Aí que entra a informação privilegiada de hóspede! Você pode encontrar um desses corrompidos agora mesmo, hehe. No Templo Byakuren-in, perto do centro da cidade, você pode topar com o velho Go-Sanjo — mas dizem que ele voltou não batendo muito bem da cabeça.'},
+    {type:'narration',text:'Ao se virar para sair, a garota discretamente devolve as dez moedas ao seu bolso, com um sorriso travesso. Talvez ela só quisesse confirmar que você as tinha mesmo.'},
+  ],
+};
+
+// Fase 17: a chegada ao Templo Byakuren-in — as servas voltam à forma física e o Go-Sanjo se revela.
+const STORY_MAP5_F17={
+  start:[
+    {type:'narration',text:'Depois de várias emboscadas, finalmente adentram o terreno do templo. Um clima de funeral paira no ar, com uma tensão estranha.'},
+    {type:'narration',text:'Em seguida, as duas servas se materializam em forma física.'},
+    {type:'ibaraki',expr:'exp2',text:'Para um templo, está bem parado.'},
+    {type:'master',text:'Acabei ficando com certa curiosidade de checar isso. Já que me meti nessa, o ideal é pular de cabeça.'},
+    {type:'ibaraki',expr:'exp1',text:'O mestre de fato é o mestre.'},
+    {type:'narration',text:'No centro do pavilhão havia um homem amadurecido, pronto para partir rumo a uma guerra — um samurai por completo.'},
+    {type:'narration',text:'Uma estranha aura negra podia ser vista emanando dele.'},
+    {type:'archer',expr:'sith_ow',text:'Eehh..... parece que ele sabe que a gente está aqui.'},
+    {type:'master',text:'Não consigo sentir que ele esteja consciente. Parece que não há alma alguma — como um objeto sem vida.'},
+    {type:'archer',expr:'sith_pis',text:'De fato. Aquilo está longe de ser humano.'},
+    {type:'narration',text:'Assim que se aproximam, o samurai se levanta. Sua aura de força emanava por todo o pavilhão. Um inimigo formidável apareceu: "Go-Sanjo, o Imperador Sombrio".'},
+  ],
+};
+
+// Derrota contra o Go-Sanjo (boss do mapa 5).
+const STORY_MAP5_GOSANJO_LOSE={
+  start:[
+    {type:'narration',text:'Sua vista apaga depois de ouvir o som do aço cortando o ar. O velho Imperador ainda estava em seus dias de glória.'},
+    {type:'shuten',expr:'bleed',text:'Fufufu, a Raikou vai fazer uma cara incrível vendo um dos seus nesse estado. Hahahah — comece de novo.'},
+  ],
+};
+
+// Vitória contra o Go-Sanjo (boss do mapa 5).
+const STORY_MAP5_GOSANJO_WIN={
+  start:[
+    {type:'narration',text:'O corpo do samurai começa a se desintegrar aos poucos. De fato, nada naquilo era humano — uma sombra do que um dia ele já foi. Nada mais restava naquela carcaça vazia e sem sentimentos.'},
+    {type:'archer',expr:'sith_ow',text:'Não achei que iria dar tanto trabalho.'},
+    {type:'ibaraki',expr:'exp1',text:'Ele não conseguiu exercer nem uma parcela dos verdadeiros ancestrais. Parece que os cães do imperador perderam as presas.'},
+    {type:'master',text:'Go-Sanjo.... Caso seja quem eu penso que seja, não tem relação com o Clã Minamoto de fato. As datas não batem....'},
+  ],
+};
+
 // Fase 12: treino/entrosamento da party num campo de arroz. Recompensa: +1 nível e +1 bond.
 const STORY_MAP5_F12={
   start:[
@@ -1710,7 +1764,7 @@ function loadProfile(){
     stats:{runs:0,enemiesDefeated:0,highestDamage:0},
     achievements:{}, // id da conquista → true quando concedida (recompensa já paga)
     codex:{}, // id do personagem → true quando descoberto no Álbum
-    skills:{manaBuster:1,transf:1,veneno:1,tormento:1,ossos:1},
+    skills:{manaBuster:1,transf:1,veneno:1,tormento:1,ossos:1,ukiyoe:1,fundir:1},
     towerSkills:{carisma:0}, // skills exclusivas da Torre (0 = não comprada)
     gachaOwned:[], // ids dos servos limitados obtidos no gacha
     perks:{energizador:0,pocaoMana:0,pactoEscudo:0,contosEpicos:0,orbeCromatico:0},
@@ -1905,9 +1959,13 @@ function bondUpServo(servoId){
 function tormentoCD(lvl){return lvl>=10?7:lvl>=6?8:9;}
 function ossosCD(lvl){return lvl>=10?5:lvl>=6?6:7;}
 function advSkillCost(lvl){return 3*lvl;} // 3 SQ base, +3 por nível
+// Skills desbloqueadas ao vencer o Go-Sanjo:
+function ukiyoeCD(lvl){return lvl>=10?7:lvl>=6?8:9;}   // 9t (1-5), 8t (6-9), 7t (10)
+function ukiyoeCost(lvl){return 5*lvl;}                 // 5 SQ base, +5 por nível
+function fundirCost(lvl){return 15*lvl;}                // 15 SQ base, +15 por nível (máx nível 5)
 
 function profileSkillValues(skills){
-  const{manaBuster=1,transf=1,veneno=1,tormento=1,ossos=1}=skills;
+  const{manaBuster=1,transf=1,veneno=1,tormento=1,ossos=1,ukiyoe=1,fundir=1}=skills;
   return{
     manaBuster:{lvl:manaBuster,atkBoost:linear(manaBuster,5,50),dur:1,cd:stdCD(manaBuster)},
     transf:{lvl:transf,npGain:linear(transf,5,50),cd:stdCD(transf)},
@@ -1916,6 +1974,10 @@ function profileSkillValues(skills){
     tormento:{lvl:tormento,hpDmgPct:5+2.5*(tormento-1),cd:tormentoCD(tormento)},
     // Ossos que não são meus: +DEF por 3t (10% base, +5%/nível) + limpa 1 debuff
     ossos:{lvl:ossos,defUp:10+5*(ossos-1),dur:3,cd:ossosCD(ossos)},
+    // Ukiyo-e: cura HP (2000 base, +500/nível) + NP (30% base, +2%/nível) + evade 2t
+    ukiyoe:{lvl:ukiyoe,healHp:2000+500*(ukiyoe-1),npGain:30+2*(ukiyoe-1),evadeTurns:2,cd:ukiyoeCD(ukiyoe)},
+    // Fundir Ossos: AoE que tira % do HP máx de todos os inimigos (40% base, +5%/nível), CD fixo 10t
+    fundir:{lvl:fundir,hpDmgPct:40+5*(fundir-1),cd:10},
   };
 }
 function sqCost(lvl){return lvl;}
@@ -2352,7 +2414,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.91</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.97</p>
       </div>
     </div>
   );
@@ -2369,12 +2431,18 @@ const CODEX=[
    info:'Um estranho no ninho. Não se lembra de como chegou ao bosque, e desperta perdido com poucas lembranças. Preso a um servo emocionalmente desequilibrado e de temperamento explosivo, precisa sobreviver aos Caminhos Cegos — sem saber quem é, nem por que sua conexão com a Mana é tão anormalmente alta.',
    details:[
      {title:'HISTÓRIA',body:'Um estranho no ninho. Ele não se lembra muito de como chegou ao local — apenas se viu perdido no bosque, com poucas lembranças e uma névoa densa onde deveria estar seu passado. Está preso ao lado de um servo emocionalmente desequilibrado e de temperamento explosivo, uma Oni que tanto pode salvá-lo quanto devorá-lo.\n\nAlgo nele não é normal. Sua conexão com a Mana é alta demais para um humano comum, como se seu próprio corpo fosse um catalisador — o sangue, a carne, os fluidos, tudo parece carregar um poder que ele não compreende. Fragmentos soltos o perseguem: um frasco estranho que alguém lhe entregou, vozes distorcidas na memória, uma sensação de que seus ossos não são bem os seus. Quem o trouxe até aqui? O que ele foi antes de esquecer? Cada passo pelo bosque parece menos uma jornada de fuga e mais um retorno a algo que ele preferiria não lembrar.'},
+     {title:'O SONHO DA NOITE 1',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
+      body:'Em Kurikara, dormindo na pousada Kogarashi-kan, o Mestre reviveu uma memória enterrada. Num bosque de árvores gigantes, ouviu duas figuras não-humanas — uma delas a General Qin, outra um homem — falando de "uma garota ferida" golpeada por Sakata. Então, uma pequena Oni ensanguentada agarrou sua perna. Com um crânio humano na mão e um "vai doer só um pouquinho", ela tocou seus ossos.\n\nA dor foi insuportável: seus ossos pareciam querer sair da própria pele. Ele desmaiou. Ao acordar suado na cama, entendeu que aquilo não era um sonho comum, mas a origem de algo dentro de si — a semente da sua skill "Ossos que não são meus". A Oni era a Shuten Douji, a mesma "Voz Desconhecida" que zomba a cada queda dele.'},
+     {title:'AS DATAS NÃO BATEM',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
+      body:'Diante da carcaça desintegrante do Go-Sanjo, algo se agitou na memória enevoada do Mestre. Ele reconheceu — ou quase reconheceu — o nome. "Caso seja quem eu penso que seja, não tem relação com o Clã Minamoto de fato. As datas não batem." De onde ele conhece esse nome? Como um estranho sem memórias saberia identificar a incoerência histórica de uma sombra sem alma? Cada resposta que ele encontra em Kurikara acende duas novas perguntas sobre o que ele realmente é.'},
      {title:'SKILLS DE MESTRE',body:'Habilidades que o Mestre usa em combate como ações livres. As três primeiras estão sempre disponíveis; as duas últimas permanecem seladas até que algo dentro dele desperte.',items:[
        {name:'Mana Buster',rank:'C',text:'Através de uma conexão estranha com "@$%=%", ele pode infundir a própria mana no servo para gerar um aumento exponencial de energia, causando alto poder de dano.'},
        {name:'Transferência de Mana',rank:'D',text:'Através da conexão com um servo, ele pode infundir mana através do contato físico.'},
        {name:'Veneno de Brasilisco',rank:'E',text:'Ao chegar no bosque, alguém lhe deu um estranho frasco com um líquido atordoante. Mas quem daria algo assim a ele? E quando? Ele não se lembra.'},
        {name:'Tormento',rank:'B',text:'🔒 SELADA — Desconforto! Ódio! Rancor... por que tudo isso aparece em sua mente? Na era atual as coisas não são mais tranquilas? E o pacifismo? Mas isso causa dano não só a si mesmo — provoca uma enorme queimação no inimigo, um calor agonizante e desconfortável.',locked:true},
        {name:'Ossos que não são meus',rank:'B+',text:'🔒 SELADA — Seus ossos estão rangendo. Uma sensação de que algo está errado, parecem diferentes: maiores, mais fortes. Mas de uma coisa ele pode ter certeza: ele só cai uma vez.',locked:true},
+       {name:'Ukiyo-e',rank:'EX',text:'🔒 SELADA (derrote o Go-Sanjo) — É um gênero de xilogravura e pintura japonesa que floresceu durante o período Edo (1603-1867). As obras retratam a cultura popular: paisagens, atrizes e cortesãs, teatro Kabuki, sumô e lendas. A expressão "mundo flutuante" deriva de uma visão budista que aludia à natureza transitória e passageira da vida, mas passou a focar nos prazeres e nas áreas de entretenimento da sociedade mercantil da época. As estampas eram produzidas por uma equipe de especialistas: o artista desenhava o rascunho, o entalhador esculpia os blocos de madeira e o impressor aplicava as cores no papel.',locked:true,gosanjo:true},
+       {name:'Fundir Ossos',rank:'B',text:'🔒 SELADA (derrote o Go-Sanjo) — Os ossos dos inimigos mortos, aliados caídos, qualquer osso fazia parte daquilo, o $*&¨$$/.',locked:true,gosanjo:true},
      ]},
      {title:'PERKS',body:'Bênçãos passivas adquiridas na Loja. As três primeiras estão disponíveis desde o início; as duas últimas só se revelam após derrotar Qin Liangyu no Bosque.',items:[
        {name:'Energizador de Raiz',rank:'EX',text:'Sua conexão com a Mana é muito alta, até mesmo para um humano. Com isso, ele pode fortalecer um servo muito além do normal.'},
@@ -2473,7 +2541,13 @@ const CODEX=[
   {id:'shuten',cat:'servo',name:'Shuten Douji',classe:'???',
    art:null,
    reveal:p=>(p.stats&&p.stats.runs||0)>0,
-   info:'A "Voz Desconhecida" que ecoa nas derrotas com um "fufufu... comece de novo". Amiga de Ibaraki no passado, no Monte Ooe. Confiante e sarcástica, subestimava "aquela mulher nojenta e seus quatro subordinados".'},
+   info:'A "Voz Desconhecida" que ecoa nas derrotas com um "fufufu... comece de novo". Amiga de Ibaraki no passado, no Monte Ooe. Confiante e sarcástica, subestimava "aquela mulher nojenta e seus quatro subordinados".',
+   details:[
+     {title:'A GAROTA DO SONHO',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
+      body:'Foi ela — a pequena Oni de corpo ensanguentado — quem o Mestre encontrou no sonho da Noite 1, no bosque das árvores gigantes. Ferida após um golpe de Sakata (Kintoki), ela se arrastou até ele e, com um crânio humano na mão e um "vai doer só um pouquinho", tocou seus ossos. Foi esse toque que transformou o corpo do Mestre — a origem da sua skill "Ossos que não são meus".'},
+     {title:'ELO COM O MESTRE',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
+      body:'A Shuten conhece o Mestre de antes de tudo. É a "Voz Desconhecida" que zomba a cada derrota mandando "começar de novo", como se controlasse o próprio fio do tempo dele. Ao ver o Go-Sanjo tombado, mencionou a Raikou — a caçadora de onis Minamoto no Raikou — sugerindo que os eventos de Kurikara tocam uma teia bem maior do que aparentam. Por que ela zela pelo Mestre, e o que fez a ele naquele bosque, ainda são perguntas em aberto.'},
+   ]},
   // ── MESTRES ──
   {id:'aria',cat:'mestre',name:'Aria Rothschild',classe:'Mestra',
    art:'assets/servos/aria/aria_avatar.png',
@@ -2506,6 +2580,16 @@ const CODEX=[
      {label:'Mana',rank:'C'},{label:'Sorte',rank:'A'},{label:'NP',rank:'C'},
    ],
    va:'Chiwa Saito'},
+  {id:'gosanjo',cat:'servo',name:'Go-Sanjo, o Imperador Sombrio',classe:'Assassin',
+   art:'assets/servos/gosanjo/gosanjo_combat.jpg',
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
+   info:'A "Sombra que veste a face de um imperador". Um samurai encontrado no Templo Byakuren-in, em Kurikara — uma casca oca movida apenas por ódio residual, sem consciência nem alma. Uma falsificação corrompida pelo ritual macabro de Nara.',
+   details:[
+     {title:'O QUE ERA',body:'Quando o Mestre e as servas o encontraram no pavilhão do templo, o Go-Sanjo já não passava de um objeto sem vida — um samurai em plena forma de guerra, envolto por uma aura negra, mas sem qualquer presença de alma. Não reagia como um ser consciente; apenas repetia fragmentos de rancor: "Malditos... Morte... Bastardos... Fome... Vingança...".\n\nEm combate, atacava em rajadas de múltiplos golpes contra alvos aleatórios, com velocidade e defesa sobrenaturais. Ao cair, seu corpo se desintegrou aos poucos, provando que nada nele era humano — uma sombra do que um dia foi, uma carcaça vazia.'},
+     {title:'A ORIGEM DA CORRUPÇÃO',body:'Segundo as informações de Chigure, o estado de Kurikara e arredores não foi causado pelo Clã Minamoto, mas por um ritual macabro realizado em Nara, no qual centenas de seres humanos foram usados. O resultado foram as pessoas corrompidas, os fantasmas e as aparições que rondam a região. Alguns dos próprios Minamoto que se dividiram no conflito se corromperam naquele lugar e "voltaram estranhos" — e o Go-Sanjo é um desses despojos.'},
+     {title:'AS DATAS NÃO BATEM',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
+      body:'Após derrotá-lo, o Mestre hesitou: "Go-Sanjo... caso seja quem eu penso que seja, não tem relação com o Clã Minamoto de fato. As datas não batem." A Ibaraki desdenhou do inimigo, dizendo que ele "não exerceu nem uma parcela dos verdadeiros ancestrais" — que "os cães do imperador perderam as presas". O verdadeiro Go-Sanjo, a identidade por trás da sombra e o motivo de ele ter sido erguido ali permanecem um enigma que a história ainda não explicou.'},
+   ]},
   {id:'kiara',cat:'servo',name:'Sessyoin Kiara',classe:'Moon Cancer',
    art:'assets/servos/kiara/kiara_profile.png',
    reveal:p=>(p.gachaOwned||[]).includes('kiara_summer'),
@@ -2669,9 +2753,9 @@ function CodexScreen({onNavigate,profile}){
                 <p style={{fontSize:'.85rem',color:'var(--parchment)',lineHeight:1.7}}>
                   {known?c.info:'Este personagem ainda não foi revelado. Continue sua jornada para descobrir mais.'}
                 </p>
-                {known&&c.details&&c.details.map((sec,si)=>(
+                {known&&c.details&&c.details.filter(sec=>!sec.reveal||sec.reveal(profile)).map((sec,si)=>(
                   <div key={si} style={{marginTop:14}}>
-                    <div className="cinzel" style={{color:'var(--red-bright)',fontSize:'.8rem',letterSpacing:2,marginBottom:6,borderBottom:'1px solid var(--gold-dim)',paddingBottom:4}}>{sec.title}</div>
+                    <div className="cinzel" style={{color:sec.spoiler?'#c98fd0':'var(--red-bright)',fontSize:'.8rem',letterSpacing:2,marginBottom:6,borderBottom:'1px solid var(--gold-dim)',paddingBottom:4}}>{sec.title}</div>
                     {sec.body&&<p style={{fontSize:'.82rem',color:'var(--parchment)',lineHeight:1.7,marginBottom:sec.items?8:0,whiteSpace:'pre-line'}}>{sec.body}</p>}
                     {sec.items&&sec.items.map((it,ii)=>{
                       // Itens marcados como 'locked' ficam esmaecidos e com texto oculto
@@ -2679,8 +2763,10 @@ function CodexScreen({onNavigate,profile}){
                       const advOk=profile.advSkillsUnlocked;
                       const qinOk=!!(profile.achievements&&profile.achievements.defeat_qin);
                       // Skills avançadas (Tormento/Ossos) usam advSkillsUnlocked; perks da Qin usam defeat_qin
+                      const gosanjoOk=!!(profile.achievements&&profile.achievements.defeat_gosanjo);
                       const isSkill=sec.title==='SKILLS DE MESTRE';
-                      const unlocked=!it.locked||(isSkill?advOk:qinOk);
+                      // Itens marcados gosanjo revelam ao vencer o Go-Sanjo; demais seguem a regra da seção
+                      const unlocked=!it.locked||(it.gosanjo?gosanjoOk:(isSkill?advOk:qinOk));
                       return(
                         <div key={ii} style={{fontSize:'.8rem',lineHeight:1.6,marginBottom:6,paddingLeft:10,
                           borderLeft:`2px solid ${it.locked&&!unlocked?'rgba(120,120,120,0.3)':'rgba(201,162,39,0.35)'}`,
@@ -2986,12 +3072,18 @@ function ProfileScreen({onNavigate,profile,setProfile}){
     saveProfile(p);setProfile(p);setNotif('Perfil salvo!');
   }
   const ADV_SKILLS=['tormento','ossos'];
-  function skillCostFor(key,lvl){return ADV_SKILLS.includes(key)?advSkillCost(lvl):sqCost(lvl);}
+  const GOSANJO_SKILLS=['ukiyoe','fundir'];
+  function skillCostFor(key,lvl){
+    if(key==='ukiyoe')return ukiyoeCost(lvl);
+    if(key==='fundir')return fundirCost(lvl);
+    return ADV_SKILLS.includes(key)?advSkillCost(lvl):sqCost(lvl);
+  }
+  function skillMaxLevel(key){return key==='fundir'?5:10;} // Fundir Ossos vai só até o Lvl.5
 
   function upgrade(key){
     const fresh=loadProfile(); // leitura fresca: nunca gasta em cima de saldo desatualizado
     const cur=(fresh.skills&&fresh.skills[key])||1;
-    if(cur>=10)return;
+    if(cur>=skillMaxLevel(key))return;
     const cost=skillCostFor(key,cur);
     if((fresh.sq||0)<cost){setNotif(`SQ insuficiente! Precisa de ${cost} SQ.`);return;}
     const p={...fresh,sq:fresh.sq-cost,skills:{...fresh.skills,[key]:cur+1}};
@@ -3010,6 +3102,10 @@ function ProfileScreen({onNavigate,profile,setProfile}){
      desc:lvl=>`Causa ${(5+2.5*(lvl-1)).toFixed(1)}% do HP do inimigo · Recarga ${tormentoCD(lvl)}t`},
     {key:'ossos',name:'Ossos que não são meus',adv:true,
      desc:lvl=>`+${10+5*(lvl-1)}% Defesa por 3t + limpa 1 debuff · Recarga ${ossosCD(lvl)}t`},
+    {key:'ukiyoe',name:'Ukiyo-e',gosanjo:true,
+     desc:lvl=>`Cura ${2000+500*(lvl-1)} HP + ${30+2*(lvl-1)}% NP + Evade 2t · Recarga ${ukiyoeCD(lvl)}t`},
+    {key:'fundir',name:'Fundir Ossos',gosanjo:true,
+     desc:lvl=>`AoE: tira ${40+5*(lvl-1)}% do HP de todos os inimigos · Recarga 10t`},
   ];
 
   return(
@@ -3066,17 +3162,20 @@ function ProfileScreen({onNavigate,profile,setProfile}){
 
         <div className="divider"><span className="divider-text">SKILLS DO MESTRE</span></div>
 
-        {skillDefs.map(({key,name,desc,adv})=>{
+        {skillDefs.map(({key,name,desc,adv,gosanjo})=>{
           const lvl=profile.skills[key]||1;
-          const locked=adv&&!profile.advSkillsUnlocked;
+          const gosanjoOk=!!(profile.achievements&&profile.achievements.defeat_gosanjo);
+          const locked=(adv&&!profile.advSkillsUnlocked)||(gosanjo&&!gosanjoOk);
+          const maxLvl=key==='fundir'?5:10;
+          const lockMsg=gosanjo?'Desbloqueada ao derrotar o Go-Sanjo em Kurikara...':'Desbloqueada ao avançar pelo Caminho Tortuoso...';
           return(
             <div key={key} className="skill-row" style={locked?{opacity:.5}:{}}>
               <div className="skill-info">
                 <div className="skill-name">{locked?'🔒 ':''}{name} {!locked&&<span style={{color:'var(--parchment-dark)'}}>Nv.{lvl}</span>}</div>
-                <div className="skill-desc">{locked?'Desbloqueada ao avançar pelo Caminho Tortuoso...':desc(lvl)}</div>
+                <div className="skill-desc">{locked?lockMsg:desc(lvl)}</div>
                 {!locked&&(
                   <div className="skill-level-pips">
-                    {Array.from({length:10},(_,i)=>(
+                    {Array.from({length:maxLvl},(_,i)=>(
                       <div key={i} className={`pip${i<lvl?' filled':''}`}/>
                     ))}
                   </div>
@@ -3084,7 +3183,7 @@ function ProfileScreen({onNavigate,profile,setProfile}){
               </div>
               {locked
                 ?<span style={{color:'var(--parchment-dark)',fontSize:'.7rem'}}>🔒</span>
-                :lvl<10
+                :lvl<maxLvl
                 ?<button className="btn btn-sm" onClick={()=>upgrade(key)}>↑ {skillCostFor(key,lvl)} SQ</button>
                 :<span style={{color:'var(--gold)',fontSize:'.7rem',fontFamily:'Cinzel,serif'}}>MAX</span>
               }
@@ -3489,7 +3588,7 @@ const GOSANJO={
   // NP Corte Triplo das Sombras: dano pesado em todos + reduz defesa
   np:{name:'Sanmen Kage-giri',dmgMult:2.4,isAoE:true,defDown:20,defDownTurns:3},
   dialogue:{
-    intro:'Eu sou a sombra que veste a face de um imperador. Três lâminas, um só destino: o seu fim.',
+    intro:'Malditos..... Morte...... Bastardos........ Fome....... Vingança ........',
     danca:'Dancem comigo até a morte!',
     selo:'Selado. Não se mova.',
     np:'Que as três sombras se cruzem... Sanmen Kage-giri!',
@@ -4224,6 +4323,17 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
         </div>
       </div>
     );
+    if(m.type==='shuten')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={SHUTEN_EXPR[m.expr]||SHUTEN_EXPR.pena} alt="Shuten"
+          style={{borderColor:'rgba(150,80,180,.6)'}}
+          onError={ev=>{ev.target.style.display='none';}}/>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'var(--oni-purple-light)'}}>SHUTEN DOUJI</div>
+          <div className="chat-bubble mystic">{m.text}</div>
+        </div>
+      </div>
+    );
     if(m.type==='archer'){
       const expImg=m.expr==='sith_ow'?ARCHER.assets.ow
         :m.expr==='sith_pis'?ARCHER.assets.pis
@@ -4697,7 +4807,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       npLevel:m.npLevel||bondToNP(loadBond(def.id).level),
       activeBuffs:buffs,activeDebuffs:[],stunned:0,
       cooldowns:Object.fromEntries((def.activeSkills||[]).map(s=>[s.id,0])),
-      profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
+      profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0,ukiyoe:0,fundir:0},
       gutsCharges:(def.passiveSkills||[]).some(p=>p.effect&&p.effect.type==='guts')?1:0,
       tempGuts:null,evadeTurns:0,
       defeated:false,
@@ -5075,6 +5185,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // Party: troca o servo ativo (ação livre, não encerra o turno)
   function switchServo(idx){
     if(idx===activeIdx||result)return;
+    // Trocar de servo é ação livre, mas só na vez do servo (não durante a cadeia inimiga).
+    if(!isServoTurn||enemyChainLock.current){setNotif('Aguarde sua vez na ordem de iniciativa!');return;}
     if(!party[idx]||party[idx].defeated||party[idx].hp<=0){setNotif('Este servo não pode entrar!');return;}
     setActiveIdx(idx);
     const nm=(PLAYABLE_SERVOS[party[idx].id]||IBARAKI).name;
@@ -5137,6 +5249,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   function doSkill(skillId){
     if(result)return;
+    // Skills são ações livres (não passam turno), mas só podem ser usadas na VEZ do servo.
+    // Durante a vez do inimigo (ou enquanto a cadeia de ações dele roda), ficam bloqueadas.
+    if(!isServoTurn||enemyChainLock.current){setNotif('Aguarde sua vez na ordem de iniciativa!');return;}
     if((servo.cooldowns[skillId]||0)>0){setNotif('Skill em recarga!');return;}
     const skillDef=(SDEF.activeSkills||[]).find(s=>s.id===skillId);
     if(!skillDef)return;
@@ -5296,6 +5411,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   function doProfileSkill(skillKey){
     if(result)return;
+    // Skills do Mestre também são ações livres, mas só na VEZ do servo.
+    if(!isServoTurn||enemyChainLock.current){setNotif('Aguarde sua vez na ordem de iniciativa!');return;}
     if((servo.profileCooldowns[skillKey]||0)>0){setNotif('Skill em recarga!');return;}
     const sk=sv[skillKey];
     let newServo={...servo,profileCooldowns:{...servo.profileCooldowns,[skillKey]:sk.cd}};
@@ -5343,6 +5460,25 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         addLog(`Ossos que não são meus Nv.${sk.lvl}: +${sk.defUp}% Defesa por 3 turnos`,'player');
       }
       spawnFx('servo',`+${sk.defUp}% DEF`,'buff');
+    } else if(skillKey==='ukiyoe'){
+      // Ukiyo-e: cura HP + carrega NP + concede evasão por 2 turnos
+      const before=newServo.hp;
+      newServo.hp=clamp(newServo.hp+sk.healHp,0,newServo.hpMax);
+      const healed=newServo.hp-before;
+      newServo.npBar=clamp(newServo.npBar+sk.npGain,0,100);
+      newServo.evadeTurns=Math.max(newServo.evadeTurns||0,sk.evadeTurns);
+      addLog(`Ukiyo-e Nv.${sk.lvl}: +${healed} HP · +${sk.npGain}% NP · Evasão por ${sk.evadeTurns}t`,'heal');
+      spawnFx('servo',`+${healed}`,'heal');
+    } else if(skillKey==='fundir'){
+      // Fundir Ossos: AoE que tira % do HP MÁXIMO de todos os inimigos (ignora defesa)
+      newEnemies=newEnemies.map(e=>{
+        if(e.currentHp<=0)return e;
+        const dmg=Math.round(e.maxHp*sk.hpDmgPct/100);
+        recordDamage(dmg);
+        return damageEnemy(e,dmg,'crit');
+      });
+      addLog(`🦴 Fundir Ossos Nv.${sk.lvl}: ${sk.hpDmgPct}% do HP de TODOS os inimigos!`,'player');
+      if(checkWin(newEnemies)){setServo(newServo);setEnemies(newEnemies);endCombat(true,newServo,newEnemies);return;}
     }
     setServo(newServo);setEnemies(newEnemies);
     // Skills do Mestre também são ações livres: não passam o turno.
@@ -6261,8 +6397,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             </button>
             {(SDEF.activeSkills||[]).map(sk=>{
               const cd=servo.cooldowns[sk.id]||0;
+              const blocked=cd>0||!isServoTurn;
               return(
-                <button key={sk.id} className="skill-btn" onClick={()=>doSkill(sk.id)} disabled={cd>0}>
+                <button key={sk.id} className="skill-btn" onClick={()=>doSkill(sk.id)} disabled={blocked}
+                  style={(!isServoTurn&&cd<=0)?{opacity:.4}:{}}>
                   {sk.name}
                   <span className="skill-cd">{cd>0?`${cd}t recarga`:`Rank ${sk.rank}`}</span>
                 </button>
@@ -6280,12 +6418,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           <div className="divider"><span className="divider-text">SKILLS DO MESTRE</span></div>
           <div className="skills-row">
             {[['manaBuster','💥 Mana Buster'],['transf','🔮 Transf. Mana'],['veneno','☠️ Veneno'],
-              ...(profile.advSkillsUnlocked?[['tormento','🔥 Tormento'],['ossos','🦴 Ossos']]:[])
+              ...(profile.advSkillsUnlocked?[['tormento','🔥 Tormento'],['ossos','🦴 Ossos']]:[]),
+              ...(profile.achievements&&profile.achievements.defeat_gosanjo?[['ukiyoe','🎴 Ukiyo-e'],['fundir','💀 Fundir Ossos']]:[])
             ].map(([key,label])=>{
               const cd=servo.profileCooldowns[key]||0;
-              const pcd=servo.profileCooldowns; // pode não ter a chave nova em saves antigos
+              const blocked=cd>0||!isServoTurn;
               return(
-                <button key={key} className="skill-btn" onClick={()=>doProfileSkill(key)} disabled={cd>0}>
+                <button key={key} className="skill-btn" onClick={()=>doProfileSkill(key)} disabled={blocked}
+                  style={(!isServoTurn&&cd<=0)?{opacity:.4}:{}}>
                   {label}
                   <span className="skill-cd">{cd>0?`${cd}t recarga`:`Nv.${sv[key].lvl}`}</span>
                 </button>
@@ -6334,7 +6474,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
       npLevel:bondToNP(bond.level),
       activeBuffs:[],activeDebuffs:[],
       cooldowns:Object.fromEntries((servoDef.activeSkills||[]).map(s=>[s.id,0])),
-      profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
+      profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0,ukiyoe:0,fundir:0},
     };
   }
 
@@ -6357,7 +6497,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
           npLevel:npLvl,
           activeBuffs:[],activeDebuffs:[],
           cooldowns:{natureza:0,rampage:0,forma:0},
-          profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0},
+          profileCooldowns:{manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0,ukiyoe:0,fundir:0},
         }];
     return{
       mapId,phase:1,maxPhases:map.phases,
@@ -6509,9 +6649,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap5&&nextPhase===8){setCamp(advanced);setStage('map5F8');return;}
     if(isMap5&&nextPhase===12){setCamp(advanced);setStage('map5F12');return;}
     if(isMap5&&nextPhase===14){setCamp(advanced);setStage('map5Dream1');return;}
-    if(isMap5&&[15,17].includes(nextPhase)){
-      setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map5Fixed');return;
-    }
+    if(isMap5&&nextPhase===15){setCamp(advanced);setStage('map5F15');return;}
+    if(isMap5&&nextPhase===17){setCamp(advanced);setStage('map5F17');return;}
     setCamp(advanced);setStage('map');
   }
 
@@ -6668,8 +6807,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mapId==='tortuoso'){setStage('commandSeal');return;} // Archer → Selo → mapa 4
     // Mapa 4 (Ninja Genji): vencer o boss mostra o diálogo de vitória da Ibaraki.
     if(mapId==='kurikara'){setStage('map4GenjiWin');return;}
-    // Mapa 5 (Go-Sanjo Falso): último mapa por ora — vencer encerra a jornada.
-    if(mapId==='kurikara_city'){finishCampaign(updatedCamp,true);return;}
+    // Mapa 5 (Go-Sanjo Falso): mostra o diálogo de vitória antes de encerrar.
+    if(mapId==='kurikara_city'){setStage('map5GosanjoWin');return;}
     finishCampaign(updatedCamp,true);
   }
 
@@ -6761,6 +6900,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mid==='tortuoso'){setStage('archerLoseStory');return;}
     if(mid==='tennobara'){setStage('nitroLoseStory');return;}
     if(mid==='kurikara'){setStage('map4GenjiLose');return;} // Ninja: diálogo de derrota (Shuten)
+    if(mid==='kurikara_city'){setStage('map5GosanjoLose');return;} // Go-Sanjo: diálogo de derrota (Shuten)
     setStage('bossLoseStory');
   }
 
@@ -6889,6 +7029,10 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map5F8')return <StoryScreen profile={profile} script={STORY_MAP5_F8} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
   if(stage==='map5F12')return <StoryScreen profile={profile} script={STORY_MAP5_F12} finishLabel="✦ Treino concluído: +1 Nível e +1 Bond!" onFinish={applyF12Reward}/>;
   if(stage==='map5Dream1')return <DreamNight1Screen onFinish={()=>setStage('map')}/>;
+  if(stage==='map5F15')return <StoryScreen profile={profile} script={STORY_MAP5_F15} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map5F17')return <StoryScreen profile={profile} script={STORY_MAP5_F17} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map5GosanjoWin')return <StoryScreen profile={profile} script={STORY_MAP5_GOSANJO_WIN} finishLabel="✦ Concluir a jornada" onFinish={()=>finishCampaign(camp,true)}/>;
+  if(stage==='map5GosanjoLose')return <StoryScreen profile={profile} script={STORY_MAP5_GOSANJO_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   if(stage==='map5Fixed')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
