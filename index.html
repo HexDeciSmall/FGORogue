@@ -241,6 +241,8 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .memory-screen.calm{animation:memCalm 6s ease infinite}
 @keyframes memCalm{0%,100%{background:linear-gradient(160deg,#0d1420,#1a1410)}50%{background:linear-gradient(160deg,#141c2a,#221a14)}}
 .memory-screen.glitch{animation:memGlitchBg .18s steps(2) infinite}
+.dream-night{background:radial-gradient(ellipse at 50% 30%,#141830,#0a0c1a 70%,#06070f)!important}
+.dream-night.calm .chat-bubble.mystic{border-color:rgba(120,140,200,.4)}
 @keyframes memGlitchBg{0%{background:#1a0808}50%{background:#0a0a18}100%{background:#180a0a}}
 .memory-art{max-width:min(92vw,640px);max-height:60vh;object-fit:contain;border:1px solid rgba(200,60,40,.5);border-radius:3px;box-shadow:0 0 50px rgba(180,40,20,.35);z-index:5}
 .memory-art.glitching{animation:artGlitch .16s steps(2) infinite}
@@ -2350,7 +2352,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.90</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v0.91</p>
       </div>
     </div>
   );
@@ -3977,6 +3979,148 @@ function MemoryScreen({onFinish}){
         </div>
       )}
 
+      <div className="nightmare-hint">▼ TOQUE PARA CONTINUAR ▼</div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// SONHO DA NOITE 1 (Fase 14 do mapa 5) — memória-pesadelo com glitch
+// ══════════════════════════════════════════════════════
+const SHUTEN_EXPR={
+  bleed:'assets/servos/shuten/shuten_bleed.png',
+  dor:'assets/servos/shuten/shuten_dor.png',
+  pena:'assets/servos/shuten/shuten_pena.png',
+  brava:'assets/servos/shuten/shuten_brava.png',
+};
+const TSUNA_EXPR={
+  bravo:'assets/servos/tsuna/tsuna_bravo.png',
+  neutro:'assets/servos/tsuna/tsuna_neutro.png',
+  serio:'assets/servos/tsuna/tsuna_serio.png',
+  off:'assets/servos/tsuna/tsuna_off.png',
+};
+const QIN_EXPR={
+  seria:'assets/servos/qin/qin_seria.png',
+  ppp:'assets/servos/qin/qin_ppp.png',
+  brava:'assets/servos/qin/qin_brava.png',
+};
+const DREAM_NIGHT1=[
+  {type:'narration',text:'Naquela noite, por entrar em um caminho estranho, você se viu em um enorme bosque de árvores gigantescas. Enquanto andava sem rumo, tentando se guiar entre os troncos, escuta o som de vozes.'},
+  {type:'qin',expr:'seria',text:'Então ela veio por aqui?'},
+  {type:'tsuna',expr:'serio',text:'Sim, ela estava ferida. Não deve ser capaz de se recuperar tão cedo — Sakata deu um golpe considerável nela.'},
+  {type:'qin',expr:'ppp',text:'Eeeh....'},
+  {type:'narration',text:'Enquanto evitava ser visto por aqueles dois — pela estranha sensação de que eram estranhamente não humanos — algo agarra sua perna.'},
+  {type:'narration',text:'Uma garota pequena, com o corpo ensanguentado, podia ser vista. Naquele momento, quase um grito escapou de sua boca pelo susto.'},
+  {type:'shuten',expr:'bleed',text:'Vai doer só um pouquinho....'},
+  {type:'master',text:'???'},
+  {type:'narration',text:'Um brilho estranho sai de um objeto esférico em sua mão. Com a escuridão, não podia ser distinguido — até que a luz da lua o iluminou: um crânio humano.'},
+];
+
+function DreamNight1Screen({onFinish}){
+  const msgs=DREAM_NIGHT1;
+  const[step,setStep]=useState(-1);
+  const[glitchStage,setGlitchStage]=useState(0);
+  const areaRef=useRef();
+  const inDream=step>=0&&step<msgs.length;
+  const inGlitch=step===msgs.length;
+  const awakening=step===msgs.length+1;
+  useEffect(()=>{if(areaRef.current)areaRef.current.scrollTop=areaRef.current.scrollHeight;},[step]);
+  function advance(){
+    if(inGlitch){
+      if(glitchStage<1)setGlitchStage(g=>g+1);
+      else setStep(s=>s+1);
+      return;
+    }
+    if(awakening){onFinish();return;}
+    setStep(s=>s+1);
+  }
+  const shown=inDream?msgs.slice(0,step+1):(step>=msgs.length?msgs:[]);
+  const renderMsg=(m,i)=>{
+    if(m.type==='narration')return <div key={i} className="chat-narration">{m.text}</div>;
+    if(m.type==='qin')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={QIN_EXPR[m.expr]||QIN_EXPR.seria} alt="?" style={{borderColor:'rgba(120,180,120,.5)'}} onError={e=>{e.target.style.display='none';}}/>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#8fce8f'}}>?????</div>
+          <div className="chat-bubble mystic">{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='tsuna')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={TSUNA_EXPR[m.expr]||TSUNA_EXPR.neutro} alt="?" style={{borderColor:'rgba(160,160,180,.5)'}} onError={e=>{e.target.style.display='none';}}/>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#b0b0c8'}}>????</div>
+          <div className="chat-bubble mystic">{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='shuten')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={SHUTEN_EXPR[m.expr]||SHUTEN_EXPR.bleed} alt="?" style={{borderColor:'rgba(150,80,180,.6)'}} onError={e=>{e.target.style.display='none';}}/>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'var(--oni-purple-light)'}}>????</div>
+          <div className="chat-bubble mystic">{m.text}</div>
+        </div>
+      </div>
+    );
+    return(
+      <div key={i} className="chat-msg right">
+        <div className="chat-avatar-q">?</div>
+        <div className="chat-body">
+          <div className="chat-name">MESTRE</div>
+          <div className="chat-bubble">{m.text}</div>
+        </div>
+      </div>
+    );
+  };
+  return(
+    <div className={`memory-screen dream-night ${inGlitch?'glitch':'calm'}`} onClick={advance}>
+      <div className={`memory-scanlines${inGlitch?' on':''}`}/>
+      {step===-1&&(
+        <div className="memory-text">
+          <div className="memory-narration" style={{color:'#a9b8e0',letterSpacing:3}}>— Noite 1 —</div>
+          <div className="memory-narration" style={{marginTop:12}}>
+            A noite desce, e você se acomoda confortavelmente na cama. O sono chega logo... talvez rápido demais.
+          </div>
+        </div>
+      )}
+      {(inDream||step>=msgs.length)&&!inGlitch&&!awakening&&(
+        <div className="chat-area" ref={areaRef} style={{maxWidth:600,width:'100%',maxHeight:'70vh'}}>
+          {shown.map(renderMsg)}
+        </div>
+      )}
+      {inGlitch&&(
+        <>
+          <img className="memory-art glitching" src={SHUTEN_EXPR.bleed} alt="Sonho"
+            onError={e=>{e.target.style.display='none';}}/>
+          <div className="memory-text">
+            <div className="memory-narration" style={{color:'#d09090'}}>
+              Seus ossos começam a doer. Depois do toque da garota, eles parecem querer sair da sua pele.
+            </div>
+            {glitchStage>=1&&<div className="memory-scream">AAAAAAGHHH!!!</div>}
+            {glitchStage>=1&&(
+              <div className="memory-narration" style={{marginTop:14,color:'#c08080'}}>
+                Com aquela dor insuportável, tudo apaga. Sua visão fica toda escura.
+              </div>
+            )}
+          </div>
+        </>
+      )}
+      {awakening&&(
+        <div className="memory-text">
+          <div className="memory-narration">
+            Você acorda no susto, todo suado na cama. Aquele sonho foi real demais.
+          </div>
+          <div className="chat-msg right" style={{justifyContent:'center',marginTop:20}}>
+            <div className="chat-avatar-q">?</div>
+            <div className="chat-body">
+              <div className="chat-name">MESTRE (pensa)</div>
+              <div className="chat-bubble action">( Meus ossos.... aquilo.... o que foi aquilo? )</div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="nightmare-hint">▼ TOQUE PARA CONTINUAR ▼</div>
     </div>
   );
@@ -6364,7 +6508,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap5&&nextPhase===6){setCamp(advanced);setStage('map5F6');return;}
     if(isMap5&&nextPhase===8){setCamp(advanced);setStage('map5F8');return;}
     if(isMap5&&nextPhase===12){setCamp(advanced);setStage('map5F12');return;}
-    if(isMap5&&[14,15,17].includes(nextPhase)){
+    if(isMap5&&nextPhase===14){setCamp(advanced);setStage('map5Dream1');return;}
+    if(isMap5&&[15,17].includes(nextPhase)){
       setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map5Fixed');return;
     }
     setCamp(advanced);setStage('map');
@@ -6743,6 +6888,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map5F6')return <StoryScreen profile={profile} script={STORY_MAP5_F6} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
   if(stage==='map5F8')return <StoryScreen profile={profile} script={STORY_MAP5_F8} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
   if(stage==='map5F12')return <StoryScreen profile={profile} script={STORY_MAP5_F12} finishLabel="✦ Treino concluído: +1 Nível e +1 Bond!" onFinish={applyF12Reward}/>;
+  if(stage==='map5Dream1')return <DreamNight1Screen onFinish={()=>setStage('map')}/>;
   if(stage==='map5Fixed')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
