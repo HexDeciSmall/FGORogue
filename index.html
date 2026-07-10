@@ -2423,7 +2423,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.03</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.04</p>
       </div>
     </div>
   );
@@ -4214,7 +4214,7 @@ function DreamNight1Screen({onFinish}){
     if(m.type==='narration')return <div key={i} className="chat-narration">{m.text}</div>;
     if(m.type==='qin')return(
       <div key={i} className="chat-msg left">
-        <img className="chat-avatar" src={QIN_EXPR[m.expr]||QIN_EXPR.seria} alt="?" style={{borderColor:'rgba(120,180,120,.5)'}} onError={e=>{e.target.style.display='none';}}/>
+        <img className="chat-avatar" src={QIN_EXPR[m.expr]||QIN_EXPR.seria} alt="?" style={{borderColor:'rgba(120,180,120,.5)'}} onError={e=>{e.target.onerror=null;e.target.src=QIN.assets.avatar||QIN.assets.default;}}/>
         <div className="chat-body">
           <div className="chat-name" style={{color:'#8fce8f'}}>?????</div>
           <div className="chat-bubble mystic">{m.text}</div>
@@ -4986,6 +4986,17 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   const curOrderEntry=turnOrder[orderPtr];
   const isServoTurn=!curOrderEntry||curOrderEntry.kind==='servo';
 
+  // Sincroniza o servo controlado com a ENTRADA da ordem de iniciativa: na vez da Ibaraki,
+  // o jogador controla a Ibaraki; na vez da Sith, controla a Sith. Sem troca livre.
+  useEffect(()=>{
+    if(curOrderEntry&&curOrderEntry.kind==='servo'&&typeof curOrderEntry.ref==='number'){
+      const tgt=curOrderEntry.ref;
+      if(tgt!==activeIdx&&party[tgt]&&!party[tgt].defeated&&party[tgt].hp>0){
+        setActiveIdx(tgt);
+      }
+    }
+  },[orderPtr,curOrderEntry]);
+
   function spawnFx(targetId,text,kind='dmg'){
     const id=Date.now()+Math.random();
     const left=22+Math.random()*50; // posição horizontal variada p/ números não se sobreporem
@@ -5275,15 +5286,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     return false;
   }
 
-  // Party: troca o servo ativo (ação livre, não encerra o turno)
+  // Party: a troca de servo agora é AUTOMÁTICA pela ordem de iniciativa — cada servo
+  // age apenas na SUA vez. A troca manual foi desativada para respeitar o turn order.
   function switchServo(idx){
-    if(idx===activeIdx||result)return;
-    // Trocar de servo é ação livre, mas só na vez do servo (não durante a cadeia inimiga).
-    if(!isServoTurn||enemyChainLock.current){setNotif('Aguarde sua vez na ordem de iniciativa!');return;}
-    if(!party[idx]||party[idx].defeated||party[idx].hp<=0){setNotif('Este servo não pode entrar!');return;}
-    setActiveIdx(idx);
-    const nm=(PLAYABLE_SERVOS[party[idx].id]||IBARAKI).name;
-    addLog(`🔄 ${nm} assume a linha de frente!`,'player');
+    setNotif('Cada servo age na sua própria vez na ordem de iniciativa!');
   }
   // encerraria o turno é consumida pelo atordoamento: decrementa e passa a vez.
   function servoStunnedThisTurn(){
@@ -6413,10 +6419,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             const active=i===activeIdx;
             const isTurn=isServoTurn&&active;
             return(
-              <div key={i} onClick={()=>!dead&&!active&&switchServo(i)}
+              <div key={i}
                 className={fx.some(f=>f.targetId==='servo'&&active&&(f.kind==='dmg'||f.kind==='crit'))?'shake':''}
                 style={{position:'relative',flex:isParty?'1':'0 0 auto',maxWidth:isParty?170:220,
-                  cursor:dead||active?'default':'pointer',opacity:dead?0.35:active?1:0.72,
+                  cursor:'default',opacity:dead?0.35:active?1:0.72,
                   transition:'all .2s',transform:active?'translateY(-4px)':'none'}}>
                 {active&&fx.filter(f=>f.targetId==='servo').map(f=>(
                   <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'10%',zIndex:5}}>{f.text}</span>
@@ -6661,6 +6667,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
       if((fresh.sq||0)<5){setNotif('Saint Quartz insuficiente! O descanso custa 5 SQ.');return;}
       const p={...fresh,sq:fresh.sq-5};
       saveProfile(p);setProfile(p);
+      setNotif('−5 SQ · Descansando no Kogarashi-kan...');
       setStage('map5Inn');
       return;
     }
@@ -6950,23 +6957,34 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   // Após o diálogo de vitória contra o Go-Sanjo: segue para o Mapa 6 (Kurikara II),
   // carregando a party de 2 com o estado atual.
   function onGosanjoWinContinue(){
-    const carriedParty=(camp.party||[camp.servo]).map(m=>({...m}));
-    const next=buildCampForMap(carriedParty[0],'kurikara2',null,false,
-      carriedParty.map(m=>PLAYABLE_SERVOS[m.id]||IBARAKI));
-    next.party=carriedParty;
-    next.servo=carriedParty[0];
+    const prev=camp.party||[camp.servo];
+    const findState=id=>prev.find(m=>m.id===id);
+    const next=buildCampForMap(IBARAKI,'kurikara2',null,false,[IBARAKI,SITH_PLAYABLE]);
+    next.party=next.party.map(m=>{
+      const old=findState(m.id);
+      return old?{...m,hp:old.hp,npBar:old.npBar}:m;
+    });
+    next.servo=next.party[0];
     next.sithJoined=true;
+    next.goldenRule=camp.goldenRule||0;
     setCamp(next);
     setStage('map5Map6Transition');
   }
 
   function onGenjiWinContinue(){
-    const carriedParty=(camp.party||[camp.servo]).map(m=>({...m}));
-    const next=buildCampForMap(carriedParty[0],'kurikara_city',null,false,
-      carriedParty.map(m=>PLAYABLE_SERVOS[m.id]||IBARAKI));
-    next.party=carriedParty;
-    next.servo=carriedParty[0];
+    // O mapa 5 sempre tem a party Ibaraki + Sith. Reconstrói explicitamente com os
+    // defs corretos (evita duplicar a Ibaraki se a carriedParty vier inconsistente),
+    // preservando HP/NP atuais de cada uma.
+    const prev=camp.party||[camp.servo];
+    const findState=id=>prev.find(m=>m.id===id);
+    const next=buildCampForMap(IBARAKI,'kurikara_city',null,false,[IBARAKI,SITH_PLAYABLE]);
+    next.party=next.party.map(m=>{
+      const old=findState(m.id);
+      return old?{...m,hp:old.hp,npBar:old.npBar}:m;
+    });
+    next.servo=next.party[0];
     next.sithJoined=true;
+    next.goldenRule=camp.goldenRule||0;
     setCamp(next);
     setStage('map4Map5Transition');
   }
@@ -7149,10 +7167,10 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
           <p style={{color:'#8fd68f',fontSize:'.78rem',marginBottom:2}}>Recuperou {heal} HP (40%).</p>
           <p style={{color:'var(--gold)',fontSize:'.78rem',marginBottom:16}}>+20% de Defesa no próximo combate.</p>
           <button className="btn btn-red btn-full" onClick={()=>{
-            const healed=Math.round((camp.servo.hpMax||0)*0.40);
-            const leader={...camp.servo,hp:clamp(camp.servo.hp+healed,0,camp.servo.hpMax)};
-            const newParty=(camp.party&&camp.party.length)?[leader,...camp.party.slice(1)]:[leader];
-            setCamp({...camp,servo:leader,party:newParty,planBonus:{...(camp.planBonus||{}),defUp:20}});
+            // Cura 40% do HP MÁXIMO de TODOS os membros da party (não só o líder).
+            const heal40=m=>({...m,hp:clamp((m.hp||0)+Math.round((m.hpMax||0)*0.40),0,m.hpMax||0)});
+            const newParty=(camp.party&&camp.party.length)?camp.party.map(heal40):[heal40(camp.servo)];
+            setCamp({...camp,servo:newParty[0],party:newParty,planBonus:{...(camp.planBonus||{}),defUp:20}});
             setStage('map');
           }}>Prosseguir →</button>
         </div>
