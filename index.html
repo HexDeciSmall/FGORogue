@@ -1733,11 +1733,13 @@ const ENEMIES_DATA={
 const ENEMY_IDS=Object.keys(ENEMIES_DATA);
 function phaseMult(p){return 1+0.12*(p-1)}
 function rollGroupSize(phase){
+  // Grupos menores para um combate mais justo (servos vão até nv25 e são poucos).
+  // Antes chegava a 7-9 inimigos; agora o teto é 4, com maioria de 1-2.
   const tables={
-    early:[[1,55],[2,30],[3,12],[4,3]],
-    mid:[[1,25],[2,30],[3,25],[4,12],[5,6],[6,2]],
-    late:[[1,8],[2,20],[3,28],[4,22],[5,14],[6,6],[7,2]],
-    boss:[[1,3],[2,10],[3,20],[4,22],[5,18],[6,12],[7,8],[8,5],[9,2]],
+    early:[[1,70],[2,26],[3,4]],
+    mid:[[1,45],[2,38],[3,15],[4,2]],
+    late:[[1,30],[2,40],[3,24],[4,6]],
+    boss:[[1,20],[2,38],[3,30],[4,12]],
   };
   const bracket=phase<=3?'early':phase<=6?'mid':phase<=9?'late':'boss';
   const t=tables[bracket];
@@ -2421,7 +2423,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.00</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.02</p>
       </div>
     </div>
   );
@@ -3770,6 +3772,21 @@ const ENEMIES_MAP5={
     description:'Feiticeiro do Clã. Pouca vida, mas fortalece os aliados e atordoa com selos espirituais.'},
 };
 
+// ── INIMIGOS DO MAPA 6: Kurikara II (o vácuo após a queda do Clã Genji) ──
+// Sem o Clã controlando a cidade, criaturas corrompidas e criminosos tomam as ruas.
+const ENEMIES_MAP6={
+  ghoul:{id:'ghoul',name:'Ghoul',hp:9000,atk:4400,agility:34,strPts:50,
+    description:'Resto humano corrompido pela mácula de Nara. Vagueia faminto pelas ruas sem lei.'},
+  bandido_armado:{id:'bandido_armado',name:'Bandido Armado',hp:9800,atk:5000,agility:48,strPts:52,
+    description:'Saqueador aproveitando o vácuo de poder. Bem equipado e sem escrúpulos.'},
+  samurai_errante:{id:'samurai_errante',name:'Samurai Errante',hp:15000,atk:6000,agility:55,strPts:60,
+    defensePassive:15, // disciplina marcial: mitigação leve
+    description:'Guerreiro sem senhor após a queda do Clã. Dano alto e técnica refinada — perigo real.'},
+  ladrao_carteira:{id:'ladrao_carteira',name:'Ladrão de Carteira',hp:7000,atk:3200,agility:80,strPts:42,
+    stealQP:2500, // se DERROTAR o jogador, rouba 2500 QP
+    description:'Larápio veloz das ruas caóticas. Se te derrotar, foge com 2500 QP da sua bolsa!'},
+};
+
 // ══════════════════════════════════════════════════════
 // MAPA 3 — CAMINHO TORTUOSO (inimigos)
 // ══════════════════════════════════════════════════════
@@ -3854,6 +3871,15 @@ const MAPS={
     fixedPhases:[1,4,6,8,12,14,15,17],
     boss:'gosanjo_shadow',
   },
+  kurikara2:{
+    id:'kurikara2',name:'Kurikara II',phases:12,
+    enemies:ENEMIES_MAP6,
+    // Pós-queda do Clã Genji: a cidade sem lei. Fases fixas: 1,3,5,7,9,11 (roteiros a definir).
+    // Boss na fase 12 — placeholder (Go-Sanjo) até o autor definir o boss real.
+    intro:null,introFinishLabel:'⚔️ Voltar às ruas',
+    fixedPhases:[1,3,5,7,9,11],
+    boss:'gosanjo_shadow',
+  },
 };
 
 // ══════════════════════════════════════════════════════
@@ -3885,6 +3911,7 @@ const CAMPAIGN_CHECKPOINTS=[
   {mapId:'tortuoso',name:'Caminho Tortuoso',phases:19,unlock:'defeat_nitro',boss:'Baobhan Sith'},
   {mapId:'kurikara',name:'Arredores de Kurikara',phases:16,unlock:'defeat_archer',boss:'Ninja Genji',party2:true},
   {mapId:'kurikara_city',name:'Kurikara (Cidade)',phases:18,unlock:'defeat_ninja',boss:'Go-Sanjo Falso',party2:true},
+  {mapId:'kurikara2',name:'Kurikara II',phases:12,unlock:'defeat_gosanjo',boss:'???',party2:true},
 ];
 
 // Gera um encontro usando a tabela de inimigos do mapa atual.
@@ -4527,6 +4554,8 @@ const PATH_THEMES={
   kurikara:[['left','🏯','Arredores'],['center','🛤️','Estrada Real'],['right','🌾','Campos Ermos']],
   // Mapa 5 — Kurikara (cidade, era Heian): distritos, ruas e avenidas.
   kurikara_city:[['left','🏘️','Distrito dos Artesãos'],['center','🏮','Avenida Suzaku'],['right','🍶','Ruas do Mercado']],
+  // Mapa 6 — Kurikara II (pós-queda do Clã Genji): a cidade sem lei.
+  kurikara2:[['left','🏚️','Distrito Saqueado'],['center','🕯️','Avenida às Escuras'],['right','💀','Becos Sem Lei']],
 };
 
 function MapScreen({camp,onChoosePath,onNavigate}){
@@ -4539,6 +4568,7 @@ function MapScreen({camp,onChoosePath,onNavigate}){
   const isBossPhase=camp.towerMode?(phase>=maxPhases)
     :(camp.mapId==='kurikara')?false
     :(camp.mapId==='kurikara_city')?(phase>=maxPhases)
+    :(camp.mapId==='kurikara2')?(phase>=maxPhases)
     :(phase>=maxPhases-1);
   return(
     <div className="screen">
@@ -4763,7 +4793,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       atkScaled:Math.round(b.atkScaled*atkM),
       damage:Math.round((b.damage||0)*atkM),
     });
-    if(mid==='kurikara_city'){
+    if(mid==='kurikara_city'||mid==='kurikara2'){ // kurikara2: boss placeholder até definição
       return T({
         ...GOSANJO,instanceId:'gosanjo_boss',
         maxHp:GOSANJO.hp,currentHp:GOSANJO.hp,
@@ -4921,15 +4951,21 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // servos e inimigos conforme a iniciativa — não é mais "1 servo, 1 inimigo".
   function rollInitiative(partyArr,enemyArr){
     const entries=[];
+    // Servos são seres heroicos: naturalmente mais rápidos que inimigos comuns.
+    // Ganham um bônus fixo de velocidade que garante agir antes da ralé.
+    const SERVO_SPEED_BONUS=25;
     partyArr.forEach((m,i)=>{
       if(m.defeated||m.hp<=0)return;
       const agi=(m.attributes?.agility?.points)||30;
-      entries.push({kind:'servo',ref:i,init:agi+1+Math.floor(Math.random()*20),name:(PLAYABLE_SERVOS[m.id]||IBARAKI).name});
+      entries.push({kind:'servo',ref:i,init:agi+SERVO_SPEED_BONUS+1+Math.floor(Math.random()*20),name:(PLAYABLE_SERVOS[m.id]||IBARAKI).name});
     });
     enemyArr.forEach((e,i)=>{
       if(e.currentHp<=0)return;
       const agi=e.agility||e.attributes?.agility?.points||25;
-      entries.push({kind:'enemy',ref:e.instanceId,init:agi+1+Math.floor(Math.random()*20),name:e.name});
+      // Inimigos comuns não recebem bônus (servos agem antes). Bosses recebem um bônus
+      // parcial para preservar seu design: um boss veloz ainda pode superar os servos.
+      const bonus=e.isBoss?18:0;
+      entries.push({kind:'enemy',ref:e.instanceId,init:agi+bonus+1+Math.floor(Math.random()*20),name:e.name});
     });
     // Maior iniciativa primeiro; empate desempata a favor dos servos
     entries.sort((a,b)=>b.init-a.init||(a.kind==='servo'?-1:1));
@@ -6711,6 +6747,11 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap5&&nextPhase===14){setCamp(advanced);setStage('map5Dream1');return;}
     if(isMap5&&nextPhase===15){setCamp(advanced);setStage('map5F15');return;}
     if(isMap5&&nextPhase===17){setCamp(advanced);setStage('map5F17');return;}
+    // Mapa 6 (Kurikara II): fases fixas 1,3,5,7,9,11 (roteiros a definir pelo autor).
+    const isMap6=(baseCamp.mapId||'bosque')==='kurikara2';
+    if(isMap6&&[1,3,5,7,9,11].includes(nextPhase)){
+      setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map6Fixed');return;
+    }
     setCamp(advanced);setStage('map');
   }
 
@@ -6885,6 +6926,19 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     setStage('map');
   }
 
+  // Após o diálogo de vitória contra o Go-Sanjo: segue para o Mapa 6 (Kurikara II),
+  // carregando a party de 2 com o estado atual.
+  function onGosanjoWinContinue(){
+    const carriedParty=(camp.party||[camp.servo]).map(m=>({...m}));
+    const next=buildCampForMap(carriedParty[0],'kurikara2',null,false,
+      carriedParty.map(m=>PLAYABLE_SERVOS[m.id]||IBARAKI));
+    next.party=carriedParty;
+    next.servo=carriedParty[0];
+    next.sithJoined=true;
+    setCamp(next);
+    setStage('map5Map6Transition');
+  }
+
   function onGenjiWinContinue(){
     const carriedParty=(camp.party||[camp.servo]).map(m=>({...m}));
     const next=buildCampForMap(carriedParty[0],'kurikara_city',null,false,
@@ -7015,6 +7069,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(camp.mapId==='tortuoso')return <StoryScreen profile={profile} script={STORY_MAP3_ARCHER_INTRO} finishLabel="⚔️ Encarar o horror" onFinish={()=>setStage('archerEncounter')}/>;
     if(camp.mapId==='kurikara')return <SplashScreen art={NINJA.assets.encounter} title="NINJA DO CLÃ GENJI" sub="Assassino — Arredores de Kurikara" onFinish={()=>setStage('boss')}/>;
     if(camp.mapId==='kurikara_city')return <SplashScreen art={GOSANJO.assets.encounter} title="GO-SANJO FALSO: SOMBRA" sub="A Sombra que Veste a Face de um Imperador" onFinish={()=>setStage('boss')}/>;
+    if(camp.mapId==='kurikara2')return <SplashScreen art={GOSANJO.assets.encounter} title="???" sub="Kurikara II — Boss a definir" onFinish={()=>setStage('boss')}/>;
     return <SplashScreen art={NITRO.assets.encounter} title="⚙️ NITRO-TYPE" sub="Samurai Mecanizado — Ameaça Anacrônica" onFinish={()=>setStage('boss')}/>;
   }
   // Splash da Archer (após o diálogo pré-boss)
@@ -7091,8 +7146,36 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map5Dream1')return <DreamNight1Screen onFinish={()=>setStage('map')}/>;
   if(stage==='map5F15')return <StoryScreen profile={profile} script={STORY_MAP5_F15} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
   if(stage==='map5F17')return <StoryScreen profile={profile} script={STORY_MAP5_F17} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
-  if(stage==='map5GosanjoWin')return <StoryScreen profile={profile} script={STORY_MAP5_GOSANJO_WIN} finishLabel="✦ Concluir a jornada" onFinish={()=>finishCampaign(camp,true)}/>;
+  if(stage==='map5GosanjoWin')return <StoryScreen profile={profile} script={STORY_MAP5_GOSANJO_WIN} finishLabel="Continuar →" onFinish={onGosanjoWinContinue}/>;
   if(stage==='map5GosanjoLose')return <StoryScreen profile={profile} script={STORY_MAP5_GOSANJO_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
+  if(stage==='map5Map6Transition')return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2.5rem',marginBottom:12}}>🏮</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:8}}>KURIKARA II</h2>
+        <p style={{color:'var(--parchment)',fontSize:'.85rem',marginBottom:6}}>
+          O Go-Sanjo caiu — e com ele, o punho do Clã Genji sobre a cidade. Mas o vácuo de poder não trouxe paz: ghouls vagam pelas ruas, saqueadores dividem os despojos, e lâminas sem senhor procuram um novo propósito.
+        </p>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.75rem',fontStyle:'italic',marginTop:14}}>
+          Kurikara está livre... e mais perigosa do que nunca.
+        </p>
+        <button className="btn btn-red btn-full" style={{marginTop:20}} onClick={()=>{setCamp(c=>({...c,pendingFixedPhase:1}));setStage('map6Fixed');}}>⚔️ Voltar às ruas</button>
+      </div>
+    </div>
+  );
+  if(stage==='map6Fixed')return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2rem',marginBottom:10}}>📜</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>KURIKARA II — FASE {camp.pendingFixedPhase}</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',fontStyle:'italic',marginBottom:16}}>
+          [ Cena fixa a ser escrita ]<br/>
+          Esta é uma fase fixa de história do Mapa 6. O roteiro será adicionado aqui depois.
+        </p>
+        <button className="btn btn-red btn-full" onClick={()=>setStage('map')}>Prosseguir →</button>
+      </div>
+    </div>
+  );
   if(stage==='map5Fixed')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
