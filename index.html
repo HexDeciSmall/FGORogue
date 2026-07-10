@@ -2423,7 +2423,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.04</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.05</p>
       </div>
     </div>
   );
@@ -3874,11 +3874,11 @@ const MAPS={
   kurikara2:{
     id:'kurikara2',name:'Kurikara II',phases:12,
     enemies:ENEMIES_MAP6,
-    // Pós-queda do Clã Genji: a cidade sem lei. Fases fixas: 1,3,5,7,9,11 (roteiros a definir).
-    // Boss na fase 12 — placeholder (Go-Sanjo) até o autor definir o boss real.
+    // Pós-queda do Clã Genji: a cidade sem lei. Fases fixas: 1,3,5,7,9,11 (história).
+    // SEM boss — a fase 12 encerra a jornada por ora (a trama segue para Shinohara).
     intro:null,introFinishLabel:'⚔️ Voltar às ruas',
     fixedPhases:[1,3,5,7,9,11],
-    boss:'gosanjo_shadow',
+    boss:null,
   },
 };
 
@@ -4160,6 +4160,97 @@ function MemoryScreen({onFinish}){
 }
 
 // ══════════════════════════════════════════════════════
+// FASES FIXAS DO MAPA 6 — KURIKARA II (pós-queda do Clã Genji)
+// ══════════════════════════════════════════════════════
+const STORY_MAP6_F1={
+  start:[
+    {type:'narration',text:'Assim que a Sombra do Go-Sanjo Falso desaparece, o clima se torna mais estável. Uma presença clara de servo surge — Chigure se aproximava.'},
+    {type:'okuni',expr:'feliz',name:'CHIGURE (?)',text:'Então de fato havia dois servos com você. Mas vejo que escolheu a melhor das opções.'},
+    {type:'okuni',expr:'normal',name:'CHIGURE (?)',text:'Desculpe pelo teste. Eu queria ver suas ações de perto — se você era alguém disposto a retirar o mal que habita esta cidade, ou só mais um desmiolado sangue-frio, igual aos que estão em Nara.'},
+    {type:'okuni',expr:'fofa',name:'IZUMO NO OKUNI',text:'Prazer. Sou a Serva da Classe Caster, Izumo no Okuni.'},
+    {type:'master',text:'Prazer. Vou me apresentar devidamente desta vez: meu nome é ----'},
+    {type:'ibaraki',expr:'exp4',text:'Esquece isso, Mestre. Vou acabar com a raça dela agora.'},
+    {type:'okuni',expr:'preocupada',name:'OKUNI',text:'Nananinanão, eu não sou uma serva do tipo combate! Eu não daria conta contra vocês duas....'},
+    {type:'narration',text:'Enquanto ela fala isso, uma figura de aproximadamente dois metros de altura, toda amadurecida, aparece atrás dela.'},
+    {type:'image',src:'assets/servos/okuni/okuni_zanzaburou.jpg'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Agora estamos em pé de igualdade. Este é o Zanzaburou.'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Claro, somos todos amigos aqui.'},
+    {type:'narration',text:'Aquele samurai colossal atrás dela exalava uma enorme pressão. Não parecia um humano, nem mesmo um servo — mas uma marionete de puro poder bruto.'},
+  ],
+};
+
+const STORY_MAP6_F3={
+  start:[
+    {type:'master',text:'Por mais que os desertores do Clã Genji/Minamoto tenham sido expulsos da cidade, ainda existem muitos bandidos que eles recrutaram por aqui...'},
+    {type:'archer',expr:'sith_ow',text:'O melhor disso é que definitivamente são apenas a ralé. Posso ganhar uma folga?'},
+    {type:'master',text:'..........'},
+    {type:'master',text:'Sua natureza não parece ser a de uma boa moça.'},
+    {type:'archer',expr:'sith_pis',text:'Como não? Eu sou uma fada honrada e zelosa. Se minha mãe estivesse aqui, você veria o que é uma pessoa má e maligna de verdade, hehe.'},
+    {type:'master',text:'Hmmm..... Acredito.'},
+    {type:'masterThought',text:'Ela teve que puxar essa má criação de alguém, né?'},
+    {type:'archer',expr:'sith_ahh',text:'Cuidado para seus pensamentos não vazarem. Má intenção e sarcasmo são coisas com que eu lido muito bem — principalmente quando piso e esmago o símbolo da virilidade masculina.'},
+    {type:'narration',text:'Claramente uma ameaça velada. E, como ela disse, não parecia mentira. Qualquer ação poderia resultar numa catástrofe onde não existiria mais uma próxima geração do Mestre.'},
+  ],
+};
+
+const STORY_MAP6_F7={
+  start:[
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Mestre, Mestre, Mestre!'},
+    {type:'master',text:'Sim?'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Senta aqui. Tenho que te passar certas informações agora que somos aliados. Você se aproveita da minha boa vontade e eu me aproveito da sua força e burrice.'},
+    {type:'okuni',expr:'think',name:'OKUNI',text:'Era isso mesmo o ditado? Todo dia sai de casa um malandro e um otário?'},
+    {type:'master',text:'......?'},
+    {type:'master',text:'Assim, de graça?'},
+    {type:'okuni',expr:'fofa',name:'OKUNI',text:'..... Achei que gostava desse tipo de tratamento. Você tem duas companhias extremamente complicadas, de personalidades espinhosas — achei que fosse masoquista....... estou errada?'},
+    {type:'master',text:'........ Maldito seja o destino que me prendeu nesta vida...........'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Certo, o primeiro detalhe que tenho que lhe passar é! Tan tan tan! A situação!'},
+    {type:'okuni',expr:'off',name:'OKUNI',text:'Há pelo menos seis meses, alguém conseguiu um item lendário vindo da China. Dizem ser o Mandato do Céu, o Selo Imperial de Jade, e blá blá blá.... Ainda não descobri quem foi. Mas usou — e usou de forma errada.'},
+    {type:'okuni',expr:'off',name:'OKUNI',text:'O Selo Imperial é um dos fragmentos da vontade inconsciente coletiva da humanidade de evitar a extinção — Alaya. As lendas dizem que quem tem o Selo pode se tornar um governante; e, por consequência, aquele que governa é aquele que pode mudar o destino de toda uma raça, para o bem ou para o mal.'},
+    {type:'okuni',expr:'preocupada',name:'OKUNI',text:'E, como pode ver, a pessoa escolheu o caminho do mal. Mas como o item tem conexão com Alaya, ela não podia permitir uma burrada dessas. Então armou um esquema de "verdadeiro sucessor": escolheu sete pessoas dentro do território de Nara e Kyoto para ver quem poderá usar o Selo.....'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Aí que entra a gente. Eu sou uma Caster invocada sem um mestre — e claro, não preciso de um! Não venha com essa carinha de cachorrinho, que não vou te dar permissão de ser o meu!'},
+    {type:'master',text:'....... Nem passou pela minha cabeça.'},
+    {type:'okuni',expr:'brava',name:'OKUNI',text:'Mas..... mas você não tem o grande objetivo de ser o mestre do harém histórico, com várias servas de eras e reinos diferentes?!!'},
+    {type:'master',text:'Mas que -?!'},
+    {type:'okuni',expr:'fofa',name:'OKUNI',text:'Perdi a linha, perdão. Mas voltando.'},
+    {type:'okuni',expr:'off',name:'OKUNI',text:'Como uma serva sem mestre, eu não deveria estar aqui. O que indica que o ritual de sucessão está adicionando mais variáveis à equação. E quando te vi, notei: você não é um dos mestres escolhidos. Isso indica muita coisa. As coisas estão esquentando, e muito, em Nara e Kyoto.... não se surpreenda em ver um Servo da Classe Ruler aparecendo.'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'O que acha? Deseja se juntar a mim nesta investigação?'},
+    {type:'master',text:'Caí de cabeça em algo complicado...... Não recusaria sua ajuda.'},
+  ],
+};
+
+const STORY_MAP6_F9={
+  start:[
+    {type:'archer',expr:'sith_ow',text:'Decidiu então embarcar nesta batalha de vez? O que vai ganhar com isso?'},
+    {type:'master',text:'Algumas coisas estão erradas comigo e preciso resolver isso para voltar para casa. Não que eu me lembre por quê... mas quero voltar para casa...'},
+    {type:'archer',expr:'sith_pis',text:'Eeeh.....'},
+    {type:'ibaraki',expr:'exp2',text:'Qual vai ser o próximo destino?'},
+    {type:'master',text:'A cidade a seguir é Shinohara. Conforme a Okuni falou, um mestre está fazendo acampamento lá.'},
+    {type:'ibaraki',expr:'exp2',text:'E a pirralha? Ela vai com a gente?'},
+    {type:'master',text:'Sim. Ela disse que está preparando algo grande para a gente se locomover.'},
+    {type:'ibaraki',expr:'exp1',text:'Um carro de boi?! Já aviso: sou fraca contra carne de boi. Posso, sem querer, devorar um sem perceber. Fica o aviso.'},
+    {type:'archer',expr:'sith_ow',text:'......'},
+    {type:'master',text:'........'},
+  ],
+};
+
+const STORY_MAP6_F11={
+  start:[
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Tan tan tan!'},
+    {type:'okuni',expr:'brava',name:'OKUNI',text:'Lhes apresento a máquina lendária, criada para locomover meu teatro Kabuki por todo o Japão: Zanzaburou Estilo Bunraku!'},
+    {type:'narration',text:'Aquele enorme samurai estava sendo usado para puxar o que parecia ser um jinrikisha grande — quase uma carruagem ocidental, toda coberta —, mas puxado não por cavalos, e sim por um homem forte e sarado....'},
+    {type:'archer',expr:'sith_ow',text:'Eu não entro nessa coisa.'},
+    {type:'ibaraki',expr:'exp2',text:'........ Sem carne de boi......'},
+    {type:'master',text:'Mas nem fodendo.......'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Tcharam!'},
+    {type:'master',text:'Isso não vai chamar atenção?'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Jamais. Zanzaburou é perito em manobras de alta velocidade e em se esconder. Está devidamente testado.'},
+    {type:'archer',expr:'sith_ow',text:'* A Sith se desmaterializa. *'},
+    {type:'narration',text:'Talvez o problema não fosse a capacidade dele, mas a vergonha de acompanhar aquilo. Não era algo bom de se lembrar.'},
+    {type:'narration',text:'Então o grupo parte para a próxima cidade.'},
+  ],
+};
+
+// ══════════════════════════════════════════════════════
 // SONHO DA NOITE 1 (Fase 14 do mapa 5) — memória-pesadelo com glitch
 // ══════════════════════════════════════════════════════
 const SHUTEN_EXPR={
@@ -4292,6 +4383,113 @@ function DreamNight1Screen({onFinish}){
             <div className="chat-body">
               <div className="chat-name">MESTRE (pensa)</div>
               <div className="chat-bubble action">( Meus ossos.... aquilo.... o que foi aquilo? )</div>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="nightmare-hint">▼ TOQUE PARA CONTINUAR ▼</div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// SONHO DA NOITE 2 (Fase 5 do mapa 6) — a memória do ensino médio, a queda e "Pai!!!"
+// ══════════════════════════════════════════════════════
+const DREAM_NIGHT2=[
+  {type:'narration',text:'Uma escola podia ser vista. Alunos correndo de um lado para o outro na pista de corrida anexa à escola. Clima de verão, com as cigarras cantando.'},
+  {type:'girl',text:'Hey, %$#@-@, vamos sair da sala. Vamos ficar para trás.'},
+  {type:'boy',text:'Tá, tá, já vou.'},
+  {type:'narration',text:'Aquela dupla passa a andar pelos corredores longos. E a cada passo o garoto fica mais para trás. O corredor, por mais longo que fosse, ficava ainda mais distante.'},
+  {type:'narration',text:'Mais distante. Até que o fim daquele corredor não podia mais ser visto.'},
+  {type:'boy',text:'Mas que-?'},
+  {type:'narration',text:'A vista começa a escurecer rapidamente. Então um som de baque seco pôde ser ouvido: o corpo do garoto cai.'},
+  {type:'girl',text:'H-Hey! Hey! Alguém-!'},
+  {type:'narration',text:'Algumas memórias rasas começam a surgir — alguns nomes, ruas, até mesmo o rosto de seus colegas. Algo que estava sendo difícil de lembrar... até que uma voz doce e melancólica grita, quebrando aquele fluxo de memórias.'},
+];
+
+function DreamNight2Screen({onFinish}){
+  const msgs=DREAM_NIGHT2;
+  const[step,setStep]=useState(-1);
+  const[gs,setGs]=useState(0);
+  const areaRef=useRef();
+  const inDream=step>=0&&step<msgs.length;
+  const inClimax=step===msgs.length;
+  useEffect(()=>{if(areaRef.current)areaRef.current.scrollTop=areaRef.current.scrollHeight;},[step]);
+  function advance(){
+    if(inClimax){ if(gs<2)setGs(g=>g+1); else onFinish(); return; }
+    setStep(s=>s+1);
+  }
+  const shown=inDream?msgs.slice(0,step+1):[];
+  const renderMsg=(m,i)=>{
+    if(m.type==='narration')return <div key={i} className="chat-narration">{m.text}</div>;
+    if(m.type==='girl')return(
+      <div key={i} className="chat-msg left">
+        <div className="chat-avatar-unknown" style={{background:'rgba(150,120,180,.3)'}}>♀</div>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#c9a0d0'}}>GAROTA</div>
+          <div className="chat-bubble mystic">{m.text}</div>
+        </div>
+      </div>
+    );
+    return(
+      <div key={i} className="chat-msg right">
+        <div className="chat-avatar-q">?</div>
+        <div className="chat-body">
+          <div className="chat-name">GAROTO</div>
+          <div className="chat-bubble">{m.text}</div>
+        </div>
+      </div>
+    );
+  };
+  return(
+    <div className={`memory-screen dream-night ${inClimax&&gs===0?'glitch':'calm'}`} onClick={advance}>
+      <div className={`memory-scanlines${inClimax?' on':''}`}/>
+      {step===-1&&(
+        <div className="memory-text">
+          <div className="memory-narration" style={{color:'#a9b8e0',letterSpacing:3}}>— Sonho —</div>
+          <div className="memory-narration" style={{marginTop:12}}>
+            O sono desce pesado, e uma lembrança antiga se abre como uma porta que deveria estar trancada.
+          </div>
+        </div>
+      )}
+      {inDream&&(
+        <div className="chat-area" ref={areaRef} style={{maxWidth:600,width:'100%',maxHeight:'70vh'}}>
+          {shown.map(renderMsg)}
+        </div>
+      )}
+      {inClimax&&gs===0&&(
+        <div className="memory-text">
+          <div className="memory-scream" style={{fontSize:'3rem'}}>PAI!!!</div>
+          <div className="memory-scream" style={{fontSize:'2rem',opacity:.7,animationDelay:'.1s'}}>PAI!!!</div>
+          <div className="memory-scream" style={{fontSize:'2.6rem',opacity:.5,animationDelay:'.2s'}}>PAI!!!</div>
+          <div className="memory-narration" style={{marginTop:16,color:'#d0a0a0'}}>
+            Aquela voz doce e melancólica rasga o ar.
+          </div>
+        </div>
+      )}
+      {inClimax&&gs===1&&(
+        <div className="memory-text">
+          <div className="memory-narration" style={{color:'#e0a060'}}>
+            As memórias do ensino médio foram rapidamente bagunçadas, como folhas ao vento. Então, uma cena: um castelo em chamas.
+          </div>
+          <div className="memory-narration" style={{marginTop:12,color:'#d09070'}}>
+            Os vários tatames do local com labaredas até o teto, a arquitetura quase desabando. E uma garota chorando, com um cadáver a seus pés — lágrimas desciam como um rio violento e turbulento.
+          </div>
+          <div className="memory-narration" style={{marginTop:12,color:'#c08080'}}>
+            Mais gritos podiam ser ouvidos. Talvez até mais altos que o próprio caos lá fora.
+          </div>
+        </div>
+      )}
+      {inClimax&&gs===2&&(
+        <div className="memory-text">
+          <div className="memory-narration">
+            O calor se intensifica. Então aquele sono, que parecia durar mais de uma noite, o força a despertar.
+          </div>
+          <div className="chat-msg right" style={{justifyContent:'center',marginTop:20}}>
+            <div className="chat-avatar-q">?</div>
+            <div className="chat-body">
+              <div className="chat-name">MESTRE (pensa)</div>
+              <div className="chat-bubble action">( Uma filha...? Um castelo em chamas...? Nada disso faz sentido. )</div>
             </div>
           </div>
         </div>
@@ -4568,7 +4766,7 @@ function MapScreen({camp,onChoosePath,onNavigate}){
   const isBossPhase=camp.towerMode?(phase>=maxPhases)
     :(camp.mapId==='kurikara')?false
     :(camp.mapId==='kurikara_city')?(phase>=maxPhases)
-    :(camp.mapId==='kurikara2')?(phase>=maxPhases)
+    :(camp.mapId==='kurikara2')?false
     :(phase>=maxPhases-1);
   return(
     <div className="screen">
@@ -4793,7 +4991,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       atkScaled:Math.round(b.atkScaled*atkM),
       damage:Math.round((b.damage||0)*atkM),
     });
-    if(mid==='kurikara_city'||mid==='kurikara2'){ // kurikara2: boss placeholder até definição
+    if(mid==='kurikara_city'){ // Go-Sanjo Falso (mapa 5)
       return T({
         ...GOSANJO,instanceId:'gosanjo_boss',
         maxHp:GOSANJO.hp,currentHp:GOSANJO.hp,
@@ -6636,7 +6834,9 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
       const c=buildCampForMap(servo,mapId,null,false,[IBARAKI,SITH_PLAYABLE]);
       c.sithJoined=true;
       setCamp(c);
-      // Pula a intro do bosque; entra direto no mapa (checkpoint = começo do mapa).
+      // Mapas 5 e 6 têm a Fase 1 como cena fixa — dispara o diálogo de abertura.
+      if(mapId==='kurikara_city'){setStage('map5F1');return;}
+      if(mapId==='kurikara2'){setStage('map6F1');return;}
       setStage('map');
       return;
     }
@@ -6775,11 +6975,14 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap5&&nextPhase===14){setCamp(advanced);setStage('map5Dream1');return;}
     if(isMap5&&nextPhase===15){setCamp(advanced);setStage('map5F15');return;}
     if(isMap5&&nextPhase===17){setCamp(advanced);setStage('map5F17');return;}
-    // Mapa 6 (Kurikara II): fases fixas 1,3,5,7,9,11 (roteiros a definir pelo autor).
+    // Mapa 6 (Kurikara II): fases fixas 1,3,5,7,9,11.
     const isMap6=(baseCamp.mapId||'bosque')==='kurikara2';
-    if(isMap6&&[1,3,5,7,9,11].includes(nextPhase)){
-      setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map6Fixed');return;
-    }
+    if(isMap6&&nextPhase===1){setCamp(advanced);setStage('map6F1');return;}
+    if(isMap6&&nextPhase===3){setCamp(advanced);setStage('map6F3');return;}
+    if(isMap6&&nextPhase===5){setCamp(advanced);setStage('map6Dream2');return;}
+    if(isMap6&&nextPhase===7){setCamp(advanced);setStage('map6F7');return;}
+    if(isMap6&&nextPhase===9){setCamp(advanced);setStage('map6F9');return;}
+    if(isMap6&&nextPhase===11){setCamp(advanced);setStage('map6F11');return;}
     setCamp(advanced);setStage('map');
   }
 
@@ -7108,7 +7311,6 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(camp.mapId==='tortuoso')return <StoryScreen profile={profile} script={STORY_MAP3_ARCHER_INTRO} finishLabel="⚔️ Encarar o horror" onFinish={()=>setStage('archerEncounter')}/>;
     if(camp.mapId==='kurikara')return <SplashScreen art={NINJA.assets.encounter} title="NINJA DO CLÃ GENJI" sub="Assassino — Arredores de Kurikara" onFinish={()=>setStage('boss')}/>;
     if(camp.mapId==='kurikara_city')return <SplashScreen art={GOSANJO.assets.encounter} title="GO-SANJO FALSO: SOMBRA" sub="A Sombra que Veste a Face de um Imperador" onFinish={()=>setStage('boss')}/>;
-    if(camp.mapId==='kurikara2')return <SplashScreen art={GOSANJO.assets.encounter} title="???" sub="Kurikara II — Boss a definir" onFinish={()=>setStage('boss')}/>;
     return <SplashScreen art={NITRO.assets.encounter} title="⚙️ NITRO-TYPE" sub="Samurai Mecanizado — Ameaça Anacrônica" onFinish={()=>setStage('boss')}/>;
   }
   // Splash da Archer (após o diálogo pré-boss)
@@ -7198,10 +7400,16 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
         <p style={{color:'var(--parchment-dark)',fontSize:'.75rem',fontStyle:'italic',marginTop:14}}>
           Kurikara está livre... e mais perigosa do que nunca.
         </p>
-        <button className="btn btn-red btn-full" style={{marginTop:20}} onClick={()=>{setCamp(c=>({...c,pendingFixedPhase:1}));setStage('map6Fixed');}}>⚔️ Voltar às ruas</button>
+        <button className="btn btn-red btn-full" style={{marginTop:20}} onClick={()=>setStage('map6F1')}>⚔️ Voltar às ruas</button>
       </div>
     </div>
   );
+  if(stage==='map6F1')return <StoryScreen profile={profile} script={STORY_MAP6_F1} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map6F3')return <StoryScreen profile={profile} script={STORY_MAP6_F3} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map6Dream2')return <DreamNight2Screen onFinish={()=>setStage('map')}/>;
+  if(stage==='map6F7')return <StoryScreen profile={profile} script={STORY_MAP6_F7} finishLabel="Aceitar a aliança →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map6F9')return <StoryScreen profile={profile} script={STORY_MAP6_F9} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map6F11')return <StoryScreen profile={profile} script={STORY_MAP6_F11} finishLabel="Partir para Shinohara →" onFinish={()=>finishCampaign(camp,true)}/>;
   if(stage==='map6Fixed')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
