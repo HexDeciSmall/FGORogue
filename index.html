@@ -2423,7 +2423,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.02</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.03</p>
       </div>
     </div>
   );
@@ -4866,6 +4866,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Bônus da Aria/plan só se aplicam ao líder na Campanha (não há party lá).
     const hpBonus=isLeader?ariaHpBonus:0;
     const npAdd=isLeader?planNpGain:0;
+    // GOLDEN RULE: bônus acumulativo de +5% ATK e +5% HP por fase de combate vencida na run.
+    const grStacks=camp.goldenRule||0;
+    const grMult=1+0.05*grStacks;
     // Monta os buffs VISÍVEIS na HUD a partir do planBonus (descanso/preparar).
     let buffs=[];
     if(isLeader){
@@ -4876,12 +4879,17 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         if(camp.planBonus.defUp)buffs.push({type:'defense_up',value:camp.planBonus.defUp,turns:3,id:'plan_def'});
       }
     }
+    const baseHpMax=(m.hpMax||def.getHp(lvl))+hpBonus;
+    const grHpMax=Math.round(baseHpMax*grMult);
+    // Preserva o HP proporcional: se o membro entra com HP cheio, continua cheio (agora maior).
+    const curHp=(m.hp!=null?m.hp:def.getHp(lvl))+hpBonus;
+    const wasFullHp=curHp>=baseHpMax;
     return{
       ...m,
       level:lvl,
-      attackBase:def.getAtk(lvl),
-      hpMax:(m.hpMax||def.getHp(lvl))+hpBonus,
-      hp:(m.hp!=null?m.hp:def.getHp(lvl))+hpBonus,
+      attackBase:Math.round(def.getAtk(lvl)*grMult),
+      hpMax:grHpMax,
+      hp:wasFullHp?grHpMax:Math.round(curHp*grMult),
       npBar:clamp((m.npBar||0)+npAdd,0,100),
       npLevel:m.npLevel||bondToNP(loadBond(def.id).level),
       activeBuffs:buffs,activeDebuffs:[],stunned:0,
@@ -6253,11 +6261,15 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
       // Atualiza a party persistida: o servo ativo recebe o estado final; os demais mantêm HP/NP
       const finalParty=party.map((m,i)=>i===activeIdx?{...finalServo,npLevel:bondToNP(newBond.level)}:m);
+      // GOLDEN RULE: +1 stack por fase de COMBATE vencida (bosses não contam como "fase comum",
+      // mas também engrossam a lenda — contam 1 stack ao cair).
+      const newGolden=(camp.goldenRule||0)+1;
       const updatedCamp={...camp,
         party:finalParty,
         servo:finalParty[0]||{...finalServo,npLevel:bondToNP(newBond.level)},
         bond:newBond,
         npLevel:bondToNP(newBond.level),
+        goldenRule:newGolden,
         sqEarned:(camp.sqEarned||0)+sqGain,
         qpEarned:(camp.qpEarned||0)+qpGain,
         xpEarned:(camp.xpEarned||0)+xpGain,
@@ -6267,6 +6279,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
       setDialogue({text:SDEF.dialogue.win,portrait:SDEF.assets.win||SDEF.assets.default});
       addLog(`✦ Vitória! +${sqGain} SQ · +${qpGain} QP · +${xpGain} XP · +30 Bond`+(newXP.level>servoLvl?` · ✨ SERVO Nv.${newXP.level}!`:''),'system');
+      addLog(`🌟 Golden Rule Nv.${newGolden}: +${newGolden*5}% ATK e HP no próximo combate!`,'system');
       setCamp(updatedCamp);
       setTimeout(()=>onWin(updatedCamp),2000);
 
@@ -6440,7 +6453,15 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             <span className="cinzel" style={{color:'var(--gold)',fontSize:'.8rem',letterSpacing:2}}>
               {SDEF.name.toUpperCase()} <span style={{color:'var(--red-bright)',fontSize:'.7rem'}}>{SDEF.className} · Nv.{servoLvl}</span>
             </span>
-            <span style={{fontSize:'.7rem',color:'var(--parchment-dark)'}}>Turno {turn}</span>
+            <span style={{fontSize:'.7rem',color:'var(--parchment-dark)',display:'flex',gap:8,alignItems:'center'}}>
+              {(camp.goldenRule||0)>0&&(
+                <span title={`Golden Rule: +${(camp.goldenRule||0)*5}% ATK e HP acumulados nesta jornada`}
+                  style={{color:'#e6c34c',fontFamily:'Cinzel,serif',fontWeight:600,border:'1px solid rgba(230,195,76,.5)',borderRadius:3,padding:'1px 6px',background:'rgba(230,195,76,.12)'}}>
+                  🌟 +{(camp.goldenRule||0)*5}%
+                </span>
+              )}
+              <span>Turno {turn}</span>
+            </span>
           </div>
           <div style={{marginTop:4}}>
             <Bar label="HP" current={servo.hp} max={servo.hpMax} type="hp"/>
