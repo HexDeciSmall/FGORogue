@@ -2492,7 +2492,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.06</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.07</p>
       </div>
     </div>
   );
@@ -2695,6 +2695,8 @@ const CODEX=[
      {title:'A JORNADA E O NP',body:'Um dia, toda a sua aldeia foi destruída da noite para o dia por um deus maligno que uma amiga sacerdotisa libertara. Sozinha, Okuni perseguiu esse deus por muitas províncias — mas jamais conseguiu destruí-lo, e esse arrependimento se tornou a essência dela como Espírito Heroico.\n\nSeu Fantasma Nobre, "Okuni Repertoire: Kabuki of the Izumo Wild God", é a primeira e mais poderosa de suas dezoito danças: com o Zanzaburou e uma odachi, tece um Grande Campo de Selamento que aprisiona todo o mal. Muda de forma e características mesmo após ser invocado — reflexo de quem sempre busca novas expressões.'},
    ],
    va:'Sumire Uesaka'},
+  {id:'kiara',cat:'servo',name:'Sessyoin Kiara',classe:'Moon Cancer',
+   art:'assets/servos/kiara/kiara_profile.png',
    reveal:p=>(p.gachaOwned||[]).includes('kiara_summer'),
    info:'Uma Pseudo-Serva imbuída com Yaobikuni do folclore japonês. Bodhisattva demoníaca que ergue e brinca com todos os seres vivos na palma da mão. Fala de "Amor" e "Salvação", mas busca apenas o próprio prazer. Obtida na Invocação (banner Summer).',
    details:[
