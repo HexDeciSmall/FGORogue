@@ -1308,6 +1308,73 @@ const SITH_PLAYABLE={
 };
 PLAYABLE_SERVOS.sith_archer=SITH_PLAYABLE;
 
+// ── IZUMO NO OKUNI (Caster) — aliada do Mapa 6 ──
+// Ayakashi-Hunter: Sacerdotisa do Selamento e progenitora do Kabuki. Suporte/dano
+// com o Código Místico Zanzaburou. Stats do FGO: Str D, End D, Agi C+, Mana B, Luck A, NP B.
+const OKUNI_PLAYABLE={
+  id:'okuni_caster',name:'Izumo no Okuni',className:'Caster',
+  getAtk:lvl=>Math.round(linear(lvl,1490,8942)),
+  getHp:lvl=>Math.round(linear(lvl,1880,11756)),
+  attributes:{
+    strength:{rank:'D',points:rankToPoints('D')},
+    agility:{rank:'C+',points:rankToPoints('C')+5},
+    luck:{rank:'A',points:rankToPoints('A')},
+    endurance:{rank:'D',points:rankToPoints('D')},
+    mana:{rank:'B',points:rankToPoints('B'),gainPercent:manaGain('B')},
+    np:{rank:'B',points:rankToPoints('B')},
+  },
+  passiveSkills:[
+    {id:'territory_kagura',name:'Criação de Território (Kagura) C',effect:{type:'np_regen',value:4}},
+    {id:'item_mech',name:'Construção de Itens (Mecânica) C',effect:{type:'defense_passive',value:8}},
+  ],
+  activeSkills:[
+    {id:'novo_kabuki',name:'Novo Okuni Kabuki',rank:'EX',
+      desc:'Ataque ↑ (3t) e carrega a própria Barra de NP',
+      effectType:'buff_atk_np',
+      getEffect:lvl=>({atkUp:linear(lvl,20,40),npCharge:linear(lvl,20,40),dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    {id:'marionete_kagura',name:'Marionete Kagura',rank:'A',
+      desc:'O Zanzaburou golpeia um inimigo (dano alto)',
+      effectType:'direct_dmg_antihero',
+      getEffect:lvl=>({strDmgPct:linear(lvl,50,100)}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    {id:'sacerdotisa_selo',name:'Sacerdotisa do Selo',rank:'B+',
+      desc:'Cura a própria vida e aumenta o Ataque (2t)',
+      effectType:'buff_atk_heal',
+      getEffect:lvl=>({heal:linear(lvl,1500,4000),atkUp:linear(lvl,10,20),dur:2}),
+      getCD:lvl=>stdCD(lvl,9,8,7)},
+  ],
+  np:{
+    name:'Okuni Repertoire: Kabuki of the Izumo Wild God',type:'Anti-Army',isAoE:true,effectType:'dmg_defdown',
+    levels:{
+      1:{dmgPct:450,defDown:20,defDownTurns:3},
+      2:{dmgPct:600,defDown:20,defDownTurns:3},
+      3:{dmgPct:750,defDown:25,defDownTurns:3},
+      4:{dmgPct:900,defDown:25,defDownTurns:3},
+      5:{dmgPct:1050,defDown:30,defDownTurns:3},
+    },
+  },
+  dialogue:{
+    summon:'Caster, Izumo no Okuni! Vim ver o mundo exterior com meus próprios olhos. Vamos nos divertir, Mestre?',
+    battle:'Que comece o espetáculo! Zanzaburou, ao palco!',
+    lose:'Ah... o pano cai cedo demais... que apresentação frustrante...',
+    win:'Bravo, bravo! Um belo número, não acha? Ufufu~',
+    np:'Dezoito danças, e esta é a primeira e mais forte! Dance comigo até o selo se fechar... Kabuki of the Izumo Wild God!',
+    skill:'Absorvo tudo o que há de novo e transformo em arte!',
+    mapDone:'O palco desta cidade se encerra. Próxima parada, próximo público!',
+  },
+  assets:{
+    default:'assets/servos/okuni/okuni_normal.png',
+    battle:'assets/servos/okuni/okuni_normal.png',
+    combat:'assets/servos/okuni/okuni_zanzaburou.jpg',
+    np:'assets/servos/okuni/okuni_feliz.png',
+    win:'assets/servos/okuni/okuni_feliz.png',
+    lose:'assets/servos/okuni/okuni_preocupada.png',
+    encounter:'assets/servos/okuni/okuni_zanzaburou.jpg',
+  },
+};
+PLAYABLE_SERVOS.okuni_caster=OKUNI_PLAYABLE;
+
 // Lista dos servos jogáveis (para Perfil e Torre), com o critério de desbloqueio.
 // unlock:null = sempre disponível; senão, exige a conquista correspondente.
 const PLAYABLE_ROSTER=[
@@ -1315,6 +1382,7 @@ const PLAYABLE_ROSTER=[
   {id:'qin_liangyu',short:'qin',unlock:'defeat_qin'},
   {id:'deon_saber',short:'deon',unlock:'defeat_nitro'},
   {id:'sith_archer',short:'archer',unlock:'defeat_archer'},
+  {id:'okuni_caster',short:'okuni',unlock:'defeat_gosanjo'},
 ];
 
 // ══════════════════════════════════════════════════════
@@ -1911,6 +1979,7 @@ const ACHIEVEMENTS=[
   {id:'defeat_archer',name:'Derrote a Archer Corrompida',desc:'Silencie a Fada Carniceira do Caminho Tortuoso.',qp:10000,sq:20,icon:'🏹'},
   {id:'defeat_ninja',name:'Derrote o Ninja do Clã Genji',desc:'Supere o assassino dos Arredores de Kurikara.',qp:15000,sq:26,icon:'🥷'},
   {id:'defeat_gosanjo',name:'Derrote o Go-Sanjo Falso',desc:'Dissipe a Sombra que veste a face de um imperador, em Kurikara.',qp:25000,sq:40,icon:'🏯'},
+  {id:'clear_kurikara2',name:'A Cidade Libertada',desc:'Ajude a limpar Kurikara e parta rumo a Shinohara ao lado de Okuni.',qp:30000,sq:45,icon:'🎭'},
 ];
 
 // Concede uma conquista (se ainda não obtida): paga a recompensa e marca no profile.
@@ -2423,7 +2492,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.05</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.06</p>
       </div>
     </div>
   );
@@ -2444,6 +2513,10 @@ const CODEX=[
       body:'Em Kurikara, dormindo na pousada Kogarashi-kan, o Mestre reviveu uma memória enterrada. Num bosque de árvores gigantes, ouviu duas figuras não-humanas — uma delas a General Qin, outra um homem — falando de "uma garota ferida" golpeada por Sakata. Então, uma pequena Oni ensanguentada agarrou sua perna. Com um crânio humano na mão e um "vai doer só um pouquinho", ela tocou seus ossos.\n\nA dor foi insuportável: seus ossos pareciam querer sair da própria pele. Ele desmaiou. Ao acordar suado na cama, entendeu que aquilo não era um sonho comum, mas a origem de algo dentro de si — a semente da sua skill "Ossos que não são meus". A Oni era a Shuten Douji, a mesma "Voz Desconhecida" que zomba a cada queda dele.'},
      {title:'AS DATAS NÃO BATEM',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
       body:'Diante da carcaça desintegrante do Go-Sanjo, algo se agitou na memória enevoada do Mestre. Ele reconheceu — ou quase reconheceu — o nome. "Caso seja quem eu penso que seja, não tem relação com o Clã Minamoto de fato. As datas não batem." De onde ele conhece esse nome? Como um estranho sem memórias saberia identificar a incoerência histórica de uma sombra sem alma? Cada resposta que ele encontra em Kurikara acende duas novas perguntas sobre o que ele realmente é.'},
+     {title:'O SELO IMPERIAL E A SUCESSÃO',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_kurikara2),
+      body:'Aliado à Okuni, o Mestre descobriu a raiz da crise: há cerca de seis meses, alguém obteve o Selo Imperial de Jade (o Mandato do Céu) vindo da China e o usou de forma errada. O Selo é um fragmento de Alaya — a vontade coletiva inconsciente da humanidade de evitar a extinção — e diz-se que quem o possui pode se tornar um governante capaz de mudar o destino de toda uma raça. Como o portador escolheu o mal, foi armado um ritual de sucessão: sete escolhidos em Nara e Kyoto disputariam o direito de usar o Selo.\n\nA revelação mais inquietante: o Mestre NÃO é um dos sete escolhidos. Sua presença ali é uma variável fora da equação — mais um sinal de que ele não pertence a este tempo ou lugar. E há o aviso de Okuni: um Servo da Classe Ruler pode estar prestes a aparecer.'},
+     {title:'O SONHO QUE NÃO ERA SEU',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_kurikara2),
+      body:'Numa noite em Kurikara, o Mestre sonhou com uma cena que parecia sua — um garoto de ensino médio, num verão de cigarras, que desaba num corredor infinito. Mas então veio o grito de uma menina ("Pai!!!") e um castelo em chamas, com uma garota chorando sobre um cadáver. Ao despertar, ele teve certeza: aquilo NÃO era a sua memória. A voz, o castelo, a filha — nada daquilo lhe pertencia. Memórias alheias parecem se infiltrar nele, como se sua mente fosse um recipiente onde ecoam vidas que não são a sua. De quem eram aquelas lembranças?'},
      {title:'SKILLS DE MESTRE',body:'Habilidades que o Mestre usa em combate como ações livres. As três primeiras estão sempre disponíveis; as duas últimas permanecem seladas até que algo dentro dele desperte.',items:[
        {name:'Mana Buster',rank:'C',text:'Através de uma conexão estranha com "@$%=%", ele pode infundir a própria mana no servo para gerar um aumento exponencial de energia, causando alto poder de dano.'},
        {name:'Transferência de Mana',rank:'D',text:'Através da conexão com um servo, ele pode infundir mana através do contato físico.'},
@@ -2599,8 +2672,29 @@ const CODEX=[
      {title:'AS DATAS NÃO BATEM',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
       body:'Após derrotá-lo, o Mestre hesitou: "Go-Sanjo... caso seja quem eu penso que seja, não tem relação com o Clã Minamoto de fato. As datas não batem." A Ibaraki desdenhou do inimigo, dizendo que ele "não exerceu nem uma parcela dos verdadeiros ancestrais" — que "os cães do imperador perderam as presas". O verdadeiro Go-Sanjo, a identidade por trás da sombra e o motivo de ele ter sido erguido ali permanecem um enigma que a história ainda não explicou.'},
    ]},
-  {id:'kiara',cat:'servo',name:'Sessyoin Kiara',classe:'Moon Cancer',
-   art:'assets/servos/kiara/kiara_profile.png',
+  {id:'chigure',cat:'npc',name:'"Takefusa Chigure"',classe:'???',
+   art:'assets/servos/okuni/okuni_encounter.jpg',
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_ninja),
+   info:'A misteriosa "filha" do dono da pousada Kogarashi-kan, em Kurikara. Alegre, atrapalhada e cheia de deslizes suspeitos — afirma se chamar Takefusa Chigure, mas quase se apresenta com outro nome. Sabe mais do que deixa transparecer, inclusive sobre o Mestre e suas servas espirituais.',
+   details:[
+     {title:'A HOSPEDEIRA SUSPEITA',body:'Recebeu o Mestre na pousada com um sorriso e um disfarce cheio de furos: disse ser filha de um homem que nunca teve filhos, quase revelou o próprio nome ("Cas-...") e percebeu, sem esforço, que o Mestre viajava acompanhado por duas presenças invisíveis — chegou a preparar "um quarto para três". Vende informações valiosas (às vezes cobrando dez Saint Quartz que discretamente devolve), sempre com bom humor e um objetivo oculto.'},
+     {title:'ALGO NÃO BATE',body:'Suas informações sobre o Clã Minamoto, o ritual de Nara e o Go-Sanjo são precisas demais para uma simples hospedeira. O Mestre desconfia desde o primeiro instante — "algo não está certo". Quem é ela de verdade, e por que testa o Mestre de perto, é um mistério que só o tempo (e a queda do Go-Sanjo) revelará.'},
+   ]},
+  {id:'okuni',cat:'servo',name:'Izumo no Okuni',classe:'Caster',
+   art:'assets/servos/okuni/okuni_zanzaburou.jpg',
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
+   info:'A serva por trás do disfarce de "Chigure": a Caster Izumo no Okuni, progenitora das danças Kabuki e, em segredo, uma Ayakashi-Hunter — Sacerdotisa do Selamento que sela e destrói os demônios deste mundo. Alegre, curiosa e insaciável por novidades, alia-se ao Mestre para investigar o ritual de sucessão.',
+   params:[
+     {label:'Força',rank:'D'},{label:'Resistência',rank:'D'},{label:'Agilidade',rank:'C+'},
+     {label:'Mana',rank:'B'},{label:'Sorte',rank:'A'},{label:'NP',rank:'B'},
+   ],
+   details:[
+     {title:'A ARTISTA DE IZUMO',body:'Uma artista do período Azuchi-Momoyama, tida como a progenitora das primeiras danças Kabuki, que ao longo dos séculos se tornaram o Kabuki atual. Diz-se que era sacerdotisa do santuário de Izumo e viajou por várias províncias apresentando suas danças — extremamente populares, quase hipnóticas. Quando as autoridades julgaram que perturbavam a moral pública, ela teria desaparecido sem deixar rastro.\n\nAdora novidades: ao ser invocada, absorve costumes e expressões da época e os sublima como arte própria — daí seu jeito peculiar de falar, cheio de palavras estrangeiras impróprias para sua origem.'},
+     {title:'A CAÇADORA DE AYAKASHI',body:'Seu segredo mais importante: sob a artista existe uma Sacerdotisa do Selamento, que sela e destrói demônios. Ayakashi-Hunter, Izumo no Okuni! Nascida numa vila de Izumo que produzia essas sacerdotisas (vistas como hereges), foi sequestrada ainda criança e submetida a um treinamento cruel como sacerdotisa descartável. Nunca conheceu o rosto dos pais — mas cresceu corajosa e alegre, sem se deixar distorcer pelo infortúnio.'},
+     {title:'ZANZABUROU',body:'O guerreiro mecânico que a segue era, na origem, o cadáver de um deus antigo (Ama-no-Sakagami) selado dentro de Izumo. Ao remodelá-lo em seu Código Místico pessoal, Okuni fez o deus perder seu poder original. Ainda que seja apenas um fantoche, o Zanzaburou parece proteger Okuni por vontade própria — com vontade própria.'},
+     {title:'A JORNADA E O NP',body:'Um dia, toda a sua aldeia foi destruída da noite para o dia por um deus maligno que uma amiga sacerdotisa libertara. Sozinha, Okuni perseguiu esse deus por muitas províncias — mas jamais conseguiu destruí-lo, e esse arrependimento se tornou a essência dela como Espírito Heroico.\n\nSeu Fantasma Nobre, "Okuni Repertoire: Kabuki of the Izumo Wild God", é a primeira e mais poderosa de suas dezoito danças: com o Zanzaburou e uma odachi, tece um Grande Campo de Selamento que aprisiona todo o mal. Muda de forma e características mesmo após ser invocado — reflexo de quem sempre busca novas expressões.'},
+   ],
+   va:'Sumire Uesaka'},
    reveal:p=>(p.gachaOwned||[]).includes('kiara_summer'),
    info:'Uma Pseudo-Serva imbuída com Yaobikuni do folclore japonês. Bodhisattva demoníaca que ergue e brinca com todos os seres vivos na palma da mão. Fala de "Amor" e "Salvação", mas busca apenas o próprio prazer. Obtida na Invocação (banner Summer).',
    details:[
@@ -2844,7 +2938,7 @@ function CodexScreen({onNavigate,profile}){
 function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
   // Party: até 3 servos distintos (ids curtos). O 1º escolhido é o líder.
   const[partySel,setPartySel]=useState(['ibaraki']);
-  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE,kiara:GACHA_SERVOS.kiara_summer,skadi:GACHA_SERVOS.skadi_summer,okita:GACHA_SERVOS.okita_saber,okita_alter:GACHA_SERVOS.okita_alter};
+  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE,okuni:OKUNI_PLAYABLE,kiara:GACHA_SERVOS.kiara_summer,skadi:GACHA_SERVOS.skadi_summer,okita:GACHA_SERVOS.okita_saber,okita_alter:GACHA_SERVOS.okita_alter};
   const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',kiara:'kiara_summer',skadi:'skadi_summer',okita:'okita_saber',okita_alter:'okita_alter'};
   const done=profile.achievements||{};
   const owned=profile.gachaOwned||[];
@@ -4489,7 +4583,7 @@ function DreamNight2Screen({onFinish}){
             <div className="chat-avatar-q">?</div>
             <div className="chat-body">
               <div className="chat-name">MESTRE (pensa)</div>
-              <div className="chat-bubble action">( Uma filha...? Um castelo em chamas...? Nada disso faz sentido. )</div>
+              <div className="chat-bubble action">( Aquela voz... aquele castelo em chamas... não eram meus. Aquilo não era a minha memória. Então de quem...? )</div>
             </div>
           </div>
         </div>
@@ -7409,7 +7503,11 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map6Dream2')return <DreamNight2Screen onFinish={()=>setStage('map')}/>;
   if(stage==='map6F7')return <StoryScreen profile={profile} script={STORY_MAP6_F7} finishLabel="Aceitar a aliança →" onFinish={()=>setStage('map')}/>;
   if(stage==='map6F9')return <StoryScreen profile={profile} script={STORY_MAP6_F9} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
-  if(stage==='map6F11')return <StoryScreen profile={profile} script={STORY_MAP6_F11} finishLabel="Partir para Shinohara →" onFinish={()=>finishCampaign(camp,true)}/>;
+  if(stage==='map6F11')return <StoryScreen profile={profile} script={STORY_MAP6_F11} finishLabel="Partir para Shinohara →" onFinish={()=>{
+    const res=grantAchievement('clear_kurikara2');
+    if(res.granted)setProfile(res.profile);
+    finishCampaign(camp,true);
+  }}/>;
   if(stage==='map6Fixed')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
