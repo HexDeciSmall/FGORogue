@@ -468,6 +468,14 @@ const IBARAKI={
     lose:'assets/servos/ibaraki/ibaraki_lose.png',
     encounter:'assets/servos/ibaraki/ibaraki_encounter.png',
   },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) ──
+  // idle = loop de espera · attack = ataque/skill · np = Fantasma Nobre.
+  // Quando presentes, o combate usa estes no lugar do busto estático.
+  sprites:{
+    idle:'assets/servos/ibaraki/ibaraki_espera.gif',
+    attack:'assets/servos/ibaraki/ibaraki_ataque.gif',
+    np:'assets/servos/ibaraki/ibaraki_np.gif',
+  },
 };
 
 // ── EXPRESSÕES DA IBARAKI (para os diálogos da história) ──
@@ -1980,6 +1988,7 @@ const ACHIEVEMENTS=[
   {id:'defeat_ninja',name:'Derrote o Ninja do Clã Genji',desc:'Supere o assassino dos Arredores de Kurikara.',qp:15000,sq:26,icon:'🥷'},
   {id:'defeat_gosanjo',name:'Derrote o Go-Sanjo Falso',desc:'Dissipe a Sombra que veste a face de um imperador, em Kurikara.',qp:25000,sq:40,icon:'🏯'},
   {id:'clear_kurikara2',name:'A Cidade Libertada',desc:'Ajude a limpar Kurikara e parta rumo a Shinohara ao lado de Okuni.',qp:30000,sq:45,icon:'🎭'},
+  {id:'defeat_shunoban',name:'Derrote o Ciclope Vermelho',desc:'Abata Shunoban, o terror de olho único da estrada de Shinohara.',qp:35000,sq:50,icon:'👁️'},
 ];
 
 // Concede uma conquista (se ainda não obtida): paga a recompensa e marca no profile.
@@ -2492,7 +2501,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.08</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.11</p>
       </div>
     </div>
   );
@@ -3738,6 +3747,42 @@ const GOSANJO={
     np:'assets/servos/gosanjo/gosanjo_encounter.jpg',
   },
 };
+
+// ── BOSS DO MAPA 7: Shunoban, o Ciclope Vermelho ──
+// Tanque de dano bruto: HP massivo, golpes fortes e controle pesado (stun).
+// Sem multi-ataque; a ameaça vem do dano por golpe e da chance de atordoar a party.
+const SHUNOBAN={
+  id:'shunoban',name:'Shunoban, o Ciclope Vermelho',className:'Berserker',isBoss:true,
+  hp:180000,attack:2600,
+  attributes:{
+    strength:{rank:'A+',points:60},
+    agility:{rank:'D',points:20}, // lento — servos geralmente agem antes
+    luck:{rank:'C',points:30},
+    endurance:{rank:'A+',points:60},
+    mana:{rank:'C',points:30,gainPercent:1.8},
+    np:{rank:'B',points:40},
+  },
+  npRegenPerTurn:4,
+  defensePassive:20,
+  skills:{
+    // Ataque de Terror: golpe forte com 60% de atordoar (CD 3t)
+    terror:{cd:3,dmgMult:1.4,stunChance:60,stunTurns:1},
+  },
+  // NP Visão Pavorosa: dano AoE massivo + zera o NP da party + 50% de atordoar cada um
+  np:{name:'Visão Pavorosa',dmgMult:2.6,isAoE:true,drainNP:true,stunChance:50,stunTurns:1},
+  dialogue:{
+    intro:'GRRAAAAWR!! Carne... carne fresca para o olho que tudo vê!',
+    terror:'OLHE PARA MIM! CONGELE DE PAVOR!',
+    np:'Meu olho... vê o MEDO em vocês! VISÃO PAVOROSA!',
+    defeated:'O... olho... escurece... a montanha... silencia...',
+  },
+  assets:{
+    encounter:'assets/servos/shunoban/shunoban.jpg',
+    battle:'assets/servos/shunoban/shunoban.jpg',
+    combat:'assets/servos/shunoban/shunoban.jpg',
+    np:'assets/servos/shunoban/shunoban.jpg',
+  },
+};
 // Boss final: rápida, ataca 2x por turno (Riding), com kit de controle pesado.
 // Muito letal — exige Servo Nv.10 e boas Perks. HP moderado (é ágil, não tanque).
 const ARCHER={
@@ -3883,6 +3928,21 @@ const ENEMIES_MAP6={
     description:'Larápio veloz das ruas caóticas. Se te derrotar, foge com 2500 QP da sua bolsa!'},
 };
 
+// ── INIMIGOS DO MAPA 7: estrada para Shinohara (youkai selvagens) ──
+const ENEMIES_MAP7={
+  ghoul_superior:{id:'ghoul_superior',name:'Ghoul Superior',hp:13000,atk:6200,agility:50,strPts:54,
+    description:'Uma evolução dos ghouls comuns. Tudo equilibrado — resistência, dano e velocidade medianos, sem fraquezas óbvias.'},
+  javali:{id:'javali',name:'Javali Gigante',hp:26000,atk:8000,agility:18,strPts:66,
+    defensePassive:10,
+    description:'Besta colossal da montanha. Lentíssimo, mas com HP imenso e uma investida devastadora.'},
+  kappa:{id:'kappa',name:'Kappa',hp:4200,atk:2400,agility:82,strPts:34,
+    swarm:true, // tende a aparecer em grupos maiores
+    description:'Youkai aquático travesso. Veloz, frágil e de ataque fraco — mas raramente vem sozinho.'},
+  kaze_kami:{id:'kaze_kami',name:'Kaze no Kami',hp:5600,atk:6600,agility:88,strPts:50,
+    poison:{chance:100,pctOfAtk:8,turns:3}, // lâminas de ar sempre envenenam: 8% ATK/turno por 3t
+    description:'Espírito do vento cortante. Rápido e de golpes fortes, porém frágil — suas lâminas de ar envenenam a cada corte.'},
+};
+
 // ══════════════════════════════════════════════════════
 // MAPA 3 — CAMINHO TORTUOSO (inimigos)
 // ══════════════════════════════════════════════════════
@@ -3976,6 +4036,14 @@ const MAPS={
     fixedPhases:[1,3,5,7,9,11],
     boss:null,
   },
+  shinohara:{
+    id:'shinohara',name:'Estrada de Shinohara',phases:15,
+    enemies:ENEMIES_MAP7,
+    // Rumo a Shinohara. Fases fixas: 3,7,11,13,14. Boss Shunoban na fase 15.
+    intro:null,introFinishLabel:'⚔️ Seguir pela estrada',
+    fixedPhases:[3,7,11,13,14],
+    boss:'shunoban',
+  },
 };
 
 // ══════════════════════════════════════════════════════
@@ -4008,6 +4076,7 @@ const CAMPAIGN_CHECKPOINTS=[
   {mapId:'kurikara',name:'Arredores de Kurikara',phases:16,unlock:'defeat_archer',boss:'Ninja Genji',party2:true},
   {mapId:'kurikara_city',name:'Kurikara (Cidade)',phases:18,unlock:'defeat_ninja',boss:'Go-Sanjo Falso',party2:true},
   {mapId:'kurikara2',name:'Kurikara II',phases:12,unlock:'defeat_gosanjo',boss:'???',party2:true},
+  {mapId:'shinohara',name:'Estrada de Shinohara',phases:15,unlock:'clear_kurikara2',boss:'???',party2:true},
 ];
 
 // Gera um encontro usando a tabela de inimigos do mapa atual.
@@ -4016,7 +4085,10 @@ function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1){
   const map=MAPS[mapId]||MAPS.bosque;
   const table=map.enemies;
   const ids=Object.keys(table);
-  const size=rollGroupSize(phase);
+  let size=rollGroupSize(phase);
+  // Inimigos "swarm" (ex.: Kappa) tendem a vir em grupos maiores: +1 alvo por sorteio.
+  const swarmIds=ids.filter(id=>table[id].swarm);
+  if(swarmIds.length&&Math.random()<0.5)size=Math.min(size+1,5);
   return Array.from({length:size},(_,i)=>{
     const id=ids[Math.floor(Math.random()*ids.length)];
     const base=table[id];
@@ -4850,6 +4922,8 @@ const PATH_THEMES={
   kurikara_city:[['left','🏘️','Distrito dos Artesãos'],['center','🏮','Avenida Suzaku'],['right','🍶','Ruas do Mercado']],
   // Mapa 6 — Kurikara II (pós-queda do Clã Genji): a cidade sem lei.
   kurikara2:[['left','🏚️','Distrito Saqueado'],['center','🕯️','Avenida às Escuras'],['right','💀','Becos Sem Lei']],
+  // Mapa 7 — Estrada de Shinohara (campo aberto, montanhas e youkai selvagens).
+  shinohara:[['left','🌲','Trilha da Floresta'],['center','⛰️','Passo da Montanha'],['right','🏞️','Margem do Rio']],
 };
 
 function MapScreen({camp,onChoosePath,onNavigate}){
@@ -4863,6 +4937,7 @@ function MapScreen({camp,onChoosePath,onNavigate}){
     :(camp.mapId==='kurikara')?false
     :(camp.mapId==='kurikara_city')?(phase>=maxPhases)
     :(camp.mapId==='kurikara2')?false
+    :(camp.mapId==='shinohara')?(phase>=maxPhases)
     :(phase>=maxPhases-1);
   return(
     <div className="screen">
@@ -4893,8 +4968,12 @@ function MapScreen({camp,onChoosePath,onNavigate}){
             {camp.innUnlocked&&(
               <button className="btn btn-full" style={{marginBottom:14,border:'1px solid var(--gold)',background:'rgba(201,162,39,0.12)',color:'var(--gold)'}}
                 onClick={()=>onChoosePath('inn')}>
-                🏮 Descansar no Kogarashi-kan &nbsp;·&nbsp; <span style={{fontSize:'.8rem'}}>5 SQ</span>
-                <div style={{fontSize:'.65rem',color:'var(--parchment-dark)',marginTop:2,fontWeight:'normal'}}>Recupera 40% HP · +20% Defesa no próximo combate</div>
+                {camp.mapId==='shinohara'
+                  ?<>☕ Pausa para o Café com Zanzaburou &nbsp;·&nbsp; <span style={{fontSize:'.8rem'}}>5 SQ</span></>
+                  :<>🏮 Descansar no Kogarashi-kan &nbsp;·&nbsp; <span style={{fontSize:'.8rem'}}>5 SQ</span></>}
+                <div style={{fontSize:'.65rem',color:'var(--parchment-dark)',marginTop:2,fontWeight:'normal'}}>
+                  {camp.mapId==='shinohara'?'Recupera 40% HP · +1 Bond com os servos':'Recupera 40% HP · +20% Defesa no próximo combate'}
+                </div>
               </button>
             )}
             <div className="path-choice">
@@ -5100,6 +5179,19 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         isGosanjo:true,isBoss:true,
       });
     }
+    if(mid==='shinohara'){ // Shunoban, o Ciclope Vermelho (mapa 7)
+      return T({
+        ...SHUNOBAN,instanceId:'shunoban_boss',
+        maxHp:SHUNOBAN.hp,currentHp:SHUNOBAN.hp,
+        atkScaled:SHUNOBAN.attack,
+        damage:Math.round(SHUNOBAN.attack*(SHUNOBAN.attributes.strength.points/100)),
+        agility:SHUNOBAN.attributes.agility.points,
+        npBar:0,activeBuffs:[],activeDebuffs:[],
+        cooldowns:{terror:2},
+        evadeTurns:0,
+        isShunoban:true,isBoss:true,
+      });
+    }
     if(mid==='kurikara'){
       return T({
         ...NINJA,instanceId:'ninja_boss',
@@ -5235,6 +5327,21 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   // ── Efeitos visuais flutuantes (dano/cura/buff/esquiva) ──
   const[fx,setFx]=useState([]);
+  // ── SPRITES ANIMADOS: estado de animação por servo da party ──
+  // Guarda qual GIF cada servo exibe agora: 'idle' (padrão), 'attack' ou 'np'.
+  // Ao disparar uma ação, troca para o GIF correspondente e volta ao idle depois.
+  const[spriteAnim,setSpriteAnim]=useState({}); // {idx: 'attack'|'np'}
+  const animTimers=useRef({});
+  // Dispara a animação de um servo (por índice na party) e agenda o retorno ao idle.
+  function playSpriteAnim(idx,kind,ms=1400){
+    if(animTimers.current[idx])clearTimeout(animTimers.current[idx]);
+    // cacheBust força o GIF a reiniciar do primeiro frame a cada disparo
+    setSpriteAnim(prev=>({...prev,[idx]:{kind,key:Date.now()}}));
+    animTimers.current[idx]=setTimeout(()=>{
+      setSpriteAnim(prev=>{const n={...prev};delete n[idx];return n;});
+    },ms);
+  }
+  useEffect(()=>()=>{Object.values(animTimers.current).forEach(clearTimeout);},[]);
   const enemyTurnPtr=useRef(0); // (legado) rotação round-robin
   // Sprite (emoji) para inimigos comuns que não têm arte PNG própria.
   function enemySprite(e){
@@ -5605,6 +5712,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(servoStunnedThisTurn())return;
     const tgt=enemies[selectedTarget];
     if(!tgt||tgt.currentHp<=0){setNotif('Selecione um inimigo vivo!');return;}
+    playSpriteAnim(activeIdx,'attack',1200); // sprite animado de ataque
     // Ação de ataque gera NP mesmo se o alvo esquivar (a ação foi executada)
     const newServo={...servo,npBar:clamp(servo.npBar+servo.attributes.mana.gainPercent,0,100)};
     // Boss pode esquivar (Agility): 5% base + metade da diferença de Agility
@@ -5646,6 +5754,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Durante a vez do inimigo (ou enquanto a cadeia de ações dele roda), ficam bloqueadas.
     if(!isServoTurn||enemyChainLock.current){setNotif('Aguarde sua vez na ordem de iniciativa!');return;}
     if((servo.cooldowns[skillId]||0)>0){setNotif('Skill em recarga!');return;}
+    playSpriteAnim(activeIdx,'attack',1200); // skills usam o sprite de ataque
     const skillDef=(SDEF.activeSkills||[]).find(s=>s.id===skillId);
     if(!skillDef)return;
     const lvl=1;
@@ -5883,6 +5992,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if((servo.npLocked||0)>0){setNotif(`NP travado pela Archer! (${servo.npLocked} turno(s) restante(s))`);return;}
     if(servo.npBar<100){setNotif('Barra de NP não está cheia!');return;}
     if(servoStunnedThisTurn())return;
+    playSpriteAnim(activeIdx,'np',2200); // sprite animado do Fantasma Nobre
     const tgt=enemies[selectedTarget];
     if(!tgt||tgt.currentHp<=0){setNotif('Selecione um inimigo vivo!');return;}
     const npLvl=servo.npLevel||1;
@@ -6257,6 +6367,65 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           }
         }
         es[i]=gs;
+      } else if(e.isShunoban){
+        // ── IA do Shunoban, o Ciclope Vermelho (boss do mapa 7) ──
+        // Tanque de dano bruto: golpe forte, Ataque de Terror (stun) e NP devastador.
+        let sh={...es[i]};
+        sh.npBar=clamp((sh.npBar||0)+SHUNOBAN.npRegenPerTurn,0,100);
+        const atkBase=sh.atkScaled*(sh.attributes.strength.points/100);
+        const pickAlive=()=>{
+          const alive=[];
+          party.forEach((m,idx)=>{
+            const mm=(idx===targetIdx)?s:(idx===activeIdx?servo:m);
+            if(mm&&!mm.defeated&&mm.hp>0)alive.push({idx,servo:mm});
+          });
+          return alive.length?alive[Math.floor(Math.random()*alive.length)]:null;
+        };
+        const hitOne=(tinfo,raw,fxKind,stunChance,stunTurns)=>{
+          if(!tinfo)return;
+          const mit=applyDmgToServo(raw,tinfo.servo);
+          if(tinfo.idx===targetIdx)s.hp=Math.max(0,s.hp-mit);
+          const doStun=stunChance&&Math.random()*100<stunChance;
+          setParty(prev=>prev.map((m,idx)=>idx===tinfo.idx?{...m,hp:Math.max(0,m.hp-mit),stunned:doStun?(m.stunned||0)+stunTurns:(m.stunned||0),npBar:clamp((m.npBar||0)+servo.attributes.mana.gainPercent,0,100)}:m));
+          if(tinfo.idx===targetIdx&&doStun)s.stunned=(s.stunned||0)+stunTurns;
+          const tdef=PLAYABLE_SERVOS[tinfo.servo.id]||SDEF;
+          addLog(`${sh.name} esmaga ${tdef.name.split(' ')[0]}: ${mit} de dano!`,'enemy');
+          spawnFx(tinfo.idx===activeIdx?'servo':tinfo.servo.instanceId||'servo',String(mit),fxKind);
+          if(doStun){addLog(`💫 ${tdef.name.split(' ')[0]} foi atordoado pelo pavor!`,'enemy');spawnFx(tinfo.idx===activeIdx?'servo':tinfo.servo.instanceId||'servo','💫 ATORDOADO','stun');}
+        };
+
+        // Prioridade 1: NP Visão Pavorosa (AoE massivo + zera NP + 50% stun em cada)
+        if(sh.npBar>=100){
+          sh.npBar=0;
+          addLog(`⚡ ${SHUNOBAN.np.name}! O olho que tudo vê fita a party inteira!`,'np');
+          setDialogue({text:SHUNOBAN.dialogue.np,portrait:SHUNOBAN.assets.battle});
+          fireNpCutin(SHUNOBAN.assets.np,SHUNOBAN.np.name.toUpperCase(),SHUNOBAN.dialogue.np);
+          const raw=Math.round(atkBase*SHUNOBAN.np.dmgMult);
+          party.forEach((m,idx)=>{
+            const mm=(idx===targetIdx)?s:(idx===activeIdx?servo:m);
+            if(mm&&!mm.defeated&&mm.hp>0){
+              const mit=applyDmgToServo(raw,mm);
+              if(idx===targetIdx)s.hp=Math.max(0,s.hp-mit);
+              const doStun=Math.random()*100<SHUNOBAN.np.stunChance;
+              setParty(prev=>prev.map((pm,pi)=>pi===idx?{...pm,hp:Math.max(0,pm.hp-mit),npBar:0,stunned:doStun?(pm.stunned||0)+SHUNOBAN.np.stunTurns:(pm.stunned||0)}:pm));
+              if(idx===targetIdx){s.npBar=0;if(doStun)s.stunned=(s.stunned||0)+SHUNOBAN.np.stunTurns;}
+              spawnFx(idx===activeIdx?'servo':mm.instanceId||'servo',String(mit),'np');
+            }
+          });
+          addLog('🌀 A barra de NP de toda a party foi drenada!','enemy');
+        }
+        // Prioridade 2: Ataque de Terror (golpe forte + 60% stun)
+        else if((sh.cooldowns?.terror||0)<=0){
+          sh.cooldowns={...sh.cooldowns,terror:SHUNOBAN.skills.terror.cd};
+          addLog(`👁️ Ataque de Terror! ${sh.name} ergue o punho colossal!`,'enemy');
+          setDialogue({text:SHUNOBAN.dialogue.terror,portrait:SHUNOBAN.assets.battle});
+          hitOne(pickAlive(),Math.round(atkBase*SHUNOBAN.skills.terror.dmgMult),'crit',SHUNOBAN.skills.terror.stunChance,SHUNOBAN.skills.terror.stunTurns);
+        }
+        // Padrão: golpe forte simples num alvo
+        else{
+          hitOne(pickAlive(),Math.round(atkBase),'dmg',0,0);
+        }
+        es[i]=sh;
       } else if(e.isArcher){
         // ── IA da Archer Corrompida (boss final) ──
         let ar={...es[i]};
@@ -6546,7 +6715,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       if(isBoss&&(camp.mapId||'bosque')==='bosque')newProfile=markQinDefeated();
       // Conquista por derrotar cada boss (paga QP+SQ uma vez)
       if(isBoss){
-        const achId={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja',kurikara_city:'defeat_gosanjo'}[camp.mapId||'bosque'];
+        const achId={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja',kurikara_city:'defeat_gosanjo',shinohara:'defeat_shunoban'}[camp.mapId||'bosque'];
         if(achId){
           const res=grantAchievement(achId);
           if(res.granted){
@@ -6676,7 +6845,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           {enemies.map((e,i)=>{
             const dead=e.currentHp<=0;
             const sel=i===selectedTarget&&!dead;
-            const bossArt=e.isGosanjo?(GOSANJO.assets.combat||GOSANJO.assets.battle):e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:QIN.assets.combat||QIN.assets.default;
+            const bossArt=e.isShunoban?(SHUNOBAN.assets.combat||SHUNOBAN.assets.battle):e.isGosanjo?(GOSANJO.assets.combat||GOSANJO.assets.battle):e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:QIN.assets.combat||QIN.assets.default;
             return(
               <div key={e.instanceId} onClick={()=>!dead&&setSelectedTarget(i)}
                 className={fx.some(f=>f.targetId===e.instanceId&&(f.kind==='dmg'||f.kind==='crit'))?'shake':''}
@@ -6715,7 +6884,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             return(
               <div key={i}
                 className={fx.some(f=>f.targetId==='servo'&&active&&(f.kind==='dmg'||f.kind==='crit'))?'shake':''}
-                style={{position:'relative',flex:isParty?'1':'0 0 auto',maxWidth:isParty?170:220,
+                style={{position:'relative',flex:isParty?'1':'0 0 auto',maxWidth:isParty?190:240,
                   cursor:'default',opacity:dead?0.35:active?1:0.72,
                   transition:'all .2s',transform:active?'translateY(-4px)':'none'}}>
                 {active&&fx.filter(f=>f.targetId==='servo').map(f=>(
@@ -6725,12 +6894,41 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                 <div style={{position:'relative',borderRadius:'6px 6px 0 0',overflow:'hidden',
                   border:`2px solid ${active?'var(--gold)':dead?'#333':'var(--gold-dim)'}`,borderBottom:'none',
                   boxShadow:isTurn?'0 0 14px rgba(201,162,39,0.55)':'none',background:'linear-gradient(180deg,rgba(40,20,20,.2),rgba(20,10,10,.6))'}}>
-                  <img src={mdef.assets.combat||mdef.assets.default} alt={mdef.name}
-                    style={{width:'100%',height:isParty?130:170,objectFit:'cover',objectPosition:'center top',
-                      filter:dead?'grayscale(1) brightness(0.6)':'none',display:'block'}}
-                    onError={ev=>{ev.target.src=mdef.assets.default;}}/>
-                  {dead&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2rem'}}>💀</div>}
-                  {active&&<div style={{position:'absolute',top:3,right:3,fontSize:'.6rem',background:'var(--gold)',color:'#1a0e0e',padding:'1px 5px',borderRadius:6,fontFamily:'Cinzel,serif'}}>ATIVO</div>}
+                {/* Retrato: GIF animado (se o servo tiver sprites) ou busto estático */}
+                {(() => {
+                  const anim=spriteAnim[i];                    // {kind,key} durante uma ação
+                  const hasSprites=!!(mdef.sprites&&mdef.sprites.idle);
+                  const spriteH=isParty?150:190;               // GIFs precisam de mais altura
+                  const bustH=isParty?130:170;
+                  if(hasSprites){
+                    const kind=anim?anim.kind:'idle';
+                    const src=mdef.sprites[kind]||mdef.sprites.idle;
+                    // A key muda a cada disparo → o React remonta o <img> e o GIF reinicia do 1º frame
+                    const k=anim?`${kind}-${anim.key}`:'idle';
+                    return(
+                      <div style={{position:'relative',height:spriteH,display:'flex',alignItems:'flex-end',justifyContent:'center',
+                        background:'radial-gradient(ellipse at 50% 85%, rgba(201,162,39,.10), transparent 70%)'}}>
+                        <img key={k} src={src} alt={mdef.name}
+                          style={{width:'100%',height:'100%',objectFit:'contain',objectPosition:'center bottom',
+                            filter:dead?'grayscale(1) brightness(0.6)':(anim&&anim.kind==='np')?'drop-shadow(0 0 12px rgba(255,180,60,.85))':'none',
+                            display:'block',transition:'filter .2s'}}
+                          onError={ev=>{ev.target.onerror=null;ev.target.src=mdef.assets.combat||mdef.assets.default;}}/>
+                        {dead&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2rem'}}>💀</div>}
+                        {active&&<div style={{position:'absolute',top:3,right:3,fontSize:'.6rem',background:'var(--gold)',color:'#1a0e0e',padding:'1px 5px',borderRadius:6,fontFamily:'Cinzel,serif'}}>ATIVO</div>}
+                      </div>
+                    );
+                  }
+                  return(
+                    <div style={{position:'relative'}}>
+                      <img src={mdef.assets.combat||mdef.assets.default} alt={mdef.name}
+                        style={{width:'100%',height:bustH,objectFit:'cover',objectPosition:'center top',
+                          filter:dead?'grayscale(1) brightness(0.6)':'none',display:'block'}}
+                        onError={ev=>{ev.target.onerror=null;ev.target.src=mdef.assets.default;}}/>
+                      {dead&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2rem'}}>💀</div>}
+                      {active&&<div style={{position:'absolute',top:3,right:3,fontSize:'.6rem',background:'var(--gold)',color:'#1a0e0e',padding:'1px 5px',borderRadius:6,fontFamily:'Cinzel,serif'}}>ATIVO</div>}
+                    </div>
+                  );
+                })()}
                 </div>
                 {/* Barra de HP/NP sob o busto */}
                 <div style={{background:'rgba(0,0,0,0.55)',border:`2px solid ${active?'var(--gold)':dead?'#333':'var(--gold-dim)'}`,borderTop:'none',borderRadius:'0 0 6px 6px',padding:'3px 5px'}}>
@@ -7079,6 +7277,11 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap6&&nextPhase===7){setCamp(advanced);setStage('map6F7');return;}
     if(isMap6&&nextPhase===9){setCamp(advanced);setStage('map6F9');return;}
     if(isMap6&&nextPhase===11){setCamp(advanced);setStage('map6F11');return;}
+    // Mapa 7 (Estrada de Shinohara): fases fixas 3,7,11,13,14 (roteiros a definir).
+    const isMap7=(baseCamp.mapId||'bosque')==='shinohara';
+    if(isMap7&&[3,7,11,13,14].includes(nextPhase)){
+      setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map7Fixed');return;
+    }
     setCamp(advanced);setStage('map');
   }
 
@@ -7237,6 +7440,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mapId==='kurikara'){setStage('map4GenjiWin');return;}
     // Mapa 5 (Go-Sanjo Falso): mostra o diálogo de vitória antes de encerrar.
     if(mapId==='kurikara_city'){setStage('map5GosanjoWin');return;}
+    // Mapa 7 (Shunoban): último mapa por ora — vencer encerra a jornada.
+    if(mapId==='shinohara'){finishCampaign(updatedCamp,true);return;}
     finishCampaign(updatedCamp,true);
   }
 
@@ -7268,6 +7473,23 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     next.goldenRule=camp.goldenRule||0;
     setCamp(next);
     setStage('map5Map6Transition');
+  }
+
+  // Após concluir o Mapa 6: segue para o Mapa 7 (Estrada de Shinohara), party Ibaraki+Sith.
+  function onKurikara2Continue(){
+    const prev=camp.party||[camp.servo];
+    const findState=id=>prev.find(m=>m.id===id);
+    const next=buildCampForMap(IBARAKI,'shinohara',null,false,[IBARAKI,SITH_PLAYABLE]);
+    next.party=next.party.map(m=>{
+      const old=findState(m.id);
+      return old?{...m,hp:old.hp,npBar:old.npBar}:m;
+    });
+    next.servo=next.party[0];
+    next.sithJoined=true;
+    next.goldenRule=camp.goldenRule||0;
+    next.innUnlocked=true; // o descanso com a Okuni já está disponível (ela é aliada)
+    setCamp(next);
+    setStage('map6Map7Transition');
   }
 
   function onGenjiWinContinue(){
@@ -7407,6 +7629,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(camp.mapId==='tortuoso')return <StoryScreen profile={profile} script={STORY_MAP3_ARCHER_INTRO} finishLabel="⚔️ Encarar o horror" onFinish={()=>setStage('archerEncounter')}/>;
     if(camp.mapId==='kurikara')return <SplashScreen art={NINJA.assets.encounter} title="NINJA DO CLÃ GENJI" sub="Assassino — Arredores de Kurikara" onFinish={()=>setStage('boss')}/>;
     if(camp.mapId==='kurikara_city')return <SplashScreen art={GOSANJO.assets.encounter} title="GO-SANJO FALSO: SOMBRA" sub="A Sombra que Veste a Face de um Imperador" onFinish={()=>setStage('boss')}/>;
+    if(camp.mapId==='shinohara')return <SplashScreen art={SHUNOBAN.assets.encounter} title="SHUNOBAN, O CICLOPE VERMELHO" sub="O Olho que Tudo Vê — Estrada de Shinohara" onFinish={()=>setStage('boss')}/>;
     return <SplashScreen art={NITRO.assets.encounter} title="⚙️ NITRO-TYPE" sub="Samurai Mecanizado — Ameaça Anacrônica" onFinish={()=>setStage('boss')}/>;
   }
   // Splash da Archer (após o diálogo pré-boss)
@@ -7451,24 +7674,32 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map4GenjiLose')return <StoryScreen profile={profile} script={STORY_MAP4_GENJI_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   if(stage==='map5Inn'){
     const heal=Math.round((camp.servo.hpMax||0)*0.40);
+    const isCafe=camp.mapId==='shinohara';
     return(
       <div className="screen">
         {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
         <div className="panel" style={{textAlign:'center',maxWidth:460}}>
-          <img src="assets/servos/okuni/okuni_encounter.jpg" alt="Kogarashi-kan"
+          <img src={isCafe?'assets/servos/okuni/okuni_zanzaburou.jpg':'assets/servos/okuni/okuni_encounter.jpg'} alt="Descanso"
             style={{width:'100%',maxHeight:'34vh',objectFit:'cover',objectPosition:'center 20%',borderRadius:6,marginBottom:12,border:'1px solid rgba(230,150,60,.4)'}}
             onError={e=>{e.target.style.display='none';}}/>
-          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>🏮 KOGARASHI-KAN</h2>
+          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>{isCafe?'☕ CAFÉ COM ZANZABUROU':'🏮 KOGARASHI-KAN'}</h2>
           <p style={{color:'var(--parchment)',fontSize:'.82rem',marginBottom:6}}>
-            Você repousa no quarto da pousada. Chigure traz um chá morno com um sorriso atrapalhado, e o cansaço se desfaz.
+            {isCafe
+              ?'À sombra do Zanzaburou, Okuni serve um café forte e conta causos do teatro Kabuki. O grupo relaxa, e os laços se estreitam à beira da estrada.'
+              :'Você repousa no quarto da pousada. Chigure traz um chá morno com um sorriso atrapalhado, e o cansaço se desfaz.'}
           </p>
           <p style={{color:'#8fd68f',fontSize:'.78rem',marginBottom:2}}>Recuperou {heal} HP (40%).</p>
-          <p style={{color:'var(--gold)',fontSize:'.78rem',marginBottom:16}}>+20% de Defesa no próximo combate.</p>
+          <p style={{color:'var(--gold)',fontSize:'.78rem',marginBottom:16}}>{isCafe?'+1 Bond com os servos da party.':'+20% de Defesa no próximo combate.'}</p>
           <button className="btn btn-red btn-full" onClick={()=>{
-            // Cura 40% do HP MÁXIMO de TODOS os membros da party (não só o líder).
             const heal40=m=>({...m,hp:clamp((m.hp||0)+Math.round((m.hpMax||0)*0.40),0,m.hpMax||0)});
             const newParty=(camp.party&&camp.party.length)?camp.party.map(heal40):[heal40(camp.servo)];
-            setCamp({...camp,servo:newParty[0],party:newParty,planBonus:{...(camp.planBonus||{}),defUp:20}});
+            if(isCafe){
+              // Café com Zanzaburou: +1 Bond para cada servo da party
+              newParty.forEach(m=>{const def=PLAYABLE_SERVOS[m.id]||IBARAKI;bondUpServo(def.id);});
+              setCamp({...camp,servo:newParty[0],party:newParty});
+            } else {
+              setCamp({...camp,servo:newParty[0],party:newParty,planBonus:{...(camp.planBonus||{}),defUp:20}});
+            }
             setStage('map');
           }}>Prosseguir →</button>
         </div>
@@ -7508,8 +7739,36 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map6F11')return <StoryScreen profile={profile} script={STORY_MAP6_F11} finishLabel="Partir para Shinohara →" onFinish={()=>{
     const res=grantAchievement('clear_kurikara2');
     if(res.granted)setProfile(res.profile);
-    finishCampaign(camp,true);
+    onKurikara2Continue();
   }}/>;
+  if(stage==='map6Map7Transition')return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2.5rem',marginBottom:12}}>⛰️</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:8}}>ESTRADA DE SHINOHARA</h2>
+        <p style={{color:'var(--parchment)',fontSize:'.85rem',marginBottom:6}}>
+          Deixando Kurikara para trás, o grupo segue pela estrada rural rumo a Shinohara — puxado (a contragosto) pelo Zanzaburou. Montanhas, florestas e rios cortam o caminho... e neles, algo antigo e selvagem se agita.
+        </p>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.75rem',fontStyle:'italic',marginTop:14}}>
+          Os youkai da terra sentiram a aproximação de espíritos heroicos.
+        </p>
+        <button className="btn btn-red btn-full" style={{marginTop:20}} onClick={()=>setStage('map')}>⚔️ Seguir pela estrada</button>
+      </div>
+    </div>
+  );
+  if(stage==='map7Fixed')return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2rem',marginBottom:10}}>📜</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>SHINOHARA — FASE {camp.pendingFixedPhase}</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',fontStyle:'italic',marginBottom:16}}>
+          [ Cena fixa a ser escrita ]<br/>
+          Esta é uma fase fixa de história do Mapa 7. O roteiro será adicionado aqui depois.
+        </p>
+        <button className="btn btn-red btn-full" onClick={()=>setStage('map')}>Prosseguir →</button>
+      </div>
+    </div>
+  );
   if(stage==='map6Fixed')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
