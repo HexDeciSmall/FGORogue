@@ -2556,7 +2556,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.18</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.19</p>
       </div>
     </div>
   );
@@ -6895,14 +6895,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         {/* Conteúdo principal do combate */}
         <div style={{flex:1,minWidth:0}}>
         {/* ═══════════ ARENA ABERTA — sprites livres, ancorados no chão ═══════════ */}
-        <div className="battle-arena" style={{height:isParty?350:340,display:'flex',alignItems:'flex-end',justifyContent:'space-between',padding:'0 3% 14px'}}>
+        <div className="battle-arena" style={{height:isParty?400:400,display:'flex',alignItems:'flex-end',justifyContent:'space-between',padding:'0 2% 10px'}}>
           <div className="arena-ground"/>
           <div className="arena-fog"/>
 
           {/* ─── GRUPO DOS SERVOS (ESQUERDA, primeiro plano) ─── */}
           {/* A arte da Ibaraki olha para a DIREITA: aqui à esquerda ela já encara
               os inimigos naturalmente, sem espelhamento. */}
-          <div style={{position:'relative',zIndex:3,display:'flex',alignItems:'flex-end',gap:0,maxWidth:'50%'}}>
+          <div style={{position:'relative',zIndex:3,display:'flex',alignItems:'flex-end',gap:0,maxWidth:'62%'}}>
             {party.map((m,i)=>{
               const mdef=PLAYABLE_SERVOS[m.id]||IBARAKI;
               const dead=m.defeated||m.hp<=0;
@@ -6913,27 +6913,28 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
               const kind=anim?anim.kind:'idle';
               const src=hasSprites?(mdef.sprites[kind]||mdef.sprites.idle):(mdef.assets.combat||mdef.assets.default);
               const k=hasSprites&&anim?`${kind}-${anim.key}`:'idle';
-              // GIFs têm muita margem vazia no quadro → renderizam bem maiores
-              const h=hasSprites?(isParty?250:290):(isParty?120:140);
-              const w=hasSprites?(isParty?218:260):(isParty?96:112);
+              // Os GIFs são 358×358 com muita margem vazia — a personagem ocupa
+              // só o miolo do quadro. Por isso renderizam bem grandes.
+              const h=hasSprites?(isParty?360:400):(isParty?150:170);
+              const w=hasSprites?(isParty?300:340):(isParty?110:130);
               const shaking=fx.some(f=>f.targetId==='servo'&&active&&(f.kind==='dmg'||f.kind==='crit'));
               return(
                 <div key={i}
                   className={`fighter ${dead?'dead':''} ${isTurn?'acting':''} ${shaking?'shake':''}`}
                   style={{width:w,cursor:'default',opacity:dead?0.3:active?1:0.72,
-                    zIndex:active?2:1,marginRight:i<party.length-1?-14:0}}>
+                    zIndex:active?2:1,marginRight:i<party.length-1?-70:0}}>
                   {active&&fx.filter(f=>f.targetId==='servo').map(f=>(
                     <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'-4%',zIndex:5}}>{f.text}</span>
                   ))}
-                  {isTurn&&<div className="arena-glow" style={{bottom:hasSprites?60:30,width:w*0.66,height:24}}/>}
+                  {isTurn&&<div className="arena-glow" style={{bottom:hasSprites?76:30,width:w*0.5,height:26}}/>}
                   <img key={k} src={src} alt={mdef.name}
                     style={{width:'100%',height:h,
                       transform:(hasSprites&&mdef.sprites.flip)?'scaleX(-1)':undefined,
                       filter:dead?'grayscale(1) brightness(.6)':(anim&&anim.kind==='np')?'drop-shadow(0 0 16px rgba(255,180,60,.95)) drop-shadow(0 4px 8px rgba(0,0,0,.55))':undefined}}
                     onError={ev=>{ev.target.onerror=null;ev.target.src=mdef.assets.combat||mdef.assets.default;}}/>
-                  <div className="arena-shadow" style={{bottom:hasSprites?66:26,width:w*0.46,height:14}}/>
+                  <div className="arena-shadow" style={{bottom:hasSprites?86:26,width:w*0.34,height:15}}/>
                   {dead&&<div style={{position:'absolute',top:'38%',left:'50%',transform:'translate(-50%,-50%)',fontSize:'1.9rem'}}>💀</div>}
-                  <div className={`status-card${active?' active':''}`} style={{marginTop:hasSprites?-26:-4,width:hasSprites?'82%':'100%',position:'relative',zIndex:4}}>
+                  <div className={`status-card${active?' active':''}`} style={{marginTop:hasSprites?-48:-4,width:hasSprites?'62%':'100%',position:'relative',zIndex:4}}>
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:4}}>
                       <span className="status-name">{mdef.name.split(' ')[0]}</span>
                       {isTurn&&<span style={{fontSize:'.46rem',background:'var(--gold)',color:'#1a0e0e',padding:'0 4px',borderRadius:4,fontFamily:'Cinzel,serif'}}>▶</span>}
@@ -6952,7 +6953,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           </div>
 
           {/* ─── GRUPO INIMIGO (DIREITA, ao fundo — menores e elevados p/ profundidade) ─── */}
-          <div style={{position:'relative',zIndex:2,display:'flex',alignItems:'flex-end',justifyContent:'flex-end',gap:10,marginBottom:isParty?52:44,flexWrap:'wrap',maxWidth:'52%'}}>
+          <div style={{position:'relative',zIndex:2,display:'flex',alignItems:'flex-end',justifyContent:'flex-end',gap:8,marginBottom:isParty?70:60,flexWrap:'wrap',maxWidth:'38%'}}>
             {enemies.map((e,i)=>{
               const dead=e.currentHp<=0;
               const sel=i===selectedTarget&&!dead;
