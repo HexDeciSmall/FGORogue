@@ -2546,7 +2546,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.14</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.15</p>
       </div>
     </div>
   );
@@ -6889,8 +6889,58 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           <div className="arena-ground"/>
           <div className="arena-fog"/>
 
-          {/* ─── GRUPO INIMIGO (esquerda, ao fundo — ligeiramente elevado p/ dar profundidade) ─── */}
-          <div style={{position:'relative',zIndex:2,display:'flex',alignItems:'flex-end',gap:10,marginBottom:isParty?52:44,flexWrap:'wrap',maxWidth:'52%'}}>
+          {/* ─── GRUPO DOS SERVOS (ESQUERDA, primeiro plano) ─── */}
+          {/* A arte da Ibaraki olha para a DIREITA: aqui à esquerda ela já encara
+              os inimigos naturalmente, sem espelhamento. */}
+          <div style={{position:'relative',zIndex:3,display:'flex',alignItems:'flex-end',gap:0,maxWidth:'50%'}}>
+            {party.map((m,i)=>{
+              const mdef=PLAYABLE_SERVOS[m.id]||IBARAKI;
+              const dead=m.defeated||m.hp<=0;
+              const active=i===activeIdx;
+              const isTurn=isServoTurn&&active;
+              const anim=spriteAnim[i];
+              const hasSprites=!!(mdef.sprites&&mdef.sprites.idle);
+              const kind=anim?anim.kind:'idle';
+              const src=hasSprites?(mdef.sprites[kind]||mdef.sprites.idle):(mdef.assets.combat||mdef.assets.default);
+              const k=hasSprites&&anim?`${kind}-${anim.key}`:'idle';
+              const h=hasSprites?(isParty?190:215):(isParty?120:140);
+              const w=hasSprites?(isParty?170:200):(isParty?96:112);
+              const shaking=fx.some(f=>f.targetId==='servo'&&active&&(f.kind==='dmg'||f.kind==='crit'));
+              return(
+                <div key={i}
+                  className={`fighter ${dead?'dead':''} ${isTurn?'acting':''} ${shaking?'shake':''}`}
+                  style={{width:w,cursor:'default',opacity:dead?0.3:active?1:0.72,
+                    zIndex:active?2:1,marginRight:i<party.length-1?-14:0}}>
+                  {active&&fx.filter(f=>f.targetId==='servo').map(f=>(
+                    <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'-4%',zIndex:5}}>{f.text}</span>
+                  ))}
+                  {isTurn&&<div className="arena-glow" style={{bottom:30,width:w*0.9,height:20}}/>}
+                  <img key={k} src={src} alt={mdef.name}
+                    style={{width:'100%',height:h,
+                      filter:dead?'grayscale(1) brightness(.6)':(anim&&anim.kind==='np')?'drop-shadow(0 0 16px rgba(255,180,60,.95)) drop-shadow(0 4px 8px rgba(0,0,0,.55))':undefined}}
+                    onError={ev=>{ev.target.onerror=null;ev.target.src=mdef.assets.combat||mdef.assets.default;}}/>
+                  <div className="arena-shadow" style={{bottom:hasSprites?34:26,width:w*0.62,height:13}}/>
+                  {dead&&<div style={{position:'absolute',top:'38%',left:'50%',transform:'translate(-50%,-50%)',fontSize:'1.9rem'}}>💀</div>}
+                  <div className={`status-card${active?' active':''}`} style={{marginTop:-4,width:'100%',position:'relative',zIndex:4}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:4}}>
+                      <span className="status-name">{mdef.name.split(' ')[0]}</span>
+                      {isTurn&&<span style={{fontSize:'.46rem',background:'var(--gold)',color:'#1a0e0e',padding:'0 4px',borderRadius:4,fontFamily:'Cinzel,serif'}}>▶</span>}
+                    </div>
+                    <div className={`status-bar status-hp${(m.hp/m.hpMax)<0.3?' low':''}`}>
+                      <div style={{width:`${clamp(m.hp/m.hpMax*100,0,100)}%`}}/>
+                    </div>
+                    <div className="status-bar status-np">
+                      <div style={{width:`${clamp(m.npBar,0,100)}%`}}/>
+                    </div>
+                    <div className="status-num">{Math.max(0,m.hp)}/{m.hpMax}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ─── GRUPO INIMIGO (DIREITA, ao fundo — menores e elevados p/ profundidade) ─── */}
+          <div style={{position:'relative',zIndex:2,display:'flex',alignItems:'flex-end',justifyContent:'flex-end',gap:10,marginBottom:isParty?52:44,flexWrap:'wrap',maxWidth:'52%'}}>
             {enemies.map((e,i)=>{
               const dead=e.currentHp<=0;
               const sel=i===selectedTarget&&!dead;
@@ -6908,9 +6958,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                   <img src={e.isBoss?bossArt:(e.sprite||enemySprite(e))} alt={e.name}
                     style={{width:'100%',height:h,transform:sel?'scale(1.05)':'scale(1)',transition:'transform .15s'}}
                     onError={ev=>{ev.target.style.visibility='hidden';}}/>
-                  {/* sombra no chão */}
                   <div className="arena-shadow" style={{bottom:26,width:w*0.8,height:11}}/>
-                  {/* status logo abaixo do sprite */}
                   <div className={`status-card${sel?' active':''}`} style={{marginTop:4,width:'100%'}}>
                     <div className="status-name" style={{fontSize:'.52rem',textAlign:'center'}}>{dead?'✝ ':''}{e.name}</div>
                     <div className={`status-bar status-hp${(e.currentHp/e.maxHp)<0.3?' low':''}`}>
@@ -6920,59 +6968,6 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                     {(e.stunned||0)>0&&<div style={{fontSize:'.48rem',color:'#c9a0ff',textAlign:'center'}}>💫 ATORD.</div>}
                     {e.isBoss&&e.gutsState?.active&&<div style={{fontSize:'.48rem',color:'#ffd080',textAlign:'center'}}>GUTS ×{e.gutsState.charges}</div>}
                     {(e.activeDebuffs||[]).slice(0,2).map((d,j)=>(<span key={j} style={{fontSize:'.48rem',color:'#ff8080',display:'block',textAlign:'center'}}>{d.type==='attack_down'?'ATK':'DEF'}-{d.value}%</span>))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* ─── GRUPO DOS SERVOS (direita, em primeiro plano — maiores) ─── */}
-          <div style={{position:'relative',zIndex:3,display:'flex',alignItems:'flex-end',gap:isParty?0:0,maxWidth:'50%'}}>
-            {party.map((m,i)=>{
-              const mdef=PLAYABLE_SERVOS[m.id]||IBARAKI;
-              const dead=m.defeated||m.hp<=0;
-              const active=i===activeIdx;
-              const isTurn=isServoTurn&&active;
-              const anim=spriteAnim[i];
-              const hasSprites=!!(mdef.sprites&&mdef.sprites.idle);
-              const kind=anim?anim.kind:'idle';
-              const src=hasSprites?(mdef.sprites[kind]||mdef.sprites.idle):(mdef.assets.combat||mdef.assets.default);
-              const k=hasSprites&&anim?`${kind}-${anim.key}`:'idle';
-              // GIFs têm muito espaço vazio ao redor → renderizam maiores para compensar
-              const h=hasSprites?(isParty?190:215):(isParty?120:140);
-              const w=hasSprites?(isParty?170:200):(isParty?96:112);
-              const shaking=fx.some(f=>f.targetId==='servo'&&active&&(f.kind==='dmg'||f.kind==='crit'));
-              return(
-                <div key={i}
-                  className={`fighter ${dead?'dead':''} ${isTurn?'acting':''} ${shaking?'shake':''}`}
-                  style={{width:w,cursor:'default',opacity:dead?0.3:active?1:0.72,
-                    zIndex:active?2:1,marginLeft:i>0?-14:0}}>
-                  {active&&fx.filter(f=>f.targetId==='servo').map(f=>(
-                    <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'-4%',zIndex:5}}>{f.text}</span>
-                  ))}
-                  {/* halo dourado no turno do servo */}
-                  {isTurn&&<div className="arena-glow" style={{bottom:30,width:w*0.9,height:20}}/>}
-                  <img key={k} src={src} alt={mdef.name}
-                    style={{width:'100%',height:h,
-                      transform:(hasSprites&&mdef.sprites.facesRight)?'scaleX(-1)':undefined,
-                      filter:dead?'grayscale(1) brightness(.6)':(anim&&anim.kind==='np')?'drop-shadow(0 0 16px rgba(255,180,60,.95)) drop-shadow(0 4px 8px rgba(0,0,0,.55))':undefined}}
-                    onError={ev=>{ev.target.onerror=null;ev.target.src=mdef.assets.combat||mdef.assets.default;}}/>
-                  {/* sombra no chão sob os pés */}
-                  <div className="arena-shadow" style={{bottom:hasSprites?34:26,width:w*0.62,height:13}}/>
-                  {dead&&<div style={{position:'absolute',top:'38%',left:'50%',transform:'translate(-50%,-50%)',fontSize:'1.9rem'}}>💀</div>}
-                  {/* status compacto sob o sprite */}
-                  <div className={`status-card${active?' active':''}`} style={{marginTop:-4,width:'100%',position:'relative',zIndex:4}}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:4}}>
-                      <span className="status-name">{mdef.name.split(' ')[0]}</span>
-                      {isTurn&&<span style={{fontSize:'.46rem',background:'var(--gold)',color:'#1a0e0e',padding:'0 4px',borderRadius:4,fontFamily:'Cinzel,serif'}}>▶</span>}
-                    </div>
-                    <div className={`status-bar status-hp${(m.hp/m.hpMax)<0.3?' low':''}`}>
-                      <div style={{width:`${clamp(m.hp/m.hpMax*100,0,100)}%`}}/>
-                    </div>
-                    <div className="status-bar status-np">
-                      <div style={{width:`${clamp(m.npBar,0,100)}%`}}/>
-                    </div>
-                    <div className="status-num">{Math.max(0,m.hp)}/{m.hpMax}</div>
                   </div>
                 </div>
               );
