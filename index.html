@@ -309,6 +309,43 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 @keyframes sc2Seal{0%{opacity:0;transform:scale(2) rotate(-12deg)}35%{opacity:1;transform:scale(1) rotate(0)}100%{opacity:.9;transform:scale(1.05)}}
 @keyframes sc2Flash{0%,40%{opacity:0}50%{opacity:.95}58%{opacity:.2}66%{opacity:.85}100%{opacity:0}}
 /* Névoa de veneno roxo (combate especial dos ladrões, Fase 9 mapa 4) */
+/* ═══════ ARENA DE COMBATE ABERTA (sprites livres, estilo Pokémon) ═══════ */
+.battle-arena{position:relative;border-radius:10px;overflow:hidden;margin-bottom:10px;
+  background:linear-gradient(180deg,#1b0f14 0%,#2a1620 45%,#3a2026 62%,#241419 100%);
+  border:1px solid rgba(201,162,39,.25);box-shadow:inset 0 0 60px rgba(0,0,0,.75)}
+/* linha do horizonte + chão em perspectiva */
+.arena-ground{position:absolute;left:0;right:0;bottom:0;height:46%;
+  background:linear-gradient(180deg,rgba(120,70,50,.18),rgba(40,20,20,.55));
+  border-top:1px solid rgba(201,162,39,.18)}
+.arena-fog{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 60%,transparent 35%,rgba(10,5,8,.55) 100%)}
+/* plataformas ovais sob cada lutador */
+.arena-pad{position:absolute;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%,rgba(201,162,39,.16),transparent 70%)}
+/* linhas de fileira */
+.arena-row{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:4px;z-index:2}
+/* sprite livre (sem moldura) */
+.fighter{position:relative;text-align:center;transition:transform .15s,filter .15s}
+.fighter img{display:block;margin:0 auto;object-fit:contain;object-position:center bottom;
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.fighter.selected img{filter:drop-shadow(0 0 10px var(--gold)) drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.fighter.dead{opacity:.32;filter:grayscale(1)}
+.fighter.acting{transform:translateY(-6px) scale(1.04)}
+/* painel de status flutuante (estilo Pokémon) */
+.status-card{background:linear-gradient(180deg,rgba(30,16,20,.94),rgba(18,10,12,.96));
+  border:1px solid var(--gold-dim);border-radius:8px;padding:4px 8px;min-width:112px;
+  box-shadow:0 3px 10px rgba(0,0,0,.6)}
+.status-card.active{border-color:var(--gold);box-shadow:0 0 12px rgba(201,162,39,.45)}
+.status-name{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.5px;color:var(--parchment);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status-card.active .status-name{color:var(--gold)}
+.status-bar{height:5px;background:rgba(0,0,0,.65);border-radius:3px;overflow:hidden;margin-top:2px}
+.status-bar>div{height:100%;transition:width .3s}
+.status-hp>div{background:#5a9a5a}
+.status-hp.low>div{background:var(--red-bright)}
+.status-np{height:3px}
+.status-np>div{background:var(--gold)}
+.status-num{font-size:.5rem;color:var(--parchment-dark);text-align:right;line-height:1.2}
 .poison-overlay{position:fixed;inset:0;z-index:60;pointer-events:none;
   background:radial-gradient(ellipse at 50% 60%,rgba(140,40,200,.28),rgba(80,10,140,.18) 50%,transparent 78%);
   mix-blend-mode:screen;animation:poisonPulse 2.4s ease-in-out infinite}
@@ -2501,7 +2538,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.11</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.12</p>
       </div>
     </div>
   );
@@ -6839,110 +6876,95 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
         {/* Conteúdo principal do combate */}
         <div style={{flex:1,minWidth:0}}>
-        {/* ═══════════ ARENA DE COMBATE (estilo FGO) ═══════════ */}
-        {/* Inimigos no TOPO — sprites grandes, clicáveis para mirar */}
-        <div style={{display:'flex',gap:8,justifyContent:'center',flexWrap:'wrap',marginBottom:10,minHeight:120,alignItems:'flex-end'}}>
-          {enemies.map((e,i)=>{
-            const dead=e.currentHp<=0;
-            const sel=i===selectedTarget&&!dead;
-            const bossArt=e.isShunoban?(SHUNOBAN.assets.combat||SHUNOBAN.assets.battle):e.isGosanjo?(GOSANJO.assets.combat||GOSANJO.assets.battle):e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:QIN.assets.combat||QIN.assets.default;
-            return(
-              <div key={e.instanceId} onClick={()=>!dead&&setSelectedTarget(i)}
-                className={fx.some(f=>f.targetId===e.instanceId&&(f.kind==='dmg'||f.kind==='crit'))?'shake':''}
-                style={{position:'relative',cursor:dead?'default':'pointer',opacity:dead?0.3:1,
-                  width:e.isBoss?128:88,textAlign:'center',transition:'transform .15s',
-                  filter:dead?'grayscale(1)':sel?'drop-shadow(0 0 8px var(--gold))':'none'}}>
-                {fx.filter(f=>f.targetId===e.instanceId).map(f=>(
-                  <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'0%',zIndex:5}}>{f.text}</span>
-                ))}
-                {(e.stunned||0)>0&&<span style={{position:'absolute',top:2,left:'50%',transform:'translateX(-50%)',fontSize:'.55rem',background:'rgba(80,40,120,.9)',color:'#fff',padding:'1px 5px',borderRadius:8,zIndex:4}}>ATORD.</span>}
-                <img src={e.isBoss?bossArt:(e.sprite||enemySprite(e))} alt={e.name}
-                  style={{width:'100%',height:e.isBoss?128:88,objectFit:'contain',
-                    filter:sel?'none':'none',transform:sel?'scale(1.06)':'scale(1)',transition:'transform .15s'}}
-                  onError={ev=>{ev.target.style.visibility='hidden';}}/>
-                <div style={{marginTop:2}}>
-                  <div style={{fontSize:'.6rem',color:sel?'var(--gold)':'var(--parchment)',fontFamily:'Cinzel,serif',lineHeight:1.1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{dead?'✝ '+e.name:e.name}</div>
-                  <div style={{height:5,background:'rgba(0,0,0,0.5)',borderRadius:3,overflow:'hidden',margin:'2px auto',width:'90%'}}>
-                    <div style={{height:'100%',width:`${clamp((e.currentHp/e.maxHp)*100,0,100)}%`,background:'var(--red-bright)',transition:'width .3s'}}/>
-                  </div>
-                  <div style={{fontSize:'.52rem',color:'var(--parchment-dark)'}}>{Math.max(0,e.currentHp)}/{e.maxHp}</div>
-                  {e.isBoss&&e.gutsState?.active&&<div style={{fontSize:'.5rem',color:'#ffd080'}}>GUTS ×{e.gutsState.charges}</div>}
-                  {(e.activeDebuffs||[]).slice(0,2).map((d,j)=>(<span key={j} style={{fontSize:'.5rem',color:'#ff8080',display:'block'}}>{d.type==='attack_down'?'ATK':'DEF'}-{d.value}%</span>))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {/* ═══════════ ARENA ABERTA (sprites livres, estilo Pokémon) ═══════════ */}
+        <div className="battle-arena" style={{minHeight:isParty?330:300}}>
+          <div className="arena-ground"/>
+          <div className="arena-fog"/>
 
-        {/* Servos da PARTY embaixo — bustos GRANDES (estilo FGO). Clique troca o ativo. */}
-        <div style={{display:'flex',gap:6,justifyContent:'center',alignItems:'flex-end',marginBottom:8}}>
-          {party.map((m,i)=>{
-            const mdef=PLAYABLE_SERVOS[m.id]||IBARAKI;
-            const dead=m.defeated||m.hp<=0;
-            const active=i===activeIdx;
-            const isTurn=isServoTurn&&active;
-            return(
-              <div key={i}
-                className={fx.some(f=>f.targetId==='servo'&&active&&(f.kind==='dmg'||f.kind==='crit'))?'shake':''}
-                style={{position:'relative',flex:isParty?'1':'0 0 auto',maxWidth:isParty?190:240,
-                  cursor:'default',opacity:dead?0.35:active?1:0.72,
-                  transition:'all .2s',transform:active?'translateY(-4px)':'none'}}>
-                {active&&fx.filter(f=>f.targetId==='servo').map(f=>(
-                  <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'10%',zIndex:5}}>{f.text}</span>
-                ))}
-                {/* Busto grande */}
-                <div style={{position:'relative',borderRadius:'6px 6px 0 0',overflow:'hidden',
-                  border:`2px solid ${active?'var(--gold)':dead?'#333':'var(--gold-dim)'}`,borderBottom:'none',
-                  boxShadow:isTurn?'0 0 14px rgba(201,162,39,0.55)':'none',background:'linear-gradient(180deg,rgba(40,20,20,.2),rgba(20,10,10,.6))'}}>
-                {/* Retrato: GIF animado (se o servo tiver sprites) ou busto estático */}
-                {(() => {
-                  const anim=spriteAnim[i];                    // {kind,key} durante uma ação
-                  const hasSprites=!!(mdef.sprites&&mdef.sprites.idle);
-                  const spriteH=isParty?150:190;               // GIFs precisam de mais altura
-                  const bustH=isParty?130:170;
-                  if(hasSprites){
-                    const kind=anim?anim.kind:'idle';
-                    const src=mdef.sprites[kind]||mdef.sprites.idle;
-                    // A key muda a cada disparo → o React remonta o <img> e o GIF reinicia do 1º frame
-                    const k=anim?`${kind}-${anim.key}`:'idle';
-                    return(
-                      <div style={{position:'relative',height:spriteH,display:'flex',alignItems:'flex-end',justifyContent:'center',
-                        background:'radial-gradient(ellipse at 50% 85%, rgba(201,162,39,.10), transparent 70%)'}}>
-                        <img key={k} src={src} alt={mdef.name}
-                          style={{width:'100%',height:'100%',objectFit:'contain',objectPosition:'center bottom',
-                            filter:dead?'grayscale(1) brightness(0.6)':(anim&&anim.kind==='np')?'drop-shadow(0 0 12px rgba(255,180,60,.85))':'none',
-                            display:'block',transition:'filter .2s'}}
-                          onError={ev=>{ev.target.onerror=null;ev.target.src=mdef.assets.combat||mdef.assets.default;}}/>
-                        {dead&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2rem'}}>💀</div>}
-                        {active&&<div style={{position:'absolute',top:3,right:3,fontSize:'.6rem',background:'var(--gold)',color:'#1a0e0e',padding:'1px 5px',borderRadius:6,fontFamily:'Cinzel,serif'}}>ATIVO</div>}
-                      </div>
-                    );
-                  }
-                  return(
-                    <div style={{position:'relative'}}>
-                      <img src={mdef.assets.combat||mdef.assets.default} alt={mdef.name}
-                        style={{width:'100%',height:bustH,objectFit:'cover',objectPosition:'center top',
-                          filter:dead?'grayscale(1) brightness(0.6)':'none',display:'block'}}
-                        onError={ev=>{ev.target.onerror=null;ev.target.src=mdef.assets.default;}}/>
-                      {dead&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2rem'}}>💀</div>}
-                      {active&&<div style={{position:'absolute',top:3,right:3,fontSize:'.6rem',background:'var(--gold)',color:'#1a0e0e',padding:'1px 5px',borderRadius:6,fontFamily:'Cinzel,serif'}}>ATIVO</div>}
+          {/* ─── FILEIRA INIMIGA (fundo, à direita) ─── */}
+          <div className="arena-row" style={{paddingTop:10,paddingRight:'6%',justifyContent:'flex-end',minHeight:130,gap:6}}>
+            {enemies.map((e,i)=>{
+              const dead=e.currentHp<=0;
+              const sel=i===selectedTarget&&!dead;
+              const bossArt=e.isShunoban?(SHUNOBAN.assets.combat||SHUNOBAN.assets.battle):e.isGosanjo?(GOSANJO.assets.combat||GOSANJO.assets.battle):e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:QIN.assets.combat||QIN.assets.default;
+              const h=e.isBoss?122:80;
+              const shaking=fx.some(f=>f.targetId===e.instanceId&&(f.kind==='dmg'||f.kind==='crit'));
+              return(
+                <div key={e.instanceId} onClick={()=>!dead&&setSelectedTarget(i)}
+                  className={`fighter ${dead?'dead':''} ${sel?'selected':''} ${shaking?'shake':''}`}
+                  style={{cursor:dead?'default':'pointer',width:e.isBoss?130:84}}>
+                  {fx.filter(f=>f.targetId===e.instanceId).map(f=>(
+                    <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'-4%',zIndex:5}}>{f.text}</span>
+                  ))}
+                  {/* status flutuante acima do inimigo */}
+                  <div className={`status-card${sel?' active':''}`} style={{marginBottom:4,minWidth:0}}>
+                    <div className="status-name" style={{fontSize:'.55rem',color:sel?'var(--gold)':'var(--parchment)'}}>{dead?'✝ ':''}{e.name}</div>
+                    <div className={`status-bar status-hp${(e.currentHp/e.maxHp)<0.3?' low':''}`}>
+                      <div style={{width:`${clamp((e.currentHp/e.maxHp)*100,0,100)}%`,background:'var(--red-bright)'}}/>
                     </div>
-                  );
-                })()}
-                </div>
-                {/* Barra de HP/NP sob o busto */}
-                <div style={{background:'rgba(0,0,0,0.55)',border:`2px solid ${active?'var(--gold)':dead?'#333':'var(--gold-dim)'}`,borderTop:'none',borderRadius:'0 0 6px 6px',padding:'3px 5px'}}>
-                  <div style={{fontSize:'.55rem',color:active?'var(--gold)':'var(--parchment)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',textAlign:'center'}}>{mdef.name.split(' ')[0]}</div>
-                  <div style={{height:5,background:'rgba(0,0,0,0.6)',borderRadius:3,overflow:'hidden',margin:'2px 0'}}>
-                    <div style={{height:'100%',width:`${clamp(m.hp/m.hpMax*100,0,100)}%`,background:m.hp/m.hpMax<0.3?'var(--red-bright)':'#5a9a5a',transition:'width .3s'}}/>
+                    <div className="status-num">{Math.max(0,e.currentHp)}</div>
+                    {(e.stunned||0)>0&&<div style={{fontSize:'.5rem',color:'#c9a0ff'}}>💫 ATORD.</div>}
+                    {e.isBoss&&e.gutsState?.active&&<div style={{fontSize:'.5rem',color:'#ffd080'}}>GUTS ×{e.gutsState.charges}</div>}
+                    {(e.activeDebuffs||[]).slice(0,2).map((d,j)=>(<span key={j} style={{fontSize:'.5rem',color:'#ff8080',display:'block'}}>{d.type==='attack_down'?'ATK':'DEF'}-{d.value}%</span>))}
                   </div>
-                  <div style={{height:3,background:'rgba(0,0,0,0.6)',borderRadius:2,overflow:'hidden'}}>
-                    <div style={{height:'100%',width:`${clamp(m.npBar,0,100)}%`,background:'var(--gold)',transition:'width .3s'}}/>
+                  {/* plataforma sob o inimigo */}
+                  <div className="arena-pad" style={{left:'50%',transform:'translateX(-50%)',bottom:-4,width:'88%',height:16}}/>
+                  <img src={e.isBoss?bossArt:(e.sprite||enemySprite(e))} alt={e.name}
+                    style={{width:'100%',height:h,transform:sel?'scale(1.06)':'scale(1)'}}
+                    onError={ev=>{ev.target.style.visibility='hidden';}}/>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ─── FILEIRA DOS SERVOS (frente, à esquerda) ─── */}
+          <div className="arena-row" style={{paddingLeft:'4%',paddingBottom:8,justifyContent:'flex-start',gap:isParty?2:0}}>
+            {party.map((m,i)=>{
+              const mdef=PLAYABLE_SERVOS[m.id]||IBARAKI;
+              const dead=m.defeated||m.hp<=0;
+              const active=i===activeIdx;
+              const isTurn=isServoTurn&&active;
+              const anim=spriteAnim[i];
+              const hasSprites=!!(mdef.sprites&&mdef.sprites.idle);
+              const kind=anim?anim.kind:'idle';
+              const src=hasSprites?(mdef.sprites[kind]||mdef.sprites.idle):(mdef.assets.combat||mdef.assets.default);
+              const k=hasSprites&&anim?`${kind}-${anim.key}`:'idle';
+              // Sprites animados ficam maiores; bustos estáticos mantêm tamanho menor
+              const h=hasSprites?(isParty?168:196):(isParty?128:150);
+              const w=hasSprites?(isParty?168:200):(isParty?110:130);
+              const shaking=fx.some(f=>f.targetId==='servo'&&active&&(f.kind==='dmg'||f.kind==='crit'));
+              return(
+                <div key={i}
+                  className={`fighter ${dead?'dead':''} ${isTurn?'acting':''} ${shaking?'shake':''}`}
+                  style={{width:w,cursor:'default',opacity:dead?0.32:active?1:0.78}}>
+                  {active&&fx.filter(f=>f.targetId==='servo').map(f=>(
+                    <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'2%',zIndex:5}}>{f.text}</span>
+                  ))}
+                  {/* plataforma sob o servo */}
+                  <div className="arena-pad" style={{left:'50%',transform:'translateX(-50%)',bottom:26,width:'80%',height:20}}/>
+                  <img key={k} src={src} alt={mdef.name}
+                    style={{width:'100%',height:h,
+                      filter:dead?'grayscale(1) brightness(.6)':(anim&&anim.kind==='np')?'drop-shadow(0 0 14px rgba(255,180,60,.9)) drop-shadow(0 6px 10px rgba(0,0,0,.6))':undefined}}
+                    onError={ev=>{ev.target.onerror=null;ev.target.src=mdef.assets.combat||mdef.assets.default;}}/>
+                  {dead&&<div style={{position:'absolute',top:'40%',left:'50%',transform:'translate(-50%,-50%)',fontSize:'2rem'}}>💀</div>}
+                  {/* status flutuante sob o servo */}
+                  <div className={`status-card${active?' active':''}`} style={{marginTop:-2}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:4}}>
+                      <span className="status-name">{mdef.name.split(' ')[0]}</span>
+                      {active&&<span style={{fontSize:'.5rem',background:'var(--gold)',color:'#1a0e0e',padding:'0 4px',borderRadius:5,fontFamily:'Cinzel,serif'}}>▶</span>}
+                    </div>
+                    <div className={`status-bar status-hp${(m.hp/m.hpMax)<0.3?' low':''}`}>
+                      <div style={{width:`${clamp(m.hp/m.hpMax*100,0,100)}%`}}/>
+                    </div>
+                    <div className="status-bar status-np">
+                      <div style={{width:`${clamp(m.npBar,0,100)}%`}}/>
+                    </div>
+                    <div className="status-num">{Math.max(0,m.hp)}/{m.hpMax}</div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         {/* HUD do servo ativo: nome, nível, buffs, diálogo */}
