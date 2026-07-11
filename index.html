@@ -1359,6 +1359,15 @@ const SITH_PLAYABLE={
     lose:'assets/servos/archer/sith_angry.png',
     encounter:'assets/servos/archer/archer_encounter.jpg',
   },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) ──
+  sprites:{
+    idle:'assets/servos/archer/sith_espera.gif',
+    attack:'assets/servos/archer/sith_ataque.gif',
+    np:'assets/servos/archer/sith_np.gif',
+    // flip:true → use se a arte dela olhar para a ESQUERDA (como a da Ibaraki).
+    // Se ela já olhar para a direita, deixe comentado.
+    flip:true,
+  },
 };
 PLAYABLE_SERVOS.sith_archer=SITH_PLAYABLE;
 
@@ -2547,7 +2556,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.16</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.17</p>
       </div>
     </div>
   );
@@ -6904,8 +6913,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
               const kind=anim?anim.kind:'idle';
               const src=hasSprites?(mdef.sprites[kind]||mdef.sprites.idle):(mdef.assets.combat||mdef.assets.default);
               const k=hasSprites&&anim?`${kind}-${anim.key}`:'idle';
-              const h=hasSprites?(isParty?190:215):(isParty?120:140);
-              const w=hasSprites?(isParty?170:200):(isParty?96:112);
+              const h=hasSprites?(isParty?176:215):(isParty?120:140);
+              const w=hasSprites?(isParty?152:200):(isParty?96:112);
               const shaking=fx.some(f=>f.targetId==='servo'&&active&&(f.kind==='dmg'||f.kind==='crit'));
               return(
                 <div key={i}
