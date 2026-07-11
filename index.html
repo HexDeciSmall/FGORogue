@@ -512,6 +512,7 @@ const IBARAKI={
     idle:'assets/servos/ibaraki/ibaraki_espera.gif',
     attack:'assets/servos/ibaraki/ibaraki_ataque.gif',
     np:'assets/servos/ibaraki/ibaraki_np.gif',
+    facesRight:true, // a arte original olha para a DIREITA → espelhar quando o alvo estiver à esquerda
   },
 };
 
@@ -2538,7 +2539,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.12</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.13</p>
       </div>
     </div>
   );
@@ -6881,8 +6882,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           <div className="arena-ground"/>
           <div className="arena-fog"/>
 
-          {/* ─── FILEIRA INIMIGA (fundo, à direita) ─── */}
-          <div className="arena-row" style={{paddingTop:10,paddingRight:'6%',justifyContent:'flex-end',minHeight:130,gap:6}}>
+          {/* ─── FILEIRA INIMIGA (fundo, à ESQUERDA) ─── */}
+          <div className="arena-row" style={{paddingTop:10,paddingLeft:'6%',justifyContent:'flex-start',minHeight:130,gap:6}}>
             {enemies.map((e,i)=>{
               const dead=e.currentHp<=0;
               const sel=i===selectedTarget&&!dead;
@@ -6917,8 +6918,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             })}
           </div>
 
-          {/* ─── FILEIRA DOS SERVOS (frente, à esquerda) ─── */}
-          <div className="arena-row" style={{paddingLeft:'4%',paddingBottom:8,justifyContent:'flex-start',gap:isParty?2:0}}>
+          {/* ─── FILEIRA DOS SERVOS (frente, à DIREITA) ─── */}
+          {/* Os inimigos ficam à esquerda, então os sprites que olham para a direita
+              são espelhados (scaleX -1) para encararem o oponente. */}
+          <div className="arena-row" style={{paddingRight:'4%',paddingBottom:8,justifyContent:'flex-end',gap:isParty?2:0}}>
             {party.map((m,i)=>{
               const mdef=PLAYABLE_SERVOS[m.id]||IBARAKI;
               const dead=m.defeated||m.hp<=0;
@@ -6944,6 +6947,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                   <div className="arena-pad" style={{left:'50%',transform:'translateX(-50%)',bottom:26,width:'80%',height:20}}/>
                   <img key={k} src={src} alt={mdef.name}
                     style={{width:'100%',height:h,
+                      // Sprites cuja arte olha para a direita são espelhados: os inimigos
+                      // estão à esquerda, então a servo precisa encarar aquele lado.
+                      transform:(hasSprites&&mdef.sprites.facesRight)?'scaleX(-1)':undefined,
                       filter:dead?'grayscale(1) brightness(.6)':(anim&&anim.kind==='np')?'drop-shadow(0 0 14px rgba(255,180,60,.9)) drop-shadow(0 6px 10px rgba(0,0,0,.6))':undefined}}
                     onError={ev=>{ev.target.onerror=null;ev.target.src=mdef.assets.combat||mdef.assets.default;}}/>
                   {dead&&<div style={{position:'absolute',top:'40%',left:'50%',transform:'translate(-50%,-50%)',fontSize:'2rem'}}>💀</div>}
