@@ -1135,6 +1135,7 @@ const QIN={
     attack:'assets/servos/qin/qin_ataque.gif',
     np:'assets/servos/qin/qin_np.gif',
     flip:true, // mesma orientação de arte da versão jogável (ver nota lá embaixo)
+    scale:1.3, // a arte da Qin tem mais margem vazia que a das outras — ajuste este número se ainda ficar desproporcional
   },
 };
 
@@ -1218,6 +1219,7 @@ const QIN_PLAYABLE={
     // flip:true → use se a arte dela olhar para a ESQUERDA (como a da Ibaraki e da Sith).
     // Se ela já olhar para a direita, deixe comentado/false.
     flip:true,
+    scale:1.3, // a arte da Qin tem mais margem vazia que a das outras — ajuste este número se ainda ficar desproporcional
   },
 };
 
@@ -6965,8 +6967,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                   ))}
                   {isTurn&&<div className="arena-glow" style={{bottom:hasSprites?76:30,width:w*0.5,height:26}}/>}
                   <img key={k} src={src} alt={mdef.name}
-                    style={{width:'100%',height:h,
-                      transform:(hasSprites&&mdef.sprites.flip)?'scaleX(-1)':undefined,
+                    style={{width:'100%',height:h,transformOrigin:'center bottom',
+                      transform:`${(hasSprites&&mdef.sprites.flip)?'scaleX(-1) ':''}scale(${hasSprites?(mdef.sprites.scale||1):1})`,
                       filter:dead?'grayscale(1) brightness(.6)':(anim&&anim.kind==='np')?'drop-shadow(0 0 16px rgba(255,180,60,.95)) drop-shadow(0 4px 8px rgba(0,0,0,.55))':undefined}}
                     onError={ev=>{ev.target.onerror=null;ev.target.src=mdef.assets.combat||mdef.assets.default;}}/>
                   <div className="arena-shadow" style={{bottom:hasSprites?86:26,width:w*0.34,height:15}}/>
@@ -7014,11 +7016,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                     <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'-12%',zIndex:5}}>{f.text}</span>
                   ))}
                   <img key={eK} src={hasBossSprites?bossSpriteSrc:(e.isBoss?bossArt:(e.sprite||enemySprite(e)))} alt={e.name}
-                    style={{width:'100%',height:h,
+                    style={{width:'100%',height:h,transformOrigin:'center bottom',
                       // A boss fica à DIREITA olhando para a ESQUERDA: se a arte original olha
                       // para a esquerda (flip:true, mesmo sentido da versão jogável), já está
                       // correta sem espelhar. Só espelha se a arte original olhar p/ direita.
-                      transform:`${sel?'scale(1.05)':'scale(1)'} ${(hasBossSprites&&!bossDef.sprites.flip)?'scaleX(-1)':''}`,
+                      transform:`${(hasBossSprites&&!bossDef.sprites.flip)?'scaleX(-1) ':''}scale(${(sel?1.05:1)*(hasBossSprites?(bossDef.sprites.scale||1):1)})`,
                       transition:'transform .15s',
                       filter:(eAnim&&eAnim.kind==='np')?'drop-shadow(0 0 16px rgba(255,90,90,.9)) drop-shadow(0 4px 8px rgba(0,0,0,.55))':undefined}}
                     onError={ev=>{ev.target.onerror=null;ev.target.src=e.isBoss?bossArt:enemySprite(e);}}/>
