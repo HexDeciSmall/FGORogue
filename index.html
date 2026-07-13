@@ -2680,7 +2680,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.31</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.32</p>
       </div>
     </div>
   );
@@ -5202,7 +5202,7 @@ const PATH_THEMES={
   shinohara:[['left','🌲','Trilha da Floresta'],['center','⛰️','Passo da Montanha'],['right','🏞️','Margem do Rio']],
 };
 
-function MapScreen({camp,onChoosePath,onNavigate}){
+function MapScreen({camp,onChoosePath,onNavigate,onGiveUp}){
   const{servo,phase,maxPhases}=camp;
   const curMap=(camp.towerMode?TOWER_MAPS[camp.mapId]:MAPS[camp.mapId])||MAPS.bosque;
   // Torre: boss só na última fase (20). Campanha: últimas 2 fases levam ao boss.
@@ -5267,6 +5267,10 @@ function MapScreen({camp,onChoosePath,onNavigate}){
         <div style={{marginTop:12,fontSize:'.7rem',color:'var(--parchment-dark)',textAlign:'center'}}>
           Combate: +{XP_COMBAT_WIN} XP · +500 QP · +30 Bond &nbsp;|&nbsp; Evento: +250 QP &nbsp;|&nbsp; Boss: +{XP_BOSS_WIN} XP · +1500 QP
         </div>
+        <button className="btn btn-red btn-full" style={{marginTop:16,opacity:.8}}
+          onClick={()=>{if(confirm('Desistir da jornada atual? Você mantém tudo que já ganhou até aqui (SQ, QP, XP e Bond), mas a run atual é encerrada.'))onGiveUp();}}>
+          🏳️ Desistir da Jornada
+        </button>
       </div>
     </div>
   );
@@ -7873,6 +7877,16 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     setStage('result');
   }
 
+  // Desistir da jornada a partir do mapa (Campanha ou Torre) — mantém tudo que já
+  // foi ganho até aqui (SQ/QP/XP/Bond já estão depositados em tempo real) e encerra
+  // a run como se fosse uma derrota, sem precisar perder de fato em combate.
+  function onGiveUp(){
+    setCampResult({type:'lose',
+      sq:camp.sqEarned||0,qp:camp.qpEarned||0,
+      xp:camp.xpEarned||0,bondEarned:camp.bondEarned||0});
+    setStage('result');
+  }
+
   function onBossLose(finalCamp){
     setCampResult({type:'lose',
       sq:finalCamp.sqEarned||0,qp:finalCamp.qpEarned||0,
@@ -8151,7 +8165,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     </div>
   );
   if(stage==='bossLoseStory')return <StoryScreen profile={profile} script={STORY_BOSS_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
-  if(stage==='map')return <MapScreen camp={camp} onChoosePath={choosePath} onNavigate={onNavigate}/>;
+  if(stage==='map')return <MapScreen camp={camp} onChoosePath={choosePath} onNavigate={onNavigate} onGiveUp={onGiveUp}/>;
   if(stage==='combat')return <CombatScreen camp={camp} isBoss={false} onWin={onCombatWin} onLose={onCombatLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
   if(stage==='boss')return <CombatScreen camp={camp} isBoss={true} onWin={onBossWin} onLose={onBossLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
   if(stage==='event')return <EventScreen camp={camp} type={eventType} onFinish={onEventFinish} setCamp={setCamp} setProfile={setProfile}/>;
