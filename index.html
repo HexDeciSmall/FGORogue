@@ -7,6 +7,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -166,6 +168,15 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .char-card-stats{font-size:.6rem;color:var(--parchment-dark);margin-bottom:6px}
 .char-card .bar-label{font-size:.52rem}
 .char-card .bar-track{height:7px}
+
+/* ── Ranking Online ── */
+.rank-list{display:flex;flex-direction:column;gap:4px}
+.rank-row{display:flex;align-items:center;gap:10px;padding:7px 10px;background:rgba(0,0,0,0.3);
+  border:1px solid rgba(201,162,39,0.2);border-radius:4px}
+.rank-row.top{border-color:var(--gold-dim);background:rgba(201,162,39,0.08)}
+.rank-pos{width:32px;text-align:center;font-family:'Cinzel',serif;color:var(--gold);font-size:.8rem;flex-shrink:0}
+.rank-name{flex:1;font-size:.8rem;color:var(--parchment);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-value{font-family:'Cinzel',serif;color:var(--gold);font-size:.8rem;flex-shrink:0}
 .bond-bar-track{height:10px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow:hidden}
 .bond-bar-fill{height:100%;background:linear-gradient(90deg,var(--oni-purple),var(--oni-purple-light));border-radius:10px;transition:width .5s ease}
 
@@ -408,6 +419,52 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 <div id="root"></div>
 <script type="text/babel">
 const {useState,useEffect,useRef,useCallback}=React;
+
+// ══════════════════════════════════════════════════════
+// FIREBASE — Ranking Online (leitura pública, escrita restrita via regras do Firestore)
+// ══════════════════════════════════════════════════════
+const firebaseConfig={
+  apiKey:"AIzaSyCopNVtmn5mu9ADg4JADKEGBJ6CSZSdzGM",
+  authDomain:"fate-rogue.firebaseapp.com",
+  projectId:"fate-rogue",
+  storageBucket:"fate-rogue.firebasestorage.app",
+  messagingSenderId:"177736740511",
+  appId:"1:177736740511:web:07a303e16d9701e0b1bcaa",
+};
+let fbDb=null;
+try{
+  const fbApp=firebase.initializeApp(firebaseConfig);
+  fbDb=firebase.firestore();
+}catch(e){console.error('Firebase não pôde iniciar:',e);}
+
+// Cada categoria vira sua própria coleção (ranking_<cat>) — evita precisar de
+// índice composto no Firestore (orderBy simples já é suportado por padrão).
+const RANK_CATS={
+  dano:{label:'Maior Dano Causado',icon:'⚔️',unit:'',ready:true},
+  runs:{label:'Quantidade de Runs',icon:'🔁',unit:'',ready:true},
+  mestre:{label:'Nível de Mestre',icon:'👑',unit:'',ready:false}, // ainda não existe essa métrica no jogo
+};
+// Envia um novo placar (sempre CRIA um documento novo — nunca edita/apaga; é assim
+// que as regras de segurança do Firestore estão configuradas).
+async function submitRankScore(cat,valor,nome){
+  if(!fbDb)return false;
+  try{
+    await fbDb.collection(`ranking_${cat}`).add({
+      valor:Math.round(valor),
+      nome:(nome||'Anônimo').trim().slice(0,28)||'Anônimo',
+      ts:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return true;
+  }catch(e){console.error(`Erro ao enviar ranking (${cat}):`,e);return false;}
+}
+// Busca os N melhores placares de uma categoria, do maior pro menor.
+async function fetchRanking(cat,max=10){
+  if(!fbDb)return[];
+  try{
+    const snap=await fbDb.collection(`ranking_${cat}`).orderBy('valor','desc').limit(max).get();
+    return snap.docs.map(d=>d.data());
+  }catch(e){console.error(`Erro ao buscar ranking (${cat}):`,e);return[];}
+}
 
 // ══════════════════════════════════════════════════════
 // DADOS E FÓRMULAS
@@ -2678,9 +2735,85 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('profile')}>📜 &nbsp; Perfil</button>
         <button className="btn btn-full" onClick={()=>onNavigate('shop')}>🏪 &nbsp; Loja de Perks</button>
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
+        <button className="btn btn-full" onClick={()=>onNavigate('ranking')}>🌐 &nbsp; Ranking Online</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.32</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.33</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── RANKING ONLINE (Firebase) ───────────────────────
+function RankingScreen({onNavigate,profile}){
+  const[nome,setNome]=useState(profile.nickname||'');
+  const[sending,setSending]=useState(false);
+  const[notif,setNotif]=useState('');
+  const[boards,setBoards]=useState({dano:null,runs:null}); // null = carregando
+
+  async function loadAll(){
+    const[dano,runs]=await Promise.all([fetchRanking('dano'),fetchRanking('runs')]);
+    setBoards({dano,runs});
+  }
+  useEffect(()=>{loadAll();},[]);
+
+  async function handleSubmit(){
+    if(!nome.trim()){setNotif('Digite um nome antes de enviar!');return;}
+    if(!fbDb){setNotif('Ranking online indisponível no momento.');return;}
+    setSending(true);
+    const stats=profile.stats||{runs:0,highestDamage:0};
+    let ok=true;
+    if((stats.highestDamage||0)>0)ok=await submitRankScore('dano',stats.highestDamage,nome)&&ok;
+    if((stats.runs||0)>0)ok=await submitRankScore('runs',stats.runs,nome)&&ok;
+    setSending(false);
+    if(ok){setNotif('✦ Placar enviado!');loadAll();}
+    else setNotif('Não foi possível enviar agora. Tente de novo mais tarde.');
+  }
+
+  return(
+    <div className="screen">
+      <div className="panel" style={{maxWidth:640}}>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:4}}>🌐 RANKING ONLINE</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.78rem',marginBottom:16}}>
+          Placares enviados por quem já jogou. Envie o seu abaixo — fica visível pra todo mundo.
+        </p>
+
+        <div style={{display:'flex',gap:8,marginBottom:6,flexWrap:'wrap'}}>
+          <input value={nome} onChange={e=>setNome(e.target.value)} placeholder="Seu nome de guerra" maxLength={28}
+            style={{flex:1,minWidth:160,padding:'8px 10px',background:'rgba(0,0,0,.35)',
+              border:'1px solid var(--gold-dim)',borderRadius:4,color:'var(--parchment)',fontFamily:"'Crimson Text',serif",fontSize:'.85rem'}}/>
+          <button className="btn" onClick={handleSubmit} disabled={sending}>{sending?'Enviando...':'📤 Enviar meu placar'}</button>
+        </div>
+        {notif&&<p style={{color:'var(--gold)',fontSize:'.75rem',marginBottom:10}}>{notif}</p>}
+        <p style={{color:'var(--parchment-dark)',fontSize:'.68rem',marginBottom:18,fontStyle:'italic'}}>
+          Seu recorde de dano: {(profile.stats?.highestDamage||0).toLocaleString()} &nbsp;|&nbsp; Suas runs: {profile.stats?.runs||0}
+        </p>
+
+        {Object.entries(RANK_CATS).map(([key,cat])=>(
+          <div key={key} style={{marginBottom:22}}>
+            <div className="divider"><span className="divider-text">{cat.icon} {cat.label.toUpperCase()}</span></div>
+            {!cat.ready
+              ?<p style={{color:'var(--parchment-dark)',fontSize:'.75rem',textAlign:'center',fontStyle:'italic'}}>Em breve — essa métrica ainda não existe no jogo.</p>
+              :boards[key]===null
+              ?<p style={{color:'var(--parchment-dark)',fontSize:'.75rem',textAlign:'center'}}>Carregando...</p>
+              :boards[key].length===0
+              ?<p style={{color:'var(--parchment-dark)',fontSize:'.75rem',textAlign:'center'}}>Ninguém enviou um placar ainda. Seja o primeiro!</p>
+              :(
+                <div className="rank-list">
+                  {boards[key].map((r,i)=>(
+                    <div key={i} className={`rank-row${i<3?' top':''}`}>
+                      <span className="rank-pos">{i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`}</span>
+                      <span className="rank-name">{r.nome}</span>
+                      <span className="rank-value">{(r.valor||0).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+          </div>
+        ))}
+
+        <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar</button>
       </div>
     </div>
   );
@@ -8248,6 +8381,7 @@ function App(){
   if(screen==='gacha')return <GachaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='comics')return <ComicAlbumScreen onNavigate={navigate}/>;
   if(screen==='achievements')return <AchievementsScreen onNavigate={navigate} profile={profile}/>;
+  if(screen==='ranking')return <RankingScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='codex')return <CodexScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='config')return <ConfigScreen onNavigate={navigate}/>;
   if(screen==='campaign')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate}/>;
