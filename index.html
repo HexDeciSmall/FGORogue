@@ -2578,7 +2578,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.24</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.25</p>
       </div>
     </div>
   );
@@ -5119,7 +5119,7 @@ function MapScreen({camp,onChoosePath,onNavigate}){
           </div>
         ):(
           <>
-            {camp.innUnlocked&&(
+            {(camp.innUnlocked||camp.mapId==='shinohara')&&(
               <button className="btn btn-full" style={{marginBottom:14,border:'1px solid var(--gold)',background:'rgba(201,162,39,0.12)',color:'var(--gold)'}}
                 onClick={()=>onChoosePath('inn')}>
                 {camp.mapId==='shinohara'
