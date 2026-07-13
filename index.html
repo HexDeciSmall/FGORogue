@@ -1009,6 +1009,23 @@ const STORY_MAP5_GOSANJO_LOSE={
   ],
 };
 
+// Derrota contra o Shunoban (boss do mapa 7).
+const STORY_MAP7_SHUNOBAN_LOSE={
+  start:[
+    {type:'narration',text:'Sentindo o corpo sendo triturado pelos enormes dentes daquele Ogro gigante, sua visão começa a escurecer.'},
+    {type:'shuten',text:'Devorado vivo? Isso foi muito visceral, fufufu, nem para cuidar da minha irmãzinha você foi capaz, comece novamente.'},
+  ],
+};
+
+// Vitória contra o Shunoban (boss do mapa 7).
+const STORY_MAP7_SHUNOBAN_WIN={
+  start:[
+    {type:'master',text:'Ok, sem mais planos de me usarem como isca viva.'},
+    {type:'ibaraki',expr:'exp1',text:'Kakaka, você foi perfeito, seus olhos com pavor seria algo que pagaria novamente para ver.'},
+    {type:'archer',expr:'sith_ow',text:'Não gostaria de ter vencido tão rápido, só de imaginar ter que entrar naquela coisa novamente....'},
+  ],
+};
+
 // Vitória contra o Go-Sanjo (boss do mapa 5).
 const STORY_MAP5_GOSANJO_WIN={
   start:[
@@ -2578,7 +2595,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.25</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.26</p>
       </div>
     </div>
   );
@@ -7615,8 +7632,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mapId==='kurikara'){setStage('map4GenjiWin');return;}
     // Mapa 5 (Go-Sanjo Falso): mostra o diálogo de vitória antes de encerrar.
     if(mapId==='kurikara_city'){setStage('map5GosanjoWin');return;}
-    // Mapa 7 (Shunoban): último mapa por ora — vencer encerra a jornada.
-    if(mapId==='shinohara'){finishCampaign(updatedCamp,true);return;}
+    // Mapa 7 (Shunoban): mostra o diálogo de vitória antes de encerrar a jornada.
+    if(mapId==='shinohara'){setStage('map7ShunobanWin');return;}
     finishCampaign(updatedCamp,true);
   }
 
@@ -7695,6 +7712,11 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     }
   }
 
+  // Após o diálogo de vitória contra o Shunoban: encerra a jornada (Mapa 7 é o último por ora).
+  function afterShunobanWin(){
+    finishCampaign(camp,true);
+  }
+
   // Constrói o estado de um novo mapa carregando HP/NP/moedas da jornada
   function enterNextMap(mapId){
     const carry={
@@ -7750,6 +7772,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mid==='tennobara'){setStage('nitroLoseStory');return;}
     if(mid==='kurikara'){setStage('map4GenjiLose');return;} // Ninja: diálogo de derrota (Shuten)
     if(mid==='kurikara_city'){setStage('map5GosanjoLose');return;} // Go-Sanjo: diálogo de derrota (Shuten)
+    if(mid==='shinohara'){setStage('map7ShunobanLose');return;} // Shunoban: diálogo de derrota (Shuten)
     setStage('bossLoseStory');
   }
 
@@ -7921,6 +7944,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map7F11')return <StoryScreen profile={profile} script={STORY_MAP7_F11} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
   if(stage==='map7F13')return <StoryScreen profile={profile} script={STORY_MAP7_F13} finishLabel="Descansar e esperar a manhã →" onFinish={()=>setStage('map')}/>;
   if(stage==='map7F14')return <StoryScreen profile={profile} script={STORY_MAP7_F14} finishLabel="⚔️ A emboscada começa!" onFinish={()=>setStage('map')}/>;
+  if(stage==='map7ShunobanWin')return <StoryScreen profile={profile} script={STORY_MAP7_SHUNOBAN_WIN} finishLabel="Continuar →" onFinish={afterShunobanWin}/>;
+  if(stage==='map7ShunobanLose')return <StoryScreen profile={profile} script={STORY_MAP7_SHUNOBAN_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   if(stage==='map6Map7Transition')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
