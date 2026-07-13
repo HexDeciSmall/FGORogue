@@ -2595,7 +2595,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.26</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.27</p>
       </div>
     </div>
   );
@@ -3847,7 +3847,7 @@ const GOSANJO={
 // Sem multi-ataque; a ameaça vem do dano por golpe e da chance de atordoar a party.
 const SHUNOBAN={
   id:'shunoban',name:'Shunoban, o Ciclope Vermelho',className:'Berserker',isBoss:true,
-  hp:180000,attack:2600,
+  hp:280000,attack:2600,
   attributes:{
     strength:{rank:'A+',points:60},
     agility:{rank:'D',points:20}, // lento — servos geralmente agem antes
@@ -3857,7 +3857,7 @@ const SHUNOBAN={
     np:{rank:'B',points:40},
   },
   npRegenPerTurn:4,
-  defensePassive:20,
+  defensePassive:32,
   skills:{
     // Ataque de Terror: golpe forte com 60% de atordoar (CD 3t)
     terror:{cd:3,dmgMult:1.4,stunChance:60,stunTurns:1},
