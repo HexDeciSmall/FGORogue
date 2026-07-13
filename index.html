@@ -442,14 +442,25 @@ try{
 const RANK_CATS={
   dano:{label:'Maior Dano Causado',icon:'⚔️',unit:'',ready:true},
   runs:{label:'Quantidade de Runs',icon:'🔁',unit:'',ready:true},
-  mestre:{label:'Nível de Mestre',icon:'👑',unit:'',ready:false}, // ainda não existe essa métrica no jogo
+  mestre:{label:'Nível de Mestre',icon:'👑',unit:'',ready:true},
 };
-// Envia um novo placar (sempre CRIA um documento novo — nunca edita/apaga; é assim
-// que as regras de segurança do Firestore estão configuradas).
+// Identificador estável do "jogador" (na verdade, do navegador/dispositivo — não
+// existe login neste projeto). Gerado uma vez e salvo no profile; é o que permite
+// SUBSTITUIR o placar anterior em vez de acumular um documento novo por envio.
+function getOrCreateDeviceId(){
+  const p=loadProfile();
+  if(p.deviceId)return p.deviceId;
+  const id='dev_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);
+  saveProfile({...p,deviceId:id});
+  return id;
+}
+// Envia um placar SUBSTITUINDO o anterior do mesmo dispositivo (mesmo doc ID),
+// então cada jogador ocupa no máximo uma linha por categoria no ranking.
 async function submitRankScore(cat,valor,nome){
   if(!fbDb)return false;
   try{
-    await fbDb.collection(`ranking_${cat}`).add({
+    const id=getOrCreateDeviceId();
+    await fbDb.collection(`ranking_${cat}`).doc(id).set({
       valor:Math.round(valor),
       nome:(nome||'Anônimo').trim().slice(0,28)||'Anônimo',
       ts:firebase.firestore.FieldValue.serverTimestamp(),
@@ -2041,8 +2052,9 @@ const SAVE_KEY='oni_tactics_profile';
 const BOND_KEY=id=>`oni_tactics_bond_${id}`;
 
 function loadProfile(){
-  const def={nickname:'',sq:0,qp:0,qinDefeats:0,advSkillsUnlocked:false,
+  const def={nickname:'',sq:0,qp:0,qinDefeats:0,advSkillsUnlocked:false,deviceId:null,
     stats:{runs:0,enemiesDefeated:0,highestDamage:0},
+    magus:{level:1,xp:0}, // EXP Magus — nível do Mestre (jogador), separado do XP dos Servos
     achievements:{}, // id da conquista → true quando concedida (recompensa já paga)
     codex:{}, // id do personagem → true quando descoberto no Álbum
     skills:{manaBuster:1,transf:1,veneno:1,tormento:1,ossos:1,ukiyoe:1,fundir:1},
@@ -2062,6 +2074,7 @@ function loadProfile(){
       gachaOwned:saved.gachaOwned||[],
       perks:{...def.perks,...(saved.perks||{})},
       stats:{...def.stats,...(saved.stats||{})},
+      magus:{...def.magus,...(saved.magus||{})},
       achievements:{...def.achievements,...(saved.achievements||{})},
       codex:{...def.codex,...(saved.codex||{})},
       equippedPerks:saved.equippedPerks||def.equippedPerks,
@@ -2069,6 +2082,33 @@ function loadProfile(){
   }catch{return def;}
 }
 function saveProfile(p){try{localStorage.setItem(SAVE_KEY,JSON.stringify(p));}catch{}}
+
+// ─── EXP MAGUS (Nível de Mestre) ──────────────────────
+// Progressão do JOGADOR, separada do XP de cada Servo. Ganha-se em Campanha e
+// Torre: um pouco a cada combate vencido, e um bônus maior ao finalizar a run
+// (vitória, derrota ou desistência — o importante é ter jogado a run inteira).
+const MAGUS_MAX_LEVEL=60;
+// Curva de custo por nível (cresce ~12% a cada nível); não usa tabela fixa
+// porque o teto é bem mais alto que o dos Servos (25).
+function magusXpToNext(lvl){return Math.round(120*Math.pow(1.12,lvl-1));}
+const MAGUS_XP_COMBAT=15;        // por combate comum vencido
+const MAGUS_XP_BOSS=50;          // por boss vencido
+const MAGUS_XP_RUN_COMPLETE=100; // por run finalizada (Campanha ou Torre)
+// Leitura/gravação ATÔMICA — mesmo padrão de depositSQ/depositQP/addServoXP:
+// sempre lê o profile mais recente do localStorage antes de somar.
+function addMagusXp(pts){
+  if(!pts)return loadProfile();
+  const p=loadProfile();
+  let magus={...(p.magus||{level:1,xp:0})};
+  magus.xp+=pts;
+  while(magus.level<MAGUS_MAX_LEVEL&&magus.xp>=magusXpToNext(magus.level)){
+    magus.xp-=magusXpToNext(magus.level);
+    magus.level++;
+  }
+  const updated={...p,magus};
+  saveProfile(updated);
+  return updated;
+}
 
 // ─── BANCO DE SQ / QP (atômico) ──────────────────────
 // Read-modify-write ATÔMICO: sempre lê o valor mais recente do localStorage
@@ -2724,6 +2764,7 @@ function MenuScreen({onNavigate,profile}){
         {profile.nickname&&(
           <p style={{color:'var(--parchment-dark)',fontSize:'.85rem',marginBottom:16,fontStyle:'italic'}}>
             Mestre: <strong style={{color:'var(--gold)'}}>{profile.nickname}</strong>
+            &nbsp;·&nbsp; <strong style={{color:'#e6c34c'}}>Nv.{(profile.magus||{level:1}).level}</strong>
             &nbsp;·&nbsp; <strong style={{color:'var(--gold)'}}>{profile.sq}</strong> SQ
             &nbsp;·&nbsp; <strong style={{color:'#4fc3f7'}}>{(profile.qp||0).toLocaleString()}</strong> QP
           </p>
@@ -2738,7 +2779,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('ranking')}>🌐 &nbsp; Ranking Online</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.33</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.35</p>
       </div>
     </div>
   );
@@ -2749,11 +2790,11 @@ function RankingScreen({onNavigate,profile}){
   const[nome,setNome]=useState(profile.nickname||'');
   const[sending,setSending]=useState(false);
   const[notif,setNotif]=useState('');
-  const[boards,setBoards]=useState({dano:null,runs:null}); // null = carregando
+  const[boards,setBoards]=useState({dano:null,runs:null,mestre:null}); // null = carregando
 
   async function loadAll(){
-    const[dano,runs]=await Promise.all([fetchRanking('dano'),fetchRanking('runs')]);
-    setBoards({dano,runs});
+    const[dano,runs,mestre]=await Promise.all([fetchRanking('dano'),fetchRanking('runs'),fetchRanking('mestre')]);
+    setBoards({dano,runs,mestre});
   }
   useEffect(()=>{loadAll();},[]);
 
@@ -2762,9 +2803,11 @@ function RankingScreen({onNavigate,profile}){
     if(!fbDb){setNotif('Ranking online indisponível no momento.');return;}
     setSending(true);
     const stats=profile.stats||{runs:0,highestDamage:0};
+    const magusLvl=(profile.magus||{level:1}).level;
     let ok=true;
     if((stats.highestDamage||0)>0)ok=await submitRankScore('dano',stats.highestDamage,nome)&&ok;
     if((stats.runs||0)>0)ok=await submitRankScore('runs',stats.runs,nome)&&ok;
+    if(magusLvl>0)ok=await submitRankScore('mestre',magusLvl,nome)&&ok;
     setSending(false);
     if(ok){setNotif('✦ Placar enviado!');loadAll();}
     else setNotif('Não foi possível enviar agora. Tente de novo mais tarde.');
@@ -2786,7 +2829,7 @@ function RankingScreen({onNavigate,profile}){
         </div>
         {notif&&<p style={{color:'var(--gold)',fontSize:'.75rem',marginBottom:10}}>{notif}</p>}
         <p style={{color:'var(--parchment-dark)',fontSize:'.68rem',marginBottom:18,fontStyle:'italic'}}>
-          Seu recorde de dano: {(profile.stats?.highestDamage||0).toLocaleString()} &nbsp;|&nbsp; Suas runs: {profile.stats?.runs||0}
+          Seu recorde de dano: {(profile.stats?.highestDamage||0).toLocaleString()} &nbsp;|&nbsp; Suas runs: {profile.stats?.runs||0} &nbsp;|&nbsp; Nível de Mestre: {(profile.magus||{level:1}).level}
         </p>
 
         {Object.entries(RANK_CATS).map(([key,cat])=>(
@@ -3547,6 +3590,30 @@ function ProfileScreen({onNavigate,profile,setProfile}){
               style={{flex:1,background:'rgba(0,0,0,0.4)',border:'1px solid var(--gold-dim)',color:'var(--white)',padding:'8px 12px',borderRadius:2,fontFamily:'Crimson Text,serif',fontSize:'1rem'}}
               placeholder="Digite seu nome..." maxLength={24}/>
             <button className="btn btn-sm" onClick={save}>Salvar</button>
+          </div>
+        </div>
+
+        {/* Nível de Mestre — EXP Magus */}
+        <div style={{background:'rgba(230,195,76,0.08)',border:'1px solid #e6c34c',borderRadius:3,padding:14,marginBottom:16}}>
+          <div className="cinzel" style={{color:'#e6c34c',fontSize:'.8rem',letterSpacing:2,marginBottom:8}}>👑 NÍVEL DE MESTRE</div>
+          {(() => {
+            const magus=profile.magus||{level:1,xp:0};
+            if(magus.level>=MAGUS_MAX_LEVEL)return(
+              <div style={{fontSize:'.8rem',color:'#e6c34c',fontFamily:'Cinzel,serif',letterSpacing:1}}>Mestre Nv.{MAGUS_MAX_LEVEL} — MAX</div>
+            );
+            const req=magusXpToNext(magus.level);
+            const pct=clamp((magus.xp/req)*100,0,100);
+            return(
+              <div>
+                <div className="bar-label"><span>Mestre Nv.{magus.level}</span><span>{magus.xp}/{req} EXP Magus</span></div>
+                <div className="bar-track" style={{height:8}}>
+                  <div className="bar-fill" style={{width:`${pct}%`,background:'linear-gradient(90deg,#8a6d00,#e6c34c,#fff3b0)'}}/>
+                </div>
+              </div>
+            );
+          })()}
+          <div style={{fontSize:'.62rem',color:'var(--parchment-dark)',marginTop:6}}>
+            Ganho em Campanha e Torre: +{MAGUS_XP_COMBAT} EXP por combate · +{MAGUS_XP_BOSS} EXP por boss · +{MAGUS_XP_RUN_COMPLETE} EXP ao finalizar a run
           </div>
         </div>
 
@@ -7162,6 +7229,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       }
       // Estatística: soma os inimigos derrotados neste combate
       newProfile=addEnemiesDefeated((finalEnemies||[]).length);
+      // EXP Magus: nível do Mestre sobe com cada combate vencido (Campanha e Torre)
+      const magusGain=isBoss?MAGUS_XP_BOSS:MAGUS_XP_COMBAT;
+      const prevMagusLvl=(newProfile.magus||{level:1}).level;
+      newProfile=addMagusXp(magusGain);
       setProfile(newProfile);
 
       // Atualiza a party persistida: o servo ativo recebe o estado final; os demais mantêm HP/NP
@@ -7183,7 +7254,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       };
 
       setDialogue({text:SDEF.dialogue.win,portrait:SDEF.assets.win||SDEF.assets.default});
-      addLog(`✦ Vitória! +${sqGain} SQ · +${qpGain} QP · +${xpGain} XP · +30 Bond`+(newXP.level>servoLvl?` · ✨ SERVO Nv.${newXP.level}!`:''),'system');
+      addLog(`✦ Vitória! +${sqGain} SQ · +${qpGain} QP · +${xpGain} XP · +30 Bond · +${magusGain} EXP Magus`+(newXP.level>servoLvl?` · ✨ SERVO Nv.${newXP.level}!`:'')+(newProfile.magus.level>prevMagusLvl?` · 👑 MESTRE Nv.${newProfile.magus.level}!`:''),'system');
       addLog(`🌟 Golden Rule Nv.${newGolden}: +${(newGolden*1.5).toFixed(1)}% ATK e HP no próximo combate!`,'system');
       setCamp(updatedCamp);
       setTimeout(()=>onWin(updatedCamp),2000);
@@ -7833,9 +7904,12 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     const multW=1+(peW.sqQpBonusPercent||0)/100;
     const bonusSQ=Math.round(5*multW); const bonusQP=Math.round(500*multW);
     depositSQ(bonusSQ);
-    const newProfile=depositQP(bonusQP);
-    setProfile(newProfile);
+    depositQP(bonusQP);
     addServoXP(IBARAKI.id,XP_CAMPAIGN_COMPLETE);
+    // EXP Magus: bônus por FINALIZAR a run (Campanha ou Torre), além do que já
+    // foi ganho combate a combate.
+    const magusProfile=addMagusXp(MAGUS_XP_RUN_COMPLETE);
+    setProfile(magusProfile);
     setCampResult({type:'win',boss:viaBoss,
       sq:updatedCamp.sqEarned+bonusSQ,
       qp:(updatedCamp.qpEarned||0)+bonusQP,
@@ -8004,6 +8078,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   }
 
   function onCombatLose(finalCamp){
+    setProfile(addMagusXp(MAGUS_XP_RUN_COMPLETE)); // EXP Magus: run finalizada (derrota)
     setCampResult({type:'lose',
       sq:finalCamp.sqEarned||0,qp:finalCamp.qpEarned||0,
       xp:finalCamp.xpEarned||0,bondEarned:finalCamp.bondEarned||0});
@@ -8014,6 +8089,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   // foi ganho até aqui (SQ/QP/XP/Bond já estão depositados em tempo real) e encerra
   // a run como se fosse uma derrota, sem precisar perder de fato em combate.
   function onGiveUp(){
+    setProfile(addMagusXp(MAGUS_XP_RUN_COMPLETE)); // EXP Magus: run finalizada (desistência)
     setCampResult({type:'lose',
       sq:camp.sqEarned||0,qp:camp.qpEarned||0,
       xp:camp.xpEarned||0,bondEarned:camp.bondEarned||0});
@@ -8021,6 +8097,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   }
 
   function onBossLose(finalCamp){
+    setProfile(addMagusXp(MAGUS_XP_RUN_COMPLETE)); // EXP Magus: run finalizada (derrota p/ boss)
     setCampResult({type:'lose',
       sq:finalCamp.sqEarned||0,qp:finalCamp.qpEarned||0,
       xp:finalCamp.xpEarned||0,bondEarned:finalCamp.bondEarned||0});
