@@ -2779,7 +2779,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('ranking')}>🌐 &nbsp; Ranking Online</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.35</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.36</p>
       </div>
     </div>
   );
@@ -7202,10 +7202,18 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     setResult(won?'win':'lose');
 
     if(won){
-      // XP e Bond por vitória em combate — salvos IMEDIATAMENTE
+      // XP e Bond por vitória em combate — salvos IMEDIATAMENTE.
+      // Vale pro GRUPO INTEIRO (todo mundo que estava na party), não só quem
+      // ficou ativo no fim da luta — senão só o líder do momento acumula.
       const newBond=addBond(SDEF.id,30);
       const xpGain=isBoss?XP_BOSS_WIN:XP_COMBAT_WIN;
       const newXP=addServoXP(SDEF.id,xpGain);
+      const restBonds={}; // {servoId: {level,points}} — pra recalcular o npLevel de cada um abaixo
+      party.forEach((m,i)=>{
+        if(i===activeIdx)return; // já contabilizado acima (SDEF===party[activeIdx])
+        restBonds[m.id]=addBond(m.id,30);
+        addServoXP(m.id,xpGain);
+      });
 
       // SQ e QP depositados IMEDIATAMENTE (leitura atômica do storage)
       // Perk "Contos Épicos de um Vagabundo": multiplica a obtenção de SQ e QP
@@ -7235,8 +7243,13 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       newProfile=addMagusXp(magusGain);
       setProfile(newProfile);
 
-      // Atualiza a party persistida: o servo ativo recebe o estado final; os demais mantêm HP/NP
-      const finalParty=party.map((m,i)=>i===activeIdx?{...finalServo,npLevel:bondToNP(newBond.level)}:m);
+      // Atualiza a party persistida: o servo ativo recebe o estado final; os demais mantêm
+      // HP/NP mas têm o npLevel recalculado com o Bond que acabaram de ganhar acima.
+      const finalParty=party.map((m,i)=>{
+        if(i===activeIdx)return{...finalServo,npLevel:bondToNP(newBond.level)};
+        const b=restBonds[m.id]||loadBond(m.id);
+        return{...m,npLevel:bondToNP(b.level)};
+      });
       // GOLDEN RULE: +1 stack por fase de COMBATE vencida (bosses não contam como "fase comum",
       // mas também engrossam a lenda — contam 1 stack ao cair).
       const newGolden=(camp.goldenRule||0)+1;
@@ -7905,7 +7918,9 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     const bonusSQ=Math.round(5*multW); const bonusQP=Math.round(500*multW);
     depositSQ(bonusSQ);
     depositQP(bonusQP);
-    addServoXP(IBARAKI.id,XP_CAMPAIGN_COMPLETE);
+    // Bônus de XP por concluir a run: pro GRUPO INTEIRO daquela run, não só a Ibaraki.
+    const finishParty=(updatedCamp.party&&updatedCamp.party.length)?updatedCamp.party:[updatedCamp.servo||IBARAKI];
+    finishParty.forEach(m=>addServoXP(m.id,XP_CAMPAIGN_COMPLETE));
     // EXP Magus: bônus por FINALIZAR a run (Campanha ou Torre), além do que já
     // foi ganho combate a combate.
     const magusProfile=addMagusXp(MAGUS_XP_RUN_COMPLETE);
