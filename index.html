@@ -2140,8 +2140,8 @@ function profileSkillValues(skills){
     ossos:{lvl:ossos,defUp:10+5*(ossos-1),dur:3,cd:ossosCD(ossos)},
     // Ukiyo-e: cura HP (2000 base, +500/nível) + NP (30% base, +2%/nível) + evade 2t
     ukiyoe:{lvl:ukiyoe,healHp:2000+500*(ukiyoe-1),npGain:30+2*(ukiyoe-1),evadeTurns:2,cd:ukiyoeCD(ukiyoe)},
-    // Fundir Ossos: AoE que tira % do HP máx de todos os inimigos (40% base, +5%/nível), CD fixo 10t
-    fundir:{lvl:fundir,hpDmgPct:40+5*(fundir-1),cd:10},
+    // Fundir Ossos: AoE que tira % do HP máx de todos os inimigos (20% base, +5%/nível), CD fixo 10t
+    fundir:{lvl:fundir,hpDmgPct:20+5*(fundir-1),cd:10},
   };
 }
 function sqCost(lvl){return lvl;}
@@ -2578,7 +2578,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.19</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.23</p>
       </div>
     </div>
   );
@@ -3296,7 +3296,7 @@ function ProfileScreen({onNavigate,profile,setProfile}){
     {key:'ukiyoe',name:'Ukiyo-e',gosanjo:true,
      desc:lvl=>`Cura ${2000+500*(lvl-1)} HP + ${30+2*(lvl-1)}% NP + Evade 2t · Recarga ${ukiyoeCD(lvl)}t`},
     {key:'fundir',name:'Fundir Ossos',gosanjo:true,
-     desc:lvl=>`AoE: tira ${40+5*(lvl-1)}% do HP de todos os inimigos · Recarga 10t`},
+     desc:lvl=>`AoE: tira ${20+5*(lvl-1)}% do HP de todos os inimigos · Recarga 10t`},
   ];
 
   return(
@@ -3854,10 +3854,10 @@ const SHUNOBAN={
     defeated:'O... olho... escurece... a montanha... silencia...',
   },
   assets:{
-    encounter:'assets/servos/shunoban/shunoban.jpg',
-    battle:'assets/servos/shunoban/shunoban.jpg',
-    combat:'assets/servos/shunoban/shunoban.jpg',
-    np:'assets/servos/shunoban/shunoban.jpg',
+    encounter:'assets/servos/shunoban/shunobon.jpg',
+    battle:'assets/servos/shunoban/shunobon.jpg',
+    combat:'assets/servos/shunoban/shunobon.jpg',
+    np:'assets/servos/shunoban/shunobon.jpg',
   },
 };
 // Boss final: rápida, ataca 2x por turno (Riding), com kit de controle pesado.
@@ -5329,9 +5329,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Bônus da Aria/plan só se aplicam ao líder na Campanha (não há party lá).
     const hpBonus=isLeader?ariaHpBonus:0;
     const npAdd=isLeader?planNpGain:0;
-    // GOLDEN RULE: bônus acumulativo de +5% ATK e +5% HP por fase de combate vencida na run.
+    // GOLDEN RULE: bônus acumulativo de +1.5% ATK e +1.5% HP por fase de combate vencida na run.
     const grStacks=camp.goldenRule||0;
-    const grMult=1+0.05*grStacks;
+    const grMult=1+0.015*grStacks;
     // Monta os buffs VISÍVEIS na HUD a partir do planBonus (descanso/preparar).
     let buffs=[];
     if(isLeader){
@@ -6842,7 +6842,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
       setDialogue({text:SDEF.dialogue.win,portrait:SDEF.assets.win||SDEF.assets.default});
       addLog(`✦ Vitória! +${sqGain} SQ · +${qpGain} QP · +${xpGain} XP · +30 Bond`+(newXP.level>servoLvl?` · ✨ SERVO Nv.${newXP.level}!`:''),'system');
-      addLog(`🌟 Golden Rule Nv.${newGolden}: +${newGolden*5}% ATK e HP no próximo combate!`,'system');
+      addLog(`🌟 Golden Rule Nv.${newGolden}: +${(newGolden*1.5).toFixed(1)}% ATK e HP no próximo combate!`,'system');
       setCamp(updatedCamp);
       setTimeout(()=>onWin(updatedCamp),2000);
 
@@ -7049,9 +7049,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             </span>
             <span style={{fontSize:'.7rem',color:'var(--parchment-dark)',display:'flex',gap:8,alignItems:'center'}}>
               {(camp.goldenRule||0)>0&&(
-                <span title={`Golden Rule: +${(camp.goldenRule||0)*5}% ATK e HP acumulados nesta jornada`}
+                <span title={`Golden Rule: +${((camp.goldenRule||0)*1.5).toFixed(1)}% ATK e HP acumulados nesta jornada`}
                   style={{color:'#e6c34c',fontFamily:'Cinzel,serif',fontWeight:600,border:'1px solid rgba(230,195,76,.5)',borderRadius:3,padding:'1px 6px',background:'rgba(230,195,76,.12)'}}>
-                  🌟 +{(camp.goldenRule||0)*5}%
+                  🌟 +{((camp.goldenRule||0)*1.5).toFixed(1)}%
                 </span>
               )}
               <span>Turno {turn}</span>
