@@ -2578,7 +2578,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.23</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.24</p>
       </div>
     </div>
   );
@@ -4416,7 +4416,7 @@ const STORY_MAP6_F1={
     {type:'master',text:'Prazer. Vou me apresentar devidamente desta vez: meu nome é ----'},
     {type:'ibaraki',expr:'exp4',text:'Esquece isso, Mestre. Vou acabar com a raça dela agora.'},
     {type:'okuni',expr:'preocupada',name:'OKUNI',text:'Nananinanão, eu não sou uma serva do tipo combate! Eu não daria conta contra vocês duas....'},
-    {type:'narration',text:'Enquanto ela fala isso, uma figura de aproximadamente dois metros de altura, toda armadurada, aparece atrás dela.'},
+    {type:'narration',text:'Enquanto ela fala isso, uma figura de aproximadamente dois metros de altura, toda amadurecida, aparece atrás dela.'},
     {type:'image',src:'assets/servos/okuni/okuni_zanzaburou.jpg'},
     {type:'okuni',expr:'feliz',name:'OKUNI',text:'Agora estamos em pé de igualdade. Este é o Zanzaburou.'},
     {type:'okuni',expr:'normal',name:'OKUNI',text:'Claro, somos todos amigos aqui.'},
@@ -4492,6 +4492,73 @@ const STORY_MAP6_F11={
     {type:'archer',expr:'sith_ow',text:'* A Sith se desmaterializa. *'},
     {type:'narration',text:'Talvez o problema não fosse a capacidade dele, mas a vergonha de acompanhar aquilo. Não era algo bom de se lembrar.'},
     {type:'narration',text:'Então o grupo parte para a próxima cidade.'},
+  ],
+};
+
+// ══════════════════════════════════════════════════════
+// MAPA 7 — ESTRADA DE SHINOHARA (fases fixas 3, 7, 11, 13, 14)
+// ══════════════════════════════════════════════════════
+const STORY_MAP7_F3={
+  start:[
+    {type:'narration',text:'Aquela cena na carruagem era estranhamente desconfortável, um samurai de poucas palavras carregando uma carroça em alta velocidade era uma visão pavorosa.'},
+    {type:'master',text:'Sobre o Mestre em Shinohara, você teria alguma informação, Caster?'},
+    {type:'okuni',expr:'off',name:'OKUNI',text:'Hmm, ele é o mestre do servo da classe Assassin, pelo que entendi das conversas dos moradores de Kurikara era que o nome de tal individuo é Asahina Kanetoki, um quarentão, solteiro, com boa pinta.... resumindo, um cara por mais que velho bem popular com as mulheres.'},
+    {type:'master',text:'Sobre os mestres, conheci a mestre do Saber, estava em uma vila próxima de Kurikara, mas ela não me atacou, parecia bem tranquila.'},
+    {type:'okuni',expr:'think',name:'OKUNI',text:'A moça da Europa? hmmm, ela não é um dos mestre de sucessão, ela é uma das variáveis estranhas que estão aparecendo. Talvez exista outros 5 mestres fora você e ela.'},
+    {type:'okuni',expr:'off',name:'OKUNI',text:'Do mesmo jeito, deve existir servos que viram a oportunidade de passar pela brecha criada, mas não sei ao certo quantos seriam, nossa missão será dar um golpe em quem planeja dar o golpe.'},
+  ],
+};
+
+const STORY_MAP7_F7={
+  start:[
+    {type:'ibaraki',expr:'exp2',text:'Estranho não acha? Muitos Yokais para esse lado.'},
+    {type:'master',text:'Com certeza, pode ser efeito do Selo Imperial?'},
+    {type:'okuni',expr:'think',name:'OKUNI',text:'Não excluiria essa possibilidade, mas ao mesmo tempo não bate, eles não estão no trono dos heróis, então não faria sentido eles aparecerem aos montes.'},
+    {type:'ibaraki',expr:'exp3',text:'Hehe, isso me faz lembrar dos bons momentos no Monte Ooe.... que saudades.'},
+    {type:'master',text:'A um tempo tive um sonho que havia você a Shuten antes de um grande festa, aquilo de fato aconteceu? com o ataque do Sakata Kintoki'},
+    {type:'ibaraki',expr:'exp2',text:'S..sim, eles a enganaram...'},
+    {type:'master',text:'Não precisa entrar em detalhe, mas não faz muito tempo, não é? talvez uns 100 anos? e então você retornou como servo'},
+    {type:'ibaraki',expr:'exp2',text:'Sim, Minamoto e os quatros reis celestiais mataram a mim e a minha irmã, então com a oportunidade de vingança surgiu mais rápido do que imaginava.'},
+    {type:'master',text:'Entendo...'},
+  ],
+};
+
+const STORY_MAP7_F11={
+  start:[
+    {type:'narration',text:'Com a velocidade atual chegar em Shinohara em poucos dias era muito possível, os primeiros dias eram de fato estranho ver tal cena, mas o grupo estava acostumando com aquela forma de viajar.'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Teremos que verificar a estrada mais ao norte, existe um rumor de uma criatura atacando viajantes, então vamos para um caminho mais longo agora, mas devemos chegar em 3/4 dias em Shinohara como previsto ainda.'},
+    {type:'master',text:'Não sendo outro robô gigante, ficaria agradecido.'},
+    {type:'okuni',expr:'think',name:'OKUNI',text:'Robô?'},
+    {type:'master',text:'Longa historia. ( Ou não tão longa assim ).'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Sei, sei, parece até alguém fora de época falando. ( Sorriso sarcástico )'},
+    {type:'narration',text:'Aquela Caster parecia saber mais do que devia.'},
+  ],
+};
+
+const STORY_MAP7_F13={
+  start:[
+    {type:'narration',text:'Chegando no tal lugar dos ataques o grupo para em um espaçamento mais aberto para poder acampar e esperar até de manhã para esperar o ataque.'},
+    {type:'archer',expr:'sith_ow',text:'Então, qual seria o plano para emboscar a criatura?'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Deixaremos nossa carroça perto da estrada e o mestre vai ser a isca, ele parece ser bem saboroso, os Yokais que estavam nos atacando parecia focar bastante nele, então usaremos isso ao nosso favor.'},
+    {type:'master',text:'.......'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Não se preocupe, você estará cercado por três lindas damas.'},
+    {type:'master',text:'......'},
+    {type:'ibaraki',expr:'exp4',text:'Mestre! Pode deixar, quem vai te devorar no fim da sua vida será ninguém menos do que EU!'},
+    {type:'master',text:'.......'},
+    {type:'ibaraki',expr:'exp1',text:'Sinta-se honrado.'},
+  ],
+};
+
+const STORY_MAP7_F14={
+  start:[
+    {type:'narration',text:'Com o plano em pratica, as três servas se desmaterializaram e o mestre foi até a carroça.'},
+    {type:'narration',text:'Com o começo do dia sendo bem tranquilo, até que o som de alguns passos podiam ser ouvidos, um som alto, a criatura parecia ser enorme.'},
+    {type:'master',text:'Eu achei que seria só mais um urso ou javali gigante.....'},
+    {type:'narration',text:'Uma criatura de pele vermelha e apenas um olho no centro da sua testa podia ser visto, era um Ogro Vermelho, mais precisamente um Shunobon.'},
+    {type:'master',text:'Então quando vocês quiserem aparecer......'},
+    {type:'narration',text:'A criatura começa a se aproximar, lambendo a boca como se fosse um lobo vendo uma ovelha que se perdeu no pasto.'},
+    {type:'shunoban',text:'Fome.... Fome..... Cheira bem......'},
+    {type:'narration',text:'Assim que se aproximo a uns 5 metros, uma lamina de ossos cortou o tornozelo do Ogro, cabelos loiros ao vento foram balançados, era a pequena Berserker atacando, em seguida as outras duas se juntam ao combate.'},
   ],
 };
 
@@ -4829,6 +4896,16 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
           onError={ev=>{ev.target.onerror=null;ev.target.src=QIN.assets.default;}}/>
         <div className="chat-body">
           <div className="chat-name hostile">QIN LIANGYU</div>
+          <div className="chat-bubble hostile">{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='shunoban')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={SHUNOBAN.assets.battle} alt="Shunoban"
+          onError={ev=>{ev.target.style.display='none';}}/>
+        <div className="chat-body">
+          <div className="chat-name hostile">SHUNOBAN, O CICLOPE VERMELHO</div>
           <div className="chat-bubble hostile">{m.text}</div>
         </div>
       </div>
@@ -7373,11 +7450,13 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap6&&nextPhase===7){setCamp(advanced);setStage('map6F7');return;}
     if(isMap6&&nextPhase===9){setCamp(advanced);setStage('map6F9');return;}
     if(isMap6&&nextPhase===11){setCamp(advanced);setStage('map6F11');return;}
-    // Mapa 7 (Estrada de Shinohara): fases fixas 3,7,11,13,14 (roteiros a definir).
+    // Mapa 7 (Estrada de Shinohara): fases fixas 3,7,11,13,14.
     const isMap7=(baseCamp.mapId||'bosque')==='shinohara';
-    if(isMap7&&[3,7,11,13,14].includes(nextPhase)){
-      setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map7Fixed');return;
-    }
+    if(isMap7&&nextPhase===3){setCamp(advanced);setStage('map7F3');return;}
+    if(isMap7&&nextPhase===7){setCamp(advanced);setStage('map7F7');return;}
+    if(isMap7&&nextPhase===11){setCamp(advanced);setStage('map7F11');return;}
+    if(isMap7&&nextPhase===13){setCamp(advanced);setStage('map7F13');return;}
+    if(isMap7&&nextPhase===14){setCamp(advanced);setStage('map7F14');return;}
     setCamp(advanced);setStage('map');
   }
 
@@ -7837,6 +7916,11 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(res.granted)setProfile(res.profile);
     onKurikara2Continue();
   }}/>;
+  if(stage==='map7F3')return <StoryScreen profile={profile} script={STORY_MAP7_F3} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map7F7')return <StoryScreen profile={profile} script={STORY_MAP7_F7} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map7F11')return <StoryScreen profile={profile} script={STORY_MAP7_F11} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map7F13')return <StoryScreen profile={profile} script={STORY_MAP7_F13} finishLabel="Descansar e esperar a manhã →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map7F14')return <StoryScreen profile={profile} script={STORY_MAP7_F14} finishLabel="⚔️ A emboscada começa!" onFinish={()=>setStage('map')}/>;
   if(stage==='map6Map7Transition')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
@@ -7849,19 +7933,6 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
           Os youkai da terra sentiram a aproximação de espíritos heroicos.
         </p>
         <button className="btn btn-red btn-full" style={{marginTop:20}} onClick={()=>setStage('map')}>⚔️ Seguir pela estrada</button>
-      </div>
-    </div>
-  );
-  if(stage==='map7Fixed')return(
-    <div className="screen">
-      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
-        <div style={{fontSize:'2rem',marginBottom:10}}>📜</div>
-        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>SHINOHARA — FASE {camp.pendingFixedPhase}</h2>
-        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',fontStyle:'italic',marginBottom:16}}>
-          [ Cena fixa a ser escrita ]<br/>
-          Esta é uma fase fixa de história do Mapa 7. O roteiro será adicionado aqui depois.
-        </p>
-        <button className="btn btn-red btn-full" onClick={()=>setStage('map')}>Prosseguir →</button>
       </div>
     </div>
   );
