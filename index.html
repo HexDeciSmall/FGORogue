@@ -72,7 +72,8 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .party-sidebar{position:fixed;left:10px;top:50%;transform:translateY(-50%);z-index:60;
   display:flex;flex-direction:column;gap:8px;width:150px;max-height:88vh;overflow-y:auto;
   padding:10px 8px;background:linear-gradient(160deg,rgba(26,10,0,0.9),rgba(42,21,5,0.92));
-  border:1px solid var(--gold-dim);border-radius:6px;box-shadow:0 0 24px rgba(0,0,0,0.5)}
+  border:1px solid var(--gold-dim);border-radius:6px;box-shadow:0 0 24px rgba(0,0,0,0.5);
+  transition:transform .25s ease,opacity .25s ease}
 .party-sidebar-title{font-family:'Cinzel',serif;color:var(--gold-dim);font-size:.6rem;letter-spacing:2px;text-align:center;margin-bottom:2px}
 .party-sidebar-card{position:relative;display:flex;flex-direction:column;align-items:center;
   background:rgba(0,0,0,0.35);border:1px solid rgba(201,162,39,0.25);border-radius:5px;padding:6px 6px 8px;transition:opacity .2s}
@@ -85,7 +86,16 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .party-sidebar-info .bar-container{margin:2px 0}
 .party-sidebar-info .bar-track{height:8px}
 .party-sidebar-info .bar-label{font-size:.5rem;margin-bottom:1px}
-@media(max-width:900px){.party-sidebar{display:none}} /* some no celular/telas estreitas p/ não cobrir a ação */
+/* Botão flutuante que abre/fecha o menu — só existe (visível) em telas estreitas */
+.party-sidebar-toggle{display:none;position:fixed;left:0;top:50%;transform:translateY(-50%);
+  z-index:62;width:30px;height:56px;border-radius:0 8px 8px 0;border:1px solid var(--gold-dim);border-left:none;
+  background:linear-gradient(160deg,rgba(26,10,0,0.95),rgba(42,21,5,0.97));color:var(--gold);
+  font-size:1rem;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 16px rgba(0,0,0,0.5)}
+@media(max-width:900px){
+  .party-sidebar-toggle{display:flex}
+  .party-sidebar{transform:translateY(-50%) translateX(-135%);opacity:0;pointer-events:none}
+  .party-sidebar.open{transform:translateY(-50%) translateX(0);opacity:1;pointer-events:auto}
+}
 
 /* ── Cards de inimigo ── */
 .enemy-group{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
@@ -2228,34 +2238,42 @@ function Portrait({src,alt,style={}}){
 }
 
 // ── Menu lateral do grupo: gif de espera + Nv./Bond/HP/NP de cada servo.
-// Aparece fixo na tela tanto no mapa quanto em combate (some em telas estreitas).
+// Aparece fixo na tela tanto no mapa quanto em combate. Em telas estreitas
+// (celular) vira uma gaveta que abre/fecha com um botão lateral.
 function PartySidebar({party}){
+  const[open,setOpen]=useState(false);
   if(!party||!party.length)return null;
   return(
-    <div className="party-sidebar">
-      <div className="party-sidebar-title">GRUPO</div>
-      {party.map((m,i)=>{
-        const def=PLAYABLE_SERVOS[m.id]||IBARAKI;
-        const dead=m.defeated||m.hp<=0;
-        const lvl=m.level||loadServoXP(m.id).level;
-        const bondLvl=loadBond(m.id).level;
-        // Padrão: usa o GIF de "espera" (idle) quando existir; senão cai no busto estático.
-        const img=(def.sprites&&def.sprites.idle)||def.assets.combat||def.assets.default;
-        return(
-          <div key={m.id+i} className={`party-sidebar-card${dead?' dead':''}`}>
-            <img className="party-sidebar-img" src={img} alt={def.name}
-              onError={ev=>{ev.target.onerror=null;ev.target.src=def.assets.combat||def.assets.default;}}/>
-            {dead&&<div className="party-sidebar-dead">💀</div>}
-            <div className="party-sidebar-name">{def.name.split(' ')[0]}</div>
-            <div className="party-sidebar-meta">Nv.{lvl} &nbsp;·&nbsp; Bond {bondLvl}</div>
-            <div className="party-sidebar-info">
-              <Bar label="HP" current={Math.max(0,m.hp)} max={m.hpMax}/>
-              <Bar label="NP" current={m.npBar||0} max={100} type="np"/>
+    <>
+      <button className="party-sidebar-toggle" onClick={()=>setOpen(o=>!o)}
+        aria-label={open?'Esconder grupo':'Mostrar grupo'} title={open?'Esconder grupo':'Mostrar grupo'}>
+        {open?'‹':'☰'}
+      </button>
+      <div className={`party-sidebar${open?' open':''}`}>
+        <div className="party-sidebar-title">GRUPO</div>
+        {party.map((m,i)=>{
+          const def=PLAYABLE_SERVOS[m.id]||IBARAKI;
+          const dead=m.defeated||m.hp<=0;
+          const lvl=m.level||loadServoXP(m.id).level;
+          const bondLvl=loadBond(m.id).level;
+          // Padrão: usa o GIF de "espera" (idle) quando existir; senão cai no busto estático.
+          const img=(def.sprites&&def.sprites.idle)||def.assets.combat||def.assets.default;
+          return(
+            <div key={m.id+i} className={`party-sidebar-card${dead?' dead':''}`}>
+              <img className="party-sidebar-img" src={img} alt={def.name}
+                onError={ev=>{ev.target.onerror=null;ev.target.src=def.assets.combat||def.assets.default;}}/>
+              {dead&&<div className="party-sidebar-dead">💀</div>}
+              <div className="party-sidebar-name">{def.name.split(' ')[0]}</div>
+              <div className="party-sidebar-meta">Nv.{lvl} &nbsp;·&nbsp; Bond {bondLvl}</div>
+              <div className="party-sidebar-info">
+                <Bar label="HP" current={Math.max(0,m.hp)} max={m.hpMax}/>
+                <Bar label="NP" current={m.npBar||0} max={100} type="np"/>
+              </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -2646,7 +2664,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.28</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.29</p>
       </div>
     </div>
   );
