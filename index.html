@@ -150,6 +150,22 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 /* ── Bond ── */
 .bond-section{margin:16px 0}
 .bond-label{font-family:'Cinzel',serif;font-size:.7rem;color:var(--gold);letter-spacing:2px;margin-bottom:6px}
+
+/* ── Grid de personagens (Perfil) — visual de tela de seleção ── */
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:14px;margin:14px 0 20px}
+.char-card{background:linear-gradient(165deg,rgba(20,8,0,0.88),rgba(40,20,5,0.92));
+  border:1px solid var(--gold-dim);border-radius:8px;overflow:hidden;
+  box-shadow:0 0 14px rgba(0,0,0,0.4);transition:transform .15s ease,box-shadow .15s ease}
+.char-card:hover{transform:translateY(-3px);box-shadow:0 0 22px rgba(201,162,39,0.35)}
+.char-card-img{width:100%;height:150px;object-fit:cover;object-position:center 12%;display:block;
+  background:rgba(0,0,0,0.35);border-bottom:1px solid var(--gold-dim)}
+.char-card-body{padding:8px 10px 10px}
+.char-card-name{font-family:'Cinzel',serif;color:var(--gold);font-size:.78rem;letter-spacing:.5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.char-card-class{font-size:.62rem;color:var(--red-bright);letter-spacing:.5px;margin:2px 0 5px}
+.char-card-stats{font-size:.6rem;color:var(--parchment-dark);margin-bottom:6px}
+.char-card .bar-label{font-size:.52rem}
+.char-card .bar-track{height:7px}
 .bond-bar-track{height:10px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow:hidden}
 .bond-bar-fill{height:100%;background:linear-gradient(90deg,var(--oni-purple),var(--oni-purple-light));border-radius:10px;transition:width .5s ease}
 
@@ -2664,7 +2680,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.29</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.30</p>
       </div>
     </div>
   );
@@ -3388,7 +3404,7 @@ function ProfileScreen({onNavigate,profile,setProfile}){
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
       {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
-      <div className="panel" style={{maxWidth:600}}>
+      <div className="panel" style={{maxWidth:720}}>
         <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:16}}>✦ PERFIL ✦</h2>
 
         <div style={{marginBottom:20}}>
@@ -3468,7 +3484,9 @@ function ProfileScreen({onNavigate,profile,setProfile}){
           );
         })}
 
-        {/* Servos jogáveis desbloqueados — cada um com nível, bond e NP */}
+        {/* Servos jogáveis desbloqueados — grid estilo "seleção de personagem" */}
+        <div className="divider"><span className="divider-text">SERVOS</span></div>
+        <div className="char-grid">
         {[
           // Servos base (desbloqueados por conquista) + servos do gacha possuídos
           ...PLAYABLE_ROSTER.filter(r=>r.unlock===null||!!(profile.achievements&&profile.achievements[r.unlock])),
@@ -3479,22 +3497,30 @@ function ProfileScreen({onNavigate,profile,setProfile}){
           const sxp=loadServoXP(r.id);
           const sbond=loadBond(r.id);
           const snp=bondToNP(sbond.level);
+          // GIF de espera: usa o já cadastrado em sprites.idle; se o servo ainda não
+          // tiver um, tenta o caminho padrão "<pasta>/<pasta>_espera.gif" (convenção do
+          // projeto) e cai de volta no busto estático caso o arquivo não exista ainda.
+          const idleGuess=`assets/servos/${r.short}/${r.short}_espera.gif`;
+          const img=(def.sprites&&def.sprites.idle)||idleGuess;
+          const staticFallback=def.assets.combat||def.assets.default;
           return(
-            <div key={r.id}>
-              <div className="divider"><span className="divider-text">{def.name.toUpperCase()}</span></div>
-              <div style={{fontSize:'.7rem',color:'var(--red-bright)',marginBottom:6,letterSpacing:1}}>
-                {def.className} · Nv.{sxp.level} &nbsp;·&nbsp; ATK {def.getAtk(sxp.level)} · HP {def.getHp(sxp.level)}
-              </div>
-              <div style={{marginBottom:10}}>
+            <div key={r.id} className="char-card">
+              <img className="char-card-img" src={img} alt={def.name}
+                onError={ev=>{ev.target.onerror=null;ev.target.src=staticFallback;}}/>
+              <div className="char-card-body">
+                <div className="char-card-name">{def.name}</div>
+                <div className="char-card-class">{def.className} · Nv.{sxp.level}</div>
+                <div className="char-card-stats">ATK {def.getAtk(sxp.level)} &nbsp;·&nbsp; HP {def.getHp(sxp.level)}</div>
                 <XPBar xpState={sxp}/>
-              </div>
-              <div className="bond-section">
-                <div className="bond-label">Bond {sbond.level} → {sbond.level+1} &nbsp;|&nbsp; NP Nv.{snp}</div>
-                <Bar label="" current={sbond.points} max={bondReq(sbond.level)} type="np" showNumbers={true}/>
+                <div className="bond-section" style={{margin:'8px 0 0'}}>
+                  <div className="bond-label" style={{fontSize:'.6rem',marginBottom:4}}>Bond {sbond.level} → {sbond.level+1} &nbsp;|&nbsp; NP Nv.{snp}</div>
+                  <Bar label="" current={sbond.points} max={bondReq(sbond.level)} type="np" showNumbers={true}/>
+                </div>
               </div>
             </div>
           );
         })}
+        </div>
         <p style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:8,fontStyle:'italic'}}>
           Combate +{XP_COMBAT_WIN} XP · Confiança +{XP_TRUST_EVENT} XP · Boss +{XP_BOSS_WIN} XP · Bond: Confiança +150 · Combate +30
         </p>
