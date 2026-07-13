@@ -2680,7 +2680,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.30</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.31</p>
       </div>
     </div>
   );
@@ -4013,6 +4013,16 @@ const ARCHER={
     ow:'assets/servos/archer/sith_ow.png', // observando / séria
     pis:'assets/servos/archer/sith_pis.png', // provocando / piscando
     ahh:'assets/servos/archer/sith_ahh.png', // rindo / zombando
+  },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) — versão BOSS ──
+  // idle = loop de espera · attack = ataque/skill · np = Fantasma Nobre.
+  // A boss fica à DIREITA da arena olhando para a ESQUERDA (para os servos).
+  sprites:{
+    idle:'assets/servos/archer/archerboss_espera.gif',
+    attack:'assets/servos/archer/archerboss_ataque.gif',
+    np:'assets/servos/archer/archerboss_np.gif',
+    // flip:true → use se a arte olhar para a ESQUERDA (mesmo esquema da Qin/Ibaraki/Sith).
+    flip:true,
   },
 };
 
@@ -6725,6 +6735,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           addLog(`⚡ ${ARCHER.np.name}! ${npDmg} de dano + 5 venenos (${pDmg}/turno por 3t)!`,'np');
           setDialogue({text:ARCHER.dialogue.np,portrait:ARCHER.assets.battle});
           fireNpCutin(ARCHER.assets.np,ARCHER.np.name.toUpperCase(),ARCHER.dialogue.np);
+          playEnemySpriteAnim(ar.instanceId,'np',2200);
           spawnFx('servo',String(npDmg),'np');
           s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
           acted=true;
@@ -6741,6 +6752,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           addLog(`🩸 Fae Vampirism! Drena ${drain} HP · cura ${heal} · +${sk.mitPct}% mitigação (${sk.mitTurns}t)`,'enemy');
           setDialogue({text:ARCHER.dialogue.vampirism,portrait:ARCHER.assets.battle});
           spawnFx('servo',`🩸 ${drain}`,'stun');spawnFx(ar.instanceId,`+${heal}`,'heal');
+          playEnemySpriteAnim(ar.instanceId,'attack');
           acted=true;
         }
         // Prioridade 3: Grimalkin (Evade + tira 25% HP)
@@ -6753,6 +6765,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           addLog(`🐾 Grimalkin! ${ar.name} fica intocável (1t) e drena ${drain} HP!`,'enemy');
           setDialogue({text:ARCHER.dialogue.grimalkin,portrait:ARCHER.assets.battle});
           spawnFx('servo',`${drain}`,'stun');spawnFx(ar.instanceId,'EVADE','buff');
+          playEnemySpriteAnim(ar.instanceId,'attack');
           acted=true;
         }
         // Prioridade 4: Blessed Scion (trava NP + buff)
@@ -6765,6 +6778,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           addLog(`🎵 Blessed Scion! NP do Servo travado (${sk.npLockTurns}t) · Archer +${sk.atkUp}% ATK e +50% NP`,'enemy');
           setDialogue({text:ARCHER.dialogue.scion,portrait:ARCHER.assets.battle});
           spawnFx(ar.instanceId,'+20% ATK','buff');spawnFx('servo','NP TRAVADO','stun');
+          playEnemySpriteAnim(ar.instanceId,'attack');
           acted=true;
         }
 
@@ -6775,6 +6789,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         const hits=ARCHER.doubleAttack?2:1;
         for(let h=0;h<hits;h++){
           if(s.hp<=0)break act;
+          playEnemySpriteAnim(ar.instanceId,'attack');
           const dodge=5+Math.max(0,(servo.attributes.agility.points-ar.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0);
           if(rollChance(dodge)){
             addLog(`💨 Ibaraki esquiva de um golpe de ${ar.name}!`,'player');
@@ -7188,8 +7203,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
               const dead=e.currentHp<=0;
               const sel=i===selectedTarget&&!dead;
               const bossArt=e.isShunoban?(SHUNOBAN.assets.combat||SHUNOBAN.assets.battle):e.isGosanjo?(GOSANJO.assets.combat||GOSANJO.assets.battle):e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:QIN.assets.combat||QIN.assets.default;
-              // Sprites GIF animados (por enquanto só a Qin tem); demais bosses seguem no busto estático.
-              const bossDef=(e.isBoss&&!e.isShunoban&&!e.isGosanjo&&!e.isNinja&&!e.isArcher&&!e.isNitro)?QIN:null;
+              // Sprites GIF animados: qualquer boss com `sprites.idle` cadastrado anima; os demais seguem no busto estático.
+              const bossDefLookup=e.isShunoban?SHUNOBAN:e.isGosanjo?GOSANJO:e.isNinja?NINJA:e.isArcher?ARCHER:e.isNitro?NITRO:e.isBoss?QIN:null;
+              const bossDef=(bossDefLookup&&bossDefLookup.sprites&&bossDefLookup.sprites.idle)?bossDefLookup:null;
               const hasBossSprites=!!(bossDef&&bossDef.sprites&&bossDef.sprites.idle);
               const eAnim=enemySpriteAnim[e.instanceId];
               const eKind=eAnim?eAnim.kind:'idle';
