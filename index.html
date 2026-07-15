@@ -6119,7 +6119,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const npAdd=isLeader?planNpGain:0;
     // GOLDEN RULE: bônus acumulativo de +1.5% ATK e +1.5% HP por fase de combate vencida na run.
     const grStacks=camp.goldenRule||0;
-    const grMult=1+0.015*grStacks;
+    const grMult=5+0.015*grStacks;
     // Monta os buffs VISÍVEIS na HUD a partir do planBonus (descanso/preparar).
     let buffs=[];
     if(isLeader){
@@ -7767,7 +7767,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
       setDialogue({text:SDEF.dialogue.win,portrait:SDEF.assets.win||SDEF.assets.default});
       addLog(`✦ Vitória! +${sqGain} SQ · +${qpGain} QP · +${xpGain} XP · +30 Bond · +${magusGain} EXP Magus`+(newXP.level>servoLvl?` · ✨ SERVO Nv.${newXP.level}!`:'')+(newProfile.magus.level>prevMagusLvl?` · 👑 MESTRE Nv.${newProfile.magus.level}!`:''),'system');
-      addLog(`🌟 Golden Rule Nv.${newGolden}: +${(newGolden*1.5).toFixed(1)}% ATK e HP no próximo combate!`,'system');
+      addLog(`🌟 Golden Rule Nv.${newGolden}: +${(newGolden*5.5).toFixed(1)}% ATK e HP no próximo combate!`,'system');
       setCamp(updatedCamp);
       setTimeout(()=>onWin(updatedCamp),2000);
 
@@ -7983,7 +7983,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             </span>
             <span style={{fontSize:'.7rem',color:'var(--parchment-dark)',display:'flex',gap:8,alignItems:'center'}}>
               {(camp.goldenRule||0)>0&&(
-                <span title={`Golden Rule: +${((camp.goldenRule||0)*1.5).toFixed(1)}% ATK e HP acumulados nesta jornada`}
+                <span title={`Golden Rule: +${((camp.goldenRule||0)*5.0).toFixed(1)}% ATK e HP acumulados nesta jornada`}
                   style={{color:'#e6c34c',fontFamily:'Cinzel,serif',fontWeight:600,border:'1px solid rgba(230,195,76,.5)',borderRadius:3,padding:'1px 6px',background:'rgba(230,195,76,.12)'}}>
                   🌟 +{((camp.goldenRule||0)*1.5).toFixed(1)}%
                 </span>
