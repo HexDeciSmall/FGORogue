@@ -2814,7 +2814,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('ranking')}>🌐 &nbsp; Ranking Online</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.45</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.48</p>
       </div>
     </div>
   );
@@ -2916,6 +2916,10 @@ const CODEX=[
       body:'Aliado à Okuni, o Mestre descobriu a raiz da crise: há cerca de seis meses, alguém obteve o Selo Imperial de Jade (o Mandato do Céu) vindo da China e o usou de forma errada. O Selo é um fragmento de Alaya — a vontade coletiva inconsciente da humanidade de evitar a extinção — e diz-se que quem o possui pode se tornar um governante capaz de mudar o destino de toda uma raça. Como o portador escolheu o mal, foi armado um ritual de sucessão: sete escolhidos em Nara e Kyoto disputariam o direito de usar o Selo.\n\nA revelação mais inquietante: o Mestre NÃO é um dos sete escolhidos. Sua presença ali é uma variável fora da equação — mais um sinal de que ele não pertence a este tempo ou lugar. E há o aviso de Okuni: um Servo da Classe Ruler pode estar prestes a aparecer.'},
      {title:'O SONHO QUE NÃO ERA SEU',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_kurikara2),
       body:'Numa noite em Kurikara, o Mestre sonhou com uma cena que parecia sua — um garoto de ensino médio, num verão de cigarras, que desaba num corredor infinito. Mas então veio o grito de uma menina ("Pai!!!") e um castelo em chamas, com uma garota chorando sobre um cadáver. Ao despertar, ele teve certeza: aquilo NÃO era a sua memória. A voz, o castelo, a filha — nada daquilo lhe pertencia. Memórias alheias parecem se infiltrar nele, como se sua mente fosse um recipiente onde ecoam vidas que não são a sua. De quem eram aquelas lembranças?'},
+     {title:'ESPELHO DOS SERVOS',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki),
+      body:'Em Shinohara, Okuni expôs uma verdade desconfortável: o Trono dos Heróis não escolhe Servos ao acaso — invoca aquele que mais se assemelha, mental ou espiritualmente, ao próprio Mestre. Se a Ibaraki (a "ariete que só destrói") respondeu ao chamado dele, o que isso diz sobre quem o Mestre realmente é por dentro? A ideia o perturba o bastante para desejar "ter uma palavrinha com esse tal Trono" — enquanto a própria Ibaraki, ouvindo tudo por telepatia, protesta indignada.'},
+     {title:'AS MEMÓRIAS DAS SERVAS',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki),
+      body:'O fenômeno das memórias herdadas se aprofunda. Depois de reviver a origem da Ibaraki (o Sonho da Noite), o Mestre passou a acessar também o passado da Sith — a fada gentil de cabelos rosa maltratada pelos Fae na floresta. Ele nota o padrão com estranheza: sabia a história da Ibaraki por conta das lendas, mas a da Sith desconhecia por completo — e ainda assim a viveu, como se estivesse lá. Sua mente não apenas recebe memórias alheias: recebe especificamente as das Servas ligadas a ele. O elo entre o Mestre e suas Servas é mais profundo — e mais anômalo — do que qualquer contrato comum.'},
      {title:'SKILLS DE MESTRE',body:'Habilidades que o Mestre usa em combate como ações livres. As três primeiras estão sempre disponíveis; as duas últimas permanecem seladas até que algo dentro dele desperte.',items:[
        {name:'Mana Buster',rank:'C',text:'Através de uma conexão estranha com "@$%=%", ele pode infundir a própria mana no servo para gerar um aumento exponencial de energia, causando alto poder de dano.'},
        {name:'Transferência de Mana',rank:'D',text:'Através da conexão com um servo, ele pode infundir mana através do contato físico.'},
@@ -3009,6 +3013,10 @@ const CODEX=[
      {title:'FANTASMA NOBRE',items:[
        {name:'Fetch Failnaught',text:'Prejudicial ao próprio usuário, corrói sua alma a cada uso. Magia de um demônio que amaldiçoa o alvo à morte sem falha, independentemente da distância. Cria um duplo do inimigo a partir de sua carne (cabelo, unha, etc.) e, ao matar esse duplo, amaldiçoa o inimigo à morte. É semelhante a uma versão de fada do ritual ushi-no-koku-mairi.'},
      ]},
+     {title:'A INVOCAÇÃO PELO SELO',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki),
+      body:'Em Shinohara, a Sith revela ao grupo a origem de sua forma "corrompida". Ela foi uma das Servas invocadas pelo Selo Imperial — mas não atendeu ao chamado por vontade própria. Seu Mestre tinha pouca mana e a forçou à existência com algum ritual desconhecido; por mais que sua natureza de Fae resistisse, ela não foi capaz de se opor. Depois disso, só se recorda de uma raiva descontrolada — e, brevemente, de "uma garota loira tentando me bater sem sucesso" (a Ibaraki), antes de perder de vez o controle. A batalha no Caminho Tortuoso não era a verdadeira Sith, mas uma fera acorrentada pela invocação forçada.'},
+     {title:'A MEMÓRIA DA FLORESTA',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki),
+      body:'Numa pousada de Shinohara, o Mestre teve mais uma memória que não era sua — desta vez, da Sith criança. Uma floresta de musgos coloridos e casas em troncos gigantes, aconchegante e bela... exceto por um canto escuro, onde uma garotinha de cabelos rosa-forte encolhia-se enquanto criaturas aladas semelhantes a borboletas a cercavam, a xingavam e arremessavam pedras e galhos. A pequena não gritava, não revidava, não reclamava: apenas aceitava. É o retrato da Baobhan Sith antes de Morgan — a fada gentil que os próprios Fae maltrataram até quebrá-la. O Mestre, que conhecia a lenda da Ibaraki, desconhecia por completo essa história.'},
    ],
    params:[
      {label:'Força',rank:'A'},{label:'Resistência',rank:'C'},{label:'Agilidade',rank:'A'},
@@ -3071,6 +3079,34 @@ const CODEX=[
      {title:'AS DATAS NÃO BATEM',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
       body:'Após derrotá-lo, o Mestre hesitou: "Go-Sanjo... caso seja quem eu penso que seja, não tem relação com o Clã Minamoto de fato. As datas não batem." A Ibaraki desdenhou do inimigo, dizendo que ele "não exerceu nem uma parcela dos verdadeiros ancestrais" — que "os cães do imperador perderam as presas". O verdadeiro Go-Sanjo, a identidade por trás da sombra e o motivo de ele ter sido erguido ali permanecem um enigma que a história ainda não explicou.'},
    ]},
+  {id:'mochizuki',cat:'servo',name:'Mochizuki Chiyome',classe:'Assassin',
+   art:'assets/servos/mochizuki/mochizuki_profile.png',
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki),
+   info:'A kunoichi das sombras de Shinohara, Serva Assassin de Asahina Kanetoki. Uma miko amaldiçoada que herdou a maldição da serpente Orochi de seu ancestral Koga Saburo. Calma, leal e séria por fora — mas por dentro treme e chora sob o tormento de um sangue que não consegue purificar.',
+   details:[
+     {title:'IDENTIDADE',body:'Uma mulher do final do período dos Estados Combatentes (Sengoku), cujo nome foi registrado nos documentos de Netsumura, em Shinshu. É considerada uma ninja (kunoichi) que serviu ao Clã Takeda da Província de Kai e descendente de Mochizuki Izumo-no-Kami — embora não haja certeza de que fosse de fato uma ninja. Em certo sentido, sua existência é uma resposta sarcástica à ideia de "ninja renomada", uma contradição para alguém cujo princípio deveria ser manter as próprias atividades em segredo.\n\nNesta obra, Chiyome é uma existência dotada de poderes grotescos, tendo herdado uma maldição lançada por um deus sobre seu ancestral Koga Saburo. Ao mesmo tempo que trabalha como shinobi pelo bem de seu senhor, dedica orações como a única miko de uma serpente, para apaziguar o aramitama (o aspecto violento) de um deus.'},
+     {title:'PERSONALIDADE',body:'« Maldito seja este meu sangue. Maldito seja este meu pecado. Não importa quanto tempo passe, há algo aqui que não pode ser lavado. »\n\nGuerreira dos Estados, viúva, jovem garota, kunoichi, miko — alguns Servos até se preocupam com ela por "ter muitos atributos". Demonstra grande tristeza por ser incapaz de se purificar ou purificar seu clã da maldição. Muito séria: se seu senhor lhe ordenasse que morresse, ela o faria imediatamente. Aparenta ser uma kunoichi calma e serena — os olhos, ouvidos e a espada de seu mestre — mas por trás dessa fachada esconde uma parte de si que teme, treme e chora por causa da maldição da serpente.\n\nCumpre suas funções de forma calma e séria, sem brincadeiras. Mas, na verdade, gosta muito de entretenimento agradável e, no tempo livre, costuma revelar diversas expressões faciais. Muito leal e dócil, reconhece seu Mestre como senhor e obedece de todo o coração.'},
+     {title:'A ATIVAÇÃO FORÇADA',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki),
+      body:'Em Shinohara, o grupo testemunhou o pior lado de sua condição. Asahina não a comandava por vínculo, mas por tortura: usando Selos canalizados por rituais sangrentos, forçava a ativação de sua conexão com Orochi. Quando essa maldição é despertada à força, Chiyome fica horrorizada — os olhos sangrando, gritando de dor, transformada de uma kunoichi disciplinada numa fera-cadáver que invoca uma serpente branca gigante das próprias sombras. Mesmo sob esse tormento herdado, ela cumpre seus deveres com lealdade. Uma Serva digna de pena, escravizada por um Mestre indigno.'},
+     {title:'HABILIDADES DE CLASSE',items:[
+       {name:'Ocultação de Presença',rank:'A+',text:'A habilidade de apagar a própria presença. Quando ativada, é quase impossível até mesmo para outros Servos detectá-la. No entanto, o efeito enfraquece bastante assim que ela ataca.'},
+     ]},
+     {title:'HABILIDADES PESSOAIS',items:[
+       {name:'Artes Amaldiçoadas (Oráculo)',rank:'C',text:'Como sacerdotisa de Shinano, é capaz de usar algum tipo de Arte Amaldiçoada. Perdeu a maior parte dessa capacidade ao ser invocada como Assassin, restando-lhe apenas o rank C.'},
+       {name:'Maldição de Orochi',rank:'B',text:'Um poder incomum transmitido através das gerações — uma maldição do Grande Deus Ibuki, profundamente ligada ao ancestral Koga Saburo do clã Kouga-Mochizuki. Tortura a mente e o corpo de seu possuidor, mas quem consegue controlá-la pode usá-la como um poderoso veneno indetectável. A cada geração, um membro do clã deve herdar esse poder.'},
+       {name:'Kouga-ryuu',rank:'A',text:'Um estilo de artes ninja com técnicas de luta especiais, transmitidas pelas gerações do clã Kouga-Mochizuki. Habilidade composta que inclui os efeitos de Ninjutsu.'},
+       {name:'Ninjutsu',rank:'A',text:'Termo geral para as diferentes habilidades de um ninja: espionagem, roubo, tortura e técnicas de batalha. Por ter nascido como chefe do Clã Mochizuki na Aliança das 53 Casas de Kouga, possui rank A.'},
+       {name:'Atividades Subversivas',rank:'C+',text:'A habilidade de reduzir a força do inimigo antes do início da batalha; domínio de armadilhas. Quanto maior o rank desta habilidade, mais o Gráfico Sagrado do usuário como Espírito Heroico diminui.'},
+     ]},
+     {title:'FANTASMA NOBRE',items:[
+       {name:'Kuchiyose - Ibuki Daimyōjin Engi (Canalização — Presságio do Grande Deus Ibuki)',text:'Através da maldição associada ao lendário Koga Saburo, tido como ancestral dos Koga-Mochizuki, ela toma emprestado temporariamente o poder de um Grande Deus aterrorizante. Por meio de canalização, escraviza de forma limitada um espírito dividido do Grande Deus Ibuki do Monte Ibuki — a divindade serpente Yamata-no-Orochi, que amaldiçoou Koga Saburo em "Presságio de Suwa". Lança sobre o alvo uma maldição mortal: quem se torna alvo perde a vida ao ter poder mágico, na forma de uma serpente, enrolado ao seu redor. Seu nome é um eco do Fantasma Nobre de seu ancestral, "Encarnação — Presságio do Grande Deus Ibuki".'},
+     ]},
+   ],
+   params:[
+     {label:'Força',rank:'D'},{label:'Resistência',rank:'D'},{label:'Agilidade',rank:'A'},
+     {label:'Mana',rank:'C'},{label:'Sorte',rank:'C'},{label:'NP',rank:'C'},
+   ],
+   va:'Sakura Ayane'},
   {id:'chigure',cat:'npc',name:'"Takefusa Chigure"',classe:'???',
    art:'assets/servos/okuni/okuni_encounter.jpg',
    reveal:p=>!!(p.achievements&&p.achievements.defeat_ninja),
@@ -3210,7 +3246,17 @@ const CODEX=[
    art:null,
    reveal:p=>!!(p.achievements&&p.achievements.defeat_archer)||(p.stats&&p.stats.runs||0)>3,
    info:'Um viajante de meia-idade emboscado por monstros sugadores de sangue no Caminho Tortuoso. Sobrevivente por sorte, foi ajudado pelo Mestre a levar sua carroça de volta à estrada. Testemunhou a Archer arremessar um cavalo como se nada fosse.'},
-  {id:'asahina',cat:'npc',name:'Asahina Kanetoki',classe:'Mestre (Assassin)',
+  {id:'nao',cat:'npc',name:'Nao',classe:'Gerente de Bordel',
+   art:null,
+   // Aparece durante o Mapa 8; consolidada ao concluir Shinohara (derrota da Mochizuki).
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki),
+   info:'Uma mulher na casa dos 40 anos que gere um bordel em Shinohara. Tímida e de cabeça baixa, foi arrastada para o conflito quando Asahina passou a maltratar suas funcionárias. Uma figura trágica, presa entre a lealdade às suas garotas e o medo de um homem cruel.',
+   details:[
+     {title:'A ALIADA RELUTANTE',body:'Nao abrigou Okuni quando esta fugia pela cidade e concordou em ajudar o grupo a emboscar Asahina, oferecendo seu estabelecimento como isca. Asahina frequentava o local e já havia ferido várias de suas garotas — dar um fim nele era, para ela, tanto justiça quanto sobrevivência.'},
+     {title:'A TRAIÇÃO SOB COAÇÃO',body:'O plano ruiu: Asahina mantinha as funcionárias de Nao como reféns, forçando-a a entregar o grupo numa armadilha. Mesmo assim, ele revelou tê-las assassinado — quebrando a promessa e transformando a traição de Nao em dor pura. Ela agira sabendo do risco, mas foi enganada de todo jeito.'},
+     {title:'A ÚLTIMA VINGANÇA',body:'Sem nada mais a perder, Nao reencontra o grupo e entrega a localização do esconderijo de Asahina — o moinho d\'água nos arredores. Não pede perdão; pede apenas que ele morra da forma mais dolorosa possível. "Para uma vingança pessoal assinaria um contrato até com demônio", diz, olhando diretamente para a Oni Ibaraki.'},
+   ]},
+  {id:'asahina',cat:'mestre',name:'Asahina Kanetoki',classe:'Mestre (Assassin)',
    art:'assets/servos/asahina/asahina_full.jpg',
    // Só aparece depois de concluir a Estrada de Shinohara (Mapa 7 / derrota do Shunoban).
    reveal:p=>!!(p.achievements&&p.achievements.defeat_shunoban),
@@ -5784,9 +5830,123 @@ const PATH_THEMES={
   kurikara2:[['left','🏚️','Distrito Saqueado'],['center','🕯️','Avenida às Escuras'],['right','💀','Becos Sem Lei']],
   // Mapa 7 — Estrada de Shinohara (campo aberto, montanhas e youkai selvagens).
   shinohara:[['left','🌲','Trilha da Floresta'],['center','⛰️','Passo da Montanha'],['right','🏞️','Margem do Rio']],
+  // Mapa 8 — Shinohara (a cidade): ruas movimentadas, distritos e o bairro do bordel.
+  shinohara_city:[['left','🏘️','Ruas Movimentadas'],['center','🏮','Distrito Central'],['right','🌃','Bairro Noturno']],
 };
 
-function MapScreen({camp,onChoosePath,onNavigate,onGiveUp}){
+// ══════════════════════════════════════════════════════
+// CASA DE CHÁ — loja de consumíveis durante a run (Campanha e Torre)
+// ══════════════════════════════════════════════════════
+// Cada item pode ser comprado de forma ilimitada, mas apenas UM por vez, antes de
+// avançar para a próxima fase. `cur` é a moeda ('qp' ou 'sq'). `kind`:
+//   buff    → guarda um efeito em camp.chaBuffs (consumido em combate)
+//   heal    → cura % do HP MÁX de um servo (ação imediata na party)
+//   revive  → revive um servo caído com % de HP (ação imediata na party)
+const TEA_HOUSE_ITEMS=[
+  {id:'cha_revolta',name:'Chá da Revolta',icon:'🍵',cur:'qp',cost:10000,kind:'buff',
+   desc:'+20% de Ataque por 5 encontros.'},
+  {id:'pilula_azul',name:'Pílula Azul',icon:'💊',cur:'qp',cost:20000,kind:'revive',revivePct:10,
+   desc:'Revive um Servo caído com 10% de HP.'},
+  {id:'cha_batizado',name:'Chá Batizado',icon:'🍵',cur:'sq',cost:10,kind:'heal',healPct:50,
+   desc:'Cura 50% do HP máximo de um Servo.'},
+  {id:'cha_tapioca',name:'Chá de Tapioca',icon:'🧋',cur:'sq',cost:20,kind:'revive',revivePct:50,
+   desc:'Revive um Servo caído com 50% de HP.'},
+  {id:'espada_enferrujada',name:'Espada Enferrujada',icon:'🗡️',cur:'sq',cost:10,kind:'buff',
+   desc:'Causa 10% de dano em todos os inimigos no próximo combate.'},
+  {id:'doces_tradicionais',name:'Doces Tradicionais',icon:'🍡',cur:'sq',cost:20,kind:'buff',
+   desc:'+20% de ganho de XP dos Servos pelo resto da run.'},
+  {id:'gas_nocivo',name:'Gás Nocivo',icon:'☁️',cur:'sq',cost:30,kind:'buff',
+   desc:'No próximo combate, os inimigos começam atordoados por 2 turnos.'},
+  {id:'bond_ce',name:'Bond CE',icon:'💠',cur:'sq',cost:60,kind:'buff',
+   desc:'+50% de Bond e XP (de Servo e Mestre) pelo resto da run.'},
+];
+
+function TeaHouseModal({party,profile,onBuy,notif,onClose}){
+  // Para itens de curar/reviver, o jogador precisa escolher qual servo. Guardamos
+  // o item pendente e mostramos os servos elegíveis como alvos.
+  const[pending,setPending]=useState(null);
+  const balSQ=profile.sq||0, balQP=profile.qp||0;
+  function handleClick(item){
+    if(item.kind==='heal'||item.kind==='revive'){
+      if(party.length<=1){onBuy(item,0);return;} // 1 servo → alvo óbvio (Campanha)
+      setPending(item); // party (Torre) → precisa escolher
+    } else onBuy(item,0);
+  }
+  return(
+    <div className="result-overlay" style={{alignItems:'flex-start',overflowY:'auto',padding:'20px 10px'}}>
+      <div className="panel" style={{maxWidth:560,width:'100%'}}>
+        {/* Atendente */}
+        <div style={{display:'flex',gap:12,alignItems:'center',marginBottom:12}}>
+          <img src="assets/servos/rikyu/rikyu_loja.jpg" alt="Atendente"
+            style={{width:64,height:64,borderRadius:'50%',objectFit:'cover',border:'2px solid var(--gold-dim)',flexShrink:0}}
+            onError={ev=>{ev.target.style.display='none';}}/>
+          <div>
+            <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,fontSize:'1rem'}}>🍵 CASA DE CHÁ</h2>
+            <p style={{color:'var(--parchment)',fontSize:'.76rem',fontStyle:'italic',marginTop:2}}>
+              "Bem-vindo(a) à minha cabana. Preparei materiais raros e especiais, então, por favor, fique à vontade para explorar. Claro, terei que cobrar por eles."
+            </p>
+          </div>
+        </div>
+        <div style={{display:'flex',justifyContent:'center',gap:16,marginBottom:10,fontSize:'.8rem'}}>
+          <span style={{color:'var(--gold)'}}>💎 {balSQ.toLocaleString()} SQ</span>
+          <span style={{color:'#4fc3f7'}}>🪙 {balQP.toLocaleString()} QP</span>
+        </div>
+        {notif&&<p style={{textAlign:'center',color:'var(--gold)',fontSize:'.78rem',marginBottom:10}}>{notif}</p>}
+
+        {pending?(
+          // Sub-tela: escolher o servo alvo (só na Torre, com party de vários servos)
+          <div>
+            <p style={{color:'var(--parchment)',fontSize:'.8rem',marginBottom:10,textAlign:'center'}}>
+              {pending.name}: escolha o Servo
+            </p>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {party.map((m,i)=>{
+                const def=PLAYABLE_SERVOS[m.id]||IBARAKI;
+                const dead=m.defeated||m.hp<=0;
+                const eligible=pending.kind==='revive'?dead:(!dead&&m.hp<m.hpMax);
+                return(
+                  <button key={m.id+i} className="btn btn-full" disabled={!eligible}
+                    style={{opacity:eligible?1:.4}}
+                    onClick={()=>{onBuy(pending,i);setPending(null);}}>
+                    {def.name.split(' ')[0]} — {dead?'💀 Caído':`${Math.max(0,Math.round(m.hp))}/${m.hpMax} HP`}
+                  </button>
+                );
+              })}
+            </div>
+            <button className="btn btn-full" style={{marginTop:12}} onClick={()=>setPending(null)}>← Voltar</button>
+          </div>
+        ):(
+          <>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {TEA_HOUSE_ITEMS.map(item=>{
+                const bal=item.cur==='sq'?balSQ:balQP;
+                const afford=bal>=item.cost;
+                return(
+                  <div key={item.id} style={{display:'flex',alignItems:'center',gap:10,
+                    background:'rgba(0,0,0,.25)',border:'1px solid rgba(201,162,39,.25)',borderRadius:5,padding:'8px 10px'}}>
+                    <span style={{fontSize:'1.3rem',flexShrink:0}}>{item.icon}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{color:'var(--gold)',fontSize:'.8rem',fontFamily:'Cinzel,serif'}}>{item.name}</div>
+                      <div style={{color:'var(--parchment-dark)',fontSize:'.68rem'}}>{item.desc}</div>
+                    </div>
+                    <button className="btn" style={{padding:'6px 12px',fontSize:'.7rem',flexShrink:0,opacity:afford?1:.45}}
+                      disabled={!afford} onClick={()=>handleClick(item)}>
+                      {item.cost.toLocaleString()} {item.cur.toUpperCase()}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <button className="btn btn-red btn-full" style={{marginTop:14}} onClick={onClose}>Sair da Casa de Chá</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,setCamp}){
+  const[teaOpen,setTeaOpen]=useState(false);
   const{servo,phase,maxPhases}=camp;
   const curMap=(camp.towerMode?TOWER_MAPS[camp.mapId]:MAPS[camp.mapId])||MAPS.bosque;
   // Torre: boss só na última fase (20). Campanha: últimas 2 fases levam ao boss.
@@ -5799,9 +5959,67 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp}){
     :(camp.mapId==='kurikara2')?false
     :(camp.mapId==='shinohara')?(phase>=maxPhases)
     :(phase>=maxPhases-1);
+
+  // ── Casa de Chá: efetua uma compra (um item por vez, ilimitadas ao longo da run) ──
+  const[teaNotif,setTeaNotif]=useState('');
+  const party=camp.party||[camp.servo];
+  function buyTeaItem(item,targetIdx){
+    const fresh=loadProfile();
+    const bal=item.cur==='sq'?(fresh.sq||0):(fresh.qp||0);
+    if(bal<item.cost){setTeaNotif(`${item.cur.toUpperCase()} insuficiente!`);return;}
+
+    // Ações que precisam de um alvo (curar/reviver) validam o alvo antes de cobrar.
+    if(item.kind==='heal'){
+      const m=party[targetIdx];
+      if(!m||m.defeated||m.hp<=0){setTeaNotif('Escolha um Servo vivo para curar.');return;}
+      if(m.hp>=m.hpMax){setTeaNotif('Esse Servo já está com HP cheio.');return;}
+    }
+    if(item.kind==='revive'){
+      const m=party[targetIdx];
+      if(!m||!(m.defeated||m.hp<=0)){setTeaNotif('Escolha um Servo caído para reviver.');return;}
+    }
+
+    // Cobra a moeda (saldo real do profile)
+    const paid=item.cur==='sq'?{...fresh,sq:fresh.sq-item.cost}:{...fresh,qp:fresh.qp-item.cost};
+    saveProfile(paid);setProfile(paid);
+
+    // Aplica o efeito
+    if(item.kind==='heal'){
+      const newParty=party.map((m,i)=>i===targetIdx
+        ?{...m,hp:Math.min(m.hpMax,m.hp+Math.round(m.hpMax*item.healPct/100))}:m);
+      setCamp(c=>({...c,party:newParty,servo:newParty[0]}));
+      setTeaNotif(`${PLAYABLE_SERVOS[party[targetIdx].id]?.name||'Servo'} recuperou ${item.healPct}% de HP!`);
+    } else if(item.kind==='revive'){
+      const newParty=party.map((m,i)=>{
+        if(i!==targetIdx)return m;
+        const def=PLAYABLE_SERVOS[m.id]||IBARAKI;
+        const hpMax=m.hpMax||def.getHp(m.level||loadServoXP(m.id).level);
+        return{...m,defeated:false,hp:Math.round(hpMax*item.revivePct/100),hpMax};
+      });
+      setCamp(c=>({...c,party:newParty,servo:newParty[0]}));
+      setTeaNotif(`${PLAYABLE_SERVOS[party[targetIdx].id]?.name||'Servo'} foi revivido com ${item.revivePct}% de HP!`);
+    } else {
+      // Buffs de run — acumulados em camp.chaBuffs (consumidos no combate)
+      setCamp(c=>{
+        const cb={...(c.chaBuffs||{})};
+        if(item.id==='cha_revolta')cb.atkUp={value:20,encounters:5};
+        if(item.id==='espada_enferrujada')cb.enemyStartDmgPct=(cb.enemyStartDmgPct||0)+10;
+        if(item.id==='gas_nocivo')cb.enemyStunTurns=Math.max(cb.enemyStunTurns||0,2);
+        if(item.id==='doces_tradicionais')cb.xpBonus=(cb.xpBonus||0)+20;
+        if(item.id==='bond_ce')cb.bondXpBonus=(cb.bondXpBonus||0)+50;
+        return{...c,chaBuffs:cb};
+      });
+      setTeaNotif(`${item.name} adquirido!`);
+    }
+  }
+
   return(
     <div className="screen">
       <PartySidebar party={camp.party||[camp.servo]}/>
+      {teaOpen&&(
+        <TeaHouseModal party={party} profile={profile} onBuy={buyTeaItem} notif={teaNotif}
+          onClose={()=>{setTeaOpen(false);setTeaNotif('');}}/>
+      )}
       <div className="panel" style={{maxWidth:600}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
           <h2 className="cinzel" style={{color:'var(--gold)',fontSize:'.9rem',letterSpacing:3}}>
@@ -5811,11 +6029,31 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp}){
         </div>
         <Bar label="HP" current={servo.hp} max={servo.hpMax} type="hp"/>
         <Bar label="NP" current={servo.npBar} max={100} type="np"/>
+        {/* Carteira do Mestre — saldo REAL gastável (profile), para gerenciar a Casa de Chá */}
+        <div style={{display:'flex',justifyContent:'center',gap:14,alignItems:'center',
+          background:'rgba(0,0,0,.28)',border:'1px solid var(--gold-dim)',borderRadius:5,
+          padding:'6px 10px',margin:'4px 0 8px',fontSize:'.78rem'}}>
+          <span style={{color:'var(--parchment-dark)',fontSize:'.62rem',letterSpacing:1}}>CARTEIRA</span>
+          <span style={{color:'var(--gold)'}}>💎 {(profile.sq||0).toLocaleString()} <span style={{fontSize:'.62rem',color:'var(--parchment-dark)'}}>SQ</span></span>
+          <span style={{color:'#4fc3f7'}}>🪙 {(profile.qp||0).toLocaleString()} <span style={{fontSize:'.62rem',color:'var(--parchment-dark)'}}>QP</span></span>
+        </div>
         <div style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginBottom:8,textAlign:'right'}}>
-          SQ: <strong style={{color:'var(--gold)'}}>{camp.sqEarned||0}</strong>
+          Ganho nesta run — SQ: <strong style={{color:'var(--gold)'}}>{camp.sqEarned||0}</strong>
           &nbsp;·&nbsp; QP: <strong style={{color:'#4fc3f7'}}>{(camp.qpEarned||0).toLocaleString()}</strong>
           &nbsp;·&nbsp; XP: <strong style={{color:'#b44fef'}}>{camp.xpEarned||0}</strong>
         </div>
+        {camp.chaBuffs&&Object.keys(camp.chaBuffs).length>0&&(
+          <div style={{fontSize:'.66rem',color:'#e8b0b0',marginBottom:8,textAlign:'center',
+            background:'rgba(180,90,90,0.1)',border:'1px solid rgba(216,138,138,.3)',borderRadius:4,padding:'4px 8px'}}>
+            🍵 {[
+              camp.chaBuffs.atkUp?`+${camp.chaBuffs.atkUp.value}% ATK (${camp.chaBuffs.atkUp.encounters} enc.)`:null,
+              camp.chaBuffs.enemyStartDmgPct?`Espada: -${camp.chaBuffs.enemyStartDmgPct}% HP inimigo (próx.)`:null,
+              camp.chaBuffs.enemyStunTurns?`Gás: stun ${camp.chaBuffs.enemyStunTurns}t (próx.)`:null,
+              camp.chaBuffs.xpBonus?`+${camp.chaBuffs.xpBonus}% XP`:null,
+              camp.chaBuffs.bondXpBonus?`+${camp.chaBuffs.bondXpBonus}% Bond/XP`:null,
+            ].filter(Boolean).join(' · ')}
+          </div>
+        )}
         <div className="divider"><span className="divider-text">ESCOLHA SEU CAMINHO</span></div>
         {isBossPhase?(
           <div style={{textAlign:'center',padding:'20px 0'}}>
@@ -5826,6 +6064,13 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp}){
           </div>
         ):(
           <>
+            <button className="btn btn-full" style={{marginBottom:14,border:'1px solid #d98a8a',background:'rgba(180,90,90,0.12)',color:'#e8b0b0'}}
+              onClick={()=>setTeaOpen(true)}>
+              🍵 Casa de Chá
+              <div style={{fontSize:'.65rem',color:'var(--parchment-dark)',marginTop:2,fontWeight:'normal'}}>
+                Consumíveis para esta jornada — cure, reviva e fortaleça seus servos
+              </div>
+            </button>
             {(camp.innUnlocked||camp.mapId==='shinohara')&&(
               <button className="btn btn-full" style={{marginBottom:14,border:'1px solid var(--gold)',background:'rgba(201,162,39,0.12)',color:'var(--gold)'}}
                 onClick={()=>onChoosePath('inn')}>
@@ -6187,9 +6432,23 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // Inimigos iniciais gerados UMA vez (reusados pelo estado e pela iniciativa)
   const initialEnemiesRef=useRef(null);
   if(initialEnemiesRef.current===null){
-    initialEnemiesRef.current=isBoss?[createBossInstance()]
+    let enem=isBoss?[createBossInstance()]
       :fixedEnemies?fixedEnemies
       :genEncounterForMap(camp.mapId||'bosque',camp.phase,camp.towerHpMult||1,camp.towerAtkMult||1);
+    // Casa de Chá — efeitos de INÍCIO de combate (consumidos ao entrar na luta):
+    const cb=camp.chaBuffs||{};
+    if(cb.enemyStartDmgPct||cb.enemyStunTurns){
+      enem=enem.map(e=>{
+        let ne={...e};
+        if(cb.enemyStartDmgPct){ // Espada Enferrujada: tira % do HP máx de cada inimigo
+          const dmg=Math.round((ne.maxHp||ne.currentHp)*cb.enemyStartDmgPct/100);
+          ne.currentHp=Math.max(1,ne.currentHp-dmg); // não mata de graça, deixa em 1 no mínimo
+        }
+        if(cb.enemyStunTurns)ne.stunned=(ne.stunned||0)+cb.enemyStunTurns; // Gás Nocivo
+        return ne;
+      });
+    }
+    initialEnemiesRef.current=enem;
   }
   const[enemies,setEnemies]=useState(initialEnemiesRef.current);
   const[selectedTarget,setSelectedTarget]=useState(0);
@@ -6378,6 +6637,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(camp.saberBuff)atkUp+=SABER_NP.atkUp;
     // Skill da Torre — Carisma: +ATK passivo permanente
     if(towerAtkUp>0)atkUp+=towerAtkUp;
+    // Casa de Chá — Chá da Revolta: +20% ATK enquanto durar (contado por encontros)
+    if(camp.chaBuffs?.atkUp&&(camp.chaBuffs.atkUp.encounters||0)>0)atkUp+=camp.chaBuffs.atkUp.value;
     // Passiva de ataque (ex.: Criação de Território da Kiara)
     for(const p of servo.passiveSkills||[]){if(p.effect.type==='atk_passive')atkUp+=p.effect.value;}
     return Math.round(dmg*(1+atkUp/100)*mult);
@@ -7717,13 +7978,18 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       // XP e Bond por vitória em combate — salvos IMEDIATAMENTE.
       // Vale pro GRUPO INTEIRO (todo mundo que estava na party), não só quem
       // ficou ativo no fim da luta — senão só o líder do momento acumula.
-      const newBond=addBond(SDEF.id,30);
-      const xpGain=isBoss?XP_BOSS_WIN:XP_COMBAT_WIN;
+      // Casa de Chá — Doces Tradicionais (+XP) e Bond CE (+Bond e +XP).
+      const cb=camp.chaBuffs||{};
+      const xpMult=1+((cb.xpBonus||0)+(cb.bondXpBonus||0))/100;
+      const bondMult=1+(cb.bondXpBonus||0)/100;
+      const bondGain=Math.round(30*bondMult);
+      const newBond=addBond(SDEF.id,bondGain);
+      const xpGain=Math.round((isBoss?XP_BOSS_WIN:XP_COMBAT_WIN)*xpMult);
       const newXP=addServoXP(SDEF.id,xpGain);
       const restBonds={}; // {servoId: {level,points}} — pra recalcular o npLevel de cada um abaixo
       party.forEach((m,i)=>{
         if(i===activeIdx)return; // já contabilizado acima (SDEF===party[activeIdx])
-        restBonds[m.id]=addBond(m.id,30);
+        restBonds[m.id]=addBond(m.id,bondGain);
         addServoXP(m.id,xpGain);
       });
 
@@ -7765,21 +8031,36 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       // GOLDEN RULE: +1 stack por fase de COMBATE vencida (bosses não contam como "fase comum",
       // mas também engrossam a lenda — contam 1 stack ao cair).
       const newGolden=(camp.goldenRule||0)+1;
+      // Casa de Chá — atualiza os buffs após o combate: consome os de uso único
+      // (Espada, Gás) e decrementa o contador de encontros do Chá da Revolta.
+      let newChaBuffs=null;
+      if(camp.chaBuffs){
+        const nb={...camp.chaBuffs};
+        delete nb.enemyStartDmgPct; // Espada Enferrujada: só o próximo combate
+        delete nb.enemyStunTurns;   // Gás Nocivo: só o próximo combate
+        if(nb.atkUp){
+          const left=(nb.atkUp.encounters||0)-1;
+          if(left>0)nb.atkUp={...nb.atkUp,encounters:left}; else delete nb.atkUp;
+        }
+        // xpBonus e bondXpBonus são permanentes pela run — mantidos.
+        newChaBuffs=Object.keys(nb).length?nb:null;
+      }
       const updatedCamp={...camp,
         party:finalParty,
         servo:finalParty[0]||{...finalServo,npLevel:bondToNP(newBond.level)},
         bond:newBond,
         npLevel:bondToNP(newBond.level),
         goldenRule:newGolden,
+        chaBuffs:newChaBuffs,
         sqEarned:(camp.sqEarned||0)+sqGain,
         qpEarned:(camp.qpEarned||0)+qpGain,
         xpEarned:(camp.xpEarned||0)+xpGain,
-        bondEarned:(camp.bondEarned||0)+30,
+        bondEarned:(camp.bondEarned||0)+bondGain,
         planBonus:null,
       };
 
       setDialogue({text:SDEF.dialogue.win,portrait:SDEF.assets.win||SDEF.assets.default});
-      addLog(`✦ Vitória! +${sqGain} SQ · +${qpGain} QP · +${xpGain} XP · +30 Bond · +${magusGain} EXP Magus`+(newXP.level>servoLvl?` · ✨ SERVO Nv.${newXP.level}!`:'')+(newProfile.magus.level>prevMagusLvl?` · 👑 MESTRE Nv.${newProfile.magus.level}!`:''),'system');
+      addLog(`✦ Vitória! +${sqGain} SQ · +${qpGain} QP · +${xpGain} XP · +${bondGain} Bond · +${magusGain} EXP Magus`+(newXP.level>servoLvl?` · ✨ SERVO Nv.${newXP.level}!`:'')+(newProfile.magus.level>prevMagusLvl?` · 👑 MESTRE Nv.${newProfile.magus.level}!`:''),'system');
       addLog(`🌟 Golden Rule Nv.${newGolden}: +${newGolden*5}% ATK e HP no próximo combate!`,'system');
       setCamp(updatedCamp);
       setTimeout(()=>onWin(updatedCamp),2000);
@@ -8998,7 +9279,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     </div>
   );
   if(stage==='bossLoseStory')return <StoryScreen profile={profile} script={STORY_BOSS_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
-  if(stage==='map')return <MapScreen camp={camp} onChoosePath={choosePath} onNavigate={onNavigate} onGiveUp={onGiveUp}/>;
+  if(stage==='map')return <MapScreen camp={camp} onChoosePath={choosePath} onNavigate={onNavigate} onGiveUp={onGiveUp} profile={profile} setProfile={setProfile} setCamp={setCamp}/>;
   if(stage==='combat')return <CombatScreen camp={camp} isBoss={false} onWin={onCombatWin} onLose={onCombatLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
   if(stage==='boss')return <CombatScreen camp={camp} isBoss={true} onWin={onBossWin} onLose={onBossLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
   if(stage==='event')return <EventScreen camp={camp} type={eventType} onFinish={onEventFinish} setCamp={setCamp} setProfile={setProfile}/>;
