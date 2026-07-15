@@ -2814,7 +2814,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('ranking')}>🌐 &nbsp; Ranking Online</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.44</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.45</p>
       </div>
     </div>
   );
@@ -3210,6 +3210,19 @@ const CODEX=[
    art:null,
    reveal:p=>!!(p.achievements&&p.achievements.defeat_archer)||(p.stats&&p.stats.runs||0)>3,
    info:'Um viajante de meia-idade emboscado por monstros sugadores de sangue no Caminho Tortuoso. Sobrevivente por sorte, foi ajudado pelo Mestre a levar sua carroça de volta à estrada. Testemunhou a Archer arremessar um cavalo como se nada fosse.'},
+  {id:'asahina',cat:'npc',name:'Asahina Kanetoki',classe:'Mestre (Assassin)',
+   art:'assets/servos/asahina/asahina_full.jpg',
+   // Só aparece depois de concluir a Estrada de Shinohara (Mapa 7 / derrota do Shunoban).
+   reveal:p=>!!(p.achievements&&p.achievements.defeat_shunoban),
+   info:'O Mestre do Servo Assassin em Shinohara. Um homem na casa dos 40 anos, solteiro, bem-vestido e de boa aparência — popular com as mulheres e de bolso cheio o suficiente para cercar-se de guarda-costas. Por trás da fachada de ostentação, esconde-se um homem cruel.',
+   details:[
+     {title:'O ALVO EM SHINOHARA',body:'Segundo as conversas dos moradores de Kurikara, o Mestre do Assassin em Shinohara chama-se Asahina Kanetoki: um quarentão solteiro, de boa pinta e muito popular com as mulheres. Sua riqueza lhe permite manter uma pequena tropa de guarda-costas, o que a princípio dificulta chegar até ele — mas também o torna um alvo fácil de localizar numa cidade pequena do interior.'},
+     {title:'UM MESTRE OSTENTOSO',body:'Ao contrário de outros Mestres da sucessão, Asahina não age nas sombras: exibe poder e dinheiro abertamente. A teoria de Okuni é que ele seja um "contraponto" ao próprio Servo — quando um Servo é invocado à força, com um catalisador em vez de por afinidade, a relação Mestre-Servo pode se inverter, com o Servo diferindo completamente da personalidade do Mestre. Se o Assassin é discreto e furtivo, Asahina é o oposto: barulhento e vaidoso.'},
+     {title:'A VERDADE POR TRÁS DA FACHADA',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki),
+      body:'A "boa pinta" escondia um monstro. Asahina frequentava o bordel gerido por Nao, maltratando e ferindo as garotas de lá. Quando Nao tentou se aliar ao grupo do Mestre, ele a chantageou tomando suas funcionárias como reféns — e, mesmo após ela entregar o grupo numa armadilha, revelou tê-las assassinado ("talvez se você cavar bem fundo você vai achar os restos delas"), tratando tudo como uma "lição" por ela não cooperar. Um homem que vê pessoas como objetos descartáveis.'},
+     {title:'O SELO DE COMANDO E A CRUELDADE',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki),
+      body:'Asahina mantém o controle sobre a Assassin não por vínculo, mas por tortura. Usa papéis grossos entalhados com símbolos — Selos de Comando canalizados por rituais — que, ao brilhar em vermelho, forçam a Assassin a um estado de fúria descontrolada, os olhos sangrando de dor. Ele os aciona sem hesitar, até mesmo sobre uma Serva já caída, para transformá-la numa arma-cadáver. Covarde no combate (foge quando pode) e dependente inteiramente do poder de sua Serva, Asahina é a personificação de um Mestre que não merece o poder que empunha.'},
+   ]},
 ];
 
 // ══════════════════════════════════════════════════════
@@ -6117,9 +6130,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Bônus da Aria/plan só se aplicam ao líder na Campanha (não há party lá).
     const hpBonus=isLeader?ariaHpBonus:0;
     const npAdd=isLeader?planNpGain:0;
-    // GOLDEN RULE: bônus acumulativo de +1.5% ATK e +1.5% HP por fase de combate vencida na run.
+    // GOLDEN RULE: bônus acumulativo de +5% ATK e +5% HP por fase de combate vencida na run.
     const grStacks=camp.goldenRule||0;
-    const grMult=1+0.015*grStacks;
+    const grMult=1+0.05*grStacks;
     // Monta os buffs VISÍVEIS na HUD a partir do planBonus (descanso/preparar).
     let buffs=[];
     if(isLeader){
@@ -7767,7 +7780,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
       setDialogue({text:SDEF.dialogue.win,portrait:SDEF.assets.win||SDEF.assets.default});
       addLog(`✦ Vitória! +${sqGain} SQ · +${qpGain} QP · +${xpGain} XP · +30 Bond · +${magusGain} EXP Magus`+(newXP.level>servoLvl?` · ✨ SERVO Nv.${newXP.level}!`:'')+(newProfile.magus.level>prevMagusLvl?` · 👑 MESTRE Nv.${newProfile.magus.level}!`:''),'system');
-      addLog(`🌟 Golden Rule Nv.${newGolden}: +${(newGolden*1.5).toFixed(1)}% ATK e HP no próximo combate!`,'system');
+      addLog(`🌟 Golden Rule Nv.${newGolden}: +${newGolden*5}% ATK e HP no próximo combate!`,'system');
       setCamp(updatedCamp);
       setTimeout(()=>onWin(updatedCamp),2000);
 
@@ -7983,9 +7996,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             </span>
             <span style={{fontSize:'.7rem',color:'var(--parchment-dark)',display:'flex',gap:8,alignItems:'center'}}>
               {(camp.goldenRule||0)>0&&(
-                <span title={`Golden Rule: +${((camp.goldenRule||0)*1.5).toFixed(1)}% ATK e HP acumulados nesta jornada`}
+                <span title={`Golden Rule: +${(camp.goldenRule||0)*5}% ATK e HP acumulados nesta jornada`}
                   style={{color:'#e6c34c',fontFamily:'Cinzel,serif',fontWeight:600,border:'1px solid rgba(230,195,76,.5)',borderRadius:3,padding:'1px 6px',background:'rgba(230,195,76,.12)'}}>
-                  🌟 +{((camp.goldenRule||0)*1.5).toFixed(1)}%
+                  🌟 +{(camp.goldenRule||0)*5}%
                 </span>
               )}
               <span>Turno {turn}</span>
@@ -8741,6 +8754,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(camp.mapId==='kurikara')return <SplashScreen art={NINJA.assets.encounter} title="NINJA DO CLÃ GENJI" sub="Assassino — Arredores de Kurikara" onFinish={()=>setStage('boss')}/>;
     if(camp.mapId==='kurikara_city')return <SplashScreen art={GOSANJO.assets.encounter} title="GO-SANJO FALSO: SOMBRA" sub="A Sombra que Veste a Face de um Imperador" onFinish={()=>setStage('boss')}/>;
     if(camp.mapId==='shinohara')return <SplashScreen art={SHUNOBAN.assets.encounter} title="SHUNOBAN, O CICLOPE VERMELHO" sub="O Olho que Tudo Vê — Estrada de Shinohara" onFinish={()=>setStage('boss')}/>;
+    if(camp.mapId==='shinohara_city')return <SplashScreen art="assets/servos/mochizuki/mochizuki_full.jpg" title="MOCHIZUKI CHIYOME" sub="Assassin — A Kunoichi das Sombras de Shinohara" onFinish={()=>setStage('boss')}/>;
     return <SplashScreen art={NITRO.assets.encounter} title="⚙️ NITRO-TYPE" sub="Samurai Mecanizado — Ameaça Anacrônica" onFinish={()=>setStage('boss')}/>;
   }
   // Splash da Archer (após o diálogo pré-boss)
