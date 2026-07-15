@@ -194,6 +194,8 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 @media(max-width:600px){
   .path-choice{grid-template-columns:1fr}
   .enemy-group{gap:6px}
+  /* Mais inimigos por linha em telas estreitas (menos gente sai do campo de visão) */
+  .arena-enemy-group{max-width:46% !important}
   /* Combate no celular: skills enquadradas em grade compacta (sem scroll feio) */
   .combat-actions{padding:8px !important}
   .combat-actions .skills-row{
@@ -659,6 +661,15 @@ const OKUNI_EXPRESSIONS={
   preocupada:'assets/servos/okuni/okuni_preocupada.png', // apreensiva
   think:'assets/servos/okuni/okuni_think.png',         // piscando / pensando
   off:'assets/servos/okuni/okuni_off.png',             // olhos fechados, séria/desligada
+  hurt:'assets/servos/okuni/okuni_hurt.png',           // ferida, traje manchado de sangue
+};
+
+// Retratos da Mochizuki usados em CENAS DE HISTÓRIA (distintos dos assets de combate
+// já cadastrados em MOCHIZUKI.assets — aqui são reações específicas de roteiro).
+const MOCHIZUKI_EXPRESSIONS={
+  default:'assets/servos/mochizuki/mochizuki_default.png',
+  pain:'assets/servos/mochizuki/mochizuki_pain.png',   // "Hmph." — desdém/dor contida
+  rage:'assets/servos/mochizuki/mochizuki_rage.png',   // grito, olhos vermelhos (forçada pelo selo)
 };
 
 // ── ROTEIRO: DIÁLOGO INICIAL DA CAMPANHA ──
@@ -1111,6 +1122,29 @@ const STORY_MAP5_F17={
     {type:'master',text:'Não consigo sentir que ele esteja consciente. Parece que não há alma alguma — como um objeto sem vida.'},
     {type:'archer',expr:'sith_pis',text:'De fato. Aquilo está longe de ser humano.'},
     {type:'narration',text:'Assim que se aproximam, o samurai se levanta. Sua aura de força emanava por todo o pavilhão. Um inimigo formidável apareceu: "Go-Sanjo, o Imperador Sombrio".'},
+  ],
+};
+
+// Derrota contra a Mochizuki Chiyome (boss do mapa 8).
+const STORY_MAP8_MOCHIZUKI_LOSE={
+  start:[
+    {type:'narration',text:'Seu pescoço é degolado pela lâmina da Assassin, sua cabeça cai com baque seco no chão.'},
+    {type:'shuten',text:'Hmmmm, essa Assassin tem o mesmo cheiro que o meu, mas não lembro de alguém assim na minha família. Você vai ter que começar de novo.'},
+  ],
+};
+
+// Vitória contra a Mochizuki Chiyome (boss do mapa 8).
+const STORY_MAP8_MOCHIZUKI_WIN={
+  start:[
+    {type:'narration',text:'Depois de uma batalha intensa, finalmente a Assassin cai no chão, sem forças para se levantar.'},
+    {type:'master',text:'Agora, Archer!'},
+    {type:'archer',expr:'sith_ow',text:'Certo.'},
+    {type:'narration',text:'No mesmo instante, o braço direito do Asahina é mandando voando longe caindo nos pés do mestre.'},
+    {type:'narration',text:'Um braço inteiro arrancado em um só golpe, o braço do qual continha os selos de comando. Asahina ao ver o braço jorrando sangue ele se desespera e começa a gritar.'},
+    {type:'asahina',text:'Urgghhh! SEUS MERDAS! SEUS PUTOS! DESGRAÇADOS!!!!'},
+    {type:'asahina',text:'VoÇês VãO PaGAR!!!!!'},
+    {type:'narration',text:'Usando sua mão esquerda ele retira outro papel grosso do terno, com símbolos estranhos, e usando seu sangue para escrever um símbolo no papel, faz novamente aquele brilho vermelho que intensifica ainda mais, a Assassin que estava desabada no chão se levanta como um cadáver, com seus olhos sangrando.'},
+    {type:'mochizuki',expr:'rage',text:'AHHHHHH!!!!!!!!!'},
   ],
 };
 
@@ -2225,6 +2259,7 @@ const ACHIEVEMENTS=[
   {id:'defeat_gosanjo',name:'Derrote o Go-Sanjo Falso',desc:'Dissipe a Sombra que veste a face de um imperador, em Kurikara.',qp:25000,sq:40,icon:'🏯'},
   {id:'clear_kurikara2',name:'A Cidade Libertada',desc:'Ajude a limpar Kurikara e parta rumo a Shinohara ao lado de Okuni.',qp:30000,sq:45,icon:'🎭'},
   {id:'defeat_shunoban',name:'Derrote o Ciclope Vermelho',desc:'Abata Shunoban, o terror de olho único da estrada de Shinohara.',qp:35000,sq:50,icon:'👁️'},
+  {id:'defeat_mochizuki',name:'Derrote a Kunoichi das Sombras',desc:'Vença Mochizuki Chiyome, a Assassin que comanda as ruas de Shinohara.',qp:42000,sq:56,icon:'🗡️'},
 ];
 
 // Concede uma conquista (se ainda não obtida): paga a recompensa e marca no profile.
@@ -2779,7 +2814,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('ranking')}>🌐 &nbsp; Ranking Online</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.37</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.44</p>
       </div>
     </div>
   );
@@ -4226,6 +4261,64 @@ const ARCHER={
   },
 };
 
+// ── BOSS DO MAPA 8: Mochizuki Chiyome ──
+// Assassin de controle: trava skills/NP do inimigo, envenena e se buffa —
+// não é uma esponja de dano, é uma luta de gerenciar janelas de ação.
+const MOCHIZUKI={
+  id:'mochizuki_chiyome',name:'Mochizuki Chiyome',className:'Assassin',isBoss:true,
+  hp:400000,attack:2900,
+  attributes:{
+    strength:{rank:'C',points:30},
+    agility:{rank:'A',points:56}, // muito rápida — age antes do Servo
+    luck:{rank:'B',points:40},
+    endurance:{rank:'B',points:40},
+    mana:{rank:'C',points:30,gainPercent:1.8},
+    np:{rank:'C',points:30},
+  },
+  npRegenPerTurn:4,
+  defensePassive:30,
+  skills:{
+    // Curse (Shrine Maiden) C++: trava Skill+NP do Servo por 2t · Mochizuki +20% ATK por 3t (CD 5t)
+    curse:{cd:5,skillLockTurns:2,npLockTurns:2,atkUp:20,atkDur:3},
+    // Curse of the Orochi B: envenena o Servo — 15% do HP MÁX por turno, 3 turnos (CD 9t)
+    orochi:{cd:9,poisonPctMaxHp:15,poisonTurns:3},
+    // Kougaryu A: Evade 2t + 50% de Barra de NP + 40% ATK por 2t, pra si mesma (CD 6t)
+    kougaryu:{cd:6,evadeTurns:2,npGain:50,atkUp:40,atkDur:2},
+  },
+  // NP Kuchiyose, Ibukidaimyoujin-Engi C+: dano massivo no Servo ativo (representa o
+  // "alvo aleatório" — o motor de combate só modela um alvo por vez), trava Skill do
+  // Servo por 2t, Mochizuki +30% ATK por 3t (substitui "dano crítico", que não existe
+  // pro lado inimigo neste motor) e 50% de chance de atordoar por 1t.
+  np:{name:'Kuchiyose, Ibukidaimyoujin-Engi',dmgMult:3.2,skillLockTurns:2,atkUp:30,atkDur:3,stunChance:50,stunTurns:1},
+  dialogue:{
+    intro:'Uma kunoichi não é vista até que já tenha vencido. Vocês já perderam — só não perceberam ainda.',
+    curse:'Que a maldição do santuário te cale.',
+    orochi:'Sinta o veneno da serpente de oito cabeças.',
+    kougaryu:'Kougaryu... a arte de desaparecer.',
+    np:'Ibukidaimyoujin-Engi! Venham, meus servos das sombras!',
+    defeated:'...impossível. Uma kunoichi... derrotada em pleno combate...',
+  },
+  assets:{
+    // Sem arte final ainda — caminhos seguem o padrão do projeto (assets/servos/mochizuki/...)
+    default:'assets/servos/mochizuki/mochizuki_default.png',
+    battle:'assets/servos/mochizuki/mochizuki_battle.png',
+    combat:'assets/servos/mochizuki/mochizuki_combat_bust.png',
+    avatar:'assets/servos/mochizuki/mochizuki_avatar.png',
+    np:'assets/servos/mochizuki/mochizuki_np.png',
+    encounter:'assets/servos/mochizuki/mochizuki_encounter.jpg',
+  },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) — versão BOSS ──
+  // Mesmo padrão dos outros bosses (Qin/Shunoban/Archer): idle/attack/np, e a
+  // boss fica à DIREITA da arena olhando para a ESQUERDA. Ainda sem os arquivos
+  // (cai no busto estático até vocês adicionarem os GIFs em assets/servos/mochizuki/).
+  sprites:{
+    idle:'assets/servos/mochizuki/mochizuki_espera.gif',
+    attack:'assets/servos/mochizuki/mochizuki_ataque.gif',
+    np:'assets/servos/mochizuki/mochizuki_np.gif',
+    flip:true,
+  },
+};
+
 // ── BOSS DO MAPA 2: Samurai Mecanizado Nitro-Type ──
 // Tanque extremo: HP altíssimo + mitigação passiva de 35%. Ataque básico fraco,
 // mas dispara MÍSSEIS em área (dano ~4.5×) a cada 3 turnos — telegrafado 1 turno
@@ -4343,6 +4436,23 @@ const ENEMIES_MAP7={
 };
 
 // ══════════════════════════════════════════════════════
+// MAPA 8 — SHINOHARA (inimigos)
+// ══════════════════════════════════════════════════════
+// 3 novos arquétipos, cada um levado ao extremo em 2 atributos:
+// Valentão (ataque+HP / lento), Guarda-Costas (HP+defesa / fraco e lento),
+// Samurai Veterano (ataque / frágil, mas muito rápido).
+const ENEMIES_MAP8={
+  valentao:{id:'valentao',name:'Valentão',hp:34000,atk:11000,agility:16,strPts:60,
+    description:'Bruto de força descomunal. Golpes pesadíssimos e HP enorme, mas lento — dá tempo de se preparar.'},
+  guarda_costas:{id:'guarda_costas',name:'Guarda-Costas',hp:48000,atk:4200,agility:14,strPts:40,
+    defensePassive:35,
+    description:'Muralha viva. HP e defesa altíssimos, ataque fraco e lentíssimo — feito para aguentar, não para ferir.'},
+  samurai_veterano:{id:'samurai_veterano',name:'Samurai Veterano',hp:6000,atk:13500,agility:100,strPts:56,
+    critChance:45,
+    description:'Décadas de lâmina. Frágil, mas rápido e com golpes críticos devastadores — mata antes de ser atingido.'},
+};
+
+// ══════════════════════════════════════════════════════
 // MAPA 3 — CAMINHO TORTUOSO (inimigos)
 // ══════════════════════════════════════════════════════
 // 2 inimigos aprimorados (Ghoul/Onmyoji do mapa 2, mais fortes) + 2 novos.
@@ -4443,6 +4553,15 @@ const MAPS={
     fixedPhases:[3,7,11,13,14],
     boss:'shunoban',
   },
+  shinohara_city:{
+    id:'shinohara_city',name:'Shinohara',phases:35,
+    enemies:ENEMIES_MAP8,
+    // Chegada à cidade de Shinohara. Fases fixas: 1,3,5,8,11,15,18,19,23,24,26,30,33,34.
+    // Boss Mochizuki Chiyome na fase 35. Roteiros das fases fixas: a definir.
+    intro:null,introFinishLabel:'⚔️ Entrar em Shinohara',
+    fixedPhases:[1,3,5,8,11,15,18,19,23,24,26,30,33,34],
+    boss:'mochizuki_chiyome',
+  },
 };
 
 // ══════════════════════════════════════════════════════
@@ -4476,6 +4595,7 @@ const CAMPAIGN_CHECKPOINTS=[
   {mapId:'kurikara_city',name:'Kurikara (Cidade)',phases:18,unlock:'defeat_ninja',boss:'Go-Sanjo Falso',party2:true},
   {mapId:'kurikara2',name:'Kurikara II',phases:12,unlock:'defeat_gosanjo',boss:'???',party2:true},
   {mapId:'shinohara',name:'Estrada de Shinohara',phases:15,unlock:'clear_kurikara2',boss:'???',party2:true},
+  {mapId:'shinohara_city',name:'Shinohara',phases:35,unlock:'defeat_shunoban',boss:'Mochizuki Chiyome',party2:true},
 ];
 
 // Gera um encontro usando a tabela de inimigos do mapa atual.
@@ -4885,6 +5005,227 @@ const STORY_MAP7_F14={
 };
 
 // ══════════════════════════════════════════════════════
+// MAPA 8 — SHINOHARA (fases fixas 1, 3, 5, 8, 11, 15, 18, 19, 23, 24, 26, 30, 33, 34)
+// ══════════════════════════════════════════════════════
+const STORY_MAP8_F1={
+  start:[
+    {type:'narration',text:'Chegando em Shinohara já podia notar as estruturas de uma cidade grande, diferente de Kurikara que ainda mantinha o estilo mais rural, Shinohara já tinha um aspecto mais moderno para a época.'},
+    {type:'narration',text:'As duas servas Berserker e Archer se desmaterializaram antes de entrar na cidade, assim como o Zanzaburou.'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Assim que entramos já nos tornamos alvos, mas vamos aproveitar como turistas, se acontecer da sorte brilhar para gente, passaremos sem suspeitas.'},
+    {type:'master',text:'Não somos os mais furtivos né? Achava que teria todo um processo de vigiar, acampar e analisar o poder do mestre inimigo.'},
+    {type:'okuni',expr:'brava',name:'OKUNI',text:'.... você é o mestre do servo Berserker, é esperado você avançar com tudo sem se preocupar com danos alheios, seu método é sempre destruir.'},
+    {type:'master',text:'Um cara tão calmo quanto eu recebendo o estigma de ser apenas um ariete.'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Um ariete né? talvez devemos construir um para entrar na mansão do adversário. Claro, se ele estiver do lado do nosso inimigo.'},
+    {type:'okuni',expr:'off',name:'OKUNI',text:'Vamos ver como as coisas estão indo, dependendo teremos sorte de apenas convencer ele a se juntar a gente para acabar com esse esquema maligno para alterar o destino do nosso mundo.'},
+    {type:'masterThought',text:'Como sou do futuro isso já não é um fato que foram impedidos? a era moderna estava tranquila, e não existe nos livros de historia sobre tal conflito.'},
+  ],
+};
+
+const STORY_MAP8_F3={
+  start:[
+    {type:'master',text:'Realmente fomos notados, esses guarda costas são um saco de lidar. Esse tal Asahina Kanetoki de fato tem uma grana para gastar com soldados.'},
+    {type:'okuni',expr:'think',name:'OKUNI',text:'Mas isso faz dele um alvo fácil de achar, mesmo que seu servo seja um Assassin, talvez a ocultação de presença dele seja baixa ou ele seja um contra ponto do próprio servo.'},
+    {type:'master',text:'Um contra ponto?'},
+    {type:'okuni',expr:'off',name:'OKUNI',text:'Quando um servo não respondeu o chamado por vontade própria, sendo forçado a ser invocado com um catalisador, já que as invocações de servos tendem a ter uma conexão com o chamado do mestre, o trono dos heróis não escolhe servos para mestre de forma aleatória, mas aquele que mais se parecem mentalmente ou espiritualmente ao mestre.'},
+    {type:'master',text:'Entendo, então, quer me dizer que a Berserker é mentalmente semelhante a mim.....? aquela coisa? ...... Memorias voltem.... quero ter uma palavrinha com esse tal trono.'},
+    {type:'ibaraki',expr:'exp4',telepathy:true,text:'Heyyyy!! Estou ouvindo isso ta bom?!'},
+  ],
+};
+
+const STORY_MAP8_F5={
+  start:[
+    {type:'narration',text:'Depois de pagarem por uma pousada simples em um lugar mais afastado do centro o mestre descansa, enquanto Okuni fica de vigia.'},
+    {type:'master',text:'Você mencionou ser um servo sem mestre, da onde a mana para te manter sai?'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Assim que fui invocada, ou melhor convocada, através de uma linha de lay eu ganhei uma grande quantidade de mana que me manteria por alguns dias, mas ai que vem o pulo do gato, eu como uma mestre de construção de kaguras implementei no Zanzaburou um bolsão de mana para me manter por meses hehe, me elogie.'},
+    {type:'master',text:'Parabéns.'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Minha adaptabilidade as situações é extremamente venerada, como "Uow Izumo criou mais uma tendência", "Bravo! Izumo trouxe a revolução para o teatro nacional" e "Venerada seja Izumo que emplacou mais um sucesso."'},
+    {type:'master',text:'Entendo, entendo, então um servo de grande calibre.'},
+    {type:'okuni',expr:'brava',name:'OKUNI',text:'Eu me adapto a ironias também, tá?'},
+    {type:'narration',text:'Enquanto conversavam tarde da noite, uma sombra pairava por perto, os observando.'},
+  ],
+};
+
+// Fase 8: sonho/memória da Archer (mesmo efeito visual dos sonhos da Ibaraki, tom calmo).
+const STORY_MAP8_F8={
+  start:[
+    {type:'narration',text:'Uma grande floresta com musgos coloridos, uma paisagem linda de se ver com pequenas casas construídas dentro de grandes troncos algumas criaturas pequenas podiam ser vistas.'},
+    {type:'narration',text:'Tudo muito colorido com um clima aconchegante, mas em um canto esta uma disparidade com o ambiente, uma garotinha pequena de cabelos de um rosa forte em uma canto escuro sendo cercada por algumas criaturas de mesmo tamanho com asas semelhante a borboletas.'},
+    {type:'narration',text:'A pequena garota encolhida no canto não gritava e não reclamava, enquanto era xingada por nomes que machucaria a qualquer um, algumas pedras e galhos podiam ser visto sendo arremessados contra ela, mas não havia contra ataque, a garota só aceitava.'},
+    {type:'master',text:'Assim como foi com a Berserker estou tendo essas memorias com a Archer?'},
+    {type:'master',text:'Diferente da Berserker que eu sabia a historia por conta das lendas, a Archer desconheço, parece ser um ambiente de fada certamente, mas esse tratamento com ela....'},
+    {type:'narration',text:'Depois de observar a situação sem poder fazer nada, as memorias começam a nublar até que é despertado do sono com a luz do sol batendo pelas janelas.'},
+  ],
+};
+
+const STORY_MAP8_F11={
+  start:[
+    {type:'narration',text:'A cada esquina que eles passavam, um grupo de guardas os interceptavam, como se os movimentos do grupo estivessem sendo monitorados.'},
+    {type:'okuni',expr:'off',name:'OKUNI',text:'Isso vai ser difícil, já estamos marcados, qualquer movimento dentro da cidade está sendo monitorado e não poderemos chegar até o mestre do Assassin. Teremos que mudar nossos planos.'},
+    {type:'master',text:'Não vai adiantar dividir também, não da para saber se vai ter uma armadilha.'},
+    {type:'ibaraki',expr:'exp2',text:'Não estão pensando demais? Não é só atacar, por mais que cause um tumulto, podemos lidar com um servo. Estamos em maior numero.'},
+    {type:'okuni',expr:'off',name:'OKUNI',text:'Seria uma boa ideia sim, mas o nível de poder dos servos invocados pelo Selo é extremamente alto, dependendo de quem seja invocado vai estar na vantagem, algo perto de um domínio, vai estar em vantagem e dependendo vantagem suficiente para derrotar nós duas.'},
+    {type:'ibaraki',expr:'exp2',text:'Duas?'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Sim, a Archer aqui é uma das servas invocadas pelo selo, não foi?'},
+    {type:'archer',expr:'sith_ow',text:'Sim, me recordo brevemente, antes de..... perder o controle.'},
+    {type:'okuni',expr:'think',name:'OKUNI',text:'Você se lembra de alguma informação do mestre que lhe invocou?'},
+    {type:'archer',expr:'sith_ahh',text:'Pouca coisa, ele naturalmente tinha pouca mana, mas quando invocou ele usou algum tipo de ritual que desconheço, por mais que minha natureza seja de uma Fae, não fui capaz de resistir, depois disso só me vi com uma raiva descontrolada. E depois uma garota loira tentando me bater sem sucesso, fufu.'},
+    {type:'master',text:'Entendo, de todo jeito precisamos pensar em algo.'},
+  ],
+};
+
+// Fase 15: narração-gatilho pro combate forçado (4 Guarda-Costas + 1 Samurai Veterano)
+const STORY_MAP8_F15_PRE={
+  start:[
+    {type:'narration',text:'O Grupo começa a ser perseguido na cidade por alguns dos guardas do Asahina Kanetoki, com ondas de inimigos aparecendo forçado batalhas atrás de batalhas.'},
+  ],
+};
+
+const STORY_MAP8_F18={
+  start:[
+    {type:'narration',text:'Depois da perseguição na cidade, o mestre se esconde em um pequeno bar, e espera a chegada da Okuni que se separou.'},
+    {type:'archer',expr:'sith_ow',text:'Não parava de vir... que raiva, parecia um formigueiro.'},
+    {type:'master',text:'De fato... ( Falando ofegante )'},
+    {type:'master',text:'Não lembro de ter corrido assim, dei tantas voltas na cidade que devo ter batido uns 10km de corrida....'},
+    {type:'ibaraki',expr:'exp1',text:'No X1 eu me garanto. É muita sacanagem essa quantidade de inimigos, me lembra uma certa historia de 100 Yokais.'},
+    {type:'narration',text:'Depois de um tempo aproveitando comida de barzinho, a Okuni chega acompanhada de uma mulher nos seus poucos 40 anos.'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Tan tan tan, eu trouxe a nossa porta de entrada para bater nesse mestre maldito!'},
+  ],
+};
+
+const STORY_MAP8_F19={
+  start:[
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Nossa salvação se chama, Nao.'},
+    {type:'npc',name:'NAO',text:'P..Prazer.'},
+    {type:'narration',text:'A mulher meio incomoda com a situação, com a cabeça baixa cumprimenta o grupo.'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Então, enquanto eu fugia ela me abrigou no estabelecimento dela, e ela decidiu se aliar a gente para acabar com o Asahina.'},
+    {type:'npc',name:'NAO',text:'O Sr. Asahina por mais que tente passar uma ostentação, ele vai até meu estabelecimento e já machucou varias das minhas garotas....'},
+    {type:'okuni',expr:'off',name:'OKUNI',text:'Faremos o seguinte, a Nao vai fornecer um espaço no bordel que ela gerencia, e quando ele aparecer por lá, vamos pegar ele e vamos interrogar ele até ele soltar a língua.'},
+    {type:'master',text:'Pegar ele em seu momento de sossego dará uma boa vantagem.'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Um homem perde suas forças quando sua calça esta arriada.'},
+    {type:'master',text:'........'},
+  ],
+};
+
+const STORY_MAP8_F23={
+  start:[
+    {type:'narration',text:'Então finalmente o dia chegou, o fim de semana estava orquestrado, o grupo se locomove até o bordel para se esconder e pegar o mestre do Assassin.'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Eu vou me infiltrar lá, e você ficará de tocaia para caso tenha muitos guardas, vamos atacar ele em pinça hehe.'},
+    {type:'master',text:'Combinado.'},
+    {type:'narration',text:'Durante a noite.'},
+    {type:'narration',text:'Com todos em posição, Okuni infiltrada no lado de dentro e o mestre do lado de fora para acabar com os reforços que poderiam aparecer ou guardas que tiverem o acompanhando.'},
+    {type:'narration',text:'Assim que a noite se tornou mais escura e fria, um homem alto, com uma estatura forte por mais que apresente sinais de já estar na casa dos 40 o 50 anos aparece com outros cinco guardas costas. Um homem bem vestido para uma cidade pequena do interior.'},
+    {type:'master',text:'Esse deve ser o Asahina. Teremos que lidar só com aqueles cinco brutamontes, e não vejo o servo com ele, pode estar desmaterializado ou em algum outro lugar, vamos tomar cuidado.'},
+    {type:'archer',expr:'sith_ow',text:'Hmm, realmente não sinto a presença de um servo, mas lembre-se, servos da classe Assassin tendem a ter cancelamento de presença ou ocultação.'},
+    {type:'master',text:'Certo, vou levar isso em conta.'},
+    {type:'narration',text:'Então os guardas ficam na porta de vigia enquanto o Asahina entra no local.'},
+  ],
+};
+
+const STORY_MAP8_F24={
+  start:[
+    {type:'narration',text:'Enquanto isso, dentro do bordel.'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Desde já agradeço Sra. Nao, estávamos em maus lenções para poder resolver essa questão.'},
+    {type:'npc',name:'NAO',text:'Entendo.... eu peço desculpas pelo que vai acontecer.... me desculpe, não tinha outra forma....'},
+    {type:'okuni',expr:'think',name:'OKUNI',text:'Hm? Não vou ferir ele, a não ser que seja realmente necessário, precisamos de algumas informações e de quebra corrigir esse comportamento mal criado dele.'},
+    {type:'npc',name:'NAO',text:'Não é isso...'},
+    {type:'narration',text:'Assim que ela termina a frase, o Asahina entra dentro do Bordel.'},
+    {type:'image',src:'assets/servos/asahina/asahina_full.jpg'},
+    {type:'asahina',text:'Oh, então Nao, decidiu se aliar a mim? Sua segunda traição não seria bem aceita.'},
+    {type:'npc',name:'NAO',text:'Sim, como prometido.... Essa é a pessoa que você estava procurando, e o colega dela está do outro lado do bordel.'},
+    {type:'okuni',expr:'brava',name:'OKUNI',text:'????'},
+    {type:'okuni',expr:'brava',name:'OKUNI',text:'Você armou isso....?'},
+    {type:'npc',name:'NAO',text:'Me desculpe, ele está com algumas das minhas garotas de refém....'},
+    {type:'asahina',text:'Não se preocupe com elas, talvez se você cavar bem fundo você vai achar os restos delas.'},
+    {type:'npc',name:'NAO',text:'ISSO NÃO ERA COMBINADO! você iria liberar elas se eu os entregasse!'},
+    {type:'asahina',text:'Nah, no mês passado você me tratou muito mal, e meus homens querem curtir algumas garotas também, mas você não coopera. Então, isso foi como uma lição, para aprender como trata bem um cliente.'},
+    {type:'npc',name:'NAO',text:'..... Por favor.... pare com isso.....'},
+    {type:'asahina',text:'Pelo que sei essa ruivinha é um servo, então deixe lhe apresentar a minha.'},
+    {type:'narration',text:'Assim que ele fala isso, uma garota de cabelos negros aparece atrás da Okuni já com uma lamina próxima da garganta e uma próxima das costelas.'},
+    {type:'okuni',expr:'brava',name:'OKUNI',text:'Tsch, Zanzaburou!'},
+    {type:'narration',text:'O enorme samurai aparece em um espaço ao lado da Okuni a puxando para cima a tirando do alcance das laminas da Assassin.'},
+    {type:'asahina',text:'Acabe com essa ai, Assassin, faça pelo menos algo util.'},
+    {type:'mochizuki',expr:'pain',text:'Hmph.'},
+    {type:'narration',text:'Um embate começa entre o Zanzaburou e a Assassin, no começo, parece que o Zanzaburou com a Okuni estava levando a melhor, uma clara vantagem de classe.'},
+    {type:'asahina',text:'Por que fui sair com o servo mais fraco.'},
+    {type:'narration',text:'Então o Asahina retira do seu bolso um objeto semelhante a um papel grosso com alguns símbolos entalhado. E aponta para a Assassin.'},
+    {type:'asahina',text:'Vai doer um pouco, mas você precisa disso não é?'},
+    {type:'narration',text:'Aquele papel brilha em tom vermelho e então a Assassin solta um grito, e seus olhos brilhão em um vermelho vivo.'},
+    {type:'mochizuki',expr:'rage',text:'ARRRGHHH!!!!!'},
+    {type:'narration',text:'Assim que ela solta aquele grito uma serpente branca enorme sai de sua sombra atacando o Zanzaburou, que o faz quebrar com apenas uma mordida, ele tenta se recompor, ficando em pé, mas o ataque da serpente não terminou, ela o entrelaça o apertando com força o fazendo o quebrar.'},
+    {type:'okuni',expr:'brava',name:'OKUNI',text:'Zanza-..!'},
+    {type:'narration',text:'Sem terminar o que ela iria falar, a Assassin aparece atrás da Okuni a desferindo um golpe com uma de suas laminas, fazendo jorrar sangue.'},
+    {type:'narration',text:'Com esse barulho total, alertou o mestre que estava do lado de fora. Assim como os guardas que de imediato ficaram na porta para impedir qualquer um entrar.'},
+  ],
+};
+
+const STORY_MAP8_F26={
+  start:[
+    {type:'narration',text:'Depois de derrotar os guardas na porta, o grupo adentra o bordel.'},
+    {type:'master',text:'Caster!'},
+    {type:'narration',text:'Assim que entra eles deparam com a cena, a Caster com seu traje manchado de vermelho, e o que parecia ser só o resto do Zanzaburou no chão.'},
+    {type:'okuni',expr:'hurt',name:'OKUNI',text:'Era uma armadilha...'},
+    {type:'master',text:'Berserker, Archer.'},
+    {type:'narration',text:'As duas servas aparecem para o combate.'},
+    {type:'asahina',text:'Vocês não estão na vantagem numérica? cadê o espirito de samurai vindo de vocês.'},
+    {type:'narration',text:'Assim que ele fala isso, a Assassin faz alguns sinais de mão, e toca contra o chão, que faz uma enorme explosão de gás negro surgir.'},
+    {type:'master',text:'Coff Coff...'},
+    {type:'narration',text:'A fumaça desaparece, e com ela a presença do Asahina e da Assassin desaparecem por completo.'},
+    {type:'master',text:'Caster, onde você está?!'},
+    {type:'narration',text:'Ao olhar para todos os lados, a presença da Caster também havia sumido.'},
+  ],
+};
+
+const STORY_MAP8_F30={
+  start:[
+    {type:'narration',text:'Depois de passar a noite toda enfrentando vários capangas do Asahina, na procura de achar a localização dele, mas sem sucesso, o grupo para em um beco escuro da cidade.'},
+    {type:'master',text:'Tsch, que droga.'},
+    {type:'ibaraki',expr:'exp2',text:'A Assassin estranhamente era alguém familiar, mas desconheço....'},
+    {type:'master',text:'Vamos parar um pouco, e pensar de forma mais clara para onde devemos seguir, agir com a cabeça quente não vai ajudar, infelizmente.'},
+    {type:'ibaraki',expr:'exp4',text:'Vou atropelar todos os inimigos daqui para frente, como que eles tiveram a coragem de ferir a minha nova subordinada.'},
+    {type:'archer',expr:'sith_ow',text:'Nossa ideia inicial de que o servo Assassin não teria muita capacidade ocultação era falsa também, não foi deixado nenhum rastro, as pistas são quase nulas.'},
+    {type:'master',text:'De fato, primeiro vamos achar eles.'},
+  ],
+};
+
+const STORY_MAP8_F33={
+  start:[
+    {type:'narration',text:'Por mais que tenha ficado a noite toda na caça pelo Asahina, nada foi encontrado, até o grupo topou com uma sombra pelas ruas.'},
+    {type:'npc',name:'NAO',text:'Me desculpe...'},
+    {type:'master',text:'Dificilmente uma desculpa vai melhorar a situação.'},
+    {type:'npc',name:'NAO',text:'Eu sei... Não vou implorar pelo seu perdão, sei que o que fiz foi errado e fiz sabendo das consequências.'},
+    {type:'archer',expr:'sith_pis',text:'Desembucha, se não vai ser isso, é por que tem algo a mais, não é?'},
+    {type:'npc',name:'NAO',text:'Sim... Eu sei o esconderijo que ele tende usar. Dá ultima vez eu tinha motivos, e não espero que entendam o por que eu fiz, mas dessa vez eu já não tenho mais nada do que eu poderia perder.'},
+    {type:'master',text:'Certo, estamos no mesmo barco, cair em mais uma armadilha só vai facilitar para gente se aproximar dele e da Assassin.'},
+    {type:'npc',name:'NAO',text:'Não sou digna para pedir isso, mas por favor, mate ele da forma mais dolorosa possível, para uma vingança pessoal assinaria um contrato até com demônio.'},
+    {type:'narration',text:'Ela diz, olhando para a Berserker.'},
+    {type:'ibaraki',expr:'exp1',text:'Hehe, meus chifres não são apenas decoração, uma verdadeira Oni sempre devora e mata.'},
+    {type:'npc',name:'NAO',text:'Na parte fora da cidade, onde fica os estábulos, tem um grande moinho de água, lá existe uma casa que ele usava de fachada para fazer alguns contrabandos, minhas meninas eram levadas para lá para entreter os clientes dele.'},
+    {type:'npc',name:'NAO',text:'Certamente vai conseguir algo lá.'},
+    {type:'master',text:'Certo, eu agradeço.'},
+    {type:'npc',name:'NAO',text:'Lhe desejo sorte.'},
+  ],
+};
+
+const STORY_MAP8_F34={
+  start:[
+    {type:'narration',text:'O grupo se reuni nas proximidades da localização informada e começam a traçar o plano inicial.'},
+    {type:'master',text:'Berserker, eu e você vamos entrar já com o pé na porta, vou te buffar com minhas magias. Meu código místico não é um dos mais forte para mim mesmo, então vou te fortificar. Enquanto isso, Archer, você tem a maior velocidade entre nós, você vai ficar no mestre, com intensão de decepar o braço onde se encontra os selos de comando.'},
+    {type:'archer',expr:'sith_ow',text:'Hmm, não faria diferente. Que bom que está entendendo a forma de um mestre lutar.'},
+    {type:'master',text:'Por mais simples que plano seja, deve funcionar, pensar muito em planos elaborados vai fazer com que certos pontos saem do controle.'},
+    {type:'narration',text:'Sem esconder intensões a Berserker invoca um grande braço alaranjado em chamas e o arremessa contra o portão da entrada da casa a destruindo como se não fosse nada.'},
+    {type:'narration',text:'Assim que o impacto e o barulho ocorre, vários capangas começam a descer das escadas indo até o portão, mas sofrem do mesmo destino do portão, aquele enorme braço passa carregando os capangas os jogando para cima ou para longe.'},
+    {type:'narration',text:'Então o grupo adentra dentro da casa, passando pelos vários cômodos procurando por algum sinal, até que chegam em uma passarela que conecta uma estrutura até outra estrutura. Podia ser visto o Asahina correndo através dela até chegar no que parecia ser uma antiga e abandonada base militar usada pelos exércitos da época.'},
+    {type:'narration',text:'O grupo corre pela passarela chegando na base militar, passando por ela eles se encontraram em um pavilhão que antigamente era usado para treinamento dos samurais e soldados, um enorme espaço aberto de areia batida e ao fundo podia ser visto alguns alvos de palha usados para treinamento de arquearia.'},
+    {type:'narration',text:'Asahina ainda correndo as pressas até que seu fôlego acaba, o que faz ele parar colocando as mãos no joelho e se envergando.'},
+    {type:'asahina',text:'Huhh Huhh....'},
+    {type:'asahina',text:'Vocês não sabem a hora de chegar né?! Assassin.'},
+    {type:'narration',text:'Assim que ele fala, a Assassin aparece do lado dele.'},
+    {type:'mochizuki',expr:'pain',text:'Haahh...'},
+    {type:'asahina',text:'Acabe com eles, e talvez eu faça seu sofrimento parar por um tempo.'},
+  ],
+};
+
+// ══════════════════════════════════════════════════════
 // SONHO DA NOITE 1 (Fase 14 do mapa 5) — memória-pesadelo com glitch
 // ══════════════════════════════════════════════════════
 const SHUTEN_EXPR={
@@ -5165,7 +5506,7 @@ function MapTitleCard({name,onFinish}){
 // ══════════════════════════════════════════════════════
 // HISTÓRIA (chat estilo visual novel)
 // ══════════════════════════════════════════════════════
-function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o Bosque',onFinish}){
+function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o Bosque',onFinish,dreamy=false}){
   const[messages,setMessages]=useState([script.start[0]]);
   const[queue,setQueue]=useState(script.start.slice(1));
   const[choice,setChoice]=useState(null);
@@ -5232,6 +5573,15 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
         </div>
       </div>
     );
+    if(m.type==='npc')return(
+      <div key={i} className="chat-msg left">
+        <div className="chat-avatar-unknown" style={{background:'rgba(150,110,60,.3)',borderColor:'rgba(200,160,100,.5)',color:'#e0c090'}}>人</div>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#e0c090'}}>{m.name||'???'}</div>
+          <div className="chat-bubble" style={{borderColor:'rgba(200,160,100,.4)'}}>{m.text}</div>
+        </div>
+      </div>
+    );
     if(m.type==='unknown')return(
       <div key={i} className="chat-msg left">
         <div className="chat-avatar-unknown">?</div>
@@ -5287,6 +5637,27 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
         <div className="chat-body">
           <div className="chat-name" style={{color:'#e6963c'}}>{m.name||'GAROTA DESCONHECIDA'}</div>
           <div className="chat-bubble" style={{borderColor:'rgba(230,150,60,.45)'}}>{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='asahina')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src="assets/servos/asahina/asahina_face.jpg" alt="Asahina Kanetoki"
+          style={{borderColor:'rgba(200,60,60,.55)'}}
+          onError={ev=>{ev.target.style.opacity=0.12;}}/>
+        <div className="chat-body">
+          <div className="chat-name" style={{color:'#c85050'}}>ASAHINA KANETOKI</div>
+          <div className="chat-bubble" style={{borderColor:'rgba(200,60,60,.4)'}}>{m.text}</div>
+        </div>
+      </div>
+    );
+    if(m.type==='mochizuki')return(
+      <div key={i} className="chat-msg left">
+        <img className="chat-avatar" src={MOCHIZUKI_EXPRESSIONS[m.expr]||MOCHIZUKI_EXPRESSIONS.default} alt="Assassin"
+          onError={ev=>{ev.target.onerror=null;ev.target.src=MOCHIZUKI_EXPRESSIONS.default;}}/>
+        <div className="chat-body">
+          <div className="chat-name hostile">{m.name||'ASSASSIN'}</div>
+          <div className="chat-bubble hostile">{m.text}</div>
         </div>
       </div>
     );
@@ -5354,7 +5725,7 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
   }
 
   return(
-    <div className="screen" style={{padding:'16px 10px'}}>
+    <div className={`screen${dreamy?' dream-night calm':''}`} style={{padding:'16px 10px'}}>
       <div className="panel story-panel" onClick={advance}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
           <span className="cinzel" style={{color:'var(--gold)',fontSize:'.75rem',letterSpacing:3}}>
@@ -5673,6 +6044,19 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         isShunoban:true,isBoss:true,
       });
     }
+    if(mid==='shinohara_city'){ // Mochizuki Chiyome (mapa 8)
+      return T({
+        ...MOCHIZUKI,instanceId:'mochizuki_boss',
+        maxHp:MOCHIZUKI.hp,currentHp:MOCHIZUKI.hp,
+        atkScaled:MOCHIZUKI.attack,
+        damage:Math.round(MOCHIZUKI.attack*(MOCHIZUKI.attributes.strength.points/100)),
+        agility:MOCHIZUKI.attributes.agility.points,
+        npBar:0,activeBuffs:[],activeDebuffs:[],
+        cooldowns:{curse:3,orochi:5,kougaryu:2},
+        evadeTurns:0,
+        isMochizuki:true,isBoss:true,
+      });
+    }
     if(mid==='kurikara'){
       return T({
         ...NINJA,instanceId:'ninja_boss',
@@ -5914,10 +6298,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       const isNinjaBoss=isBoss&&mid==='kurikara';
       const isArcherBoss=isBoss&&mid==='tortuoso';
       const isNitroBoss=isBoss&&mid==='tennobara';
+      const isMochizukiBoss=isBoss&&mid==='shinohara_city';
       setDialogue(
         isNinjaBoss?{text:NINJA.dialogue.intro,portrait:NINJA.assets.battle}
         :isArcherBoss?{text:ARCHER.dialogue.intro,portrait:ARCHER.assets.battle}
         :isNitroBoss?{text:NITRO.dialogue.intro,portrait:NITRO.assets.battle}
+        :isMochizukiBoss?{text:MOCHIZUKI.dialogue.intro,portrait:MOCHIZUKI.assets.battle}
         :isBoss?{text:QIN.dialogue.intro,portrait:QIN.assets.default}
         :{text:SDEF.dialogue.battle,portrait:SDEF.assets.default}
       );
@@ -6089,6 +6475,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       hp,npBar,tempGuts,
       evadeTurns:Math.max(0,(s.evadeTurns||0)-1), // evasão do servo (Deon) expira
       npLocked:Math.max(0,(s.npLocked||0)-1), // trava de NP da Archer (Blessed Scion)
+      skillLocked:Math.max(0,(s.skillLocked||0)-1), // trava de Skill (própria + Mestre) — ex: Mochizuki
       activeBuffs:(s.activeBuffs||[]).map(b=>({...b,turns:b.turns-1})).filter(b=>b.turns>0),
       activeDebuffs:(s.activeDebuffs||[]).map(d=>({...d,turns:d.turns-1})).filter(d=>d.turns>0),
       cooldowns:Object.fromEntries(Object.entries(s.cooldowns||{}).map(([k,v])=>[k,Math.max(0,v-1)])),
@@ -6248,6 +6635,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Skills são ações livres (não passam turno), mas só podem ser usadas na VEZ do servo.
     // Durante a vez do inimigo (ou enquanto a cadeia de ações dele roda), ficam bloqueadas.
     if(!isServoTurn||enemyChainLock.current){setNotif('Aguarde sua vez na ordem de iniciativa!');return;}
+    if((servo.skillLocked||0)>0){setNotif(`Skill travada! (${servo.skillLocked} turno(s) restante(s))`);return;}
     if((servo.cooldowns[skillId]||0)>0){setNotif('Skill em recarga!');return;}
     playSpriteAnim(activeIdx,'attack',1200); // skills usam o sprite de ataque
     const skillDef=(SDEF.activeSkills||[]).find(s=>s.id===skillId);
@@ -6410,6 +6798,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(result)return;
     // Skills do Mestre também são ações livres, mas só na VEZ do servo.
     if(!isServoTurn||enemyChainLock.current){setNotif('Aguarde sua vez na ordem de iniciativa!');return;}
+    if((servo.skillLocked||0)>0){setNotif(`Skill travada! (${servo.skillLocked} turno(s) restante(s))`);return;}
     // Skills do Mestre são um recurso ÚNICO e COMPARTILHADO pelo grupo inteiro —
     // a recarga vale pra todo mundo, não reseta ao trocar de servo ativo.
     if((masterCd[skillKey]||0)>0){setNotif('Skill em recarga!');return;}
@@ -7014,6 +7403,109 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           spawnFx('servo',String(mit),'dmg');
         }
         es[i]=ar;
+      } else if(e.isMochizuki){
+        // ── IA da Mochizuki Chiyome (boss do mapa 8) ──
+        // Assassin de controle: trava Skill/NP do Servo, envenena e se buffa.
+        let mo={...es[i]};
+        mo.npBar=clamp((mo.npBar||0)+MOCHIZUKI.npRegenPerTurn,0,100);
+        const atkBase=mo.atkScaled*(mo.attributes.strength.points/100);
+        let atkUp=0;
+        for(const b of mo.activeBuffs||[]){if(b.type==='attack_up')atkUp+=b.value;}
+        let acted=false;
+
+        // Prioridade 1: NP — dano massivo num servo ALEATÓRIO da party, trava Skill
+        // por 2t, +30% ATK (3t) pra si mesma, 50% de chance de atordoar por 1t.
+        if(mo.npBar>=100){
+          acted=true;
+          mo.npBar=0;
+          addLog(`⚡ ${MOCHIZUKI.np.name}! As sombras convocadas escolhem seu alvo...`,'np');
+          setDialogue({text:MOCHIZUKI.dialogue.np,portrait:MOCHIZUKI.assets.battle});
+          fireNpCutin(MOCHIZUKI.assets.np,MOCHIZUKI.np.name.toUpperCase(),MOCHIZUKI.dialogue.np);
+          playEnemySpriteAnim(mo.instanceId,'np',2200);
+          // Sorteia um servo vivo da party como alvo (representa o "alvo aleatório" do NP)
+          const alive=[];
+          party.forEach((m,idx)=>{
+            const mm=(idx===targetIdx)?s:(idx===activeIdx?servo:m);
+            if(mm&&!mm.defeated&&mm.hp>0)alive.push({idx,servo:mm});
+          });
+          const t=alive.length?alive[Math.floor(Math.random()*alive.length)]:null;
+          if(t){
+            const npDmg=Math.round(atkBase*MOCHIZUKI.np.dmgMult*(1+atkUp/100));
+            const mit=applyDmgToServo(npDmg,t.servo);
+            const doStun=rollChance(MOCHIZUKI.np.stunChance);
+            if(t.idx===targetIdx){
+              s.hp=Math.max(0,s.hp-mit);
+              s.skillLocked=Math.max(s.skillLocked||0,MOCHIZUKI.np.skillLockTurns);
+              if(doStun)s.stunned=(s.stunned||0)+MOCHIZUKI.np.stunTurns;
+            }
+            setParty(prev=>prev.map((pm,pi)=>pi===t.idx?{...pm,
+              hp:Math.max(0,pm.hp-mit),
+              skillLocked:Math.max(pm.skillLocked||0,MOCHIZUKI.np.skillLockTurns),
+              stunned:doStun?(pm.stunned||0)+MOCHIZUKI.np.stunTurns:pm.stunned,
+            }:pm));
+            const tdef=PLAYABLE_SERVOS[t.servo.id]||SDEF;
+            addLog(`${tdef.name.split(' ')[0]} foi o alvo: ${mit} de dano · Skill travada (${MOCHIZUKI.np.skillLockTurns}t)`+(doStun?' · ATORDOADO!':''),'enemy');
+            spawnFx(t.idx===activeIdx?'servo':t.servo.instanceId||'servo',String(mit),'np');
+          }
+          mo.activeBuffs=[...(mo.activeBuffs||[]).filter(b=>b.id!=='mochi_np_atk'),{type:'attack_up',value:MOCHIZUKI.np.atkUp,turns:MOCHIZUKI.np.atkDur,id:'mochi_np_atk'}];
+        }
+        // Prioridade 2: Curse (Shrine Maiden) — trava Skill+NP do ativo por 2t, +20% ATK (3t)
+        else if((mo.cooldowns?.curse||0)<=0){
+          acted=true;
+          const sk=MOCHIZUKI.skills.curse;
+          mo.cooldowns={...mo.cooldowns,curse:sk.cd};
+          s.skillLocked=Math.max(s.skillLocked||0,sk.skillLockTurns);
+          s.npLocked=Math.max(s.npLocked||0,sk.npLockTurns);
+          mo.activeBuffs=[...(mo.activeBuffs||[]).filter(b=>b.id!=='mochi_curse_atk'),{type:'attack_up',value:sk.atkUp,turns:sk.atkDur,id:'mochi_curse_atk'}];
+          addLog(`👻 Curse (Shrine Maiden)! Skill e NP travados (${sk.skillLockTurns}t) · Mochizuki +${sk.atkUp}% ATK (${sk.atkDur}t)`,'enemy');
+          setDialogue({text:MOCHIZUKI.dialogue.curse,portrait:MOCHIZUKI.assets.battle});
+          spawnFx('servo','SKILL/NP TRAVADOS','stun');spawnFx(mo.instanceId,`+${sk.atkUp}% ATK`,'buff');
+          playEnemySpriteAnim(mo.instanceId,'attack');
+        }
+        // Prioridade 3: Curse of the Orochi — envenena o ativo (% do HP MÁX/turno, 3t)
+        else if((mo.cooldowns?.orochi||0)<=0){
+          acted=true;
+          const sk=MOCHIZUKI.skills.orochi;
+          mo.cooldowns={...mo.cooldowns,orochi:sk.cd};
+          const pDmg=Math.round(s.hpMax*sk.poisonPctMaxHp/100);
+          const others=(s.activeDebuffs||[]).filter(d=>d.type!=='poison');
+          s.activeDebuffs=[...others,{type:'poison',value:pDmg,turns:sk.poisonTurns}];
+          addLog(`🐍 Curse of the Orochi! Veneno: ${pDmg}/turno por ${sk.poisonTurns} turnos`,'enemy');
+          setDialogue({text:MOCHIZUKI.dialogue.orochi,portrait:MOCHIZUKI.assets.battle});
+          spawnFx('servo','☠️ ENVENENADO','stun');
+          playEnemySpriteAnim(mo.instanceId,'attack');
+        }
+        // Prioridade 4: Kougaryu — pra si mesma: Evade 2t + 50% Barra + 40% ATK (2t)
+        else if((mo.cooldowns?.kougaryu||0)<=0){
+          acted=true;
+          const sk=MOCHIZUKI.skills.kougaryu;
+          mo.cooldowns={...mo.cooldowns,kougaryu:sk.cd};
+          mo.evadeTurns=Math.max(mo.evadeTurns||0,sk.evadeTurns);
+          mo.npBar=clamp(mo.npBar+sk.npGain,0,100);
+          mo.activeBuffs=[...(mo.activeBuffs||[]).filter(b=>b.id!=='mochi_kou_atk'),{type:'attack_up',value:sk.atkUp,turns:sk.atkDur,id:'mochi_kou_atk'}];
+          addLog(`🌀 Kougaryu! Mochizuki some das sombras: Evasão (${sk.evadeTurns}t) · +${sk.npGain}% Barra · +${sk.atkUp}% ATK (${sk.atkDur}t)`,'enemy');
+          setDialogue({text:MOCHIZUKI.dialogue.kougaryu,portrait:MOCHIZUKI.assets.battle});
+          spawnFx(mo.instanceId,'EVASÃO','buff');
+          playEnemySpriteAnim(mo.instanceId,'attack');
+        }
+
+        // Ataque básico (só quando não usou nenhuma skill/NP nesta ação)
+        if(!acted){
+          playEnemySpriteAnim(mo.instanceId,'attack');
+          const dodge=5+Math.max(0,(servo.attributes.agility.points-mo.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0);
+          if(rollChance(dodge)){
+            addLog(`💨 Ibaraki esquiva do golpe de ${mo.name}!`,'player');
+            spawnFx('servo','ESQUIVOU','miss');
+          } else {
+            const raw=Math.round(atkBase*(1+atkUp/100));
+            const mit=applyDmgToServo(raw,s);
+            s.hp=Math.max(0,s.hp-mit);
+            s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+            addLog(`${mo.name} ataca: ${mit} de dano!`,'enemy');
+            spawnFx('servo',String(mit),'dmg');
+          }
+        }
+        es[i]=mo;
       } else if(e.isNitro){
         // ── IA do Samurai Mecanizado Nitro-Type ──
         // Nitro NÃO tem passiva Anti-Berserker, então seu dano é "cru"
@@ -7233,7 +7725,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       if(isBoss&&(camp.mapId||'bosque')==='bosque')newProfile=markQinDefeated();
       // Conquista por derrotar cada boss (paga QP+SQ uma vez)
       if(isBoss){
-        const achId={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja',kurikara_city:'defeat_gosanjo',shinohara:'defeat_shunoban'}[camp.mapId||'bosque'];
+        const achId={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja',kurikara_city:'defeat_gosanjo',shinohara:'defeat_shunoban',shinohara_city:'defeat_mochizuki'}[camp.mapId||'bosque'];
         if(achId){
           const res=grantAchievement(achId);
           if(res.granted){
@@ -7425,14 +7917,19 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             })}
           </div>
 
-          {/* ─── GRUPO INIMIGO (DIREITA, ao fundo — menores e elevados p/ profundidade) ─── */}
-          <div style={{position:'relative',zIndex:2,display:'flex',alignItems:'flex-end',justifyContent:'flex-end',gap:8,marginBottom:isParty?70:60,flexWrap:'wrap',maxWidth:'38%'}}>
+          {/* ─── GRUPO INIMIGO (DIREITA, ao fundo — menores e elevados p/ profundidade) ───
+              Com muitos inimigos numa tela estreita (celular), reduzimos o tamanho de
+              cada um pra caber sem sair da área visível; e como cinto de segurança,
+              o grupo também rola internamente (scroll) caso ainda não caiba tudo. */}
+          <div className="arena-enemy-group" style={{position:'relative',zIndex:2,display:'flex',alignItems:'flex-end',justifyContent:'flex-end',
+            gap:enemies.length>3?4:8,marginBottom:isParty?70:60,flexWrap:'wrap',maxWidth:'40%',
+            maxHeight:'100%',overflowY:'auto',overflowX:'hidden',WebkitOverflowScrolling:'touch',paddingTop:6}}>
             {enemies.map((e,i)=>{
               const dead=e.currentHp<=0;
               const sel=i===selectedTarget&&!dead;
-              const bossArt=e.isShunoban?(SHUNOBAN.assets.combat||SHUNOBAN.assets.battle):e.isGosanjo?(GOSANJO.assets.combat||GOSANJO.assets.battle):e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:QIN.assets.combat||QIN.assets.default;
+              const bossArt=e.isShunoban?(SHUNOBAN.assets.combat||SHUNOBAN.assets.battle):e.isGosanjo?(GOSANJO.assets.combat||GOSANJO.assets.battle):e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:e.isMochizuki?(MOCHIZUKI.assets.combat||MOCHIZUKI.assets.battle):QIN.assets.combat||QIN.assets.default;
               // Sprites GIF animados: qualquer boss com `sprites.idle` cadastrado anima; os demais seguem no busto estático.
-              const bossDefLookup=e.isShunoban?SHUNOBAN:e.isGosanjo?GOSANJO:e.isNinja?NINJA:e.isArcher?ARCHER:e.isNitro?NITRO:e.isBoss?QIN:null;
+              const bossDefLookup=e.isShunoban?SHUNOBAN:e.isGosanjo?GOSANJO:e.isNinja?NINJA:e.isArcher?ARCHER:e.isNitro?NITRO:e.isMochizuki?MOCHIZUKI:e.isBoss?QIN:null;
               const bossDef=(bossDefLookup&&bossDefLookup.sprites&&bossDefLookup.sprites.idle)?bossDefLookup:null;
               const hasBossSprites=!!(bossDef&&bossDef.sprites&&bossDef.sprites.idle);
               const eAnim=enemySpriteAnim[e.instanceId];
@@ -7440,8 +7937,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
               const bossSpriteSrc=hasBossSprites?(bossDef.sprites[eKind]||bossDef.sprites.idle):null;
               const eK=hasBossSprites&&eAnim?`${eKind}-${eAnim.key}`:'idle';
               // GIFs têm bastante margem vazia ao redor da personagem, por isso renderizam maiores.
-              const h=hasBossSprites?260:(e.isBoss?150:96);
-              const w=hasBossSprites?220:(e.isBoss?155:100);
+              // Encolhe conforme o número de inimigos, pra caber em telas estreitas sem cortar ninguém.
+              const crowdScale=enemies.length<=2?1:enemies.length===3?0.88:enemies.length===4?0.76:0.66;
+              const h=(hasBossSprites?260:(e.isBoss?150:96))*crowdScale;
+              const w=(hasBossSprites?220:(e.isBoss?155:100))*crowdScale;
               const shaking=fx.some(f=>f.targetId===e.instanceId&&(f.kind==='dmg'||f.kind==='crit'));
               return(
                 <div key={e.instanceId} onClick={()=>!dead&&setSelectedTarget(i)}
@@ -7696,6 +8195,14 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     }
     const mapId=camp.mapId||'bosque';
 
+    // Mapa 8, Fase 25: os guardas bloqueiam a porta do bordel — combate forçado,
+    // sempre os mesmos 5 Guarda-Costas (não é uma fase fixa de diálogo, só o combate).
+    if(mapId==='shinohara_city'&&camp.phase===25){
+      scriptedFightRef.current=genFixedEnemies('shinohara_city','guarda_costas',5,camp.phase);
+      setStage('map8GuardsFight');
+      return;
+    }
+
     // Modo Torre: encontros 100% aleatórios (combate ou evento), sem história.
     if(camp.towerMode){
       const r=Math.random();
@@ -7813,6 +8320,23 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap7&&nextPhase===11){setCamp(advanced);setStage('map7F11');return;}
     if(isMap7&&nextPhase===13){setCamp(advanced);setStage('map7F13');return;}
     if(isMap7&&nextPhase===14){setCamp(advanced);setStage('map7F14');return;}
+    // Mapa 8 (Shinohara): fases fixas 1,3,5,8,11,15,18,19,23,24,26,30,33,34
+    // (1,3,5,8 já têm roteiro; as demais caem num placeholder genérico por enquanto).
+    const isMap8=(baseCamp.mapId||'bosque')==='shinohara_city';
+    if(isMap8&&nextPhase===1){setCamp(advanced);setStage('map8F1');return;}
+    if(isMap8&&nextPhase===3){setCamp(advanced);setStage('map8F3');return;}
+    if(isMap8&&nextPhase===5){setCamp(advanced);setStage('map8F5');return;}
+    if(isMap8&&nextPhase===8){setCamp(advanced);setStage('map8F8');return;}
+    if(isMap8&&nextPhase===11){setCamp(advanced);setStage('map8F11');return;}
+    if(isMap8&&nextPhase===15){setCamp(advanced);setStage('map8Chase');return;} // narração → combate forçado
+    if(isMap8&&nextPhase===18){setCamp(advanced);setStage('map8F18');return;}
+    if(isMap8&&nextPhase===19){setCamp(advanced);setStage('map8F19');return;}
+    if(isMap8&&nextPhase===23){setCamp(advanced);setStage('map8F23');return;}
+    if(isMap8&&nextPhase===24){setCamp(advanced);setStage('map8F24');return;}
+    if(isMap8&&nextPhase===26){setCamp(advanced);setStage('map8F26');return;}
+    if(isMap8&&nextPhase===30){setCamp(advanced);setStage('map8F30');return;}
+    if(isMap8&&nextPhase===33){setCamp(advanced);setStage('map8F33');return;}
+    if(isMap8&&nextPhase===34){setCamp(advanced);setStage('map8F34');return;}
     setCamp(advanced);setStage('map');
   }
 
@@ -7917,6 +8441,18 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     setStage('map4BanditsPos');
   }
 
+  // Fase 15 do mapa 8: perseguição forçada — 4 Guarda-Costas + 1 Samurai Veterano de uma vez.
+  function startMap8Chase(){
+    const guardas=genFixedEnemies('shinohara_city','guarda_costas',4,camp.phase);
+    const samurai=genFixedEnemies('shinohara_city','samurai_veterano',1,camp.phase);
+    scriptedFightRef.current=[...guardas,...samurai].sort((a,b)=>b.agility-a.agility);
+    setStage('map8ChaseFight');
+  }
+  function onMap8ChaseWin(updatedCamp){
+    setCamp({...updatedCamp,phase:15});
+    setStage('map');
+  }
+
   function finishCampaign(updatedCamp,viaBoss){
     const peW=getActivePerkEffects();
     const multW=1+(peW.sqQpBonusPercent||0)/100;
@@ -7978,6 +8514,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mapId==='kurikara_city'){setStage('map5GosanjoWin');return;}
     // Mapa 7 (Shunoban): mostra o diálogo de vitória antes de encerrar a jornada.
     if(mapId==='shinohara'){setStage('map7ShunobanWin');return;}
+    // Mapa 8 (Mochizuki Chiyome): mostra o diálogo de vitória antes de encerrar a jornada.
+    if(mapId==='shinohara_city'){setStage('map8MochizukiWin');return;}
     finishCampaign(updatedCamp,true);
   }
 
@@ -8056,8 +8594,25 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     }
   }
 
-  // Após o diálogo de vitória contra o Shunoban: encerra a jornada (Mapa 7 é o último por ora).
+  // Após o diálogo de vitória contra o Shunoban: segue para o Mapa 8 (Shinohara, a cidade).
   function afterShunobanWin(){
+    const prev=camp.party||[camp.servo];
+    const findState=id=>prev.find(m=>m.id===id);
+    const next=buildCampForMap(IBARAKI,'shinohara_city',null,false,[IBARAKI,SITH_PLAYABLE]);
+    next.party=next.party.map(m=>{
+      const old=findState(m.id);
+      return old?{...m,hp:old.hp,npBar:old.npBar}:m;
+    });
+    next.servo=next.party[0];
+    next.sithJoined=true;
+    next.goldenRule=camp.goldenRule||0;
+    next.innUnlocked=true;
+    setCamp(next);
+    setStage('map7Map8Transition');
+  }
+
+  // Após o diálogo de vitória contra a Mochizuki Chiyome: fim da jornada por ora (Mapa 8 é o último).
+  function afterMochizukiWin(){
     finishCampaign(camp,true);
   }
 
@@ -8130,6 +8685,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mid==='kurikara'){setStage('map4GenjiLose');return;} // Ninja: diálogo de derrota (Shuten)
     if(mid==='kurikara_city'){setStage('map5GosanjoLose');return;} // Go-Sanjo: diálogo de derrota (Shuten)
     if(mid==='shinohara'){setStage('map7ShunobanLose');return;} // Shunoban: diálogo de derrota (Shuten)
+    if(mid==='shinohara_city'){setStage('map8MochizukiLose');return;} // Mochizuki: diálogo de derrota (Shuten)
     setStage('bossLoseStory');
   }
 
@@ -8303,6 +8859,24 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map7F14')return <StoryScreen profile={profile} script={STORY_MAP7_F14} finishLabel="⚔️ A emboscada começa!" onFinish={()=>setStage('map')}/>;
   if(stage==='map7ShunobanWin')return <StoryScreen profile={profile} script={STORY_MAP7_SHUNOBAN_WIN} finishLabel="Continuar →" onFinish={afterShunobanWin}/>;
   if(stage==='map7ShunobanLose')return <StoryScreen profile={profile} script={STORY_MAP7_SHUNOBAN_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
+  if(stage==='map8F1')return <StoryScreen profile={profile} script={STORY_MAP8_F1} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8F3')return <StoryScreen profile={profile} script={STORY_MAP8_F3} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8F5')return <StoryScreen profile={profile} script={STORY_MAP8_F5} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8F8')return <StoryScreen profile={profile} script={STORY_MAP8_F8} finishLabel="Continuar →" onFinish={()=>setStage('map')} dreamy/>;
+  if(stage==='map8F11')return <StoryScreen profile={profile} script={STORY_MAP8_F11} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8Chase')return <StoryScreen profile={profile} script={STORY_MAP8_F15_PRE} finishLabel="⚔️ Enfrentar os perseguidores" onFinish={startMap8Chase}/>;
+  if(stage==='map8ChaseFight')return <CombatScreen camp={camp} isBoss={false} fixedEnemies={scriptedFightRef.current} onWin={onMap8ChaseWin} onLose={onCombatLose} onFlee={onMap8ChaseWin} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
+  if(stage==='map8GuardsFight')return <CombatScreen camp={camp} isBoss={false} fixedEnemies={scriptedFightRef.current} onWin={onCombatWin} onLose={onCombatLose} onFlee={onCombatWin} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
+  if(stage==='map8F18')return <StoryScreen profile={profile} script={STORY_MAP8_F18} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8F19')return <StoryScreen profile={profile} script={STORY_MAP8_F19} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8F23')return <StoryScreen profile={profile} script={STORY_MAP8_F23} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8F24')return <StoryScreen profile={profile} script={STORY_MAP8_F24} finishLabel="⚔️ Os guardas bloqueiam a porta!" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8F26')return <StoryScreen profile={profile} script={STORY_MAP8_F26} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8F30')return <StoryScreen profile={profile} script={STORY_MAP8_F30} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8F33')return <StoryScreen profile={profile} script={STORY_MAP8_F33} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8F34')return <StoryScreen profile={profile} script={STORY_MAP8_F34} finishLabel="⚔️ Confrontar a Assassin!" onFinish={()=>setStage('map')}/>;
+  if(stage==='map8MochizukiWin')return <StoryScreen profile={profile} script={STORY_MAP8_MOCHIZUKI_WIN} finishLabel="Continuar →" onFinish={afterMochizukiWin}/>;
+  if(stage==='map8MochizukiLose')return <StoryScreen profile={profile} script={STORY_MAP8_MOCHIZUKI_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   if(stage==='map6Map7Transition')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
@@ -8315,6 +8889,21 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
           Os youkai da terra sentiram a aproximação de espíritos heroicos.
         </p>
         <button className="btn btn-red btn-full" style={{marginTop:20}} onClick={()=>setStage('map')}>⚔️ Seguir pela estrada</button>
+      </div>
+    </div>
+  );
+  if(stage==='map7Map8Transition')return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2.5rem',marginBottom:12}}>🏘️</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:8}}>SHINOHARA</h2>
+        <p style={{color:'var(--parchment)',fontSize:'.85rem',marginBottom:6}}>
+          Com o Ciclope Vermelho derrotado, a estrada finalmente se abre para os portões de Shinohara. O grupo chega à cidade — mas nas sombras das ruas, algo os observa sem ser visto.
+        </p>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.75rem',fontStyle:'italic',marginTop:14}}>
+          [ Cena de chegada a ser escrita ]
+        </p>
+        <button className="btn btn-red btn-full" style={{marginTop:20}} onClick={()=>setStage('map')}>⚔️ Entrar em Shinohara</button>
       </div>
     </div>
   );
