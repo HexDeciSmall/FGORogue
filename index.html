@@ -1621,6 +1621,13 @@ const OKUNI_PLAYABLE={
     lose:'assets/servos/okuni/okuni_preocupada.png',
     encounter:'assets/servos/okuni/okuni_zanzaburou.jpg',
   },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) — mesmo padrão de Ibaraki/Sith/Qin ──
+  sprites:{
+    idle:'assets/servos/okuni/okuni_espera.gif',
+    attack:'assets/servos/okuni/okuni_ataque.gif',
+    np:'assets/servos/okuni/okuni_np.gif',
+    flip:true,
+  },
 };
 PLAYABLE_SERVOS.okuni_caster=OKUNI_PLAYABLE;
 
@@ -2814,7 +2821,7 @@ function MenuScreen({onNavigate,profile}){
         <button className="btn btn-full" onClick={()=>onNavigate('ranking')}>🌐 &nbsp; Ranking Online</button>
         <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
         <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.48</p>
+        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.49</p>
       </div>
     </div>
   );
@@ -3398,8 +3405,8 @@ function CodexScreen({onNavigate,profile}){
 function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
   // Party: até 3 servos distintos (ids curtos). O 1º escolhido é o líder.
   const[partySel,setPartySel]=useState(['ibaraki']);
-  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE,okuni:OKUNI_PLAYABLE,kiara:GACHA_SERVOS.kiara_summer,skadi:GACHA_SERVOS.skadi_summer,okita:GACHA_SERVOS.okita_saber,okita_alter:GACHA_SERVOS.okita_alter};
-  const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',kiara:'kiara_summer',skadi:'skadi_summer',okita:'okita_saber',okita_alter:'okita_alter'};
+  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE,okuni:OKUNI_PLAYABLE,mochizuki:MOCHIZUKI_PLAYABLE,kiara:GACHA_SERVOS.kiara_summer,skadi:GACHA_SERVOS.skadi_summer,okita:GACHA_SERVOS.okita_saber,okita_alter:GACHA_SERVOS.okita_alter};
+  const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',okuni:'okuni_caster',mochizuki:'mochizuki_chiyome',kiara:'kiara_summer',skadi:'skadi_summer',okita:'okita_saber',okita_alter:'okita_alter'};
   const done=profile.achievements||{};
   const owned=profile.gachaOwned||[];
   const SERVOS=[
@@ -3411,6 +3418,10 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
      ready:!!done.defeat_nitro,unlock:'defeat_nitro'},
     {id:'archer',name:'Baobhan Sith',classe:'Archer',art:ARCHER.assets.face,
      ready:!!done.defeat_archer,unlock:'defeat_archer'},
+    {id:'okuni',name:'Izumo no Okuni',classe:'Caster',art:OKUNI_PLAYABLE.assets.default,
+     ready:!!done.defeat_gosanjo,unlock:'defeat_gosanjo',lockText:'Derrote o Go-Sanjo'},
+    {id:'mochizuki',name:'Mochizuki Chiyome',classe:'Assassin',art:MOCHIZUKI_PLAYABLE.assets.default,
+     ready:!!done.defeat_mochizuki,unlock:'defeat_mochizuki',lockText:'Derrote a Mochizuki'},
     {id:'kiara',name:'Sessyoin Kiara',classe:'Moon Cancer',art:GACHA_SERVOS.kiara_summer.assets.default,
      ready:owned.includes('kiara_summer'),unlock:'gacha',lockText:'Banner Pull'},
     {id:'skadi',name:'Scáthach-Skadi',classe:'Ruler',art:GACHA_SERVOS.skadi_summer.assets.default,
@@ -4378,7 +4389,79 @@ const MOCHIZUKI={
   },
 };
 
-// ── BOSS DO MAPA 2: Samurai Mecanizado Nitro-Type ──
+// ── MOCHIZUKI CHIYOME (Assassin) — jogável (Torre) ──
+// A kunoichi amaldiçoada: controle e veneno. Kit fiel ao FGO (Curse Arts, Curse of
+// the Orochi, Kougaryu) + NP Kuchiyose. Stats FGO: Str D, End D, Agi A, Mana C, Luck C, NP C.
+const MOCHIZUKI_PLAYABLE={
+  id:'mochizuki_chiyome',name:'Mochizuki Chiyome',className:'Assassin',
+  getAtk:lvl=>Math.round(linear(lvl,1520,9120)),
+  getHp:lvl=>Math.round(linear(lvl,1620,10100)),
+  attributes:{
+    strength:{rank:'D',points:rankToPoints('D')},
+    agility:{rank:'A',points:rankToPoints('A')},
+    luck:{rank:'C',points:rankToPoints('C')},
+    endurance:{rank:'D',points:rankToPoints('D')},
+    mana:{rank:'C',points:rankToPoints('C'),gainPercent:manaGain('C')},
+    np:{rank:'C',points:rankToPoints('C')},
+  },
+  passiveSkills:[
+    {id:'presence_conceal',name:'Ocultação de Presença A+',effect:{type:'crit_passive',value:20}},
+    {id:'subversive',name:'Atividades Subversivas C+',effect:{type:'atk_passive',value:8}},
+  ],
+  activeSkills:[
+    {id:'curse_arts',name:'Artes Amaldiçoadas (Oráculo)',rank:'C',
+      desc:'Sela o NP de um inimigo e carrega a própria Barra de NP',
+      effectType:'enemyseal_npcharge',
+      getEffect:lvl=>({sealTurns:2,npCharge:linear(lvl,20,40)}),
+      getCD:lvl=>stdCD(lvl,7,6,5)},
+    {id:'curse_orochi',name:'Maldição de Orochi',rank:'B',
+      desc:'Envenena um inimigo (dano por turno, 3t) — indetectável',
+      effectType:'poison_apply',
+      getEffect:lvl=>({poisonPctAtk:linear(lvl,30,60),turns:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    {id:'kougaryu',name:'Kouga-ryuu',rank:'A',
+      desc:'Ganha Evasão (2t), +Ataque (2t) e carrega a própria Barra de NP',
+      effectType:'evade_atk_npcharge',
+      getEffect:lvl=>({evadeTurns:2,atkUp:linear(lvl,20,40),atkDur:2,npCharge:linear(lvl,20,40)}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+  ],
+  np:{
+    name:'Kuchiyose, Ibukidaimyoujin-Engi',type:'Anti-Personnel',isAoE:false,effectType:'dmg_curse',sureHit:true,
+    levels:{
+      1:{dmgPct:600,curseDmg:1000,curseTurns:5},
+      2:{dmgPct:800,curseDmg:1500,curseTurns:5},
+      3:{dmgPct:1000,curseDmg:2000,curseTurns:5},
+      4:{dmgPct:1150,curseDmg:2500,curseTurns:5},
+      5:{dmgPct:1300,curseDmg:3000,curseTurns:5},
+    },
+  },
+  dialogue:{
+    summon:'Assassin, Mochizuki Chiyome. Meu senhor... eu serei seus olhos, seus ouvidos e sua lâmina. Ordene, e obedecerei.',
+    battle:'A serpente observa das sombras.',
+    lose:'Perdão... falhei... senhor...',
+    win:'Alvo silenciado. Sem rastros.',
+    np:'Canalizo o Grande Deus Ibuki... venha, Orochi! Kuchiyose — Ibukidaimyoujin-Engi!',
+    skill:'Que a maldição de Orochi te alcance.',
+    mapDone:'Meus deveres foram cumpridos, senhor.',
+  },
+  assets:{
+    default:'assets/servos/mochizuki/mochizuki_profile.png',
+    battle:'assets/servos/mochizuki/mochizuki_battle.png',
+    combat:'assets/servos/mochizuki/mochizuki_combat_bust.png',
+    np:'assets/servos/mochizuki/mochizuki_np.png',
+    win:'assets/servos/mochizuki/mochizuki_profile.png',
+    lose:'assets/servos/mochizuki/mochizuki_pain.png',
+    encounter:'assets/servos/mochizuki/mochizuki_full.jpg',
+  },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) — mesmo padrão das outras ──
+  sprites:{
+    idle:'assets/servos/mochizuki/mochizuki_espera.gif',
+    attack:'assets/servos/mochizuki/mochizuki_ataque.gif',
+    np:'assets/servos/mochizuki/mochizuki_np.gif',
+    flip:true,
+  },
+};
+PLAYABLE_SERVOS.mochizuki_chiyome=MOCHIZUKI_PLAYABLE;
 // Tanque extremo: HP altíssimo + mitigação passiva de 35%. Ataque básico fraco,
 // mas dispara MÍSSEIS em área (dano ~4.5×) a cada 3 turnos — telegrafado 1 turno
 // antes ("CARREGANDO"), dando ao jogador a chance de defender com Mudança de Forma.
@@ -7062,6 +7145,21 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'np_damage_up',value:eff.npDmgUp,turns:eff.dur,id:'alter_np'}];
       addLog(`${skillDef.name}: Invencibilidade por ${eff.evadeTurns}t e dano de NP +${eff.npDmgUp}% por ${eff.dur}t`,'player');
       spawnFx('servo','INVENCÍVEL','buff');
+    } else if(et==='poison_apply'){ // Mochizuki: Maldição de Orochi — veneno num inimigo
+      const tgt=newEnemies[selectedTarget];
+      if(tgt&&tgt.currentHp>0){
+        const pDmg=Math.round(servo.attackBase*(servo.attributes.strength.points/100)*(eff.poisonPctAtk/100));
+        const others=(tgt.activeDebuffs||[]).filter(d=>d.type!=='poison');
+        newEnemies=newEnemies.map((e,i)=>i!==selectedTarget?e:{...e,activeDebuffs:[...others,{type:'poison',value:pDmg,turns:eff.turns,curse:true}]});
+        addLog(`${skillDef.name}: envenena ${tgt.name} — ${pDmg}/turno por ${eff.turns}t`,'player');
+        spawnFx('servo','☠️ VENENO','buff');
+      } else { setNotif('Selecione um inimigo vivo!'); return; }
+    } else if(et==='evade_atk_npcharge'){ // Mochizuki: Kouga-ryuu — evasão + ATK + carrega NP
+      newServo.evadeTurns=Math.max(newServo.evadeTurns||0,eff.evadeTurns);
+      newServo.npBar=clamp(newServo.npBar+eff.npCharge,0,100);
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'attack_up',value:eff.atkUp,turns:eff.atkDur,id:'kouga_atk'}];
+      addLog(`${skillDef.name}: Evasão por ${eff.evadeTurns}t · Ataque +${eff.atkUp}% por ${eff.atkDur}t · +${eff.npCharge}% de NP`,'player');
+      spawnFx('servo','🌀 KOUGA-RYUU','buff');
     }
     setServo(newServo);setEnemies(newEnemies);
     if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
