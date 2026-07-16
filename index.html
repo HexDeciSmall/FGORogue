@@ -348,6 +348,25 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .chat-msg.right .chat-bubble::before{content:'';position:absolute;top:14px;right:-13px;border:6px solid transparent;border-left-color:rgba(79,195,247,.45)}
 .chat-bubble.action{font-style:italic;color:var(--parchment-dark)}
 .chat-narration{text-align:center;font-style:italic;color:var(--parchment-dark);font-size:.82rem;margin:16px auto;max-width:88%;line-height:1.65;animation:msgIn .35s ease}
+/* narração/fala em contexto de sonho (memória) */
+.chat-narration.dream,.chat-bubble.dream{color:#aeb8e0;text-shadow:0 0 8px rgba(120,140,220,.4)}
+.chat-msg.dream .chat-bubble{background:rgba(30,34,60,.5);border-color:rgba(120,140,210,.4);color:#c2cbf0}
+/* divisor de "glitch" — transição pra/da lembrança */
+.glitch-divider{text-align:center;margin:20px auto;max-width:90%;font-family:'Cinzel',serif;letter-spacing:4px;
+  font-size:.7rem;color:#7d8fd6;opacity:.9;animation:glitchFlick .12s steps(2,end) 6}
+@keyframes glitchFlick{0%{opacity:.3;transform:translateX(-2px);filter:hue-rotate(0)}100%{opacity:1;transform:translateX(2px);filter:hue-rotate(40deg)}}
+/* chuva de sakuras (Fantasma Nobre da Okuni) */
+.sakura-rain{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.sakura{position:absolute;top:-24px;font-size:1.1rem;opacity:0;animation:sakuraFall linear forwards}
+@keyframes sakuraFall{
+  0%{opacity:0;transform:translateY(0) rotate(0deg)}
+  10%{opacity:.95}
+  100%{opacity:0;transform:translateY(105vh) translateX(40px) rotate(320deg)}}
+/* flash de purificação dourado/rosa */
+.purify-flash{position:fixed;inset:0;pointer-events:none;z-index:59;
+  background:radial-gradient(circle at 50% 45%, rgba(255,220,240,.55), rgba(255,180,210,.2) 40%, transparent 70%);
+  animation:purifyPulse 2.4s ease-out forwards}
+@keyframes purifyPulse{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
 .chat-choices{display:flex;flex-direction:column;gap:8px;margin:12px auto;max-width:340px;animation:msgIn .35s ease}
 .tap-hint{text-align:center;font-size:.65rem;color:var(--gold-dim);letter-spacing:2px;padding-top:8px;animation:tapPulse 1.6s ease infinite}
 @keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -1745,6 +1764,7 @@ const PLAYABLE_ROSTER=[
   {id:'deon_saber',short:'deon',unlock:'defeat_nitro'},
   {id:'sith_archer',short:'archer',unlock:'defeat_archer'},
   {id:'okuni_caster',short:'okuni',unlock:'defeat_gosanjo'},
+  {id:'mochizuki_chiyome',short:'mochizuki',unlock:'defeat_mochizuki'},
 ];
 
 // ══════════════════════════════════════════════════════
@@ -2958,7 +2978,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.54</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.57</p>
       </div>
     </div>
   );
@@ -3064,6 +3084,8 @@ const CODEX=[
       body:'Em Shinohara, Okuni expôs uma verdade desconfortável: o Trono dos Heróis não escolhe Servos ao acaso — invoca aquele que mais se assemelha, mental ou espiritualmente, ao próprio Mestre. Se a Ibaraki (a "ariete que só destrói") respondeu ao chamado dele, o que isso diz sobre quem o Mestre realmente é por dentro? A ideia o perturba o bastante para desejar "ter uma palavrinha com esse tal Trono" — enquanto a própria Ibaraki, ouvindo tudo por telepatia, protesta indignada.'},
      {title:'AS MEMÓRIAS DAS SERVAS',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki),
       body:'O fenômeno das memórias herdadas se aprofunda. Depois de reviver a origem da Ibaraki (o Sonho da Noite), o Mestre passou a acessar também o passado da Sith — a fada gentil de cabelos rosa maltratada pelos Fae na floresta. Ele nota o padrão com estranheza: sabia a história da Ibaraki por conta das lendas, mas a da Sith desconhecia por completo — e ainda assim a viveu, como se estivesse lá. Sua mente não apenas recebe memórias alheias: recebe especificamente as das Servas ligadas a ele. O elo entre o Mestre e suas Servas é mais profundo — e mais anômalo — do que qualquer contrato comum.'},
+     {title:'A MEMÓRIA DAS FAMÍLIAS',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki_rage),
+      body:'Na Batalha de Shinohara, no auge da exaustão, uma lembrança que era de fato SUA irrompeu na mente do Mestre — a primeira em toda a jornada. Três figuras conversavam: um patriarca, um jovem risonho e uma mulher. Falavam com desdém de uma Guerra do Santo Graal recente — os ganhos de "os Illyasviel e os Tohsaka", o "triste fim daquele homúnculo", e como os Matou saíram pior. Vangloriavam-se de terem lucrado sem sequer participar da "guerra medíocre", e sonhavam alto: alcançar a Raiz "primeiro neste século", através da "palavra de deus", acima das grandes famílias e da Torre do Relógio.\n\nEntão veio a frase que gela: "o que faremos com aquele defeito? Talvez possamos consertar isso." O "defeito" ainda "não podia ser usado sem um teste prévio". E, na brecha da porta, um garotinho ouvia tudo. Esse garoto — o "defeito" de que falavam — é o próprio Mestre. Sua conexão anormal com a Mana, seu corpo-catalisador, as memórias que se infiltram: não são acidentes, mas o resultado de um experimento de uma família de magos obcecada em alcançar a Raiz.'},
      {title:'SKILLS DE MESTRE',body:'Habilidades que o Mestre usa em combate como ações livres. As três primeiras estão sempre disponíveis; as duas últimas permanecem seladas até que algo dentro dele desperte.',items:[
        {name:'Mana Buster',rank:'C',text:'Através de uma conexão estranha com "@$%=%", ele pode infundir a própria mana no servo para gerar um aumento exponencial de energia, causando alto poder de dano.'},
        {name:'Transferência de Mana',rank:'D',text:'Através da conexão com um servo, ele pode infundir mana através do contato físico.'},
@@ -3245,6 +3267,10 @@ const CODEX=[
      {title:'FANTASMA NOBRE',items:[
        {name:'Kuchiyose - Ibuki Daimyōjin Engi (Canalização — Presságio do Grande Deus Ibuki)',text:'Através da maldição associada ao lendário Koga Saburo, tido como ancestral dos Koga-Mochizuki, ela toma emprestado temporariamente o poder de um Grande Deus aterrorizante. Por meio de canalização, escraviza de forma limitada um espírito dividido do Grande Deus Ibuki do Monte Ibuki — a divindade serpente Yamata-no-Orochi, que amaldiçoou Koga Saburo em "Presságio de Suwa". Lança sobre o alvo uma maldição mortal: quem se torna alvo perde a vida ao ter poder mágico, na forma de uma serpente, enrolado ao seu redor. Seu nome é um eco do Fantasma Nobre de seu ancestral, "Encarnação — Presságio do Grande Deus Ibuki".'},
      ]},
+     {title:'A SERPENTE DESPERTA',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki_rage),
+      body:'Na Batalha de Shinohara, Asahina forçou a maldição além de qualquer limite — e a canalização de Orochi consumiu a própria Chiyome. Serpentes brancas passaram a jorrar de sua sombra quase sem fim, feitas da mesma essência do Yamata no Orochi (a Ibaraki reconheceu o cheiro ao devorá-las). Quando as serpentes devoraram o próprio Asahina, ela perdeu o Mestre — e, sem os Selos, nada mais a obrigava a se manter. Ainda assim, não se rendeu: só restava a fúria da serpente, destruindo tudo à volta.'},
+     {title:'O DESCANSO DA KUNOICHI',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki_rage),
+      body:'O Fantasma Nobre da Okuni selou as serpentes e enfraqueceu a Assassin, permitindo o combate direto. No fim, o pequeno corpo de Chiyome caiu de joelhos, tremeu em espasmos e se desfez em uma serena energia dourada. Foi um fim triste, mas talvez misericordioso — o silêncio que a maldição nunca lhe permitiu em vida. A kunoichi que serviu com lealdade absoluta, mesmo torturada pelo próprio sangue, enfim descansou.'},
    ],
    params:[
      {label:'Força',rank:'D'},{label:'Resistência',rank:'D'},{label:'Agilidade',rank:'A'},
@@ -3272,6 +3298,8 @@ const CODEX=[
      {title:'A CAÇADORA DE AYAKASHI',body:'Seu segredo mais importante: sob a artista existe uma Sacerdotisa do Selamento, que sela e destrói demônios. Ayakashi-Hunter, Izumo no Okuni! Nascida numa vila de Izumo que produzia essas sacerdotisas (vistas como hereges), foi sequestrada ainda criança e submetida a um treinamento cruel como sacerdotisa descartável. Nunca conheceu o rosto dos pais — mas cresceu corajosa e alegre, sem se deixar distorcer pelo infortúnio.'},
      {title:'ZANZABUROU',body:'O guerreiro mecânico que a segue era, na origem, o cadáver de um deus antigo (Ama-no-Sakagami) selado dentro de Izumo. Ao remodelá-lo em seu Código Místico pessoal, Okuni fez o deus perder seu poder original. Ainda que seja apenas um fantoche, o Zanzaburou parece proteger Okuni por vontade própria — com vontade própria.'},
      {title:'A JORNADA E O NP',body:'Um dia, toda a sua aldeia foi destruída da noite para o dia por um deus maligno que uma amiga sacerdotisa libertara. Sozinha, Okuni perseguiu esse deus por muitas províncias — mas jamais conseguiu destruí-lo, e esse arrependimento se tornou a essência dela como Espírito Heroico.\n\nSeu Fantasma Nobre, "Okuni Repertoire: Kabuki of the Izumo Wild God", é a primeira e mais poderosa de suas dezoito danças: com o Zanzaburou e uma odachi, tece um Grande Campo de Selamento que aprisiona todo o mal. Muda de forma e características mesmo após ser invocado — reflexo de quem sempre busca novas expressões.'},
+     {title:'A REVIRAVOLTA DE SHINOHARA',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki_rage),
+      body:'Dada como perdida após a armadilha do bordel (onde o Zanzaburou foi destruído e ela, ferida), Okuni na verdade se infiltrou fundo na base militar de Asahina. Encontrou lá uma fonte de mana — uma grande rocha azul — e, com sua Criação de Território, restaurou o próprio código místico de Sacerdotisa do Selamento. No auge do desespero, quando o grupo já não tinha forças contra a maré infinita de serpentes, ela chegou com a "entrada triunfal" que sempre sonhou: "Izumo Aragami Kabuki!". Sua dança Kagura selou as serpentes, aprisionou o mal e enfraqueceu a Assassin — abrindo caminho para o golpe final. O protagonista que sempre chega tarde, mas na hora certa.'},
    ],
    va:'Sumire Uesaka'},
   {id:'kiara',cat:'servo',name:'Sessyoin Kiara',classe:'Moon Cancer',
@@ -3412,6 +3440,8 @@ const CODEX=[
       body:'A "boa pinta" escondia um monstro. Asahina frequentava o bordel gerido por Nao, maltratando e ferindo as garotas de lá. Quando Nao tentou se aliar ao grupo do Mestre, ele a chantageou tomando suas funcionárias como reféns — e, mesmo após ela entregar o grupo numa armadilha, revelou tê-las assassinado ("talvez se você cavar bem fundo você vai achar os restos delas"), tratando tudo como uma "lição" por ela não cooperar. Um homem que vê pessoas como objetos descartáveis.'},
      {title:'O SELO DE COMANDO E A CRUELDADE',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki),
       body:'Asahina mantém o controle sobre a Assassin não por vínculo, mas por tortura. Usa papéis grossos entalhados com símbolos — Selos de Comando canalizados por rituais — que, ao brilhar em vermelho, forçam a Assassin a um estado de fúria descontrolada, os olhos sangrando de dor. Ele os aciona sem hesitar, até mesmo sobre uma Serva já caída, para transformá-la numa arma-cadáver. Covarde no combate (foge quando pode) e dependente inteiramente do poder de sua Serva, Asahina é a personificação de um Mestre que não merece o poder que empunha.'},
+     {title:'DEVORADO PELA PRÓPRIA ARMA',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_mochizuki_rage),
+      body:'O fim de Asahina foi o reflexo exato de sua crueldade. Ao forçar a maldição de Orochi além do limite, ele perdeu qualquer controle sobre a Assassin — e as serpentes que jorravam da sombra dela não fizeram distinção. Caído e sangrando, foi cercado e devorado pelas próprias criaturas que mandou desencadear, gritando por ajuda em seu último suspiro até desaparecer no interior delas. O homem que via pessoas como objetos descartáveis terminou como alimento da arma que torturou.'},
    ]},
 ];
 
@@ -5571,6 +5601,115 @@ const STORY_MAP8_F34={
 };
 
 // ══════════════════════════════════════════════════════
+// MAPA 9 — BATALHA DE SHINOHARA (fases fixas 1, 3, 5, 6, 8, 9)
+// ══════════════════════════════════════════════════════
+const STORY_MAP9_F1={
+  start:[
+    {type:'narration',text:'Assim que a Assassin entrou em seu estado de fúria várias serpentes começaram a sair de sua sombra atacando o grupo.'},
+    {type:'master',text:'Teremos que evitar gastar muito da nossa energia e acabar com essas criaturas o mais rápido possivel.'},
+    {type:'ibaraki',expr:'exp1',text:'Hehe, carne de cobra tende a ser muito saborosa.'},
+    {type:'ibaraki',expr:'exp2',text:'Mas ainda não entendo, essas cobras tem um cheiro familiar.'},
+    {type:'narration',text:'Enquanto eles lutavam contra as serpentes, outras saiam da sombra da Assassin, quase que infinitamente.'},
+    {type:'archer',expr:'sith_ow',text:'A Berserker pode estar certa sobre carne de serpente, mas nessa quantidade vai me deixar sem vontade de experimentar.'},
+    {type:'narration',text:'O Asahina ainda no chão com aquela quantidade de sangue saindo, faz com que as cobras comecem a rodear ele, por mais que ele seja de fato o mestre da Assassin, agora ele tinha perdido esse posto, sem os selos, o servo não precisa se manter com essa conexão.'},
+    {type:'mochizuki',expr:'rage',text:'ARRGHHH!!!!!'},
+    {type:'narration',text:'Com um grito, as serpentes devoram o corpo do Asahina que grita por ajuda como seu ultimo suspiro, até desaparecer no interior da criatura.'},
+    {type:'narration',text:'A Assassin sem um mestre agora podia desaparecer a qualquer momento, mas não apresentava nenhum sinal que iria se render sem destruir tudo a sua volta.'},
+  ],
+};
+
+const STORY_MAP9_F3={
+  start:[
+    {type:'master',text:'Sem o Asahina achei que isso iria ficar mais fácil, mas parece que piorou....'},
+    {type:'narration',text:'Enquanto isso vários gritos da Assassin podia ser ouvido.'},
+    {type:'master',text:'Alguma ideia para passar dessas serpentes para assim dar um fim na Assassin?'},
+    {type:'archer',expr:'sith_ahh',text:'Nenhuma.'},
+    {type:'ibaraki',expr:'exp4',text:'Acabar com todas, uma por uma.'},
+    {type:'narration',text:'Ela falava isso enquanto mordia uma das serpentes arrancando um pedaço, ela estava devorando aquelas coisas ainda com vida.'},
+    {type:'archer',expr:'sith_ow',text:'Não sei o que é pior, a Berserker fazendo um petisco ou as Serpentes fazendo o Asahina de petisco.'},
+  ],
+};
+
+const STORY_MAP9_F5={
+  start:[
+    {type:'narration',text:'Em algum lugar na base militar antiga.'},
+    {type:'narration',text:'Uma garota ruiva estava usando seu grampeador para arrombar uma fechadura.'},
+    {type:'okuni',expr:'brava',name:'OKUNI',text:'Tsch, que barulheira é essa.... estão em uma batalha e não me chamaram?'},
+    {type:'narration',text:'Depois de um tempo a Caster finalmente conseguiu quebrar a fechadura, o que parecia ser uma tarefa simples para qualquer servo, aquilo tinha sido uma batalha muito mais difícil para ela, um servo com o mínimo da mana, e a classe dita como a mais fraca.'},
+    {type:'narration',text:'Ela caminha as pressas pelo que parecia ser uma prisão, usa para prender desertores de guerra ou até mesmo pessoas usadas como moeda de troca.'},
+    {type:'okuni',expr:'think',name:'OKUNI',text:'Não posso chegar lá de mãos vazias para meu salvador.'},
+    {type:'narration',text:'Ao invés de correr para fora, ela adentrou mais e mais fundo no local.'},
+  ],
+};
+
+const STORY_MAP9_F6={
+  start:[
+    {type:'master',text:'Parece que as serpentes estão acabando.'},
+    {type:'archer',expr:'sith_pis',text:'Você acabou de levantar uma bandeira que não devia.'},
+    {type:'narration',text:'De fato, aquilo só serviu para a quantidade de serpentes aumentarem de forma extraordinária. Estavam se acumulando, por mais que o grupo esteja se contendo para se manter com energia para bater na Assassin, a pressão estava fazendo com que eles tivessem que usar tudo.'},
+    {type:'narration',text:'Liberando mais de uma vez o Fantasma Nobre na batalha já estava esgotando a mana das Servas e do Mestre.'},
+    {type:'narration',text:'Enquanto o mestre usava seus magecrafts de forma para manter os servos, uma lembrança passa pela sua mente.'},
+    {type:'glitch',text:'⟨ ▓▒░ lembrança ░▒▓ ⟩'},
+    {type:'unknown',dream:true,name:'HOMEM DESCONHECIDO',text:'Os Illyasviel e os Tohsaka conseguiram grandes ganhos com a guerra que fizeram, por mais que aquele homúnculo teve um triste fim, só não saíram pior que os Matou.'},
+    {type:'unknown',dream:true,name:'JOVEM DESCONHECIDO',text:'Kakaka, patriarca você é de fato genial, não participar daquela guerra medíocre. E ganhar em cima disso foi uma ideia de gênio. Kakaka.'},
+    {type:'unknown',dream:true,name:'MULHER DESCONHECIDA',text:'Através da palavra de deus poderemos fazer algo ainda mais forte, só de imaginar que seremos os primeiros a chegar na raiz nesse século. Não importa se é alguém das grandes família ou da torre do relógio.'},
+    {type:'unknown',dream:true,name:'HOMEM DESCONHECIDO',text:'Mas, o que faremos com aquele defeito? Hm, talvez podemos consertar isso.'},
+    {type:'unknown',dream:true,name:'JOVEM DESCONHECIDO',text:'Aquilo ainda não pode ser usado sem um teste prévio, se der certo, podemos melhorar para aplicar de forma mais eficiente.'},
+    {type:'narration',dream:true,text:'Enquanto isso, na brecha da porta havia um garotinho ouvindo aquele assunto.'},
+    {type:'glitch',text:'⟨ ▓▒░ presente ░▒▓ ⟩'},
+    {type:'master',text:'Hmph.... uma lembrança minha? Não é hora de distrair.'},
+  ],
+};
+
+const STORY_MAP9_F8={
+  start:[
+    {type:'okuni',expr:'think',name:'OKUNI',text:'Muito conveniente esse Asahina fazer uma mansão perto de uma fonte de mana....'},
+    {type:'narration',text:'Chegando no fundo da estrutura, uma grande rocha de tom azul escuro de aproximadamente 10 m² se encontrava com algumas pequenas estruturas de metal.'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Não é o suficiente para muito, mas deve funcionar.'},
+    {type:'narration',text:'Com sua habilidade de criação de território, ela cria um campo delimitado simples, distorcendo o espaço em torno dela, fazendo uma restauração do seu próprio código místico de sacerdotisa do selo.'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Se eu tivesse mais tempo, poderia fazer algo mais bem feito. Então chegou a hora do climax, o protagonista sempre chega tarde.'},
+  ],
+};
+
+const STORY_MAP9_F9={
+  start:[
+    {type:'narration',text:'O grupo já estava esgotado, não tinham mais força para se moverem em velocidade e com classe como era visto no inicio do embate.'},
+    {type:'ibaraki',expr:'exp3',text:'Eu já estou... esgotada....'},
+    {type:'ibaraki',expr:'exp2',text:'Depois de comer algumas eu notei o que era igual.... essas serpentes são feitas de semelhança ao Yamata no Orochi.... a energia delas vem dele, sem duvidas.'},
+    {type:'archer',expr:'sith_ahh',text:'Posso tentar fazer um ataque suicida para cima dela, mas não sei se funcionaria com um ataque de morte definitivamente.'},
+    {type:'master',text:'Ainda não podemos cair aqui, por enquanto estamos segurando e não estão indo para a cidade, o que conta muito.... ela deve parar em algum momento, não pode ser infinito.....'},
+    {type:'narration',text:'Naquele momento desesperador, um voz fofa e tranquila podia ser ouvida.'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Hehe sempre desejei uma entrada triunfal, e aqui vai.'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Depois de superar provações e tribulações, a reviravolta que todos estão esperando vai acontecer e mudar tudo! Izumo Aragami Kabuki!'},
+    {type:'sakura'}, // efeito visual: chuva de sakuras + flash de purificação
+    {type:'narration',text:'Usando seu Fantasma Nobre. A energia mágica que continua a tecer o corpo da Sacerdotisa do Selamento é cuidadosamente manipulada com uma dança Kagura, e envolve a Assassin e as serpentes, e cria um Grande campo delimitado de Selamento que aprisiona todo o mal. fazendo aquelas serpentes desaparecerem e enfraquecer a Assassin, que momentaneamente para de se mover.'},
+    {type:'narration',text:'O que dá inicio ao combate direto.'},
+  ],
+};
+
+// Derrota contra a Mochizuki Enfurecida (boss do mapa 9).
+const STORY_MAP9_RAGE_LOSE={
+  start:[
+    {type:'narration',text:'Por mais enfraquecida a Assassin estava não foi o suficiente para lhe dar vantagem, seu corpo é partido ao meio em um golpe limpo, sua vista escurece.'},
+    {type:'shuten',text:'Eeeh, essa garotinha consegue invocar partes do meu pai? Isso é impressionante. Infelizmente foi o suficiente para acabar com você, comece de novo.'},
+  ],
+};
+
+// Vitória contra a Mochizuki Enfurecida (boss do mapa 9) — clímax da jornada de Shinohara.
+const STORY_MAP9_RAGE_WIN={
+  start:[
+    {type:'narration',text:'A Assassin cai de joelhos no chão sem força, seu pequeno corpo começa a dar alguns espasmos o que é um visão triste, o pequeno corpo dela começa a desfazer em uma energia dourada.'},
+    {type:'narration',text:'Esse era o fim daquele servo.'},
+    {type:'masterAction',text:'Cai no chão por exaustão'},
+    {type:'master',text:'Finalmente.....'},
+    {type:'archer',expr:'sith_ow',text:'Vou querer férias depois disso.'},
+    {type:'ibaraki',expr:'exp3',text:'Eeeh..... não ficou nenhuma serpente para devorar de lanchinho......'},
+    {type:'master',text:'......'},
+    {type:'archer',expr:'sith_ahh',text:'......'},
+  ],
+};
+
+// ══════════════════════════════════════════════════════
 // SONHO DA NOITE 1 (Fase 14 do mapa 5) — memória-pesadelo com glitch
 // ══════════════════════════════════════════════════════
 const SHUTEN_EXPR={
@@ -5851,6 +5990,13 @@ function MapTitleCard({name,onFinish}){
 // ══════════════════════════════════════════════════════
 // HISTÓRIA (chat estilo visual novel)
 // ══════════════════════════════════════════════════════
+// Pétalas de sakura pré-geradas (para o efeito do NP da Okuni) — posições/tempos fixos.
+const SAKURA_PETALS=Array.from({length:34},()=>({
+  left:Math.random()*100,
+  size:0.8+Math.random()*1.1,
+  dur:3+Math.random()*3.5,
+  delay:Math.random()*2.2,
+}));
 function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o Bosque',onFinish,dreamy=false}){
   const[messages,setMessages]=useState([script.start[0]]);
   const[queue,setQueue]=useState(script.start.slice(1));
@@ -5881,8 +6027,28 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
   const masterName=(profile?.nickname||'Mestre').toUpperCase();
 
   function renderMsg(m,i){
+    if(m.type==='sakura'){
+      // Efeito visual do NP da Okuni: chuva de pétalas de sakura + flash de purificação.
+      // Renderiza um overlay (não ocupa espaço no fluxo do chat).
+      const petals=SAKURA_PETALS;
+      return(
+        <React.Fragment key={i}>
+          <div className="purify-flash"/>
+          <div className="sakura-rain">
+            {petals.map((p,k)=>(
+              <span key={k} className="sakura" style={{
+                left:`${p.left}%`,fontSize:`${p.size}rem`,
+                animationDuration:`${p.dur}s`,animationDelay:`${p.delay}s`}}>🌸</span>
+            ))}
+          </div>
+        </React.Fragment>
+      );
+    }
+    if(m.type==='glitch')return(
+      <div key={i} className="glitch-divider">{m.text||'⟨ ▓▒░ memória ░▒▓ ⟩'}</div>
+    );
     if(m.type==='narration')return(
-      <div key={i} className="chat-narration">{m.text}</div>
+      <div key={i} className={`chat-narration${m.dream?' dream':''}`}>{m.text}</div>
     );
     if(m.type==='image')return(
       <div key={i} style={{margin:'12px auto',textAlign:'center'}}>
@@ -5928,11 +6094,11 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
       </div>
     );
     if(m.type==='unknown')return(
-      <div key={i} className="chat-msg left">
+      <div key={i} className={`chat-msg left${m.dream?' dream':''}`}>
         <div className="chat-avatar-unknown">?</div>
         <div className="chat-body">
-          <div className="chat-name unknown">VOZ DESCONHECIDA</div>
-          <div className="chat-bubble mystic">{m.text}</div>
+          <div className="chat-name unknown">{m.name||'VOZ DESCONHECIDA'}</div>
+          <div className={`chat-bubble mystic${m.dream?' dream':''}`}>{m.text}</div>
         </div>
       </div>
     );
@@ -8953,9 +9119,12 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap8&&nextPhase===34){setCamp(advanced);setStage('map8F34');return;}
     // Mapa 9 (Batalha de Shinohara): fases fixas 1,3,5,6,8,9 (roteiros a definir).
     const isMap9=(baseCamp.mapId||'bosque')==='shinohara_battle';
-    if(isMap9&&[1,3,5,6,8,9].includes(nextPhase)){
-      setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map9Fixed');return;
-    }
+    if(isMap9&&nextPhase===1){setCamp(advanced);setStage('map9F1');return;}
+    if(isMap9&&nextPhase===3){setCamp(advanced);setStage('map9F3');return;}
+    if(isMap9&&nextPhase===5){setCamp(advanced);setStage('map9F5');return;}
+    if(isMap9&&nextPhase===6){setCamp(advanced);setStage('map9F6');return;}
+    if(isMap9&&nextPhase===8){setCamp(advanced);setStage('map9F8');return;}
+    if(isMap9&&nextPhase===9){setCamp(advanced);setStage('map9F9');return;}
     setCamp(advanced);setStage('map');
   }
 
@@ -9135,8 +9304,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mapId==='shinohara'){setStage('map7ShunobanWin');return;}
     // Mapa 8 (Mochizuki Chiyome): mostra o diálogo de vitória antes de encerrar a jornada.
     if(mapId==='shinohara_city'){setStage('map8MochizukiWin');return;}
-    // Mapa 9 (Mochizuki Enfurecida): último mapa por ora — encerra a jornada.
-    if(mapId==='shinohara_battle'){finishCampaign(updatedCamp,true);return;}
+    // Mapa 9 (Mochizuki Enfurecida): mostra o diálogo de vitória antes de encerrar a jornada.
+    if(mapId==='shinohara_battle'){setStage('map9RageWin');return;}
     finishCampaign(updatedCamp,true);
   }
 
@@ -9325,7 +9494,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mid==='kurikara_city'){setStage('map5GosanjoLose');return;} // Go-Sanjo: diálogo de derrota (Shuten)
     if(mid==='shinohara'){setStage('map7ShunobanLose');return;} // Shunoban: diálogo de derrota (Shuten)
     if(mid==='shinohara_city'){setStage('map8MochizukiLose');return;} // Mochizuki: diálogo de derrota (Shuten)
-    if(mid==='shinohara_battle'){setStage('result');return;} // Mochizuki Enfurecida: derrota vai ao resultado
+    if(mid==='shinohara_battle'){setStage('map9RageLose');return;} // Mochizuki Enfurecida: derrota (Shuten)
     setStage('bossLoseStory');
   }
 
@@ -9564,19 +9733,14 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
       </div>
     </div>
   );
-  if(stage==='map9Fixed')return(
-    <div className="screen">
-      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
-        <div style={{fontSize:'2rem',marginBottom:10}}>📜</div>
-        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>BATALHA DE SHINOHARA — FASE {camp.pendingFixedPhase}</h2>
-        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',fontStyle:'italic',marginBottom:16}}>
-          [ Cena fixa a ser escrita ]<br/>
-          Esta é uma fase fixa de história do Mapa 9. O roteiro será adicionado aqui depois.
-        </p>
-        <button className="btn btn-red btn-full" onClick={()=>setStage('map')}>Prosseguir →</button>
-      </div>
-    </div>
-  );
+  if(stage==='map9F1')return <StoryScreen profile={profile} script={STORY_MAP9_F1} finishLabel="⚔️ Cortar as serpentes" onFinish={()=>setStage('map')}/>;
+  if(stage==='map9F3')return <StoryScreen profile={profile} script={STORY_MAP9_F3} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map9F5')return <StoryScreen profile={profile} script={STORY_MAP9_F5} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map9F6')return <StoryScreen profile={profile} script={STORY_MAP9_F6} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map9F8')return <StoryScreen profile={profile} script={STORY_MAP9_F8} finishLabel="Continuar →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map9F9')return <StoryScreen profile={profile} script={STORY_MAP9_F9} finishLabel="⚔️ O combate direto começa!" onFinish={()=>setStage('map')}/>;
+  if(stage==='map9RageWin')return <StoryScreen profile={profile} script={STORY_MAP9_RAGE_WIN} finishLabel="Continuar →" onFinish={afterMochizukiRageWin}/>;
+  if(stage==='map9RageLose')return <StoryScreen profile={profile} script={STORY_MAP9_RAGE_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   if(stage==='map6Fixed')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
