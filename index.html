@@ -13,52 +13,158 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ink:#1a0a00;--parchment:#f5e6c8;--parchment-dark:#e8d5a3;
+  --ink:#050506;--parchment:#f5e6c8;--parchment-dark:#c9bfae;--white:#fff8f0;
   --red:#8b1a1a;--red-bright:#c0392b;--gold:#c9a227;--gold-dim:#8b6914;
-  --smoke:#2a1505;--mist:#f0e6d3;--white:#fff8f0;
+  --smoke:#050506;--mist:#f0e6d3;
   --oni-purple:#4a0e6e;--oni-purple-light:#7b2d9e;
   --hp-green:#2d6a2d;--np-blue:#1a3a6e;--np-light:#4a7ecf;
   --shadow:rgba(0,0,0,0.7);
+  /* Base carmesim/preto — acento vermelho substitui o dourado ornamentado */
+  --crimson:#c0392b;--crimson-deep:#8b1a1a;--crimson-dim:#5a1418;--crimson-soft:#e05a4a;
+  --panel-a:rgba(14,10,11,0.94);--panel-b:rgba(7,6,7,0.97);
+  --edge:rgba(192,57,43,0.28);--edge-soft:rgba(192,57,43,0.14);
 }
 body{background:var(--smoke);color:var(--white);font-family:'Crimson Text',serif;min-height:100vh;overflow-x:hidden}
+/* Fundo geral: preto profundo com um leve halo carmesim no topo, em todas as telas */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 130% 60% at 50% -15%, rgba(120,20,30,.18), transparent 55%),
+    linear-gradient(180deg,#070607 0%,#0a0708 50%,#050405 100%)}
 h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--smoke)}
-::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:3px}
+::-webkit-scrollbar-thumb{background:var(--crimson-dim);border-radius:3px}
 
 /* ── Layout base ── */
-.screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
-.screen::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='1' fill='%23c9a22722'/%3E%3C/svg%3E");pointer-events:none}
+.screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden;z-index:1}
+.screen::before{content:'';position:absolute;inset:0;pointer-events:none}
 
 /* ── Painéis ── */
-.panel{background:linear-gradient(160deg,rgba(26,10,0,0.92),rgba(42,21,5,0.95));border:1px solid var(--gold-dim);border-radius:4px;padding:24px;max-width:900px;width:100%;position:relative;box-shadow:0 0 40px rgba(201,162,39,0.15),inset 0 0 20px rgba(0,0,0,0.3)}
-.panel::before,.panel::after{content:'✦';position:absolute;color:var(--gold-dim);font-size:10px}
-.panel::before{top:8px;left:12px}.panel::after{top:8px;right:12px}
+.panel{background:linear-gradient(160deg,var(--panel-a),var(--panel-b));border:1px solid var(--edge);border-radius:10px;padding:24px;max-width:900px;width:100%;position:relative;box-shadow:0 12px 44px rgba(0,0,0,0.65),inset 0 1px 0 rgba(255,255,255,0.02)}
+.panel::before,.panel::after{content:'';position:absolute;top:0;width:32px;height:2px;background:linear-gradient(90deg,transparent,var(--crimson),transparent);opacity:.5}
+.panel::before{left:18px}.panel::after{right:18px}
 
 /* ── Título principal ── */
-.title-main{font-size:clamp(2rem,6vw,4rem);color:var(--gold);text-shadow:0 0 30px rgba(201,162,39,0.5),2px 2px 0 var(--ink);letter-spacing:4px;text-align:center;margin-bottom:8px}
+.title-main{font-size:clamp(2rem,6vw,4rem);color:var(--white);text-shadow:0 0 30px rgba(192,57,43,0.4);letter-spacing:4px;text-align:center;margin-bottom:8px}
 .title-sub{color:var(--parchment-dark);font-style:italic;text-align:center;font-size:1.1rem;margin-bottom:32px;letter-spacing:2px}
 
 /* ── Botões ── */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 28px;border:1px solid var(--gold-dim);background:linear-gradient(135deg,rgba(139,105,20,0.3),rgba(201,162,39,0.15));color:var(--gold);font-family:'Cinzel',serif;font-size:0.85rem;letter-spacing:2px;cursor:pointer;border-radius:2px;transition:all .2s;text-transform:uppercase;position:relative;overflow:hidden}
-.btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,162,39,0.2),transparent);opacity:0;transition:opacity .2s}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 28px;border:1px solid var(--edge);background:rgba(255,255,255,0.02);color:var(--parchment);font-family:'Cinzel',serif;font-size:0.85rem;letter-spacing:2px;cursor:pointer;border-radius:6px;transition:all .18s;text-transform:uppercase;position:relative;overflow:hidden}
+.btn::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--crimson);opacity:0;transition:opacity .18s}
 .btn:hover::before{opacity:1}
-.btn:hover{border-color:var(--gold);color:var(--white);box-shadow:0 0 20px rgba(201,162,39,0.3);transform:translateY(-1px)}
+.btn:hover{border-color:var(--crimson);color:var(--white);background:rgba(192,57,43,0.08);transform:translateY(-1px)}
 .btn:active{transform:translateY(0)}
-.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.btn-red{border-color:var(--red);color:#ff8080;background:linear-gradient(135deg,rgba(139,26,26,0.3),rgba(192,57,43,0.15))}
-.btn-red:hover{border-color:var(--red-bright);color:#ffb0b0;box-shadow:0 0 20px rgba(192,57,43,0.3)}
-.btn-np{border-color:var(--np-light);color:var(--np-light);background:linear-gradient(135deg,rgba(26,58,110,0.4),rgba(74,126,207,0.2));font-size:0.75rem;padding:10px 20px}
-.btn-np:hover{box-shadow:0 0 25px rgba(74,126,207,0.5)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-red{border-color:rgba(192,57,43,0.5);color:#e88;background:rgba(139,26,26,0.12)}
+.btn-red:hover{border-color:var(--crimson);color:#fbb;background:rgba(192,57,43,0.16)}
+.btn-np{border-color:rgba(74,126,207,0.4);color:var(--np-light);background:rgba(26,58,110,0.18);font-size:0.75rem;padding:10px 20px}
+.btn-np:hover{border-color:var(--np-light);box-shadow:0 0 18px rgba(74,126,207,0.3)}
 .btn-sm{padding:8px 16px;font-size:0.75rem}
 .btn-full{width:100%;margin-bottom:10px}
 
-/* ── Divisores ornamentais ── */
+/* ── Divisores ── */
 .divider{display:flex;align-items:center;gap:12px;margin:20px 0}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,var(--gold-dim),transparent)}
-.divider-text{color:var(--gold-dim);font-size:.75rem;letter-spacing:3px;white-space:nowrap}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,var(--edge),transparent)}
+.divider-text{color:var(--crimson-soft);font-size:.75rem;letter-spacing:3px;white-space:nowrap;opacity:.8}
+
+/* ══════════ MENU PRINCIPAL — preto profundo, acento carmesim, minimalista ══════════ */
+.menu-screen{position:relative;overflow:hidden;
+  background:
+    radial-gradient(ellipse 110% 70% at 50% -10%, rgba(120,20,30,.20), transparent 55%),
+    linear-gradient(180deg,#070607 0%,#0a0708 55%,#040304 100%)}
+/* lua carmesim discreta atrás do painel */
+.menu-moon{position:absolute;top:6%;left:50%;transform:translateX(-50%);
+  width:min(300px,64vw);height:min(300px,64vw);border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 50% 45%, #7a1f23 0%, #4a1216 45%, transparent 70%);
+  filter:blur(3px);opacity:.42;
+  animation:moonPulse 8s ease-in-out infinite}
+@keyframes moonPulse{0%,100%{opacity:.34}50%{opacity:.5}}
+/* névoa sutil de baixo */
+.menu-fog{position:absolute;left:0;right:0;bottom:0;height:40%;pointer-events:none;
+  background:linear-gradient(0deg, rgba(10,4,6,.7), transparent)}
+/* ── BRASAS E CHAMAS ── */
+/* brilho de chama pulsante na base da tela (a "fogueira" de onde sobem as brasas) */
+.menu-flames{position:absolute;left:0;right:0;bottom:0;height:38%;pointer-events:none;z-index:1;
+  background:
+    radial-gradient(ellipse 60% 100% at 30% 120%, rgba(224,90,40,.28), transparent 70%),
+    radial-gradient(ellipse 50% 100% at 70% 120%, rgba(200,50,30,.24), transparent 70%),
+    radial-gradient(ellipse 90% 100% at 50% 125%, rgba(120,25,20,.4), transparent 75%);
+  animation:flameGlow 3.5s ease-in-out infinite;mix-blend-mode:screen}
+@keyframes flameGlow{
+  0%,100%{opacity:.75;transform:scaleY(1)}
+  50%{opacity:1;transform:scaleY(1.08)}}
+/* partículas de brasa subindo */
+.menu-embers{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.menu-ember{position:absolute;bottom:-12px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%, #ffe08a 0%, #ff9a3c 30%, #e0472a 60%, #7a1f14 100%);
+  box-shadow:0 0 6px 1px rgba(255,140,50,.7), 0 0 12px 2px rgba(224,71,42,.4);
+  opacity:0;will-change:transform,opacity;
+  animation:emberRise linear infinite, emberFlicker .35s steps(2,end) infinite}
+/* subida com leve deriva lateral (serpenteando) + encolhimento */
+@keyframes emberRise{
+  0%{transform:translate(0,0) scale(1);opacity:0}
+  8%{opacity:1}
+  25%{transform:translate(14px,-22vh) scale(.95)}
+  50%{transform:translate(-10px,-45vh) scale(.8)}
+  75%{transform:translate(12px,-68vh) scale(.6)}
+  92%{opacity:.5}
+  100%{transform:translate(-6px,-92vh) scale(.3);opacity:0}}
+/* cintilar da brasa (brilho oscilando como fogo) */
+@keyframes emberFlicker{
+  0%{filter:brightness(1)}
+  100%{filter:brightness(1.6)}}
+
+/* painel — vidro quase preto, borda carmesim fina */
+.menu-panel{position:relative;z-index:2;
+  background:linear-gradient(155deg, rgba(12,9,10,.9), rgba(5,4,5,.96));
+  border:1px solid var(--edge);border-radius:14px;
+  padding:32px 26px;max-width:440px;width:100%;text-align:center;
+  box-shadow:0 24px 70px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,0.03);
+  backdrop-filter:blur(2px)}
+/* linha carmesim fina no topo do painel */
+.menu-panel::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:60%;height:2px;background:linear-gradient(90deg,transparent,var(--crimson),transparent);opacity:.6}
+
+.menu-crest{font-size:2.4rem;filter:drop-shadow(0 0 12px rgba(192,57,43,.5));margin-bottom:4px;
+  animation:crestGlow 5s ease-in-out infinite}
+@keyframes crestGlow{0%,100%{filter:drop-shadow(0 0 8px rgba(192,57,43,.35))}50%{filter:drop-shadow(0 0 18px rgba(224,90,74,.6))}}
+.menu-title{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(2.2rem,7vw,3.4rem);
+  letter-spacing:7px;line-height:1;color:var(--white);
+  text-shadow:0 0 24px rgba(192,57,43,.4);margin:4px 0}
+.menu-subtitle{color:var(--parchment-dark);font-style:italic;letter-spacing:3px;font-size:1rem;
+  opacity:.75;margin-bottom:6px}
+.menu-kanji{color:var(--crimson-soft);letter-spacing:8px;font-size:.85rem;opacity:.7;margin-bottom:20px}
+
+/* card do mestre */
+.menu-master{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;align-items:center;
+  background:rgba(0,0,0,.4);border:1px solid var(--edge-soft);border-radius:8px;
+  padding:10px 14px;margin-bottom:22px;font-size:.82rem}
+.menu-master .mm-name{color:var(--crimson-soft);font-family:'Cinzel',serif}
+.menu-master .mm-stat{color:var(--parchment-dark);display:inline-flex;gap:4px;align-items:center}
+
+/* botões do menu — selo do ícone + rótulo */
+.menu-btn{display:flex;align-items:center;gap:14px;width:100%;margin-bottom:9px;
+  padding:12px 16px;border:1px solid var(--edge-soft);border-radius:8px;cursor:pointer;
+  background:rgba(255,255,255,0.015);
+  color:var(--parchment);font-family:'Cinzel',serif;font-size:.82rem;letter-spacing:1.5px;
+  text-align:left;transition:all .18s ease;position:relative;overflow:hidden}
+.menu-btn .mb-icon{flex-shrink:0;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  font-size:1.15rem;border-radius:7px;background:rgba(192,57,43,.08);border:1px solid var(--edge-soft);
+  transition:all .18s ease}
+.menu-btn .mb-label{flex:1}
+.menu-btn .mb-arrow{opacity:0;color:var(--crimson-soft);transition:all .18s ease;transform:translateX(-6px)}
+.menu-btn:hover{border-color:var(--crimson);color:var(--white);transform:translateX(3px);
+  background:rgba(192,57,43,.07)}
+.menu-btn:hover .mb-icon{background:rgba(192,57,43,.2);border-color:var(--crimson);transform:scale(1.08)}
+.menu-btn:hover .mb-arrow{opacity:1;transform:translateX(0)}
+.menu-btn.primary{border-color:var(--edge);background:rgba(192,57,43,.06)}
+.menu-btn.primary .mb-icon{background:rgba(192,57,43,.16);border-color:var(--edge)}
+.menu-btn.danger{border-color:rgba(192,57,43,.4)}
+.menu-btn.danger .mb-icon{background:rgba(192,57,43,.14);border-color:rgba(192,57,43,.35)}
+.menu-btn.danger:hover{border-color:var(--red-bright)}
+.menu-version{margin-top:18px;font-size:.62rem;color:var(--crimson-dim);letter-spacing:3px}
 
 /* ── Barras de HP / NP ── */
 .bar-container{margin:6px 0}
@@ -73,7 +179,7 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 /* ── Menu lateral do grupo (mapa + combate) ── */
 .party-sidebar{position:fixed;left:10px;top:50%;transform:translateY(-50%);z-index:60;
   display:flex;flex-direction:column;gap:8px;width:150px;max-height:88vh;overflow-y:auto;
-  padding:10px 8px;background:linear-gradient(160deg,rgba(26,10,0,0.9),rgba(42,21,5,0.92));
+  padding:10px 8px;background:linear-gradient(160deg,var(--panel-a),var(--panel-b));
   border:1px solid var(--gold-dim);border-radius:6px;box-shadow:0 0 24px rgba(0,0,0,0.5);
   transition:transform .25s ease,opacity .25s ease}
 .party-sidebar-title{font-family:'Cinzel',serif;color:var(--gold-dim);font-size:.6rem;letter-spacing:2px;text-align:center;margin-bottom:2px}
@@ -91,7 +197,7 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 /* Botão flutuante que abre/fecha o menu — só existe (visível) em telas estreitas */
 .party-sidebar-toggle{display:none;position:fixed;left:0;top:50%;transform:translateY(-50%);
   z-index:62;width:30px;height:56px;border-radius:0 8px 8px 0;border:1px solid var(--gold-dim);border-left:none;
-  background:linear-gradient(160deg,rgba(26,10,0,0.95),rgba(42,21,5,0.97));color:var(--gold);
+  background:linear-gradient(160deg,var(--panel-a),var(--panel-b));color:var(--gold);
   font-size:1rem;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 16px rgba(0,0,0,0.5)}
 @media(max-width:900px){
   .party-sidebar-toggle{display:flex}
@@ -112,7 +218,7 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 
 /* ── Skills de batalha ── */
 .skills-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
-.skill-btn{padding:8px 14px;border:1px solid var(--gold-dim);background:rgba(26,10,0,0.6);color:var(--parchment);font-size:.7rem;cursor:pointer;border-radius:2px;text-align:center;transition:all .2s;min-width:100px;font-family:'Cinzel',serif}
+.skill-btn{padding:8px 14px;border:1px solid var(--gold-dim);background:rgba(18,9,24,0.6);color:var(--parchment);font-size:.7rem;cursor:pointer;border-radius:2px;text-align:center;transition:all .2s;min-width:100px;font-family:'Cinzel',serif}
 .skill-btn:hover:not(:disabled){border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(201,162,39,0.25)}
 .skill-btn:disabled{opacity:.4;cursor:not-allowed}
 .skill-cd{display:block;font-size:.6rem;color:var(--red-bright);margin-top:3px}
@@ -181,7 +287,7 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .bond-bar-fill{height:100%;background:linear-gradient(90deg,var(--oni-purple),var(--oni-purple-light));border-radius:10px;transition:width .5s ease}
 
 /* ── Notificações ── */
-.notif{position:fixed;top:20px;right:20px;background:rgba(26,10,0,0.95);border:1px solid var(--gold);padding:12px 20px;border-radius:3px;font-family:'Cinzel',serif;font-size:.75rem;color:var(--gold);letter-spacing:1px;z-index:1000;animation:slideIn .3s ease;max-width:280px}
+.notif{position:fixed;top:20px;right:20px;background:rgba(16,8,20,0.96);border:1px solid var(--gold);padding:12px 20px;border-radius:3px;font-family:'Cinzel',serif;font-size:.75rem;color:var(--gold);letter-spacing:1px;z-index:1000;animation:slideIn .3s ease;max-width:280px}
 @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 
 /* ── Overlay de vitória/derrota ── */
@@ -377,7 +483,7 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
   box-shadow:inset 0 0 70px rgba(0,0,0,.8), 0 2px 14px rgba(0,0,0,.5)}
 /* chão em perspectiva com linha de horizonte suave */
 .arena-ground{position:absolute;left:0;right:0;bottom:0;height:42%;
-  background:linear-gradient(180deg,rgba(150,90,60,.10) 0%,rgba(60,28,30,.42) 45%,rgba(25,12,14,.72) 100%)}
+  background:linear-gradient(180deg,rgba(120,70,80,.10) 0%,rgba(50,24,36,.42) 45%,rgba(20,10,18,.72) 100%)}
 .arena-ground::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
   background:linear-gradient(90deg,transparent,rgba(201,162,39,.35),transparent)}
 /* vinheta */
@@ -2267,6 +2373,7 @@ const ACHIEVEMENTS=[
   {id:'clear_kurikara2',name:'A Cidade Libertada',desc:'Ajude a limpar Kurikara e parta rumo a Shinohara ao lado de Okuni.',qp:30000,sq:45,icon:'🎭'},
   {id:'defeat_shunoban',name:'Derrote o Ciclope Vermelho',desc:'Abata Shunoban, o terror de olho único da estrada de Shinohara.',qp:35000,sq:50,icon:'👁️'},
   {id:'defeat_mochizuki',name:'Derrote a Kunoichi das Sombras',desc:'Vença Mochizuki Chiyome, a Assassin que comanda as ruas de Shinohara.',qp:42000,sq:56,icon:'🗡️'},
+  {id:'defeat_mochizuki_rage',name:'Silencie a Serpente',desc:'Vença Mochizuki Chiyome em sua forma enfurecida, na Batalha de Shinohara.',qp:50000,sq:64,icon:'🐍'},
 ];
 
 // Concede uma conquista (se ainda não obtida): paga a recompensa e marca no profile.
@@ -2796,32 +2903,62 @@ function GachaScreen({onNavigate,profile,setProfile}){
 }
 
 function MenuScreen({onNavigate,profile}){
+  // Botões do menu: [id de navegação, ícone, rótulo, variante]
+  const items=[
+    ['campaign','⚔️','Iniciar Campanha','primary'],
+    ['tower','🗼','Torre de Desafios','danger'],
+    ['gacha','⛩️','Invocação',''],
+    ['comics','📖','Álbum de Tradução',''],
+    ['profile','📜','Perfil',''],
+    ['shop','🏪','Loja de Perks',''],
+    ['achievements','🏆','Conquistas',''],
+    ['ranking','🌐','Ranking Online',''],
+    ['codex','📖','Informações',''],
+    ['config','⚙️','Configurações',''],
+  ];
+  // Brasas subindo (geradas uma vez, posições/tempos/tamanhos aleatórios).
+  // Mais brasas nas laterais/base, tamanhos e velocidades variados = fogo mais vivo.
+  const embers=useRef(Array.from({length:32},()=>({
+    left:Math.random()*100,
+    dur:5+Math.random()*7,       // tempo de subida
+    delay:Math.random()*10,      // início escalonado
+    size:2+Math.random()*4,      // tamanho da brasa
+    flick:0.25+Math.random()*0.4,// velocidade do cintilar
+  }))).current;
   return(
-    <div className="screen">
-      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
-        <div style={{fontSize:'2.5rem',marginBottom:8}}>⛩️</div>
-        <h1 className="title-main">FGO ROGUE</h1>
-        <p className="title-sub">Hyakki Yagyō ・ 百鬼夜行</p>
-        <div className="divider"><span className="divider-text">✦ MENU PRINCIPAL ✦</span></div>
+    <div className="screen menu-screen">
+      <div className="menu-moon"/>
+      <div className="menu-flames"/>
+      <div className="menu-embers">
+        {embers.map((e,i)=>(
+          <span key={i} className="menu-ember" style={{
+            left:`${e.left}%`,width:e.size,height:e.size,
+            animationDuration:`${e.dur}s, ${e.flick}s`,
+            animationDelay:`${e.delay}s, ${e.delay}s`}}/>
+        ))}
+      </div>
+      <div className="menu-fog"/>
+      <div className="menu-panel">
+        <div className="menu-crest">⛩️</div>
+        <h1 className="menu-title">FGO ROGUE</h1>
+        <p className="menu-subtitle">Hyakki Yagyō</p>
+        <p className="menu-kanji">百 鬼 夜 行</p>
         {profile.nickname&&(
-          <p style={{color:'var(--parchment-dark)',fontSize:'.85rem',marginBottom:16,fontStyle:'italic'}}>
-            Mestre: <strong style={{color:'var(--gold)'}}>{profile.nickname}</strong>
-            &nbsp;·&nbsp; <strong style={{color:'#e6c34c'}}>Nv.{(profile.magus||{level:1}).level}</strong>
-            &nbsp;·&nbsp; <strong style={{color:'var(--gold)'}}>{profile.sq}</strong> SQ
-            &nbsp;·&nbsp; <strong style={{color:'#4fc3f7'}}>{(profile.qp||0).toLocaleString()}</strong> QP
-          </p>
+          <div className="menu-master">
+            <span className="mm-name">✦ {profile.nickname}</span>
+            <span className="mm-stat" style={{color:'#e6c34c'}}>👑 Nv.{(profile.magus||{level:1}).level}</span>
+            <span className="mm-stat">💎 {(profile.sq||0).toLocaleString()} SQ</span>
+            <span className="mm-stat" style={{color:'#4fc3f7'}}>🪙 {(profile.qp||0).toLocaleString()} QP</span>
+          </div>
         )}
-        <button className="btn btn-full" onClick={()=>onNavigate('campaign')}>⚔️ &nbsp; Iniciar Campanha</button>
-        <button className="btn btn-full btn-red" onClick={()=>onNavigate('tower')}>🗼 &nbsp; Torre de Desafios</button>
-        <button className="btn btn-full" onClick={()=>onNavigate('gacha')}>⛩️ &nbsp; Invocação</button>
-        <button className="btn btn-full" onClick={()=>onNavigate('comics')}>📖 &nbsp; Álbum de Tradução</button>
-        <button className="btn btn-full" onClick={()=>onNavigate('profile')}>📜 &nbsp; Perfil</button>
-        <button className="btn btn-full" onClick={()=>onNavigate('shop')}>🏪 &nbsp; Loja de Perks</button>
-        <button className="btn btn-full" onClick={()=>onNavigate('achievements')}>🏆 &nbsp; Conquistas</button>
-        <button className="btn btn-full" onClick={()=>onNavigate('ranking')}>🌐 &nbsp; Ranking Online</button>
-        <button className="btn btn-full" onClick={()=>onNavigate('codex')}>📖 &nbsp; Informações</button>
-        <button className="btn btn-full" onClick={()=>onNavigate('config')}>⚙️ &nbsp; Configurações</button>
-        <p style={{marginTop:20,fontSize:'.65rem',color:'var(--gold-dim)',letterSpacing:2}}>FATE・ROGUELIKE ✦ v1.49</p>
+        {items.map(([nav,icon,label,variant])=>(
+          <button key={nav} className={`menu-btn ${variant}`} onClick={()=>onNavigate(nav)}>
+            <span className="mb-icon">{icon}</span>
+            <span className="mb-label">{label}</span>
+            <span className="mb-arrow">➜</span>
+          </button>
+        ))}
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.54</p>
       </div>
     </div>
   );
@@ -4141,7 +4278,7 @@ function ServoSelectScreen({onNavigate,onStartCampaign,profile}){
               <button key={cp.mapId} onClick={()=>unlocked&&setSelMap(cp.mapId)} disabled={!unlocked}
                 style={{textAlign:'left',padding:'10px 12px',borderRadius:3,cursor:unlocked?'pointer':'not-allowed',
                   border:`1px solid ${isSel?'var(--gold)':'var(--gold-dim)'}`,
-                  background:isSel?'rgba(201,162,39,0.14)':'rgba(26,10,0,0.4)',
+                  background:isSel?'rgba(201,162,39,0.14)':'rgba(18,9,24,0.5)',
                   opacity:unlocked?1:0.45,transition:'all .2s'}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <span style={{fontFamily:'Cinzel,serif',fontSize:'.82rem',color:isSel?'var(--gold)':'var(--parchment)'}}>
@@ -4389,6 +4526,52 @@ const MOCHIZUKI={
   },
 };
 
+// ── BOSS DO MAPA 9: Mochizuki Chiyome ENFURECIDA (2ª fase) ──
+// Forçada pelo Selo de Asahina a canalizar Orochi por completo. É a mesma luta de
+// controle, mas amplificada: mais HP, mais dano, mais rápida e recargas mais curtas.
+const MOCHIZUKI_RAGE={
+  id:'mochizuki_chiyome',name:'Mochizuki Chiyome (Enfurecida)',className:'Assassin',isBoss:true,
+  hp:620000,attack:4200,
+  attributes:{
+    strength:{rank:'C',points:30},
+    agility:{rank:'A+',points:62}, // ainda mais veloz — supera a maioria dos servos
+    luck:{rank:'B',points:40},
+    endurance:{rank:'A',points:50},
+    mana:{rank:'C',points:30,gainPercent:2.0},
+    np:{rank:'C',points:30},
+  },
+  npRegenPerTurn:6,
+  defensePassive:30,
+  skills:{
+    curse:{cd:4,skillLockTurns:2,npLockTurns:2,atkUp:30,atkDur:3},
+    orochi:{cd:7,poisonPctMaxHp:20,poisonTurns:3},
+    kougaryu:{cd:5,evadeTurns:2,npGain:50,atkUp:50,atkDur:2},
+  },
+  np:{name:'Kuchiyose, Ibukidaimyoujin-Engi',dmgMult:4.0,skillLockTurns:2,atkUp:40,atkDur:3,stunChance:60,stunTurns:1},
+  dialogue:{
+    intro:'AAARGH... o sangue... a serpente... NÃO CONSIGO CONTER! Se é para morrer, morram COMIGO!',
+    curse:'CALEM-SE! CALEM-SE!',
+    orochi:'ORochi... DEVORE-OS!',
+    kougaryu:'Nas sombras... nas sombras...!',
+    np:'IBUKIDAIMYOUJIN... ENGI!!! VENHAM, TODOS VOCÊS!',
+    defeated:'...finalmente... o silêncio... obrigada... por me... parar...',
+  },
+  assets:{
+    default:'assets/servos/mochizuki/mochizuki_rage.png',
+    battle:'assets/servos/mochizuki/mochizuki_rage.png',
+    combat:'assets/servos/mochizuki/mochizuki_combat_bust.png',
+    avatar:'assets/servos/mochizuki/mochizuki_avatar.png',
+    np:'assets/servos/mochizuki/mochizuki_np.png',
+    encounter:'assets/servos/mochizuki/mochizuki_rage.png',
+  },
+  sprites:{
+    idle:'assets/servos/mochizuki/mochizuki_espera.gif',
+    attack:'assets/servos/mochizuki/mochizuki_ataque.gif',
+    np:'assets/servos/mochizuki/mochizuki_np.gif',
+    flip:true,
+  },
+};
+
 // ── MOCHIZUKI CHIYOME (Assassin) — jogável (Torre) ──
 // A kunoichi amaldiçoada: controle e veneno. Kit fiel ao FGO (Curse Arts, Curse of
 // the Orochi, Kougaryu) + NP Kuchiyose. Stats FGO: Str D, End D, Agi A, Mana C, Luck C, NP C.
@@ -4595,6 +4778,16 @@ const ENEMIES_MAP8={
 };
 
 // ══════════════════════════════════════════════════════
+// MAPA 9 — BATALHA DE SHINOHARA (inimigos)
+// ══════════════════════════════════════════════════════
+// Um único arquétipo: as Cobras Orochi invocadas pela Mochizuki enfurecida.
+const ENEMIES_MAP9={
+  cobra_orochi:{id:'cobra_orochi',name:'Cobra de Orochi',hp:52000,atk:8500,agility:48,strPts:52,
+    poison:{chance:60,pctOfAtk:6,turns:3}, // presas venenosas: 6% ATK/turno por 3t
+    description:'Serpentes brancas emergidas das sombras da kunoichi. HP imenso, dano mediano e velocidade moderada — e suas presas carregam o veneno de Orochi.'},
+};
+
+// ══════════════════════════════════════════════════════
 // MAPA 3 — CAMINHO TORTUOSO (inimigos)
 // ══════════════════════════════════════════════════════
 // 2 inimigos aprimorados (Ghoul/Onmyoji do mapa 2, mais fortes) + 2 novos.
@@ -4704,6 +4897,15 @@ const MAPS={
     fixedPhases:[1,3,5,8,11,15,18,19,23,24,26,30,33,34],
     boss:'mochizuki_chiyome',
   },
+  shinohara_battle:{
+    id:'shinohara_battle',name:'Batalha de Shinohara',phases:10,
+    enemies:ENEMIES_MAP9,
+    // O confronto final com a Mochizuki enfurecida. Fases fixas: 1,3,5,6,8,9.
+    // Boss (Mochizuki Enfurecida) na fase 10.
+    intro:null,introFinishLabel:'⚔️ Enfrentar a serpente',
+    fixedPhases:[1,3,5,6,8,9],
+    boss:'mochizuki_rage',
+  },
 };
 
 // ══════════════════════════════════════════════════════
@@ -4738,6 +4940,7 @@ const CAMPAIGN_CHECKPOINTS=[
   {mapId:'kurikara2',name:'Kurikara II',phases:12,unlock:'defeat_gosanjo',boss:'???',party2:true},
   {mapId:'shinohara',name:'Estrada de Shinohara',phases:15,unlock:'clear_kurikara2',boss:'???',party2:true},
   {mapId:'shinohara_city',name:'Shinohara',phases:35,unlock:'defeat_shunoban',boss:'Mochizuki Chiyome',party2:true},
+  {mapId:'shinohara_battle',name:'Batalha de Shinohara',phases:10,unlock:'defeat_mochizuki',boss:'Mochizuki (Enfurecida)',party2:true},
 ];
 
 // Gera um encontro usando a tabela de inimigos do mapa atual.
@@ -5915,6 +6118,8 @@ const PATH_THEMES={
   shinohara:[['left','🌲','Trilha da Floresta'],['center','⛰️','Passo da Montanha'],['right','🏞️','Margem do Rio']],
   // Mapa 8 — Shinohara (a cidade): ruas movimentadas, distritos e o bairro do bordel.
   shinohara_city:[['left','🏘️','Ruas Movimentadas'],['center','🏮','Distrito Central'],['right','🌃','Bairro Noturno']],
+  // Mapa 9 — Batalha de Shinohara: o pavilhão tomado pelas serpentes de Orochi.
+  shinohara_battle:[['left','🐍','Ninho de Serpentes'],['center','⚔️','Pátio de Treino'],['right','🌑','Sombras de Orochi']],
 };
 
 // ══════════════════════════════════════════════════════
@@ -6041,6 +6246,8 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
     :(camp.mapId==='kurikara_city')?(phase>=maxPhases)
     :(camp.mapId==='kurikara2')?false
     :(camp.mapId==='shinohara')?(phase>=maxPhases)
+    :(camp.mapId==='shinohara_city')?(phase>=maxPhases)
+    :(camp.mapId==='shinohara_battle')?(phase>=maxPhases)
     :(phase>=maxPhases-1);
 
   // ── Casa de Chá: efetua uma compra (um item por vez, ilimitadas ao longo da run) ──
@@ -6394,6 +6601,19 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         agility:MOCHIZUKI.attributes.agility.points,
         npBar:0,activeBuffs:[],activeDebuffs:[],
         cooldowns:{curse:3,orochi:5,kougaryu:2},
+        evadeTurns:0,
+        isMochizuki:true,isBoss:true,
+      });
+    }
+    if(mid==='shinohara_battle'){ // Mochizuki Chiyome ENFURECIDA (mapa 9)
+      return T({
+        ...MOCHIZUKI_RAGE,instanceId:'mochizuki_rage_boss',
+        maxHp:MOCHIZUKI_RAGE.hp,currentHp:MOCHIZUKI_RAGE.hp,
+        atkScaled:MOCHIZUKI_RAGE.attack,
+        damage:Math.round(MOCHIZUKI_RAGE.attack*(MOCHIZUKI_RAGE.attributes.strength.points/100)),
+        agility:MOCHIZUKI_RAGE.attributes.agility.points,
+        npBar:20,activeBuffs:[],activeDebuffs:[], // já começa com um pouco de barra (mais agressiva)
+        cooldowns:{curse:2,orochi:3,kougaryu:1},
         evadeTurns:0,
         isMochizuki:true,isBoss:true,
       });
@@ -7776,10 +7996,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         }
         es[i]=ar;
       } else if(e.isMochizuki){
-        // ── IA da Mochizuki Chiyome (boss do mapa 8) ──
+        // ── IA da Mochizuki Chiyome (boss do mapa 8 e da versão enfurecida do mapa 9) ──
         // Assassin de controle: trava Skill/NP do Servo, envenena e se buffa.
+        // MDEF escolhe a definição certa (enfurecida no mapa 9, normal no 8).
+        const MDEF=e.instanceId==='mochizuki_rage_boss'?MOCHIZUKI_RAGE:MOCHIZUKI;
         let mo={...es[i]};
-        mo.npBar=clamp((mo.npBar||0)+MOCHIZUKI.npRegenPerTurn,0,100);
+        mo.npBar=clamp((mo.npBar||0)+MDEF.npRegenPerTurn,0,100);
         const atkBase=mo.atkScaled*(mo.attributes.strength.points/100);
         let atkUp=0;
         for(const b of mo.activeBuffs||[]){if(b.type==='attack_up')atkUp+=b.value;}
@@ -7790,9 +8012,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         if(mo.npBar>=100){
           acted=true;
           mo.npBar=0;
-          addLog(`⚡ ${MOCHIZUKI.np.name}! As sombras convocadas escolhem seu alvo...`,'np');
-          setDialogue({text:MOCHIZUKI.dialogue.np,portrait:MOCHIZUKI.assets.battle});
-          fireNpCutin(MOCHIZUKI.assets.np,MOCHIZUKI.np.name.toUpperCase(),MOCHIZUKI.dialogue.np);
+          addLog(`⚡ ${MDEF.np.name}! As sombras convocadas escolhem seu alvo...`,'np');
+          setDialogue({text:MDEF.dialogue.np,portrait:MDEF.assets.battle});
+          fireNpCutin(MDEF.assets.np,MDEF.np.name.toUpperCase(),MDEF.dialogue.np);
           playEnemySpriteAnim(mo.instanceId,'np',2200);
           // Sorteia um servo vivo da party como alvo (representa o "alvo aleatório" do NP)
           const alive=[];
@@ -7802,61 +8024,61 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           });
           const t=alive.length?alive[Math.floor(Math.random()*alive.length)]:null;
           if(t){
-            const npDmg=Math.round(atkBase*MOCHIZUKI.np.dmgMult*(1+atkUp/100));
+            const npDmg=Math.round(atkBase*MDEF.np.dmgMult*(1+atkUp/100));
             const mit=applyDmgToServo(npDmg,t.servo);
-            const doStun=rollChance(MOCHIZUKI.np.stunChance);
+            const doStun=rollChance(MDEF.np.stunChance);
             if(t.idx===targetIdx){
               s.hp=Math.max(0,s.hp-mit);
-              s.skillLocked=Math.max(s.skillLocked||0,MOCHIZUKI.np.skillLockTurns);
-              if(doStun)s.stunned=(s.stunned||0)+MOCHIZUKI.np.stunTurns;
+              s.skillLocked=Math.max(s.skillLocked||0,MDEF.np.skillLockTurns);
+              if(doStun)s.stunned=(s.stunned||0)+MDEF.np.stunTurns;
             }
             setParty(prev=>prev.map((pm,pi)=>pi===t.idx?{...pm,
               hp:Math.max(0,pm.hp-mit),
-              skillLocked:Math.max(pm.skillLocked||0,MOCHIZUKI.np.skillLockTurns),
-              stunned:doStun?(pm.stunned||0)+MOCHIZUKI.np.stunTurns:pm.stunned,
+              skillLocked:Math.max(pm.skillLocked||0,MDEF.np.skillLockTurns),
+              stunned:doStun?(pm.stunned||0)+MDEF.np.stunTurns:pm.stunned,
             }:pm));
             const tdef=PLAYABLE_SERVOS[t.servo.id]||SDEF;
-            addLog(`${tdef.name.split(' ')[0]} foi o alvo: ${mit} de dano · Skill travada (${MOCHIZUKI.np.skillLockTurns}t)`+(doStun?' · ATORDOADO!':''),'enemy');
+            addLog(`${tdef.name.split(' ')[0]} foi o alvo: ${mit} de dano · Skill travada (${MDEF.np.skillLockTurns}t)`+(doStun?' · ATORDOADO!':''),'enemy');
             spawnFx(t.idx===activeIdx?'servo':t.servo.instanceId||'servo',String(mit),'np');
           }
-          mo.activeBuffs=[...(mo.activeBuffs||[]).filter(b=>b.id!=='mochi_np_atk'),{type:'attack_up',value:MOCHIZUKI.np.atkUp,turns:MOCHIZUKI.np.atkDur,id:'mochi_np_atk'}];
+          mo.activeBuffs=[...(mo.activeBuffs||[]).filter(b=>b.id!=='mochi_np_atk'),{type:'attack_up',value:MDEF.np.atkUp,turns:MDEF.np.atkDur,id:'mochi_np_atk'}];
         }
         // Prioridade 2: Curse (Shrine Maiden) — trava Skill+NP do ativo por 2t, +20% ATK (3t)
         else if((mo.cooldowns?.curse||0)<=0){
           acted=true;
-          const sk=MOCHIZUKI.skills.curse;
+          const sk=MDEF.skills.curse;
           mo.cooldowns={...mo.cooldowns,curse:sk.cd};
           s.skillLocked=Math.max(s.skillLocked||0,sk.skillLockTurns);
           s.npLocked=Math.max(s.npLocked||0,sk.npLockTurns);
           mo.activeBuffs=[...(mo.activeBuffs||[]).filter(b=>b.id!=='mochi_curse_atk'),{type:'attack_up',value:sk.atkUp,turns:sk.atkDur,id:'mochi_curse_atk'}];
           addLog(`👻 Curse (Shrine Maiden)! Skill e NP travados (${sk.skillLockTurns}t) · Mochizuki +${sk.atkUp}% ATK (${sk.atkDur}t)`,'enemy');
-          setDialogue({text:MOCHIZUKI.dialogue.curse,portrait:MOCHIZUKI.assets.battle});
+          setDialogue({text:MDEF.dialogue.curse,portrait:MDEF.assets.battle});
           spawnFx('servo','SKILL/NP TRAVADOS','stun');spawnFx(mo.instanceId,`+${sk.atkUp}% ATK`,'buff');
           playEnemySpriteAnim(mo.instanceId,'attack');
         }
         // Prioridade 3: Curse of the Orochi — envenena o ativo (% do HP MÁX/turno, 3t)
         else if((mo.cooldowns?.orochi||0)<=0){
           acted=true;
-          const sk=MOCHIZUKI.skills.orochi;
+          const sk=MDEF.skills.orochi;
           mo.cooldowns={...mo.cooldowns,orochi:sk.cd};
           const pDmg=Math.round(s.hpMax*sk.poisonPctMaxHp/100);
           const others=(s.activeDebuffs||[]).filter(d=>d.type!=='poison');
           s.activeDebuffs=[...others,{type:'poison',value:pDmg,turns:sk.poisonTurns}];
           addLog(`🐍 Curse of the Orochi! Veneno: ${pDmg}/turno por ${sk.poisonTurns} turnos`,'enemy');
-          setDialogue({text:MOCHIZUKI.dialogue.orochi,portrait:MOCHIZUKI.assets.battle});
+          setDialogue({text:MDEF.dialogue.orochi,portrait:MDEF.assets.battle});
           spawnFx('servo','☠️ ENVENENADO','stun');
           playEnemySpriteAnim(mo.instanceId,'attack');
         }
         // Prioridade 4: Kougaryu — pra si mesma: Evade 2t + 50% Barra + 40% ATK (2t)
         else if((mo.cooldowns?.kougaryu||0)<=0){
           acted=true;
-          const sk=MOCHIZUKI.skills.kougaryu;
+          const sk=MDEF.skills.kougaryu;
           mo.cooldowns={...mo.cooldowns,kougaryu:sk.cd};
           mo.evadeTurns=Math.max(mo.evadeTurns||0,sk.evadeTurns);
           mo.npBar=clamp(mo.npBar+sk.npGain,0,100);
           mo.activeBuffs=[...(mo.activeBuffs||[]).filter(b=>b.id!=='mochi_kou_atk'),{type:'attack_up',value:sk.atkUp,turns:sk.atkDur,id:'mochi_kou_atk'}];
           addLog(`🌀 Kougaryu! Mochizuki some das sombras: Evasão (${sk.evadeTurns}t) · +${sk.npGain}% Barra · +${sk.atkUp}% ATK (${sk.atkDur}t)`,'enemy');
-          setDialogue({text:MOCHIZUKI.dialogue.kougaryu,portrait:MOCHIZUKI.assets.battle});
+          setDialogue({text:MDEF.dialogue.kougaryu,portrait:MDEF.assets.battle});
           spawnFx(mo.instanceId,'EVASÃO','buff');
           playEnemySpriteAnim(mo.instanceId,'attack');
         }
@@ -8102,7 +8324,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       if(isBoss&&(camp.mapId||'bosque')==='bosque')newProfile=markQinDefeated();
       // Conquista por derrotar cada boss (paga QP+SQ uma vez)
       if(isBoss){
-        const achId={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja',kurikara_city:'defeat_gosanjo',shinohara:'defeat_shunoban',shinohara_city:'defeat_mochizuki'}[camp.mapId||'bosque'];
+        const achId={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja',kurikara_city:'defeat_gosanjo',shinohara:'defeat_shunoban',shinohara_city:'defeat_mochizuki',shinohara_battle:'defeat_mochizuki_rage'}[camp.mapId||'bosque'];
         if(achId){
           const res=grantAchievement(achId);
           if(res.granted){
@@ -8319,9 +8541,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             {enemies.map((e,i)=>{
               const dead=e.currentHp<=0;
               const sel=i===selectedTarget&&!dead;
-              const bossArt=e.isShunoban?(SHUNOBAN.assets.combat||SHUNOBAN.assets.battle):e.isGosanjo?(GOSANJO.assets.combat||GOSANJO.assets.battle):e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:e.isMochizuki?(MOCHIZUKI.assets.combat||MOCHIZUKI.assets.battle):QIN.assets.combat||QIN.assets.default;
+              const bossArt=e.isShunoban?(SHUNOBAN.assets.combat||SHUNOBAN.assets.battle):e.isGosanjo?(GOSANJO.assets.combat||GOSANJO.assets.battle):e.isNinja?NINJA.assets.battle:e.isArcher?(ARCHER.assets.combat||ARCHER.assets.battle):e.isNitro?NITRO.assets.battle:e.isMochizuki?((e.instanceId==='mochizuki_rage_boss'?MOCHIZUKI_RAGE:MOCHIZUKI).assets.combat||MOCHIZUKI.assets.battle):QIN.assets.combat||QIN.assets.default;
               // Sprites GIF animados: qualquer boss com `sprites.idle` cadastrado anima; os demais seguem no busto estático.
-              const bossDefLookup=e.isShunoban?SHUNOBAN:e.isGosanjo?GOSANJO:e.isNinja?NINJA:e.isArcher?ARCHER:e.isNitro?NITRO:e.isMochizuki?MOCHIZUKI:e.isBoss?QIN:null;
+              const bossDefLookup=e.isShunoban?SHUNOBAN:e.isGosanjo?GOSANJO:e.isNinja?NINJA:e.isArcher?ARCHER:e.isNitro?NITRO:e.isMochizuki?(e.instanceId==='mochizuki_rage_boss'?MOCHIZUKI_RAGE:MOCHIZUKI):e.isBoss?QIN:null;
               const bossDef=(bossDefLookup&&bossDefLookup.sprites&&bossDefLookup.sprites.idle)?bossDefLookup:null;
               const hasBossSprites=!!(bossDef&&bossDef.sprites&&bossDef.sprites.idle);
               const eAnim=enemySpriteAnim[e.instanceId];
@@ -8729,6 +8951,11 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap8&&nextPhase===30){setCamp(advanced);setStage('map8F30');return;}
     if(isMap8&&nextPhase===33){setCamp(advanced);setStage('map8F33');return;}
     if(isMap8&&nextPhase===34){setCamp(advanced);setStage('map8F34');return;}
+    // Mapa 9 (Batalha de Shinohara): fases fixas 1,3,5,6,8,9 (roteiros a definir).
+    const isMap9=(baseCamp.mapId||'bosque')==='shinohara_battle';
+    if(isMap9&&[1,3,5,6,8,9].includes(nextPhase)){
+      setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map9Fixed');return;
+    }
     setCamp(advanced);setStage('map');
   }
 
@@ -8908,6 +9135,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mapId==='shinohara'){setStage('map7ShunobanWin');return;}
     // Mapa 8 (Mochizuki Chiyome): mostra o diálogo de vitória antes de encerrar a jornada.
     if(mapId==='shinohara_city'){setStage('map8MochizukiWin');return;}
+    // Mapa 9 (Mochizuki Enfurecida): último mapa por ora — encerra a jornada.
+    if(mapId==='shinohara_battle'){finishCampaign(updatedCamp,true);return;}
     finishCampaign(updatedCamp,true);
   }
 
@@ -9003,8 +9232,26 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     setStage('map7Map8Transition');
   }
 
-  // Após o diálogo de vitória contra a Mochizuki Chiyome: fim da jornada por ora (Mapa 8 é o último).
+  // Após o diálogo de vitória contra a Mochizuki Chiyome (mapa 8): a kunoichi se ergue
+  // enfurecida — segue direto para a Batalha de Shinohara (mapa 9).
   function afterMochizukiWin(){
+    const prev=camp.party||[camp.servo];
+    const findState=id=>prev.find(m=>m.id===id);
+    const next=buildCampForMap(IBARAKI,'shinohara_battle',null,false,[IBARAKI,SITH_PLAYABLE]);
+    next.party=next.party.map(m=>{
+      const old=findState(m.id);
+      return old?{...m,hp:old.hp,npBar:old.npBar}:m;
+    });
+    next.servo=next.party[0];
+    next.sithJoined=true;
+    next.goldenRule=camp.goldenRule||0;
+    next.innUnlocked=true;
+    setCamp(next);
+    setStage('map8Map9Transition');
+  }
+
+  // Após o diálogo de vitória contra a Mochizuki ENFURECIDA (mapa 9): fim da jornada por ora.
+  function afterMochizukiRageWin(){
     finishCampaign(camp,true);
   }
 
@@ -9078,6 +9325,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(mid==='kurikara_city'){setStage('map5GosanjoLose');return;} // Go-Sanjo: diálogo de derrota (Shuten)
     if(mid==='shinohara'){setStage('map7ShunobanLose');return;} // Shunoban: diálogo de derrota (Shuten)
     if(mid==='shinohara_city'){setStage('map8MochizukiLose');return;} // Mochizuki: diálogo de derrota (Shuten)
+    if(mid==='shinohara_battle'){setStage('result');return;} // Mochizuki Enfurecida: derrota vai ao resultado
     setStage('bossLoseStory');
   }
 
@@ -9134,6 +9382,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(camp.mapId==='kurikara_city')return <SplashScreen art={GOSANJO.assets.encounter} title="GO-SANJO FALSO: SOMBRA" sub="A Sombra que Veste a Face de um Imperador" onFinish={()=>setStage('boss')}/>;
     if(camp.mapId==='shinohara')return <SplashScreen art={SHUNOBAN.assets.encounter} title="SHUNOBAN, O CICLOPE VERMELHO" sub="O Olho que Tudo Vê — Estrada de Shinohara" onFinish={()=>setStage('boss')}/>;
     if(camp.mapId==='shinohara_city')return <SplashScreen art="assets/servos/mochizuki/mochizuki_full.jpg" title="MOCHIZUKI CHIYOME" sub="Assassin — A Kunoichi das Sombras de Shinohara" onFinish={()=>setStage('boss')}/>;
+    if(camp.mapId==='shinohara_battle')return <SplashScreen art="assets/servos/mochizuki/mochizuki_rage.png" title="MOCHIZUKI ENFURECIDA" sub="Assassin — A Serpente Desperta de Orochi" onFinish={()=>setStage('boss')}/>;
     return <SplashScreen art={NITRO.assets.encounter} title="⚙️ NITRO-TYPE" sub="Samurai Mecanizado — Ameaça Anacrônica" onFinish={()=>setStage('boss')}/>;
   }
   // Splash da Archer (após o diálogo pré-boss)
@@ -9297,6 +9546,34 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
           [ Cena de chegada a ser escrita ]
         </p>
         <button className="btn btn-red btn-full" style={{marginTop:20}} onClick={()=>setStage('map')}>⚔️ Entrar em Shinohara</button>
+      </div>
+    </div>
+  );
+  if(stage==='map8Map9Transition')return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2.5rem',marginBottom:12}}>🐍</div>
+        <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,marginBottom:8}}>BATALHA DE SHINOHARA</h2>
+        <p style={{color:'var(--parchment)',fontSize:'.85rem',marginBottom:6}}>
+          O Selo de Asahina brilha em vermelho e a Assassin se ergue como um cadáver, os olhos sangrando. Uma serpente branca colossal desliza de sua sombra. Não há mais kunoichi — só a fúria de Orochi.
+        </p>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.75rem',fontStyle:'italic',marginTop:14}}>
+          [ Cena de abertura a ser escrita ]
+        </p>
+        <button className="btn btn-red btn-full" style={{marginTop:20}} onClick={()=>setStage('map')}>⚔️ Enfrentar a serpente</button>
+      </div>
+    </div>
+  );
+  if(stage==='map9Fixed')return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2rem',marginBottom:10}}>📜</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>BATALHA DE SHINOHARA — FASE {camp.pendingFixedPhase}</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',fontStyle:'italic',marginBottom:16}}>
+          [ Cena fixa a ser escrita ]<br/>
+          Esta é uma fase fixa de história do Mapa 9. O roteiro será adicionado aqui depois.
+        </p>
+        <button className="btn btn-red btn-full" onClick={()=>setStage('map')}>Prosseguir →</button>
       </div>
     </div>
   );
