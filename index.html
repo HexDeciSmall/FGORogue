@@ -1620,6 +1620,13 @@ const DEON_PLAYABLE={
     lose:'assets/servos/deon/deon_pog.png',
     encounter:'assets/servos/deon/deon_encounter.jpg',
   },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) ──
+  sprites:{
+    idle:'assets/servos/deon/deon_espera.gif',
+    attack:'assets/servos/deon/deon_ataque.gif',
+    np:'assets/servos/deon/deon_np.gif',
+    flip:true,
+  },
 };
 PLAYABLE_SERVOS.deon_saber=DEON_PLAYABLE;
 
@@ -1877,6 +1884,13 @@ GACHA_SERVOS.kiara_summer={
     np:'assets/servos/kiara/kiara_combat.png',
     full:'assets/servos/kiara/kiara_full.png',
   },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) ──
+  sprites:{
+    idle:'assets/servos/kiara/kiara_espera.gif',
+    attack:'assets/servos/kiara/kiara_ataque.gif',
+    np:'assets/servos/kiara/kiara_np.gif',
+    flip:true,
+  },
 };
 // Registra os servos do gacha no motor de combate (para skills/NP funcionarem)
 PLAYABLE_SERVOS.kiara_summer=GACHA_SERVOS.kiara_summer;
@@ -1947,6 +1961,13 @@ GACHA_SERVOS.skadi_summer={
     combat:'assets/servos/skadi/skadi_combat.png',
     np:'assets/servos/skadi/skadi_combat.png',
     full:'assets/servos/skadi/skadi_full.png',
+  },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) ──
+  sprites:{
+    idle:'assets/servos/skadi/skadi_espera.gif',
+    attack:'assets/servos/skadi/skadi_ataque.gif',
+    np:'assets/servos/skadi/skadi_np.gif',
+    flip:true,
   },
 };
 PLAYABLE_SERVOS.skadi_summer=GACHA_SERVOS.skadi_summer;
@@ -2021,6 +2042,13 @@ GACHA_SERVOS.okita_saber={
     np:'assets/servos/okita/okita_combat.png',
     full:'assets/servos/okita/okita_full.png',
   },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) ──
+  sprites:{
+    idle:'assets/servos/okita/okita_espera.gif',
+    attack:'assets/servos/okita/okita_ataque.gif',
+    np:'assets/servos/okita/okita_np.gif',
+    flip:true,
+  },
 };
 PLAYABLE_SERVOS.okita_saber=GACHA_SERVOS.okita_saber;
 
@@ -2090,6 +2118,13 @@ GACHA_SERVOS.okita_alter={
     combat:'assets/servos/okita_alter/okita_alter_combat.png',
     np:'assets/servos/okita_alter/okita_alter_combat.png',
     full:'assets/servos/okita_alter/okita_alter_full.png',
+  },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) ──
+  sprites:{
+    idle:'assets/servos/okita_alter/majin_espera.gif',
+    attack:'assets/servos/okita_alter/majin_ataque.gif',
+    np:'assets/servos/okita_alter/majin_np.gif',
+    flip:true,
   },
 };
 PLAYABLE_SERVOS.okita_alter=GACHA_SERVOS.okita_alter;
@@ -3083,7 +3118,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.69</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.70</p>
       </div>
     </div>
   );
