@@ -2450,6 +2450,24 @@ const ACHIEVEMENTS=[
   {id:'magus_40',name:'Grande Magus',desc:'Alcance o Nível de Mestre 40.',qp:50000,sq:70,icon:'🔱',challenge:true},
   {id:'slayer_500',name:'Ceifador',desc:'Derrote 500 inimigos no total.',qp:35000,sq:45,icon:'☠️',challenge:true},
   {id:'roster_lv20',name:'Treinador de Espíritos',desc:'Tenha 3 Servos no nível 20 ou mais.',qp:42000,sq:55,icon:'📈',challenge:true},
+
+  // ── DESAFIOS DAS GRAÇAS DO TRONO ──
+  {id:'graca_first',name:'Primeira Bênção',desc:'Receba sua primeira Graça do Trono.',qp:8000,sq:12,icon:'🏛️',challenge:true},
+  {id:'graca_full',name:'Trono Completo',desc:'Preencha os 5 slots de Graça numa mesma jornada.',qp:30000,sq:40,icon:'✴️',challenge:true},
+  {id:'graca_lv3',name:'Bênção Suprema',desc:'Leve uma Graça ao nível III.',qp:22000,sq:30,icon:'🔺',challenge:true},
+  {id:'graca_all_lv3',name:'Favorito do Trono',desc:'Tenha os 5 slots preenchidos e todos no nível III.',qp:70000,sq:90,icon:'👑',challenge:true},
+  {id:'graca_pantheon',name:'Panteão',desc:'Tenha 5 Graças de 5 patronos diferentes ao mesmo tempo.',qp:34000,sq:44,icon:'🌌',challenge:true},
+  {id:'graca_devotion',name:'Devoção',desc:'Tenha 3 Graças do mesmo patrono ao mesmo tempo.',qp:32000,sq:42,icon:'🙏',challenge:true},
+  {id:'graca_boss_full',name:'Encarnação do Trono',desc:'Vença um boss com os 5 slots de Graça preenchidos.',qp:45000,sq:58,icon:'⚜️',challenge:true},
+  {id:'graca_none',name:'Recusa o Trono',desc:'Complete um mapa da Campanha sem aceitar nenhuma Graça.',qp:40000,sq:52,icon:'🚷',challenge:true},
+
+  // ── DUOS TEMÁTICOS (referências ao lore de FGO) ──
+  {id:'duo_orochi',name:'Herdeiros de Orochi',desc:'Combine Graças de Shuten Douji e Ibuki-Douji.',qp:26000,sq:36,icon:'🐍',challenge:true},
+  {id:'duo_minamoto',name:'Estirpe Minamoto',desc:'Combine Graças de Minamoto no Raikou e Ushiwakamaru.',qp:26000,sq:36,icon:'🎋',challenge:true},
+  {id:'duo_shitenno',name:'Reis Celestiais',desc:'Combine Graças de Minamoto no Raikou e Sakata Kintoki.',qp:26000,sq:36,icon:'⛩️',challenge:true},
+  {id:'duo_rivals',name:'Rivais Eternos',desc:'Combine Graças de EMIYA e Gilgamesh.',qp:28000,sq:38,icon:'⚔️',challenge:true},
+  {id:'duo_martyrs',name:'Mártires',desc:"Combine Graças de Jeanne d'Arc e Karna.",qp:28000,sq:38,icon:'🕯️',challenge:true},
+  {id:'duo_magi',name:'Conselho dos Magos',desc:'Combine Graças de Scáthach e Merlin.',qp:28000,sq:38,icon:'📖',challenge:true},
 ];
 
 // ── Avaliação de conquistas de DESAFIO ──────────────────
@@ -3065,7 +3083,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.67</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.69</p>
       </div>
     </div>
   );
@@ -3535,11 +3553,103 @@ const CODEX=[
 // ══════════════════════════════════════════════════════
 // ÁLBUM / INFORMAÇÕES
 // ══════════════════════════════════════════════════════
+// ── Aba "Patronos" do Codex: os Espíritos Heroicos do Trono e suas Graças ──
+function PatronosView({profile,sel,setSel}){
+  const slotInfo=Object.fromEntries(GRACA_SLOTS.map(([k,l,i])=>[k,{label:l,icon:i}]));
+  const porPatrono=id=>GRACAS.filter(g=>g.patrono===id);
+  const ordem=Object.keys(PATRONOS);
+
+  if(sel&&PATRONOS[sel]){
+    const pat=PATRONOS[sel];
+    const lista=porPatrono(sel);
+    return(
+      <div>
+        <div style={{display:'flex',gap:14,alignItems:'center',marginBottom:6}}>
+          <div style={{width:70,height:70,display:'flex',alignItems:'center',justifyContent:'center',
+            fontSize:'2.4rem',borderRadius:8,border:`1px solid ${pat.color}66`,background:`${pat.color}14`}}>
+            {pat.icon}
+          </div>
+          <div style={{flex:1}}>
+            <div className="cinzel" style={{color:pat.color,fontSize:'1.15rem',letterSpacing:1}}>{pat.name}</div>
+            <div style={{fontSize:'.78rem',color:'var(--parchment-dark)',marginTop:2}}>
+              Patrono do Trono · {pat.tag}
+            </div>
+            <div style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginTop:2}}>
+              {lista.length} {lista.length===1?'Graça':'Graças'}
+            </div>
+          </div>
+        </div>
+        <div className="divider"><span className="divider-text">GRAÇAS</span></div>
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {lista.map(g=>{
+            const s=slotInfo[g.slot]||{label:g.slot,icon:'✦'};
+            return(
+              <div key={g.id} style={{padding:'10px 12px',borderRadius:6,
+                border:`1px solid ${pat.color}44`,background:'rgba(0,0,0,.25)'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10}}>
+                  <SkillIcon nome={g.name} emoji={pat.icon} size={34}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="cinzel" style={{color:pat.color,fontSize:'.88rem',letterSpacing:.5}}>{g.name}</div>
+                    <div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>
+                      Slot: {s.icon} {s.label}
+                    </div>
+                  </div>
+                </div>
+                <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:4}}>
+                  {[1,2,3].map(lv=>(
+                    <div key={lv} style={{display:'flex',gap:8,alignItems:'flex-start',fontSize:'.74rem'}}>
+                      <span style={{color:pat.color,fontFamily:'Cinzel,serif',minWidth:22,
+                        border:`1px solid ${pat.color}55`,borderRadius:3,textAlign:'center',
+                        lineHeight:'16px',fontSize:'.6rem'}}>{ROMAN[lv-1]}</span>
+                      <span style={{color:'var(--parchment)',lineHeight:1.5}}>{g.desc(g.v(lv))}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <button className="btn btn-full" style={{marginTop:16}} onClick={()=>setSel(null)}>← Voltar aos Patronos</button>
+      </div>
+    );
+  }
+
+  return(
+    <div>
+      <p style={{fontSize:'.76rem',color:'var(--parchment-dark)',lineHeight:1.6,marginBottom:12,fontStyle:'italic'}}>
+        Espíritos Heroicos que observam do Trono dos Heróis. Ao vencer um encontro, um deles
+        pode estender sua bênção — cada Graça ocupa um dos {GRACA_SLOTS.length} slots e pode ser
+        reforçada até o nível III ao ser recebida novamente.
+      </p>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {ordem.map(id=>{
+          const p=PATRONOS[id];
+          const qtd=porPatrono(id).length;
+          return(
+            <button key={id} onClick={()=>setSel(id)}
+              style={{display:'flex',alignItems:'center',gap:10,textAlign:'left',cursor:'pointer',
+                padding:'10px 12px',borderRadius:6,width:'100%',
+                background:`${p.color}10`,border:`1px solid ${p.color}44`,transition:'all .18s'}}
+              onMouseEnter={e=>{e.currentTarget.style.background=`${p.color}22`;e.currentTarget.style.borderColor=p.color;}}
+              onMouseLeave={e=>{e.currentTarget.style.background=`${p.color}10`;e.currentTarget.style.borderColor=`${p.color}44`;}}>
+              <span style={{fontSize:'1.6rem',flexShrink:0}}>{p.icon}</span>
+              <span style={{flex:1,minWidth:0}}>
+                <span className="cinzel" style={{color:p.color,fontSize:'.82rem',display:'block'}}>{p.name}</span>
+                <span style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>{p.tag} · {qtd} {qtd===1?'Graça':'Graças'}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function CodexScreen({onNavigate,profile}){
   const[cat,setCat]=useState('servo');
   const[sel,setSel]=useState(null);
-  const cats=[['servo','Servos'],['mestre','Mestres'],['npc','NPCs']];
-  const list=CODEX.filter(c=>c.cat===cat);
+  const cats=[['servo','Servos'],['mestre','Mestres'],['npc','NPCs'],['patrono','Patronos']];
+  const list=cat==='patrono'?[]:CODEX.filter(c=>c.cat===cat);
 
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
@@ -3547,10 +3657,10 @@ function CodexScreen({onNavigate,profile}){
         <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:12}}>📖 INFORMAÇÕES</h2>
 
         {/* Abas de categoria */}
-        <div style={{display:'flex',gap:8,marginBottom:16}}>
+        <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
           {cats.map(([id,label])=>(
             <button key={id} onClick={()=>{setCat(id);setSel(null);}}
-              className="btn btn-sm" style={{flex:1,
+              className="btn btn-sm" style={{flex:'1 1 40%',minWidth:110,
                 background:cat===id?'var(--gold-dim)':'rgba(0,0,0,0.3)',
                 color:cat===id?'#1a1005':'var(--parchment-dark)'}}>
               {label}
@@ -3558,7 +3668,9 @@ function CodexScreen({onNavigate,profile}){
           ))}
         </div>
 
-        {sel?(
+        {cat==='patrono'?(
+          <PatronosView profile={profile} sel={sel} setSel={setSel}/>
+        ):sel?(
           // Detalhe do personagem selecionado
           (()=>{
             const c=CODEX.find(x=>x.id===sel);
@@ -6624,6 +6736,33 @@ function rollGracaOffer(camp,count=3){
 }
 const ROMAN=['I','II','III'];
 
+// Avalia a BUILD de Graças atual e devolve os ids de conquista alcançados.
+// Chamada sempre que uma Graça é escolhida (a build muda nesse momento).
+function checkGracaAchievements(gracas){
+  const ids=[];
+  const held=Object.values(gracas||{}).filter(Boolean);
+  if(!held.length)return ids;
+  ids.push('graca_first');
+  const defs=held.map(h=>({def:GRACA_BY_ID[h.id],lvl:h.lvl||1})).filter(x=>x.def);
+  const pats=defs.map(x=>x.def.patrono);
+  const uniq=[...new Set(pats)];
+  if(held.length>=GRACA_SLOTS.length)ids.push('graca_full');
+  if(defs.some(x=>x.lvl>=3))ids.push('graca_lv3');
+  if(held.length>=GRACA_SLOTS.length&&defs.every(x=>x.lvl>=3))ids.push('graca_all_lv3');
+  if(uniq.length>=5)ids.push('graca_pantheon');
+  const cont={};pats.forEach(p=>{cont[p]=(cont[p]||0)+1;});
+  if(Object.values(cont).some(c=>c>=3))ids.push('graca_devotion');
+  // Duos temáticos (lore de FGO)
+  const tem=(a,b)=>uniq.includes(a)&&uniq.includes(b);
+  if(tem('shuten','ibuki'))ids.push('duo_orochi');       // ambos ligados ao Orochi/Monte Ibuki
+  if(tem('raikou','ushiwaka'))ids.push('duo_minamoto');  // ambos do Clã Minamoto
+  if(tem('raikou','kintoki'))ids.push('duo_shitenno');   // Kintoki é um dos Reis Celestiais de Raikou
+  if(tem('emiya','gilgamesh'))ids.push('duo_rivals');    // a rivalidade clássica
+  if(tem('jeanne','karna'))ids.push('duo_martyrs');      // ambos mártires por doação
+  if(tem('scathach','merlin'))ids.push('duo_magi');      // runas e magia
+  return ids;
+}
+
 // ══════════════════════════════════════════════════════
 // ARTES DE SKILLS / NP / PERKS / GRAÇAS
 // ══════════════════════════════════════════════════════
@@ -9267,6 +9406,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         if(turn<=3)chIds.push('blitz_boss');
         if(!chNpUsed.current)chIds.push('no_np_boss');
         if(!chSkillUsed.current)chIds.push('no_skill_boss');
+        // Encarnação do Trono: derrotar um boss com os 5 slots de Graça preenchidos
+        if(Object.values(camp.gracas||{}).filter(Boolean).length>=GRACA_SLOTS.length)chIds.push('graca_boss_full');
         if(camp.towerMode){
           const ids=finalParty.map(m=>m.id);
           if(ids.length===1)chIds.push('tower_solo');
@@ -9629,6 +9770,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   const[campResult,setCampResult]=useState(null);
   // Oferta de Graça pendente: {offer:[{id,lvl}], camp} — mostrada após vencer um encontro
   const[gracaOffer,setGracaOffer]=useState(null);
+  // Conquistas de Graça recém-obtidas: {camp, won:[def]} — celebradas antes de avançar
+  const[gracaWon,setGracaWon]=useState(null);
   const[notif,setNotif]=useState('');
   const scriptedFightRef=useRef(null); // guarda inimigos de combates roteirizados (ex: Fase 12)
 
@@ -9911,9 +10054,24 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(choice){
       const g=GRACA_BY_ID[choice.id];
       if(g)next={...next,gracas:{...(next.gracas||{}),[g.slot]:{id:choice.id,lvl:choice.lvl}}};
+      // A build mudou: avalia as conquistas de combinação/coleção de Graças.
+      const r=grantMany(checkGracaAchievements(next.gracas));
+      if(r.won.length){
+        setProfile(loadProfile());
+        // Segura na tela para celebrar antes de avançar.
+        setGracaOffer(null);
+        setGracaWon({camp:next,won:r.won});
+        return;
+      }
     }
     setGracaOffer(null);
     goToPhase(next,next.phase+1);
+  }
+
+  // Fecha a celebração de conquista e segue a jornada.
+  function closeGracaWon(){
+    const p=gracaWon;setGracaWon(null);
+    if(p)goToPhase(p.camp,p.camp.phase+1); else setStage('map');
   }
 
   // Fim da sequência da Fase 2: recupera 50% HP + Bond, mostra a vila, vai ao mapa
@@ -10042,6 +10200,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
       const runIds=[];
       if(!updatedCamp.anyFell)runIds.push('run_untouched');
       if(!(updatedCamp.teaBuys||0))runIds.push('run_no_tea');
+      // Recusa o Trono: terminou o mapa sem aceitar nenhuma Graça
+      if(!Object.values(updatedCamp.gracas||{}).filter(Boolean).length)runIds.push('graca_none');
       const r=grantMany(runIds);
       if(r.won.length)setProfile(loadProfile());
     }
@@ -10659,6 +10819,35 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     </div>
   );
   if(stage==='bossLoseStory')return <StoryScreen profile={profile} script={STORY_BOSS_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
+  if(stage==='gracaOffer'&&gracaWon)return(
+    <div className="screen">
+      <div className="panel" style={{maxWidth:520,textAlign:'center'}}>
+        <div style={{fontSize:'2.4rem',marginBottom:6}}>🏆</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:4}}>
+          {gracaWon.won.length>1?'CONQUISTAS DESBLOQUEADAS':'CONQUISTA DESBLOQUEADA'}
+        </h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.76rem',fontStyle:'italic',marginBottom:14}}>
+          Sua build chamou a atenção do Trono.
+        </p>
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {gracaWon.won.map(d=>(
+            <div key={d.id} style={{display:'flex',alignItems:'center',gap:12,textAlign:'left',
+              padding:'12px 14px',borderRadius:6,background:'rgba(192,57,43,.10)',border:'1px solid var(--edge)'}}>
+              <div style={{fontSize:'1.8rem'}}>{d.icon}</div>
+              <div style={{flex:1}}>
+                <div className="cinzel" style={{color:'var(--gold)',fontSize:'.9rem',letterSpacing:1}}>{d.name}</div>
+                <div style={{fontSize:'.74rem',color:'var(--parchment-dark)',marginTop:2}}>{d.desc}</div>
+                <div style={{fontSize:'.7rem',color:'#4fc3f7',marginTop:4}}>
+                  +{d.qp.toLocaleString()} QP · +{d.sq} SQ
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button className="btn btn-red btn-full" style={{marginTop:16}} onClick={closeGracaWon}>Continuar →</button>
+      </div>
+    </div>
+  );
   if(stage==='gracaOffer'&&gracaOffer)return <GracaOfferScreen camp={gracaOffer.camp} offer={gracaOffer.offer} onPick={pickGraca}/>;
   if(stage==='map')return <MapScreen camp={camp} onChoosePath={choosePath} onNavigate={onNavigate} onGiveUp={onGiveUp} profile={profile} setProfile={setProfile} setCamp={setCamp}/>;
   if(stage==='combat')return <CombatScreen camp={camp} isBoss={false} onWin={onCombatWin} onLose={onCombatLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
