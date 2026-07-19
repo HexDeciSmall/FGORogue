@@ -3118,7 +3118,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.70</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.71</p>
       </div>
     </div>
   );
@@ -7005,6 +7005,315 @@ const TEA_HOUSE_ITEMS=[
    desc:'+50% de Bond e XP (de Servo e Mestre) pelo resto da run.'},
 ];
 
+// ══════════════════════════════════════════════════════
+// SALAS (prévia de caminho) — estilo roguelike
+// ══════════════════════════════════════════════════════
+// Cada caminho do mapa mostra ANTES o que há nele, tornando a escolha real.
+const SALAS={
+  combat:  {icon:'⚔️',label:'Combate',  cor:'#e0806a'},
+  event:   {icon:'❓',label:'Evento',   cor:'#9fb0d8'},
+  elite:   {icon:'💀',label:'Elite',    cor:'#e05a5a'},
+  treasure:{icon:'💰',label:'Tesouro',  cor:'#e6c34c'},
+  shrine:  {icon:'🏛️',label:'Santuário',cor:'#c98fd0'},
+};
+// PRNG simples e determinístico (mesma fase → mesmas salas).
+function seedRand(n){const x=Math.sin(n)*10000;return x-Math.floor(x);}
+// Sorteia as 3 salas da fase atual. Garante ao menos 1 combate para manter o ritmo.
+function rollSalas(camp){
+  const base=(camp.runSeed||1)*7919+(camp.phase||1)*131;
+  const fase=camp.phase||1;
+  const pool=[];
+  const push=(t,n)=>{for(let i=0;i<n;i++)pool.push(t);};
+  push('combat',10);push('event',5);push('treasure',3);push('shrine',2);
+  if(fase>=4)push('elite',2); // Elite só depois das primeiras fases
+  const out=[];
+  for(let i=0;i<3;i++){
+    const r=seedRand(base+i*37.7);
+    out.push(pool[Math.floor(r*pool.length)]);
+  }
+  if(!out.includes('combat'))out[Math.floor(seedRand(base+91)*3)]='combat';
+  return out;
+}
+
+// ══════════════════════════════════════════════════════
+// EVENTOS COM ESCOLHA
+// ══════════════════════════════════════════════════════
+// Cada evento tem opções com custo/risco real. `cond` filtra por contexto.
+// A opção devolve {msg, camp?, then?} — `then` pode encaminhar para 'graca' ou 'combat'.
+function _curarGrupo(camp,pct){
+  const party=(camp.party||[camp.servo]).map(m=>m.defeated?m:
+    {...m,hp:clamp(m.hp+Math.round(m.hpMax*pct/100),0,m.hpMax)});
+  return{...camp,party,servo:party[0]};
+}
+function _danoGrupo(camp,pct){
+  const party=(camp.party||[camp.servo]).map(m=>m.defeated?m:
+    {...m,hp:Math.max(1,m.hp-Math.round(m.hpMax*pct/100))});
+  return{...camp,party,servo:party[0]};
+}
+function _qp(camp,valor){
+  const pe=getActivePerkEffects();
+  const g=Math.round(valor*(1+(pe.sqQpBonusPercent||0)/100));
+  depositQP(g);
+  return{camp:{...camp,qpEarned:(camp.qpEarned||0)+g},g};
+}
+const EVENTOS=[
+  {id:'altar',titulo:'⛩️ Altar Abandonado',
+   desc:'Um altar coberto de musgo se ergue entre as árvores. Ainda há incenso queimado na base — alguém esteve aqui recentemente.',
+   opts:[
+     {label:'Rezar',hint:'Cura 30% do HP do grupo',
+      run:c=>({camp:_curarGrupo(c,30),msg:'Uma calma antiga percorre o grupo. Todos recuperam 30% do HP.'})},
+     {label:'Profanar o altar',hint:'+30% ATK por 3 encontros · −20% HP máximo pela jornada',
+      run:c=>{
+        const party=(c.party||[c.servo]).map(m=>{
+          const novoMax=Math.max(1,Math.round(m.hpMax*0.8));
+          return{...m,hpMax:novoMax,hp:Math.min(m.hp,novoMax)};
+        });
+        const cb={...(c.chaBuffs||{}),atkUp:{value:30,encounters:3}};
+        return{camp:{...c,party,servo:party[0],chaBuffs:cb},
+          msg:'Você arranca as oferendas. Um poder amargo se espalha — mas algo foi permanentemente perdido.'};
+      }},
+     {label:'Seguir em frente',hint:'Nada acontece',
+      run:c=>({camp:c,msg:'Vocês deixam o altar intacto.'})},
+   ]},
+
+  {id:'fonte',titulo:'🌊 Fonte de Mana Corrompida',
+   desc:'A água brilha em azul-escuro, densa de mana. Mas há um cheiro adocicado de podridão vindo do fundo.',
+   opts:[
+     {label:'Beber da fonte',hint:'Começa os próximos 3 combates com 50% de NP · envenenado no próximo',
+      run:c=>{
+        const cb={...(c.chaBuffs||{}),fonteNp:{value:50,encounters:3},fontePoison:true};
+        return{camp:{...c,chaBuffs:cb},msg:'A mana inunda seus circuitos — junto com algo que não deveria estar ali.'};
+      }},
+     {label:'Purificar (−5 SQ)',hint:'Cura 40% do HP do grupo',
+      run:c=>{
+        const f=loadProfile();
+        if((f.sq||0)<5)return{camp:c,msg:'Saint Quartz insuficiente. Vocês seguem em frente.',falhou:true};
+        saveProfile({...f,sq:f.sq-5});
+        return{camp:_curarGrupo(c,40),msg:'A água clareia. O grupo se recupera profundamente. (−5 SQ)'};
+      }},
+     {label:'Ignorar',hint:'Nada acontece',run:c=>({camp:c,msg:'Vocês contornam a fonte.'})},
+   ]},
+
+  {id:'tesouro_selado',titulo:'📦 Tesouro Selado',
+   desc:'Um baú lacrado com talismãs. Os selos estão rasgados pela metade — ou alguém tentou abrir, ou algo tentou sair.',
+   opts:[
+     {label:'Arrombar',hint:'60% Graça · 40% armadilha (−25% HP)',
+      run:c=>{
+        if(Math.random()<0.60)return{camp:c,msg:'O baú cede e uma luz do Trono escapa de dentro!',then:'graca'};
+        return{camp:_danoGrupo(c,25),msg:'Os talismãs explodem! O grupo é ferido pela armadilha.'};
+      }},
+     {label:'Deixar quieto',hint:'Nada acontece',run:c=>({camp:c,msg:'Melhor não mexer.'})},
+   ]},
+
+  {id:'oraculo',titulo:'🏛️ Oráculo do Trono',
+   desc:'Uma voz sem corpo ecoa: "Posso remodelar o que já lhe foi dado — mas toda troca cobra seu preço."',
+   cond:c=>Object.values(c.gracas||{}).filter(Boolean).length>0,
+   opts:[
+     {label:'Consultar',hint:'Troca uma Graça aleatória por outra do mesmo slot',
+      run:c=>{
+        const held=c.gracas||{};
+        const slots=Object.keys(held).filter(k=>held[k]);
+        const slot=slots[Math.floor(Math.random()*slots.length)];
+        const alt=GRACAS.filter(g=>g.slot===slot&&g.id!==held[slot].id);
+        if(!alt.length)return{camp:c,msg:'O Oráculo silencia. Não há outro caminho para esse dom.'};
+        const nova=alt[Math.floor(Math.random()*alt.length)];
+        const antiga=GRACA_BY_ID[held[slot].id];
+        return{camp:{...c,gracas:{...held,[slot]:{id:nova.id,lvl:held[slot].lvl}}},
+          msg:`${antiga.name} se dissolve e renasce como ${nova.name}.`};
+      }},
+     {label:'Sacrificar uma Graça',hint:'Destrói uma Graça para subir outra de nível',
+      run:c=>{
+        const held={...(c.gracas||{})};
+        const slots=Object.keys(held).filter(k=>held[k]);
+        if(slots.length<2)return{camp:c,msg:'O Oráculo recusa: é preciso ter ao menos duas Graças.',falhou:true};
+        const alvo=slots.reduce((a,b)=>(held[a].lvl<=held[b].lvl?a:b));
+        const resto=slots.filter(s=>s!==alvo);
+        const ganha=resto[Math.floor(Math.random()*resto.length)];
+        if((held[ganha].lvl||1)>=3)return{camp:c,msg:'O Oráculo recusa: aquela Graça já atingiu seu ápice.',falhou:true};
+        const perdida=GRACA_BY_ID[held[alvo].id],reforcada=GRACA_BY_ID[held[ganha].id];
+        held[ganha]={...held[ganha],lvl:(held[ganha].lvl||1)+1};
+        delete held[alvo];
+        return{camp:{...c,gracas:held},
+          msg:`${perdida.name} é consumida. ${reforcada.name} ascende ao nível ${ROMAN[held[ganha].lvl-1]}.`};
+      }},
+     {label:'Recusar',hint:'Nada acontece',run:c=>({camp:c,msg:'Vocês seguem sem ouvir o Oráculo.'})},
+   ]},
+
+  {id:'maldicao',titulo:'🕯️ Encruzilhada Amaldiçoada',
+   desc:'Velas negras marcam o cruzamento. Uma presença oferece poder — do tipo que nunca vem de graça.',
+   opts:[
+     {label:'Aceitar a maldição',hint:'−15% de defesa pela jornada · Graça direto no nível III',
+      run:c=>{
+        const cb={...(c.chaBuffs||{}),maldicaoDef:15};
+        return{camp:{...c,chaBuffs:cb,gracaBonusLvl:3},
+          msg:'A maldição se enraíza na sua carne — e o Trono responde ao chamado.',then:'graca'};
+      }},
+     {label:'Recusar',hint:'Nada acontece',run:c=>({camp:c,msg:'Vocês apagam as velas e seguem.'})},
+   ]},
+
+  {id:'banquete',titulo:'🍶 Banquete Oni',
+   desc:'Barris de saquê abandonados, ainda cheios. A Ibaraki já está olhando com um brilho perigoso nos olhos.',
+   cond:c=>(c.party||[c.servo]).some(m=>m.id==='ibaraki_douji'),
+   opts:[
+     {label:'Beber tudo',hint:'Cura 50% do HP · perde o 1º turno do próximo combate',
+      run:c=>{
+        const cb={...(c.chaBuffs||{}),embriagado:true};
+        return{camp:{..._curarGrupo(c,50),chaBuffs:cb},
+          msg:'O banquete é devastador. O grupo se recupera — mas ninguém vai acordar cedo.'};
+      }},
+     {label:'Recusar educadamente',hint:'+120 Bond',
+      run:c=>{
+        const b=addBond(c.servo.id,120);
+        return{camp:{...c,bond:b,bondEarned:(c.bondEarned||0)+120,npLevel:bondToNP(b.level)},
+          msg:'A Ibaraki reclama por horas. Mas alguma coisa entre vocês se firma. (+120 Bond)'};
+      }},
+   ]},
+
+  {id:'espirito',titulo:'⚔️ Espírito Errante',
+   desc:'Uma silhueta translúcida bloqueia o caminho e aponta a lâmina. Não fala — apenas espera.',
+   opts:[
+     {label:'Aceitar o duelo',hint:'Combate de Elite · recompensa garantida',
+      run:c=>({camp:{...c,eliteFight:true},msg:'O espírito assume forma sólida. Isto vai doer.',then:'combat'})},
+     {label:'Recusar',hint:'Ganha um pouco de QP',
+      run:c=>{const r=_qp(c,300);return{camp:r.camp,msg:`Vocês contornam o espírito. Ele deixa cair algo. +${r.g} QP.`};}},
+   ]},
+
+  {id:'campo',titulo:'🩸 Campo de Batalha Antigo',
+   desc:'Ossos, estandartes rasgados e armas enferrujadas cobrem o solo. Há coisas de valor aqui — e coisas que ainda se movem.',
+   opts:[
+     {label:'Vasculhar os corpos',hint:'QP alto · 40% de chance de emboscada',
+      run:c=>{
+        const r=_qp(c,900);
+        if(Math.random()<0.40)return{camp:r.camp,msg:`Vocês recolhem ${r.g} QP — mas algo desperta entre os ossos!`,then:'combat'};
+        return{camp:r.camp,msg:`Saque limpo. +${r.g} QP.`};
+      }},
+     {label:'Homenagear os mortos',hint:'Cura 15% do HP · +80 Bond',
+      run:c=>{
+        const b=addBond(c.servo.id,80);
+        const nc=_curarGrupo(c,15);
+        return{camp:{...nc,bond:b,bondEarned:(c.bondEarned||0)+80,npLevel:bondToNP(b.level)},
+          msg:'Vocês erguem os estandartes caídos. Um silêncio respeitoso restaura um pouco de força.'};
+      }},
+   ]},
+
+  {id:'peregrino',titulo:'🧎 Peregrino Ferido',
+   desc:'Um homem arrasta a perna quebrada pela estrada. Ele ergue a mão ao ver vocês — mas há uma bolsa pesada no cinto dele.',
+   opts:[
+     {label:'Curar suas feridas',hint:'−10% do seu HP · ele retribui adiante',
+      run:c=>({camp:{..._danoGrupo(c,10),peregrinoSalvo:true},
+        msg:'Você cede parte da própria mana. Ele promete retribuir quando puder.'})},
+     {label:'Roubar a bolsa',hint:'QP imediato · −60 Bond',
+      run:c=>{
+        const r=_qp(c,700);
+        const b=addBond(c.servo.id,-60);
+        return{camp:{...r.camp,bond:b},msg:`Você toma o que ele tinha. +${r.g} QP — e um olhar de desaprovação da sua Serva.`};
+      }},
+     {label:'Ignorar',hint:'Nada acontece',run:c=>({camp:c,msg:'Vocês passam direto.'})},
+   ]},
+
+  // ── Eventos clássicos, agora com escolha ──
+  {id:'confianca',titulo:'🤝 Ganhar Confiança',
+   desc:'Uma pausa rara. Há espaço para conversar — ou para treinar.',
+   opts:[
+     {label:'Conversar',hint:'+150 Bond',
+      run:c=>{
+        const b=addBond(c.servo.id,150);
+        return{camp:{...c,bond:b,bondEarned:(c.bondEarned||0)+150,npLevel:bondToNP(b.level)},
+          msg:'O vínculo entre Mestre e Serva se aprofunda. (+150 Bond)'};
+      }},
+     {label:'Treinar duro',hint:'+XP · −12% do HP',
+      run:c=>{
+        (c.party||[c.servo]).forEach(m=>addServoXP(m.id,XP_TRUST_EVENT*2));
+        return{camp:{..._danoGrupo(c,12),xpEarned:(c.xpEarned||0)+XP_TRUST_EVENT*2},
+          msg:`Treino brutal. +${XP_TRUST_EVENT*2} XP para o grupo, ao custo de alguns hematomas.`};
+      }},
+   ]},
+
+  {id:'descanso',titulo:'🌙 Descansar',
+   desc:'O lugar é seguro o bastante para parar. A pergunta é o que fazer com o tempo.',
+   opts:[
+     {label:'Dormir',hint:'Cura 30% do HP',
+      run:c=>({camp:_curarGrupo(c,30),msg:'Um sono breve, mas reparador.'})},
+     {label:'Meditar',hint:'+35% da Barra de NP do grupo',
+      run:c=>{
+        const party=(c.party||[c.servo]).map(m=>({...m,npBar:clamp(m.npBar+35,0,100)}));
+        return{camp:{...c,party,servo:party[0]},msg:'A mana circula. As barras de NP avançam.'};
+      }},
+     {label:'Vigiar a estrada',hint:'+10% ATK e DEF no próximo combate',
+      run:c=>({camp:{...c,planBonus:{atkUp:10,defUp:10}},msg:'Vocês estudam o terreno à frente.'})},
+   ]},
+
+  {id:'aldeoes',titulo:'🧺 Lidar com Aldeões',
+   desc:'Os moradores reconhecem vocês e cercam o grupo com pedidos.',
+   opts:[
+     {label:'Ajudar todos',hint:'QP e Bond, mas gasta energia (−8% HP)',
+      run:c=>{
+        const r=_qp(c,600);
+        const b=addBond(c.servo.id,100);
+        return{camp:{..._danoGrupo(r.camp,8),bond:b,bondEarned:(c.bondEarned||0)+100,npLevel:bondToNP(b.level)},
+          msg:`Um dia inteiro de trabalho. +${r.g} QP e +100 Bond — e um cansaço honesto.`};
+      }},
+     {label:'Cobrar pelos serviços',hint:'QP alto · sem Bond',
+      run:c=>{const r=_qp(c,1100);return{camp:r.camp,msg:`Negócio é negócio. +${r.g} QP.`};}},
+     {label:'Seguir viagem',hint:'Nada acontece',run:c=>({camp:c,msg:'Vocês se desculpam e seguem.'})},
+   ]},
+];
+const EVENTO_BY_ID=Object.fromEntries(EVENTOS.map(e=>[e.id,e]));
+// Sorteia um evento válido que ainda não apareceu nesta jornada.
+function rollEvento(camp){
+  const vistos=camp.eventosVistos||[];
+  let pool=EVENTOS.filter(e=>(!e.cond||e.cond(camp))&&!vistos.includes(e.id));
+  if(!pool.length)pool=EVENTOS.filter(e=>!e.cond||e.cond(camp)); // esgotou: pode repetir
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+function TreasureScreen({camp,setProfile,onFinish}){
+  const[aberto,setAberto]=useState(false);
+  const[premio,setPremio]=useState(null);
+  function abrir(){
+    const pe=getActivePerkEffects();
+    const mult=1+(pe.sqQpBonusPercent||0)/100+(getGracaEffects(camp).qpBonusPct||0)/100;
+    // O peregrino que você curou deixou sua retribuição neste cofre.
+    const pereg=!!camp.peregrinoSalvo;
+    const qp=Math.round((800+Math.floor(Math.random()*700))*mult*(pereg?2.5:1));
+    const sq=(2+Math.floor(Math.random()*3))+(pereg?4:0);
+    depositQP(qp);depositSQ(sq);
+    setProfile(loadProfile());
+    setPremio({qp,sq,pereg});
+    setAberto(true);
+  }
+  return(
+    <div className="screen">
+      <div className="panel" style={{maxWidth:480,textAlign:'center'}}>
+        <div style={{fontSize:'2.6rem',marginBottom:8}}>{aberto?'✨':'💰'}</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:6}}>CÂMARA DO TESOURO</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.82rem',fontStyle:'italic',marginBottom:16}}>
+          {aberto
+            ?'O baú se abre sem resistência. Alguém guardou isto aqui há muito tempo.'
+            :'Um cofre esquecido repousa no centro da sala. Nenhum selo, nenhuma armadilha — apenas sorte.'}
+        </p>
+        {!aberto?(
+          <button className="btn btn-red btn-full" onClick={abrir}>Abrir o cofre</button>
+        ):(
+          <>
+            <div style={{background:'rgba(192,57,43,.10)',border:'1px solid var(--edge)',borderRadius:6,
+              padding:14,marginBottom:14,display:'flex',justifyContent:'center',gap:20}}>
+              <span style={{color:'#4fc3f7'}}>🪙 +{premio.qp.toLocaleString()} QP</span>
+              <span style={{color:'var(--gold)'}}>💎 +{premio.sq} SQ</span>
+            </div>
+            {premio.pereg&&(
+              <p style={{color:'var(--crimson-soft)',fontSize:'.76rem',fontStyle:'italic',marginBottom:12}}>
+                Junto ao ouro há um bilhete: "Ao viajante que não passou direto." — o peregrino cumpriu sua palavra.
+              </p>
+            )}
+            <button className="btn btn-full" onClick={()=>onFinish({...camp,peregrinoSalvo:false})}>Seguir em Frente →</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TeaHouseModal({party,profile,onBuy,notif,onClose}){
   // Para itens de curar/reviver, o jogador precisa escolher qual servo. Guardamos
   // o item pendente e mostramos os servos elegíveis como alvos.
@@ -7232,13 +7541,21 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
               </button>
             )}
             <div className="path-choice">
-              {(PATH_THEMES[camp.mapId]||PATH_THEMES._default).map(([dir,icon,label])=>(
-                <button key={dir} className="path-btn" onClick={()=>onChoosePath(dir)}>
-                  <span className="path-icon">{icon}</span>
-                  {dir==='left'?'⬅ Esquerda':dir==='center'?'⬆ Centro':'➡ Direita'}
-                  <div className="path-hint">{label}</div>
-                </button>
-              ))}
+              {(PATH_THEMES[camp.mapId]||PATH_THEMES._default).map(([dir,icon,label],pi)=>{
+                const sala=SALAS[rollSalas(camp)[pi]]||SALAS.combat;
+                return(
+                  <button key={dir} className="path-btn" onClick={()=>onChoosePath(dir)}
+                    style={{borderColor:`${sala.cor}66`}}>
+                    <span className="path-icon">{icon}</span>
+                    {dir==='left'?'⬅ Esquerda':dir==='center'?'⬆ Centro':'➡ Direita'}
+                    <div className="path-hint">{label}</div>
+                    <div style={{marginTop:6,paddingTop:6,borderTop:`1px solid ${sala.cor}33`,
+                      color:sala.cor,fontSize:'.72rem',fontFamily:'Cinzel,serif',letterSpacing:1}}>
+                      {sala.icon} {sala.label}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </>
         )}
@@ -7257,139 +7574,62 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
 // ══════════════════════════════════════════════════════
 // EVENTO
 // ══════════════════════════════════════════════════════
-function EventScreen({camp,type,onFinish,setCamp,setProfile}){
-  const{servo}=camp;
-  const[done,setDone]=useState(false);
-  const[result,setResult]=useState('');
-  const finalCampRef=useRef(camp); // guarda o camp com os buffs aplicados (ex: planBonus)
+function EventScreen({camp,evento,onFinish,setProfile,onCombat,onGraca}){
+  const ev=evento;
+  const [res,setRes]=useState(null); // {msg, camp, then}
+  if(!ev)return(
+    <div className="screen"><div className="panel" style={{maxWidth:520,textAlign:'center'}}>
+      <p style={{color:'var(--parchment-dark)'}}>Nada acontece por aqui.</p>
+      <button className="btn btn-full" style={{marginTop:12}} onClick={()=>onFinish(camp)}>Seguir →</button>
+    </div></div>
+  );
 
-  function doEvent(){
-    let newCamp={...camp,servo:{...servo}};
-    let msg='';
-    // QP por evento: 250 base — multiplicado pela Perk Contos Épicos, se equipada
-    const pe=getActivePerkEffects();
-    const qpGain=Math.round(250*(1+(pe.sqQpBonusPercent||0)/100));
-
-    if(type==='trust'){
-      const newBond=addBond(servo.id,150);
-      const newXP=addServoXP(servo.id,XP_TRUST_EVENT);
-      newCamp={...newCamp,bond:newBond,
-        xpEarned:(camp.xpEarned||0)+XP_TRUST_EVENT,
-        qpEarned:(camp.qpEarned||0)+qpGain,
-        bondEarned:(camp.bondEarned||0)+150,
-        npLevel:bondToNP(newBond.level)};
-      newCamp.servo.npLevel=bondToNP(newBond.level);
-      msg=`+${XP_TRUST_EVENT} XP · +150 Bond · +${qpGain} QP · Bond ${newBond.level} (${newBond.points}/${bondReq(newBond.level)} PB)${newXP.level>camp.servo.level?` · ✨ SERVO Nv.${newXP.level}!`:''}`;
-    } else if(type==='rest'){
-      const heal=Math.round(servo.hpMax*0.25);
-      const npHeal=15;
-      newCamp.servo.hp=clamp(servo.hp+heal,0,servo.hpMax);
-      newCamp.servo.npBar=clamp(servo.npBar+npHeal,0,100);
-      newCamp.qpEarned=(camp.qpEarned||0)+qpGain;
-      msg=`Recuperou ${heal} HP e ${npHeal}% NP. +${qpGain} QP.`;
-    } else if(type==='plan'){
-      newCamp.planBonus={atkUp:10,defUp:10};
-      newCamp.qpEarned=(camp.qpEarned||0)+qpGain;
-      msg=`Rota planejada! +10% ATK/DEF no próximo combate. +${qpGain} QP.`;
-    } else if(type==='rest2'){
-      // Descanso da Vila: recupera 30% HP + 10% NP + um pouco de XP
-      const heal=Math.round(servo.hpMax*0.30);
-      const newXP=addServoXP(servo.id,XP_TRUST_EVENT);
-      newCamp.servo.hp=clamp(servo.hp+heal,0,servo.hpMax);
-      newCamp.servo.npBar=clamp(servo.npBar+10,0,100);
-      newCamp.qpEarned=(camp.qpEarned||0)+qpGain;
-      newCamp.xpEarned=(camp.xpEarned||0)+XP_TRUST_EVENT;
-      msg=`Recuperou ${heal} HP e 10% NP · +${XP_TRUST_EVENT} XP · +${qpGain} QP${newXP.level>camp.servo.level?` · ✨ SERVO Nv.${newXP.level}!`:''}`;
-    } else if(type==='aldeoes'){
-      // Lidar com aldeões: tarefa aleatória → QP extra + XP
-      const bonusQP=Math.round(qpGain*1.5); // tarefas rendem mais QP que o normal
-      const newXP=addServoXP(servo.id,XP_TRUST_EVENT);
-      newCamp.qpEarned=(camp.qpEarned||0)+bonusQP;
-      newCamp.xpEarned=(camp.xpEarned||0)+XP_TRUST_EVENT;
-      msg=`Tarefa concluída! +${XP_TRUST_EVENT} XP · +${bonusQP} QP${newXP.level>camp.servo.level?` · ✨ SERVO Nv.${newXP.level}!`:''}`;
-      // Deposita o QP maior (não o padrão)
-      const upd=depositQP(bonusQP);
-      if(setProfile)setProfile(upd);
-      finalCampRef.current=newCamp;
-      setResult(msg);setCamp(newCamp);setDone(true);
-      return; // já depositou — evita o depósito padrão abaixo
-    } else if(type==='plan3'){
-      // Planejar Rota (mapa 3): cura 40% HP + buff forte no próximo combate
-      const heal=Math.round(servo.hpMax*0.40);
-      newCamp.servo.hp=clamp(servo.hp+heal,0,servo.hpMax);
-      newCamp.planBonus={atkUp:20,atkTurns:3,npGain:20};
-      newCamp.qpEarned=(camp.qpEarned||0)+qpGain;
-      msg=`Rota planejada! Recuperou ${heal} HP · +20% ATK (3t) e +20% NP no próximo combate. +${qpGain} QP.`;
-    } else if(type==='desviar'){
-      // Desviar do Caminho: +150 Bond e +100 XP
-      const newBond=addBond(servo.id,150);
-      const newXP=addServoXP(servo.id,100);
-      newCamp={...newCamp,bond:newBond,
-        bondEarned:(camp.bondEarned||0)+150,
-        xpEarned:(camp.xpEarned||0)+100,
-        npLevel:bondToNP(newBond.level)};
-      newCamp.servo.npLevel=bondToNP(newBond.level);
-      newCamp.qpEarned=(camp.qpEarned||0)+qpGain;
-      msg=`Desviou do caminho principal · +150 Bond · +100 XP · +${qpGain} QP${newXP.level>camp.servo.level?` · ✨ SERVO Nv.${newXP.level}!`:''}`;
-    }
-    // Deposita QP imediatamente (leitura fresca) e sincroniza o estado do App
-    const updatedProfile=depositQP(qpGain);
-    if(setProfile)setProfile(updatedProfile);
-    // IMPORTANTE: o combate lê camp.party (quando há party). Sincroniza o líder
-    // (party[0]) com o servo curado, senão o HP/NP recuperado é ignorado na luta.
-    if(newCamp.party&&newCamp.party.length){
-      newCamp.party=[{...newCamp.party[0],hp:newCamp.servo.hp,npBar:newCamp.servo.npBar,hpMax:newCamp.servo.hpMax},...newCamp.party.slice(1)];
-    }
-    finalCampRef.current=newCamp;
-    setResult(msg);setCamp(newCamp);setDone(true);
+  function escolher(opt){
+    const out=opt.run(camp)||{};
+    // Marca o evento como já visto nesta jornada (evita repetição)
+    const novoCamp={...(out.camp||camp),
+      eventosVistos:[...(camp.eventosVistos||[]),ev.id]};
+    setProfile(loadProfile()); // moedas podem ter mudado
+    setRes({msg:out.msg||'',camp:novoCamp,then:out.then,falhou:out.falhou});
   }
 
-  // Tarefas aleatórias do evento "Lidar com Aldeões" (mapa 2)
-  const ALDEAO_TAREFAS=[
-    'Você ajudou a colher alguns vegetais no campo da vila.',
-    'Você lidou com o pirralho ladrão de calcinhas que aterrorizava as senhoras.',
-    'Você consertou o telhado da casa de um velho pescador.',
-    'Você espantou os corvos que rondavam o celeiro de arroz.',
-  ];
-  const tarefaRef=useRef(ALDEAO_TAREFAS[Math.floor(Math.random()*ALDEAO_TAREFAS.length)]);
-
-  const bondLvl=camp.bond?.level||1;
-  const trustDialogue=
-    bondLvl>=13?IBARAKI.bondDialogue[15]:
-    bondLvl>=9?IBARAKI.bondDialogue[10]:
-    bondLvl>=4?IBARAKI.bondDialogue[5]:
-    IBARAKI.bondDialogue[1];
-
-  const evtTitles={trust:'🤝 Ganhar Confiança',rest:'🌙 Descansar',plan:'🗺️ Planejar Rota',
-    rest2:'🏕️ Pausa para Descanso',aldeoes:'🧺 Lidar com Aldeões',
-    plan3:'🗺️ Planejar Rota',desviar:'🌿 Desviar do Caminho'};
-  const evtDescs={
-    trust:'Um momento de cumplicidade entre Mestre e Servo fortalece o vínculo.',
-    rest:'Um breve descanso para recuperar forças antes de continuar.',
-    plan:'Analisam os caminhos à frente para escolher a rota mais vantajosa.',
-    rest2:'Vocês fazem uma pausa na Vila para recuperar forças.',
-    aldeoes:tarefaRef.current,
-    plan3:'Estudam o caminho sombrio à frente, recuperando forças e traçando a melhor rota.',
-    desviar:'Tomam um atalho tortuoso pelo mato — mais perigoso, mas revelador. O vínculo se fortalece.',
-  };
+  function continuar(){
+    if(res.then==='combat'){onCombat(res.camp);return;}
+    if(res.then==='graca'){onGraca(res.camp);return;}
+    onFinish(res.camp);
+  }
 
   return(
-    <div className="screen">
+    <div className="screen" style={{padding:'20px 12px'}}>
       <div className="panel" style={{maxWidth:560}}>
-        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:4}}>{evtTitles[type]}</h2>
-        <p style={{color:'var(--parchment-dark)',fontSize:'.85rem',marginBottom:16,fontStyle:'italic'}}>{evtDescs[type]}</p>
-        {type==='trust'&&!done&&(
-          <DialogueBox speaker="Ibaraki Douji" text={trustDialogue} portrait={IBARAKI.assets.default}/>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>{ev.titulo}</h2>
+        <p style={{color:'var(--parchment)',fontSize:'.85rem',lineHeight:1.7,marginBottom:16,fontStyle:'italic'}}>
+          {ev.desc}
+        </p>
+        {!res?(
+          <div style={{display:'flex',flexDirection:'column',gap:9}}>
+            {ev.opts.map((o,i)=>(
+              <button key={i} onClick={()=>escolher(o)}
+                style={{textAlign:'left',cursor:'pointer',padding:'11px 14px',borderRadius:7,width:'100%',
+                  background:'rgba(255,255,255,.02)',border:'1px solid var(--edge)',transition:'all .18s'}}
+                onMouseEnter={e=>{e.currentTarget.style.background='rgba(192,57,43,.08)';e.currentTarget.style.borderColor='var(--crimson)';}}
+                onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.02)';e.currentTarget.style.borderColor='var(--edge)';}}>
+                <div className="cinzel" style={{color:'var(--parchment)',fontSize:'.86rem',letterSpacing:1}}>{o.label}</div>
+                <div style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:3}}>{o.hint}</div>
+              </button>
+            ))}
+          </div>
+        ):(
+          <>
+            <div style={{background:res.falhou?'rgba(120,120,120,.12)':'rgba(192,57,43,.10)',
+              border:`1px solid ${res.falhou?'rgba(120,120,120,.35)':'var(--edge)'}`,
+              borderRadius:6,padding:13,margin:'6px 0 14px',
+              color:'var(--parchment)',fontSize:'.85rem',lineHeight:1.6}}>{res.msg}</div>
+            <button className="btn btn-red btn-full" onClick={continuar}>
+              {res.then==='combat'?'⚔️ Preparar para o combate':'Seguir em Frente →'}
+            </button>
+          </>
         )}
-        {!done
-          ?<button className="btn btn-full" onClick={doEvent}>✦ Continuar</button>
-          :(
-            <>
-              <div style={{background:'rgba(201,162,39,0.1)',border:'1px solid var(--gold-dim)',borderRadius:3,padding:12,margin:'12px 0',color:'var(--gold)',fontSize:'.85rem'}}>{result}</div>
-              <button className="btn btn-full" onClick={()=>onFinish(finalCampRef.current)}>Seguir em Frente →</button>
-            </>
-          )
-        }
       </div>
     </div>
   );
@@ -7567,7 +7807,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Bônus da Aria/plan só se aplicam ao líder na Campanha (não há party lá).
     const hpBonus=isLeader?ariaHpBonus:0;
     // Graça — Portal de Babilônia (Gilgamesh): começa o combate com NP carregado
-    const npAdd=(isLeader?planNpGain:0)+(getGracaEffects(camp).startNpPct||0);
+    // Evento Fonte de Mana Corrompida: NP inicial extra pelos próximos encontros.
+    const fonteNp=(camp.chaBuffs&&camp.chaBuffs.fonteNp&&(camp.chaBuffs.fonteNp.encounters||0)>0)
+      ?camp.chaBuffs.fonteNp.value:0;
+    const npAdd=(isLeader?planNpGain:0)+(getGracaEffects(camp).startNpPct||0)+fonteNp;
     // GOLDEN RULE: bônus acumulativo de +5% ATK e +5% HP por fase de combate vencida na run.
     const grStacks=camp.goldenRule||0;
     const grMult=1+0.05*grStacks;
@@ -7596,7 +7839,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       hp:wasFullHp?grHpMax:Math.round(curHp*grMult),
       npBar:clamp((m.npBar||0)+npAdd,0,100),
       npLevel:m.npLevel||bondToNP(loadBond(def.id).level),
-      activeBuffs:buffs,activeDebuffs:[],stunned:0,
+      activeBuffs:buffs,
+      // Evento Fonte de Mana Corrompida: entra envenenado no combate seguinte.
+      activeDebuffs:(camp.chaBuffs&&camp.chaBuffs.fontePoison)
+        ?[{type:'poison',value:Math.round(grHpMax*0.05),turns:3}]:[],
+      // Evento Banquete Oni: embriagado perde o primeiro turno.
+      stunned:(camp.chaBuffs&&camp.chaBuffs.embriagado)?1:0,
       cooldowns:Object.fromEntries((def.activeSkills||[]).map(s=>[s.id,0])),
       gutsCharges:(def.passiveSkills||[]).some(p=>p.effect&&p.effect.type==='guts')?1:0,
       tempGuts:null,evadeTurns:0,
@@ -7637,7 +7885,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   if(initialEnemiesRef.current===null){
     let enem=isBoss?[createBossInstance()]
       :fixedEnemies?fixedEnemies
-      :genEncounterForMap(camp.mapId||'bosque',camp.phase,camp.towerHpMult||1,camp.towerAtkMult||1);
+      :genEncounterForMap(camp.mapId||'bosque',camp.phase,
+        (camp.towerHpMult||1)*(camp.eliteFight?1.8:1),
+        (camp.towerAtkMult||1)*(camp.eliteFight?1.45:1));
     // Casa de Chá — efeitos de INÍCIO de combate (consumidos ao entrar na luta):
     const cb=camp.chaBuffs||{};
     if(cb.enemyStartDmgPct||cb.enemyStunTurns){
@@ -7952,6 +8202,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     for(const d of tgt.activeDebuffs||[]){if(d.type==='defense_down')defDown+=d.value;}
     // Graças: Muralha do Castelo (+def) e Taça do Oni (-def)
     defUp+=(GEd.defUpPct||0);
+    // Evento Encruzilhada Amaldiçoada: penalidade de defesa por toda a jornada
+    defDown+=((camp.chaBuffs&&camp.chaBuffs.maldicaoDef)||0);
     defDown+=(GEd.defDownPct||0);
     const finalDmg=Math.round(raw*(1-clamp(passiveMit+defUp-defDown,0,95)/100));
     // Graça — Luminosité Eternelle (Jeanne): 1× por combate, sobrevive ao golpe fatal.
@@ -9362,8 +9614,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       // SQ e QP depositados IMEDIATAMENTE (leitura atômica do storage)
       // Perk "Contos Épicos de um Vagabundo": multiplica a obtenção de SQ e QP
       // Graça de Gilgamesh (Tesouro do Rei): soma mais um multiplicador por cima.
-      const moneyMult=1+(perkEffects.sqQpBonusPercent||0)/100
-        +(getGracaEffects(camp).qpBonusPct||0)/100;
+      const eliteBonus=camp.eliteFight?2:1;
+      const moneyMult=(1+(perkEffects.sqQpBonusPercent||0)/100
+        +(getGracaEffects(camp).qpBonusPct||0)/100)*eliteBonus;
       const sqGain=Math.round((isBoss?5:2)*moneyMult);
       const qpGain=Math.round((isBoss?1500:500)*moneyMult);
       depositSQ(sqGain);
@@ -9410,6 +9663,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           const left=(nb.atkUp.encounters||0)-1;
           if(left>0)nb.atkUp={...nb.atkUp,encounters:left}; else delete nb.atkUp;
         }
+        // ── Efeitos vindos dos EVENTOS ──
+        delete nb.fontePoison; // veneno da Fonte: só o combate seguinte
+        delete nb.embriagado;  // Banquete Oni: só o combate seguinte
+        if(nb.fonteNp){
+          const left=(nb.fonteNp.encounters||0)-1;
+          if(left>0)nb.fonteNp={...nb.fonteNp,encounters:left}; else delete nb.fonteNp;
+        }
+        // maldicaoDef é permanente pela jornada — mantida.
         // xpBonus e bondXpBonus são permanentes pela run — mantidos.
         newChaBuffs=Object.keys(nb).length?nb:null;
       }
@@ -9427,6 +9688,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         chaBuffs:newChaBuffs,
         enemyKinds:kindsSeen,
         anyFell:someoneFell,
+        eliteFight:false, // a sala de Elite vale só para aquele combate
         sqEarned:(camp.sqEarned||0)+sqGain,
         qpEarned:(camp.qpEarned||0)+qpGain,
         xpEarned:(camp.xpEarned||0)+xpGain,
@@ -9801,7 +10063,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   const[stage,setStage]=useState(mode==='tower'?'towerSelect':'select');
   const[camp,setCamp]=useState(null);
-  const[eventType,setEventType]=useState(null);
+  const[eventoAtual,setEventoAtual]=useState(null);
   const[campResult,setCampResult]=useState(null);
   // Oferta de Graça pendente: {offer:[{id,lvl}], camp} — mostrada após vencer um encontro
   const[gracaOffer,setGracaOffer]=useState(null);
@@ -9861,6 +10123,10 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
       xpEarned:carry?carry.xpEarned:0,
       bondEarned:carry?carry.bondEarned:0,
       orbeUsed:false,
+      // Semente da jornada: torna o sorteio das SALAS determinístico por fase
+      // (o mapa mostra a prévia e o resultado bate ao escolher o caminho).
+      runSeed:carry&&carry.runSeed?carry.runSeed:Math.floor(Math.random()*1e6)+1,
+      eventosVistos:carry&&carry.eventosVistos?carry.eventosVistos:[],
     };
   }
 
@@ -9919,67 +10185,27 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
       return;
     }
 
-    // Modo Torre: encontros 100% aleatórios (combate ou evento), sem história.
-    if(camp.towerMode){
-      const r=Math.random();
-      if(r<0.60){setStage('combat');}
-      else{
-        // Eventos genéricos apropriados por mapa
-        const evtPool=mapId==='bosque'?['trust','rest','plan']
-          :mapId==='tennobara'?['rest2','aldeoes']
-          :['plan3','desviar'];
-        setEventType(evtPool[Math.floor(Math.random()*evtPool.length)]);
-        setStage('event');
-      }
-      return;
-    }
+    // ── SALAS: o caminho escolhido já mostrou o que havia nele ──
+    const salas=rollSalas(camp);
+    const idx={left:0,center:1,right:2}[dir];
+    const sala=salas[idx!=null?idx:0]||'combat';
+    entrarNaSala(sala);
+  }
 
-    if(mapId==='tennobara'){
-      // Fase 1: só combate. Após vencê-la, a Fase 2 tem diálogo fixo (Saber).
-      if(camp.phase===1){setStage('combat');return;}
-      const r=Math.random();
-      if(r<0.55){setStage('combat');}
-      else{
-        const evts=['rest2','aldeoes'];
-        setEventType(evts[Math.floor(Math.random()*evts.length)]);
-        setStage('event');
-      }
-      return;
+  // Encaminha para a sala escolhida (usado pelo mapa e pelos eventos).
+  function entrarNaSala(sala,campBase){
+    const c=campBase||camp;
+    if(sala==='combat'){setCamp({...c,eliteFight:false});setStage('combat');return;}
+    if(sala==='elite'){setCamp({...c,eliteFight:true});setStage('combat');return;}
+    if(sala==='treasure'){setCamp(c);setStage('treasure');return;}
+    if(sala==='shrine'){
+      const offer=rollGracaOffer(c,3);
+      if(offer.length){setGracaOffer({offer,camp:c});setStage('gracaOffer');return;}
+      setStage('map');return;
     }
-
-    if(mapId==='tortuoso'){
-      // Caminho Tortuoso — fases fixas (3,8,12,14,18) serão adicionadas depois.
-      // (Fase 1 já é tratada na entrada do mapa.) Eventos: Planejar Rota e Desviar.
-      const r=Math.random();
-      if(r<0.58){setStage('combat');}
-      else{
-        const evts=['plan3','desviar'];
-        setEventType(evts[Math.floor(Math.random()*evts.length)]);
-        setStage('event');
-      }
-      return;
-    }
-
-    if(mapId==='kurikara'){
-      // Arredores de Kurikara — fases fixas (1,6,9,12,15) serão adicionadas depois.
-      const r=Math.random();
-      if(r<0.60){setStage('combat');}
-      else{
-        const evts=['plan3','desviar'];
-        setEventType(evts[Math.floor(Math.random()*evts.length)]);
-        setStage('event');
-      }
-      return;
-    }
-
-    // Mapa 1 (Bosque)
-    const r=Math.random();
-    if(r<0.55){setStage('combat');}
-    else{
-      const evts=['trust','rest','plan'];
-      setEventType(evts[Math.floor(Math.random()*evts.length)]);
-      setStage('event');
-    }
+    // evento
+    const ev=rollEvento(c);
+    setEventoAtual(ev);setCamp(c);setStage('event');
   }
 
   // Avança para a próxima fase, checando se ela é uma FASE FIXA de história.
@@ -10887,7 +11113,14 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map')return <MapScreen camp={camp} onChoosePath={choosePath} onNavigate={onNavigate} onGiveUp={onGiveUp} profile={profile} setProfile={setProfile} setCamp={setCamp}/>;
   if(stage==='combat')return <CombatScreen camp={camp} isBoss={false} onWin={onCombatWin} onLose={onCombatLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
   if(stage==='boss')return <CombatScreen camp={camp} isBoss={true} onWin={onBossWin} onLose={onBossLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
-  if(stage==='event')return <EventScreen camp={camp} type={eventType} onFinish={onEventFinish} setCamp={setCamp} setProfile={setProfile}/>;
+  if(stage==='event')return <EventScreen camp={camp} evento={eventoAtual} onFinish={onEventFinish}
+    setProfile={setProfile}
+    onCombat={c=>{setCamp(c);setStage('combat');}}
+    onGraca={c=>{let o=rollGracaOffer(c,3);
+      if(c.gracaBonusLvl)o=o.map(x=>({...x,lvl:c.gracaBonusLvl})); // Encruzilhada Amaldiçoada
+      const c2={...c,gracaBonusLvl:undefined};
+      if(o.length){setGracaOffer({offer:o,camp:c2});setStage('gracaOffer');}else onEventFinish(c2);}}/>;
+  if(stage==='treasure')return <TreasureScreen camp={camp} setProfile={setProfile} onFinish={onEventFinish}/>;
 
   // Tela de resultado
   const xpFinal=loadServoXP(IBARAKI.id);
