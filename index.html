@@ -3065,7 +3065,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.66</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.67</p>
       </div>
     </div>
   );
@@ -6631,7 +6631,18 @@ const ROMAN=['I','II','III'];
 // Skills/Perks/Graças: 110x110. Fantasmas Nobres: 44x44.
 // Se o arquivo não existir, o ícone/emoji antigo continua aparecendo (fallback).
 const SKILL_ART_DIR='assets/skill/';
-const SKILL_ART=(()=>{
+// Pastas candidatas: tenta cada uma antes de cair no emoji. Cobre variações comuns
+// (singular/plural, .png/.PNG) para a arte aparecer sem precisar renomear nada.
+const SKILL_ART_DIRS=['assets/skill/','assets/skills/'];
+const SKILL_ART_EXTS=['.png','.PNG'];
+function artCandidates(nome){
+  const base=nome?SKILL_ART_BASE[nome]:null;
+  if(!base)return[];
+  const out=[];
+  for(const d of SKILL_ART_DIRS)for(const e of SKILL_ART_EXTS)out.push(d+base+e);
+  return out;
+}
+const SKILL_ART_BASE=(()=>{
   const groups={
     skill_bonus:['Mana Buster','Golden Drive'],
     skill_ataque:['Natureza Demoníaca','Energizador de Raiz','Carisma','Sorvete de Verão',
@@ -6666,10 +6677,10 @@ const SKILL_ART=(()=>{
       'Gate of Aegir','Mumyou Sandanzuki'],
   };
   const map={};
-  for(const file in groups)for(const nome of groups[file])map[nome]=SKILL_ART_DIR+file+'.png';
+  for(const file in groups)for(const nome of groups[file])map[nome]=file;
   return map;
 })();
-function artFor(nome){return nome?SKILL_ART[nome]||null:null;}
+function artFor(nome){return nome?(SKILL_ART_BASE[nome]?SKILL_ART_DIR+SKILL_ART_BASE[nome]+'.png':null):null;}
 // Os botões do combate usam rótulos curtos; aqui está o nome completo de cada
 // Skill de Mestre, que é a chave usada para achar a arte.
 const MASTER_SKILL_NOME={
@@ -6679,10 +6690,14 @@ const MASTER_SKILL_NOME={
 
 // Ícone de skill/perk/graça/NP: usa a arte quando existe, senão mostra o emoji antigo.
 function SkillIcon({nome,emoji,size=26,style}){
-  const src=artFor(nome);
-  const[erro,setErro]=useState(false);
-  if(!src||erro)return emoji?<span style={{fontSize:size*0.8,lineHeight:1,...style}}>{emoji}</span>:null;
-  return <img src={src} alt="" width={size} height={size} onError={()=>setErro(true)}
+  const cands=artCandidates(nome);
+  const[i,setI]=useState(0);
+  // Reinicia a tentativa se a skill mudar (o mesmo componente é reusado na lista)
+  useEffect(()=>{setI(0);},[nome]);
+  if(!cands.length||i>=cands.length)
+    return emoji?<span style={{fontSize:size*0.8,lineHeight:1,...style}}>{emoji}</span>:null;
+  return <img src={cands[i]} alt="" width={size} height={size}
+    onError={()=>setI(n=>n+1)}
     style={{width:size,height:size,objectFit:'contain',verticalAlign:'middle',flexShrink:0,...style}}/>;
 }
 
