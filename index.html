@@ -205,6 +205,34 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
   .party-sidebar.open{transform:translateY(-50%) translateX(0);opacity:1;pointer-events:auto}
 }
 
+/* ══════ BARRA DAS GRAÇAS (direita) — espelho da barra do grupo ══════ */
+.graca-sidebar{position:fixed;right:10px;top:50%;transform:translateY(-50%);z-index:60;
+  display:flex;flex-direction:column;gap:7px;width:176px;max-height:88vh;overflow-y:auto;
+  padding:10px 8px;background:linear-gradient(160deg,var(--panel-a),var(--panel-b));
+  border:1px solid var(--edge);border-radius:8px;box-shadow:0 0 24px rgba(0,0,0,0.55);
+  transition:transform .25s ease,opacity .25s ease}
+.graca-sidebar.hidden{transform:translateY(-50%) translateX(135%);opacity:0;pointer-events:none}
+.graca-sidebar-title{font-family:'Cinzel',serif;color:var(--crimson-soft);font-size:.6rem;
+  letter-spacing:2px;text-align:center;margin-bottom:2px}
+.graca-sidebar-sub{font-size:.54rem;color:var(--parchment-dark);text-align:center;margin-bottom:4px}
+.graca-slot{border-radius:5px;padding:5px 6px;border:1px solid rgba(120,120,120,.18);
+  background:rgba(0,0,0,.3)}
+.graca-slot.empty{opacity:.45;border-style:dashed}
+.graca-slot-head{display:flex;align-items:center;gap:4px;font-size:.55rem;
+  color:var(--parchment-dark);letter-spacing:1px;margin-bottom:2px}
+.graca-slot-name{font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.3px;
+  display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.graca-slot-lvl{font-size:.52rem;border:1px solid currentColor;border-radius:3px;padding:0 3px;opacity:.9}
+.graca-slot-desc{font-size:.55rem;color:var(--parchment-dark);line-height:1.35;margin-top:2px}
+.graca-sidebar-toggle{position:fixed;right:0;top:50%;transform:translateY(-50%);
+  z-index:62;width:30px;height:56px;border-radius:8px 0 0 8px;border:1px solid var(--edge);border-right:none;
+  background:linear-gradient(160deg,var(--panel-a),var(--panel-b));color:var(--crimson-soft);
+  font-size:1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:0 0 16px rgba(0,0,0,0.5)}
+@media(max-width:900px){
+  .graca-sidebar{width:150px}
+}
+
 /* ── Cards de inimigo ── */
 .enemy-group{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
 .enemy-card{background:rgba(0,0,0,0.4);border:1px solid var(--red);border-radius:3px;padding:10px 14px;min-width:120px;text-align:center;transition:all .2s;cursor:pointer;position:relative}
@@ -2394,7 +2422,64 @@ const ACHIEVEMENTS=[
   {id:'defeat_shunoban',name:'Derrote o Ciclope Vermelho',desc:'Abata Shunoban, o terror de olho único da estrada de Shinohara.',qp:35000,sq:50,icon:'👁️'},
   {id:'defeat_mochizuki',name:'Derrote a Kunoichi das Sombras',desc:'Vença Mochizuki Chiyome, a Assassin que comanda as ruas de Shinohara.',qp:42000,sq:56,icon:'🗡️'},
   {id:'defeat_mochizuki_rage',name:'Silencie a Serpente',desc:'Vença Mochizuki Chiyome em sua forma enfurecida, na Batalha de Shinohara.',qp:50000,sq:64,icon:'🐍'},
+  {id:'clear_sucessao',name:'O Prelúdio da Guerra',desc:'Atravesse o prelúdio e chegue às portas da Guerra de Sucessão.',qp:55000,sq:70,icon:'⚔️'},
+
+  // ── DESAFIOS DE COMBATE (boss) ──
+  {id:'flawless_boss',name:'Vitória Imaculada',desc:'Vença um boss sem que nenhum Servo perca um único ponto de HP.',qp:30000,sq:40,icon:'✨',challenge:true},
+  {id:'blitz_boss',name:'Golpe Relâmpago',desc:'Vença um boss em 3 turnos ou menos.',qp:28000,sq:38,icon:'⚡',challenge:true},
+  {id:'no_np_boss',name:'Sem Fantasma Nobre',desc:'Vença um boss sem liberar nenhum Fantasma Nobre.',qp:32000,sq:42,icon:'🚫',challenge:true},
+  {id:'no_skill_boss',name:'Puro Aço',desc:'Vença um boss sem usar nenhuma Skill (de Servo ou de Mestre).',qp:34000,sq:44,icon:'🗡️',challenge:true},
+  {id:'overkill',name:'Overkill',desc:'Cause 100.000 de dano em um único golpe.',qp:26000,sq:36,icon:'💥',challenge:true},
+
+  // ── DESAFIOS DA TORRE ──
+  {id:'tower_solo',name:'Escalada Solitária',desc:'Vença um andar da Torre com apenas 1 Servo na party.',qp:36000,sq:46,icon:'🚶',challenge:true},
+  {id:'tower_trio_shinohara',name:'Trio de Shinohara',desc:'Vença um andar da Torre com Okuni, Mochizuki e Baobhan Sith juntas.',qp:40000,sq:50,icon:'🎭',challenge:true},
+  {id:'tower_no_ibaraki',name:'Sem a Líder',desc:'Vença um andar da Torre sem a Ibaraki na party.',qp:24000,sq:34,icon:'👥',challenge:true},
+  {id:'tower_top',name:'Conquistadora da Torre',desc:'Alcance o Andar 10 da Torre de Desafios.',qp:60000,sq:80,icon:'🗼',challenge:true},
+
+  // ── DESAFIOS DE JORNADA (run) ──
+  {id:'run_untouched',name:'Jornada Perfeita',desc:'Complete um mapa da Campanha sem que nenhum Servo caia em combate.',qp:38000,sq:48,icon:'🛡️',challenge:true},
+  {id:'run_bestiary',name:'Bestiário de Guerra',desc:'Derrote um Soldado Minamoto, um Soldado Fujiwara, uma Kijo e um Suiko na mesma jornada.',qp:24000,sq:34,icon:'📜',challenge:true},
+  {id:'run_wildtrail',name:'Trilha Selvagem',desc:'Derrote um Javali Gigante, um Kappa e um Kaze no Kami na mesma jornada.',qp:20000,sq:28,icon:'👹',challenge:true},
+  {id:'run_golden20',name:'Regra Dourada',desc:'Acumule 20 cargas de Golden Rule numa única jornada.',qp:30000,sq:40,icon:'🌟',challenge:true},
+  {id:'run_teahouse',name:'Freguês da Casa de Chá',desc:'Compre 8 itens na Casa de Chá durante uma única jornada.',qp:20000,sq:30,icon:'🍵',challenge:true},
+  {id:'run_no_tea',name:'Jejum',desc:'Complete um mapa da Campanha sem comprar nada na Casa de Chá.',qp:26000,sq:36,icon:'🚱',challenge:true},
+
+  // ── PROGRESSÃO DE LONGO PRAZO ──
+  {id:'magus_20',name:'Magus Experiente',desc:'Alcance o Nível de Mestre 20.',qp:25000,sq:35,icon:'👑',challenge:true},
+  {id:'magus_40',name:'Grande Magus',desc:'Alcance o Nível de Mestre 40.',qp:50000,sq:70,icon:'🔱',challenge:true},
+  {id:'slayer_500',name:'Ceifador',desc:'Derrote 500 inimigos no total.',qp:35000,sq:45,icon:'☠️',challenge:true},
+  {id:'roster_lv20',name:'Treinador de Espíritos',desc:'Tenha 3 Servos no nível 20 ou mais.',qp:42000,sq:55,icon:'📈',challenge:true},
 ];
+
+// ── Avaliação de conquistas de DESAFIO ──────────────────
+// Concede várias de uma vez e devolve a lista das que foram efetivamente ganhas
+// (para exibir a notificação). Idempotente: já obtidas são ignoradas.
+function grantMany(ids){
+  const won=[];
+  let prof=null;
+  for(const id of (ids||[])){
+    const res=grantAchievement(id);
+    if(res.granted){won.push(res.def);prof=res.profile;}
+  }
+  return{won,profile:prof||loadProfile()};
+}
+
+// Checagens que dependem apenas do profile (progressão de longo prazo).
+function checkProfileAchievements(){
+  const p=loadProfile();
+  const ids=[];
+  const magusLvl=(p.magus||{level:1}).level;
+  if(magusLvl>=20)ids.push('magus_20');
+  if(magusLvl>=40)ids.push('magus_40');
+  if((p.stats?.enemiesDefeated||0)>=500)ids.push('slayer_500');
+  // 3 servos no nível 20+
+  const lv20=PLAYABLE_ROSTER.filter(r=>{
+    try{return loadServoXP(r.id).level>=20;}catch{return false;}
+  }).length;
+  if(lv20>=3)ids.push('roster_lv20');
+  return grantMany(ids);
+}
 
 // Concede uma conquista (se ainda não obtida): paga a recompensa e marca no profile.
 function grantAchievement(id){
@@ -2424,6 +2509,8 @@ function addEnemiesDefeated(n){
   const up={...p,stats:s};saveProfile(up);return up;
 }
 function recordDamage(dmg){
+  // Desafio "Overkill": 100.000 de dano num único golpe (avaliado a cada golpe).
+  if((dmg||0)>=100000)grantAchievement('overkill');
   const p=loadProfile();
   if((dmg||0)<=(p.stats?.highestDamage||0))return p;
   const s={...p.stats,highestDamage:Math.round(dmg)};
@@ -2978,7 +3065,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.57</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.66</p>
       </div>
     </div>
   );
@@ -3661,6 +3748,9 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
                   </div>
                   <div style={{fontSize:'.66rem',color:'var(--parchment-dark)',marginTop:2}}>
                     20 fases · boss na fase 20{i===0?' · ponto de partida':''}
+                    <span style={{color:'#e88',marginLeft:6}}>
+                      ×{(map.towerHpMult||1).toFixed(2)} HP · ×{(map.towerAtkMult||1).toFixed(2)} ATK
+                    </span>
                   </div>
                 </div>
                 <span style={{fontSize:'1.1rem'}}>{i===0?'🚪':'🔺'}</span>
@@ -3726,7 +3816,8 @@ function TowerShopScreen({profile,setProfile,onBack}){
           return(
             <div key={sk.id} style={{background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:4,padding:'14px',marginBottom:12}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
-                <span className="cinzel" style={{color:'var(--gold)',fontSize:'.95rem',letterSpacing:1}}>{sk.icon} {sk.name}</span>
+                <span className="cinzel" style={{color:'var(--gold)',fontSize:'.95rem',letterSpacing:1,display:'inline-flex',alignItems:'center',gap:6}}>
+                  <SkillIcon nome={sk.name} emoji={sk.icon} size={28}/> {sk.name}</span>
                 <span style={{fontSize:'.72rem',color:cur>0?'var(--red-bright)':'var(--parchment-dark)'}}>
                   {cur>0?`Nv.${cur}/${sk.maxLvl}`:'Não adquirida'}
                 </span>
@@ -3768,32 +3859,50 @@ function AchievementsScreen({onNavigate,profile}){
   const done=profile.achievements||{};
   const total=ACHIEVEMENTS.length;
   const unlocked=ACHIEVEMENTS.filter(a=>done[a.id]).length;
+  const story=ACHIEVEMENTS.filter(a=>!a.challenge);
+  const challenges=ACHIEVEMENTS.filter(a=>a.challenge);
+  const chDone=challenges.filter(a=>done[a.id]).length;
+  const renderAch=a=>{
+    const got=!!done[a.id];
+    return(
+      <div key={a.id} style={{
+        display:'flex',alignItems:'center',gap:12,padding:'12px 14px',marginBottom:10,
+        background:got?'rgba(192,57,43,0.10)':'rgba(0,0,0,0.25)',
+        border:`1px solid ${got?'var(--edge)':'rgba(120,120,120,0.2)'}`,
+        borderRadius:6,opacity:got?1:0.65}}>
+        <div style={{fontSize:'1.8rem',filter:got?'none':'grayscale(1)'}}>{got?a.icon:'🔒'}</div>
+        <div style={{flex:1}}>
+          <div className="cinzel" style={{color:got?'var(--gold)':'var(--parchment-dark)',fontSize:'.9rem',letterSpacing:1}}>{a.name}</div>
+          <div style={{fontSize:'.75rem',color:'var(--parchment-dark)',marginTop:2}}>{a.desc}</div>
+          <div style={{fontSize:'.7rem',color:got?'#4fc3f7':'var(--parchment-dark)',marginTop:4}}>
+            Recompensa: {a.qp.toLocaleString()} QP · {a.sq} SQ {got&&<span style={{color:'var(--gold)'}}>✓ RECEBIDA</span>}
+          </div>
+        </div>
+      </div>
+    );
+  };
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
       <div className="panel" style={{maxWidth:600}}>
         <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:4}}>🏆 CONQUISTAS</h2>
-        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:16}}>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:6}}>
           {unlocked} de {total} desbloqueadas
         </p>
-        {ACHIEVEMENTS.map(a=>{
-          const got=!!done[a.id];
-          return(
-            <div key={a.id} style={{
-              display:'flex',alignItems:'center',gap:12,padding:'12px 14px',marginBottom:10,
-              background:got?'rgba(201,162,39,0.1)':'rgba(0,0,0,0.25)',
-              border:`1px solid ${got?'var(--gold-dim)':'rgba(120,120,120,0.2)'}`,
-              borderRadius:3,opacity:got?1:0.65}}>
-              <div style={{fontSize:'1.8rem',filter:got?'none':'grayscale(1)'}}>{got?a.icon:'🔒'}</div>
-              <div style={{flex:1}}>
-                <div className="cinzel" style={{color:got?'var(--gold)':'var(--parchment-dark)',fontSize:'.9rem',letterSpacing:1}}>{a.name}</div>
-                <div style={{fontSize:'.75rem',color:'var(--parchment-dark)',marginTop:2}}>{a.desc}</div>
-                <div style={{fontSize:'.7rem',color:got?'#4fc3f7':'var(--parchment-dark)',marginTop:4}}>
-                  Recompensa: {a.qp.toLocaleString()} QP · {a.sq} SQ {got&&<span style={{color:'var(--gold)'}}>✓ RECEBIDA</span>}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {/* Barra de platina */}
+        <div className="bar-track" style={{height:8,marginBottom:18}}>
+          <div className="bar-fill" style={{width:`${(unlocked/total)*100}%`,
+            background:'linear-gradient(90deg,#5a1418,#c0392b,#e8b04a)'}}/>
+        </div>
+
+        <div className="divider"><span className="divider-text">📖 HISTÓRIA</span></div>
+        {story.map(renderAch)}
+
+        <div className="divider"><span className="divider-text">⚔️ DESAFIOS · {chDone}/{challenges.length}</span></div>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.72rem',fontStyle:'italic',marginBottom:12,textAlign:'center'}}>
+          Provações opcionais para quem quer dominar o jogo de verdade.
+        </p>
+        {challenges.map(renderAch)}
+
         <button className="btn btn-full" style={{marginTop:16}} onClick={()=>onNavigate('menu')}>← Voltar</button>
       </div>
     </div>
@@ -3935,6 +4044,7 @@ function ProfileScreen({onNavigate,profile,setProfile}){
           const lockMsg=gosanjo?'Desbloqueada ao derrotar o Go-Sanjo em Kurikara...':'Desbloqueada ao avançar pelo Caminho Tortuoso...';
           return(
             <div key={key} className="skill-row" style={locked?{opacity:.5}:{}}>
+              {!locked&&<SkillIcon nome={name} size={40} style={{marginRight:10}}/>}
               <div className="skill-info">
                 <div className="skill-name">{locked?'🔒 ':''}{name} {!locked&&<span style={{color:'var(--parchment-dark)'}}>Nv.{lvl}</span>}</div>
                 <div className="skill-desc">{locked?lockMsg:desc(lvl)}</div>
@@ -4095,8 +4205,10 @@ function ShopScreen({onNavigate,profile,setProfile}){
             <div style={{display:'flex',gap:6,marginTop:8,flexWrap:'wrap'}}>
               {equipped.map(id=>(
                 <span key={id} style={{fontSize:'.7rem',background:'rgba(79,195,247,0.12)',
-                  border:'1px solid rgba(79,195,247,0.4)',borderRadius:10,padding:'3px 10px',color:'#4fc3f7'}}>
-                  {PERK_DEFS[id]?.icon} {PERK_DEFS[id]?.name} Nv.{perks[id]||0}
+                  border:'1px solid rgba(79,195,247,0.4)',borderRadius:10,padding:'3px 10px',color:'#4fc3f7',
+                  display:'inline-flex',alignItems:'center',gap:5}}>
+                  <SkillIcon nome={PERK_DEFS[id]?.name} emoji={PERK_DEFS[id]?.icon} size={18}/>
+                  {PERK_DEFS[id]?.name} Nv.{perks[id]||0}
                 </span>
               ))}
             </div>
@@ -4140,7 +4252,9 @@ function ShopScreen({onNavigate,profile,setProfile}){
               transition:'border-color .2s',opacity:locked?0.55:1,
               ...(isEquipped?{boxShadow:'0 0 12px rgba(201,162,39,0.15)'}:{})}}>
               <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
-                <div style={{fontSize:'2rem',lineHeight:1,filter:locked?'grayscale(1)':'none'}}>{locked?'🔒':def.icon}</div>
+                <div style={{fontSize:'2rem',lineHeight:1,filter:locked?'grayscale(1)':'none',display:'flex',alignItems:'center'}}>
+                  {locked?'🔒':<SkillIcon nome={def.name} emoji={def.icon} size={40}/>}
+                </div>
                 <div style={{flex:1}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4,gap:8,flexWrap:'wrap'}}>
                     <div className="cinzel" style={{color:locked?'var(--parchment-dark)':'#4fc3f7',fontSize:'.85rem',letterSpacing:1}}>
@@ -4818,6 +4932,23 @@ const ENEMIES_MAP9={
 };
 
 // ══════════════════════════════════════════════════════
+// MAPA 10 — PRELÚDIO PARA GUERRA DE SUCESSÃO (inimigos)
+// ══════════════════════════════════════════════════════
+// Soldados das grandes casas e youkai menores. Sem boss neste mapa.
+const ENEMIES_MAP10={
+  soldado_minamoto:{id:'soldado_minamoto',name:'Soldado Minamoto',hp:38000,atk:15000,agility:22,strPts:58,
+    defensePassive:32,
+    description:'Guerreiro disciplinado do Clã Minamoto. Golpe pesado e armadura resistente, mas lento e de pouca vitalidade — uma muralha ofensiva que demora a alcançar o inimigo.'},
+  soldado_fujiwara:{id:'soldado_fujiwara',name:'Soldado Fujiwara',hp:22000,atk:14500,agility:92,strPts:56,
+    description:'Lâmina veloz do Clã Fujiwara. Ataque forte e rapidíssimo, mas frágil e sem defesa — mata rápido, morre rápido.'},
+  kijo:{id:'kijo',name:'Kijo',hp:16000,atk:5200,agility:96,strPts:40,
+    description:'Ogra menor de movimentos frenéticos. Extremamente rápida, mas de golpe fraco e pouca resistência — irritante mais do que perigosa, sozinha.'},
+  suiko:{id:'suiko',name:'Suiko',hp:18000,atk:11000,agility:88,strPts:52,
+    swarm:true, // tende a aparecer em grupos maiores
+    description:'Youkai aquático em bando. Rápido e de golpe forte, porém frágil — raramente aparece sozinho, e a matilha compensa a fragilidade individual.'},
+};
+
+// ══════════════════════════════════════════════════════
 // MAPA 3 — CAMINHO TORTUOSO (inimigos)
 // ══════════════════════════════════════════════════════
 // 2 inimigos aprimorados (Ghoul/Onmyoji do mapa 2, mais fortes) + 2 novos.
@@ -4936,6 +5067,14 @@ const MAPS={
     fixedPhases:[1,3,5,6,8,9],
     boss:'mochizuki_rage',
   },
+  sucessao_prelude:{
+    id:'sucessao_prelude',name:'Prelúdio para Guerra de Sucessão',phases:18,
+    enemies:ENEMIES_MAP10,
+    // Preparação para a guerra de sucessão. Fases fixas: 1,3,7,9,11,13,17. SEM boss.
+    intro:null,introFinishLabel:'⚔️ Avançar',
+    fixedPhases:[1,3,7,9,11,13,17],
+    boss:null,
+  },
 };
 
 // ══════════════════════════════════════════════════════
@@ -4949,15 +5088,29 @@ const TOWER_MAPS={
   bosque:{id:'bosque',name:'Floresta',phases:20,enemies:ENEMIES_DATA,boss:'qin_liangyu',
     towerHpMult:1.5,towerAtkMult:1.4},
   tennobara:{id:'tennobara',name:'Vila',phases:20,enemies:ENEMIES_MAP2,boss:'samurai_nitro',
-    towerHpMult:1.5,towerAtkMult:1.4},
+    towerHpMult:1.7,towerAtkMult:1.5},
   tortuoso:{id:'tortuoso',name:'Caminho',phases:20,enemies:ENEMIES_MAP3,boss:'archer_corrupted',
-    towerHpMult:1.5,towerAtkMult:1.4},
-  kurikara:{id:'kurikara',name:'Redondezas',phases:15,enemies:ENEMIES_MAP4,boss:'ninja_genji',
-    towerHpMult:1.5,towerAtkMult:1.4},
+    towerHpMult:1.9,towerAtkMult:1.6},
+  kurikara:{id:'kurikara',name:'Redondezas',phases:20,enemies:ENEMIES_MAP4,boss:'ninja_genji',
+    towerHpMult:2.1,towerAtkMult:1.75},
+  kurikara_city:{id:'kurikara_city',name:'Kurikara',phases:20,enemies:ENEMIES_MAP5,boss:'gosanjo',
+    towerHpMult:2.35,towerAtkMult:1.9},
+  kurikara2:{id:'kurikara2',name:'Kurikara II',phases:20,enemies:ENEMIES_MAP6,boss:'gosanjo',
+    towerHpMult:2.6,towerAtkMult:2.05},
+  shinohara:{id:'shinohara',name:'Estrada',phases:20,enemies:ENEMIES_MAP7,boss:'shunoban',
+    towerHpMult:2.85,towerAtkMult:2.2},
+  shinohara_city:{id:'shinohara_city',name:'Shinohara',phases:20,enemies:ENEMIES_MAP8,boss:'mochizuki_chiyome',
+    towerHpMult:3.1,towerAtkMult:2.4},
+  shinohara_battle:{id:'shinohara_battle',name:'Batalha',phases:20,enemies:ENEMIES_MAP9,boss:'mochizuki_rage',
+    towerHpMult:3.4,towerAtkMult:2.6},
+  sucessao_prelude:{id:'sucessao_prelude',name:'Prelúdio',phases:20,enemies:ENEMIES_MAP10,boss:'mochizuki_rage',
+    towerHpMult:3.8,towerAtkMult:2.85},
 };
-const TOWER_ORDER=['bosque','tennobara','tortuoso','kurikara'];
+const TOWER_ORDER=['bosque','tennobara','tortuoso','kurikara','kurikara_city','kurikara2','shinohara','shinohara_city','shinohara_battle','sucessao_prelude'];
 // Qual conquista libera cada mapa/servo da Torre
-const TOWER_UNLOCK={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja'};
+const TOWER_UNLOCK={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja',
+  kurikara_city:'defeat_gosanjo',kurikara2:'clear_kurikara2',shinohara:'defeat_shunoban',
+  shinohara_city:'defeat_mochizuki',shinohara_battle:'defeat_mochizuki_rage',sucessao_prelude:'clear_sucessao'};
 
 // Checkpoints da Campanha: cada mapa libera ao derrotar o boss do mapa anterior.
 // O primeiro (bosque) está sempre disponível. Party de 2 (Ibaraki+Sith) nos mapas 4 e 5.
@@ -4971,6 +5124,7 @@ const CAMPAIGN_CHECKPOINTS=[
   {mapId:'shinohara',name:'Estrada de Shinohara',phases:15,unlock:'clear_kurikara2',boss:'???',party2:true},
   {mapId:'shinohara_city',name:'Shinohara',phases:35,unlock:'defeat_shunoban',boss:'Mochizuki Chiyome',party2:true},
   {mapId:'shinohara_battle',name:'Batalha de Shinohara',phases:10,unlock:'defeat_mochizuki',boss:'Mochizuki (Enfurecida)',party2:true},
+  {mapId:'sucessao_prelude',name:'Prelúdio para Guerra de Sucessão',phases:18,unlock:'defeat_mochizuki_rage',boss:'—',party2:true},
 ];
 
 // Gera um encontro usando a tabela de inimigos do mapa atual.
@@ -6286,6 +6440,8 @@ const PATH_THEMES={
   shinohara_city:[['left','🏘️','Ruas Movimentadas'],['center','🏮','Distrito Central'],['right','🌃','Bairro Noturno']],
   // Mapa 9 — Batalha de Shinohara: o pavilhão tomado pelas serpentes de Orochi.
   shinohara_battle:[['left','🐍','Ninho de Serpentes'],['center','⚔️','Pátio de Treino'],['right','🌑','Sombras de Orochi']],
+  // Mapa 10 — Prelúdio para Guerra de Sucessão: estradas rumo ao conflito das grandes casas.
+  sucessao_prelude:[['left','🏯','Fronteira dos Clãs'],['center','🛤️','Estrada Real'],['right','⛩️','Portões de Nara']],
 };
 
 // ══════════════════════════════════════════════════════
@@ -6296,6 +6452,351 @@ const PATH_THEMES={
 //   buff    → guarda um efeito em camp.chaBuffs (consumido em combate)
 //   heal    → cura % do HP MÁX de um servo (ação imediata na party)
 //   revive  → revive um servo caído com % de HP (ação imediata na party)
+// ══════════════════════════════════════════════════════
+// GRAÇAS DO TRONO — bênçãos de Espíritos Heroicos (estilo roguelike)
+// ══════════════════════════════════════════════════════
+// Ao vencer um encontro, o Trono dos Heróis oferece 3 Graças; o jogador escolhe 1.
+// Cada Graça ocupa um SLOT (uma por slot). Pegar a mesma Graça de novo sobe o nível.
+// Guardadas em camp.gracas = {atk:{id,lvl}, skill:{...}, np:{...}, def:{...}, util:{...}}
+const GRACA_SLOTS=[
+  ['atk','Ataque Básico','⚔️'],
+  ['skill','Skills','✨'],
+  ['np','Fantasma Nobre','🌟'],
+  ['def','Defesa','🛡️'],
+  ['util','Utilidade','🎴'],
+];
+const PATRONOS={
+  tamamo:{id:'tamamo',name:'Tamamo-no-Mae',icon:'🦊',color:'#ff9ec4',tag:'Sustento'},
+  kintoki:{id:'kintoki',name:'Sakata Kintoki',icon:'🌟',color:'#ffd54f',tag:'Explosão'},
+  raikou:{id:'raikou',name:'Minamoto no Raikou',icon:'⚡',color:'#b388ff',tag:'Controle'},
+  ushiwaka:{id:'ushiwaka',name:'Ushiwakamaru',icon:'🗡️',color:'#80deea',tag:'Velocidade'},
+  ibuki:{id:'ibuki',name:'Ibuki-Douji',icon:'🐍',color:'#66bb6a',tag:'Veneno'},
+  shuten:{id:'shuten',name:'Shuten Douji',icon:'👹',color:'#ce93d8',tag:'Risco'},
+  osakabe:{id:'osakabe',name:'Osakabehime',icon:'🏯',color:'#90a4ae',tag:'Defesa'},
+  gilgamesh:{id:'gilgamesh',name:'Gilgamesh',icon:'👑',color:'#ffb74d',tag:'Riqueza'},
+  scathach:{id:'scathach',name:'Scáthach',icon:'🔱',color:'#9575cd',tag:'Letalidade'},
+  merlin:{id:'merlin',name:'Merlin',icon:'🌸',color:'#f48fb1',tag:'Sonho'},
+  jeanne:{id:'jeanne',name:"Jeanne d'Arc",icon:'⛪',color:'#fff176',tag:'Proteção'},
+  emiya:{id:'emiya',name:'EMIYA',icon:'🏹',color:'#a1887f',tag:'Projeção'},
+  karna:{id:'karna',name:'Karna',icon:'☀️',color:'#ff8a65',tag:'Perfuração'},
+};
+// v(lvl) = magnitude por nível (I, II, III)
+const V=(a,b,c)=>lvl=>[a,b,c][Math.min(lvl,3)-1];
+const GRACAS=[
+  // ── Tamamo-no-Mae (sustento) ──
+  {id:'t_atk',patrono:'tamamo',slot:'atk',name:'Bênção da Raposa',
+   v:V(8,14,20),desc:v=>`Ataques básicos curam ${v}% do dano causado.`,eff:v=>({lifestealPct:v})},
+  {id:'t_np',patrono:'tamamo',slot:'np',name:'Encanto Restaurador',
+   v:V(12,20,30),desc:v=>`Ao usar o Fantasma Nobre, cura ${v}% do HP máximo do grupo.`,eff:v=>({npHealPct:v})},
+  {id:'t_util',patrono:'tamamo',slot:'util',name:'Espelho do Sol',
+   v:V(3,5,8),desc:v=>`Regenera ${v}% do HP máximo por turno.`,eff:v=>({hpRegenPct:v})},
+
+  // ── Sakata Kintoki (explosão) ──
+  {id:'k_atk',patrono:'kintoki',slot:'atk',name:'Punho Dourado',
+   v:V(20,32,45),desc:v=>`+${v}% de chance de acerto crítico.`,eff:v=>({critChanceUp:v})},
+  {id:'k_def',patrono:'kintoki',slot:'def',name:'Impacto Áureo',
+   v:V(25,45,70),desc:v=>`Críticos causam +${v}% de dano extra.`,eff:v=>({critMultBonus:v})},
+  {id:'k_np',patrono:'kintoki',slot:'np',name:'Golden Spark',
+   v:V(20,35,55),desc:v=>`+${v}% de dano do Fantasma Nobre.`,eff:v=>({npDmgUp:v})},
+
+  // ── Minamoto no Raikou (controle) ──
+  {id:'r_atk',patrono:'raikou',slot:'atk',name:'Raio Materno',
+   v:V(15,25,38),desc:v=>`${v}% de chance de atordoar o alvo ao atacar.`,eff:v=>({stunChance:v})},
+  {id:'r_skill',patrono:'raikou',slot:'skill',name:'Ordem da Mãe',
+   v:V(10,18,28),desc:v=>`Usar uma Skill também carrega ${v}% da Barra de NP.`,eff:v=>({skillNpGain:v})},
+  {id:'r_util',patrono:'raikou',slot:'util',name:'Vigília do Trovão',
+   v:V(4,7,11),desc:v=>`+${v}% de Barra de NP por turno.`,eff:v=>({npPerTurn:v})},
+
+  // ── Ushiwakamaru (velocidade) ──
+  {id:'u_atk',patrono:'ushiwaka',slot:'atk',name:'Dança dos Oito Barcos',
+   v:V(20,33,50),desc:v=>`${v}% de chance do ataque básico acertar duas vezes.`,eff:v=>({doubleHitChance:v})},
+  {id:'u_def',patrono:'ushiwaka',slot:'def',name:'Passo de Pluma',
+   v:V(10,17,25),desc:v=>`+${v}% de chance de evadir ataques inimigos.`,eff:v=>({evadeChanceUp:v})},
+
+  // ── Ibuki-Douji (veneno) ──
+  {id:'i_atk',patrono:'ibuki',slot:'atk',name:'Presas de Orochi',
+   v:V(12,20,30),desc:v=>`Ataques envenenam: ${v}% do dano por turno (3 turnos).`,eff:v=>({poisonOnHitPct:v})},
+  {id:'i_np',patrono:'ibuki',slot:'np',name:'Sopro do Deus Serpente',
+   v:V(8,13,20),desc:v=>`O Fantasma Nobre envenena: ${v}% do HP máx do alvo por turno (3 turnos).`,eff:v=>({poisonOnNpPct:v})},
+
+  // ── Shuten Douji (risco/recompensa) ──
+  {id:'s_util',patrono:'shuten',slot:'util',name:'Embriaguez de Sangue',
+   v:V(25,40,60),desc:v=>`+${v}% de Ataque, mas perde 4% do HP máximo por turno.`,eff:v=>({atkUpPct:v,selfDmgPct:4})},
+  {id:'s_atk',patrono:'shuten',slot:'atk',name:'Taça do Oni',
+   v:V(30,50,75),desc:v=>`+${v}% de dano no ataque básico, mas -20% de defesa.`,eff:v=>({atkFlatUp:v,defDownPct:20})},
+
+  // ── Osakabehime (defesa) ──
+  {id:'o_def',patrono:'osakabe',slot:'def',name:'Muralha do Castelo',
+   v:V(15,25,35),desc:v=>`+${v}% de defesa contra todo dano.`,eff:v=>({defUpPct:v})},
+  {id:'o_util',patrono:'osakabe',slot:'util',name:'Armadilha da Reclusa',
+   v:V(15,25,40),desc:v=>`Reflete ${v}% do dano recebido de volta ao atacante.`,eff:v=>({thornsPct:v})},
+
+  // ── Gilgamesh (riqueza) ──
+  {id:'g_util',patrono:'gilgamesh',slot:'util',name:'Tesouro do Rei',
+   v:V(30,55,90),desc:v=>`+${v}% de QP e Saint Quartz ganhos em combate.`,eff:v=>({qpBonusPct:v})},
+  {id:'g_skill',patrono:'gilgamesh',slot:'skill',name:'Portal de Babilônia',
+   v:V(20,35,50),desc:v=>`Começa cada combate com ${v}% da Barra de NP.`,eff:v=>({startNpPct:v})},
+
+  // ══════ PACOTE II — novos patronos ══════
+  // ── Scáthach (letalidade) ──
+  {id:'sc_atk',patrono:'scathach',slot:'atk',name:'Lança da Morte Carmesim',
+   v:V(35,60,90),desc:v=>`+${v}% de dano contra inimigos abaixo de 30% do HP.`,eff:v=>({executePct:v})},
+  {id:'sc_skill',patrono:'scathach',slot:'skill',name:'Runas Primordiais',
+   v:V(1,2,3),desc:v=>`Reduz a recarga de todas as Skills em ${v} turno(s).`,eff:v=>({skillCdDown:v})},
+
+  // ── Merlin (sonho) ──
+  {id:'me_skill',patrono:'merlin',slot:'skill',name:'Jardim de Avalon',
+   v:V(20,35,50),desc:v=>`${v}% de chance da Skill não entrar em recarga.`,eff:v=>({skillRefundChance:v})},
+  {id:'me_np',patrono:'merlin',slot:'np',name:'Ilusão do Mago das Flores',
+   v:V(20,35,50),desc:v=>`Após o Fantasma Nobre, devolve ${v}% da Barra de NP.`,eff:v=>({npRefundPct:v})},
+
+  // ── Jeanne d'Arc (proteção) ──
+  {id:'je_def',patrono:'jeanne',slot:'def',name:'Luminosité Eternelle',
+   v:V(20,35,50),desc:v=>`Uma vez por combate, sobrevive a um golpe fatal com ${v}% do HP.`,eff:v=>({gutsOnce:v})},
+  {id:'je_util',patrono:'jeanne',slot:'util',name:'Estandarte Sagrado',
+   v:V(15,25,40),desc:v=>`+${v}% de HP máximo para todo o grupo.`,eff:v=>({maxHpUpPct:v})},
+
+  // ── EMIYA (projeção) ──
+  {id:'em_atk',patrono:'emiya',slot:'atk',name:'Projeção Contínua',
+   v:V(40,70,110),desc:v=>`+${v}% de dano no primeiro turno de cada combate.`,eff:v=>({firstStrikePct:v})},
+  {id:'em_util',patrono:'emiya',slot:'util',name:'Rastreamento',
+   v:V(12,20,30),desc:v=>`+${v}% da Barra de NP ao derrotar um inimigo.`,eff:v=>({npChargeOnKill:v})},
+
+  // ── Karna (perfuração) ──
+  {id:'ka_atk',patrono:'karna',slot:'atk',name:'Brahmastra',
+   v:V(25,45,70),desc:v=>`Ignora ${v}% da defesa dos inimigos.`,eff:v=>({pierceDefPct:v})},
+  {id:'ka_def',patrono:'karna',slot:'def',name:'Armadura do Sol',
+   v:V(30,55,85),desc:v=>`+${v}% de Ataque enquanto estiver abaixo de 30% do HP.`,eff:v=>({lowHpAtkPct:v})},
+
+  // ══════ PACOTE II — novas Graças dos patronos antigos ══════
+  {id:'t_skill',patrono:'tamamo',slot:'skill',name:'Bênção de Mikon',
+   v:V(6,10,15),desc:v=>`Cura ${v}% do HP máximo ao derrotar um inimigo.`,eff:v=>({healOnKillPct:v})},
+  {id:'k_util',patrono:'kintoki',slot:'util',name:'Golden Drive',
+   v:V(8,14,20),desc:v=>`+${v}% de dano acumulativo a cada inimigo derrotado no combate.`,eff:v=>({killChainPct:v})},
+  {id:'r_np',patrono:'raikou',slot:'np',name:'Ushi-Gozen',
+   v:V(35,55,80),desc:v=>`O Fantasma Nobre tem ${v}% de chance de atordoar os atingidos.`,eff:v=>({npStunChance:v})},
+  {id:'s_np',patrono:'shuten',slot:'np',name:'Última Gota',
+   v:V(40,65,95),desc:v=>`+${v}% de dano do Fantasma Nobre, mas perde 6% do HP máximo por turno.`,eff:v=>({npDmgUp:v,selfDmgPct:6})},
+];
+const GRACA_BY_ID=Object.fromEntries(GRACAS.map(g=>[g.id,g]));
+// Agrega os efeitos de todas as Graças ativas da run num único objeto de números.
+function getGracaEffects(camp){
+  const out={};
+  const held=camp&&camp.gracas?camp.gracas:{};
+  for(const slot of Object.keys(held)){
+    const h=held[slot];if(!h)continue;
+    const def=GRACA_BY_ID[h.id];if(!def)continue;
+    const val=def.v(h.lvl||1);
+    const e=def.eff(val)||{};
+    for(const k of Object.keys(e))out[k]=(out[k]||0)+e[k];
+  }
+  return out;
+}
+// Sorteia 3 Graças para oferecer. Prioriza variedade de patrono e permite
+// duplicatas de Graças já possuídas (que sobem de nível em vez de virar lixo).
+function rollGracaOffer(camp,count=3){
+  const held=camp&&camp.gracas?camp.gracas:{};
+  const pool=GRACAS.filter(g=>{
+    const cur=held[g.slot];
+    // Se o slot já tem ESTA graça no nível máximo, não oferece de novo.
+    if(cur&&cur.id===g.id&&(cur.lvl||1)>=3)return false;
+    return true;
+  });
+  const picked=[];const usedPatronos=new Set();
+  const shuffled=[...pool].sort(()=>Math.random()-0.5);
+  // 1ª passada: um por patrono (variedade)
+  for(const g of shuffled){
+    if(picked.length>=count)break;
+    if(usedPatronos.has(g.patrono))continue;
+    picked.push(g);usedPatronos.add(g.patrono);
+  }
+  // 2ª passada: completa se faltar
+  for(const g of shuffled){
+    if(picked.length>=count)break;
+    if(!picked.includes(g))picked.push(g);
+  }
+  // Define o nível ofertado: se já possui a mesma graça, oferece o próximo nível.
+  return picked.map(g=>{
+    const cur=held[g.slot];
+    const lvl=(cur&&cur.id===g.id)?Math.min(3,(cur.lvl||1)+1):1;
+    return{id:g.id,lvl};
+  });
+}
+const ROMAN=['I','II','III'];
+
+// ══════════════════════════════════════════════════════
+// ARTES DE SKILLS / NP / PERKS / GRAÇAS
+// ══════════════════════════════════════════════════════
+// Mapeamento por NOME (os nomes são únicos no jogo). Arquivos em assets/skill/.
+// Skills/Perks/Graças: 110x110. Fantasmas Nobres: 44x44.
+// Se o arquivo não existir, o ícone/emoji antigo continua aparecendo (fallback).
+const SKILL_ART_DIR='assets/skill/';
+const SKILL_ART=(()=>{
+  const groups={
+    skill_bonus:['Mana Buster','Golden Drive'],
+    skill_ataque:['Natureza Demoníaca','Energizador de Raiz','Carisma','Sorvete de Verão',
+      'Bênção da Raposa','Punho Dourado','Raio Materno','Taça do Oni','Projeção Contínua'],
+    skill_debuff:['Rampage de Oni','Deixe o Lírio Branco Brilhar'],
+    skill_def:['Mudança de Forma','Ossos que não são meus','Impacto Áureo','Passo de Pluma','Muralha do Castelo'],
+    skill_barra:['Transferência de Mana','Poder Divino (Tinta)','Perdida em Pensamentos numa Noite de Verão',
+      'Persistência','Encanto Restaurador','Golden Spark','Ushi-Gozen'],
+    skill_poison:['Veneno de Brasilisco','Presas de Orochi'],
+    skill_inflict:['Tormento','Sucessora Abençoada','Artes Amaldiçoadas (Oráculo)'],
+    skill_efect:['Ukiyo-e','Sacerdotisa do Selo','Ordem da Mãe','Vigília do Trovão','Rastreamento'],
+    skill_negative:['Fundir Ossos','Sanguessuga de Fada','Embriaguez de Sangue'],
+    skill_npregen:['Poção de Mana','Sopro do Deus Serpente','Última Gota','Ilusão do Mago das Flores'],
+    skill_regen:['Pacto do Escudo'],
+    skill_rand:['Contos Épicos de um Vagabundo','Espelho do Sol','Armadilha da Reclusa','Tesouro do Rei'],
+    skill_guts:['Orbe Cromático','Lança de Haste Branca'],
+    skill_av:['Natureza de Soldado Leal'],
+    skill_star:['Abolição de Rufiões','Marionete Kagura','Constituição Fraca','Portal de Babilônia'],
+    skill_evade:['Olho da Mente (Verdadeiro)','Kouga-ryuu','Palácio de Conchas','Olho da Mente (Falso)'],
+    skill_beat:['Bela Aparência','Bênção de Mikon'],
+    skill_quick:['Grimalkin','Runa Primordial (Verão)','Shukuchi','Dança dos Oito Barcos'],
+    skill_vv:['Novo Okuni Kabuki','Extremo','Lança da Morte Carmesim','Brahmastra'],
+    skill_arts:['Maldição de Orochi','Jardim de Avalon','Estandarte Sagrado'],
+    skill_mermaid:['Carne de Sereia'],
+    skill_npup:['Inabalável','Runas Primordiais'],
+    skill_invenc:['Luminosité Eternelle','Armadura do Sol'],
+    // ── Fantasmas Nobres (44x44) ──
+    np_buster:['Rashōmon Daiengi','Zekken Mukyusandan'],
+    np_arts:['Canção da Lealdade Abnegada','Fleur de Lis',"Nirmāṇarati Heaven's Foam",
+      'Kuchiyose, Ibukidaimyoujin-Engi'],
+    np_quick:['Fetch Failnaught','Okuni Repertoire: Kabuki of the Izumo Wild God',
+      'Gate of Aegir','Mumyou Sandanzuki'],
+  };
+  const map={};
+  for(const file in groups)for(const nome of groups[file])map[nome]=SKILL_ART_DIR+file+'.png';
+  return map;
+})();
+function artFor(nome){return nome?SKILL_ART[nome]||null:null;}
+// Os botões do combate usam rótulos curtos; aqui está o nome completo de cada
+// Skill de Mestre, que é a chave usada para achar a arte.
+const MASTER_SKILL_NOME={
+  manaBuster:'Mana Buster',transf:'Transferência de Mana',veneno:'Veneno de Brasilisco',
+  tormento:'Tormento',ossos:'Ossos que não são meus',ukiyoe:'Ukiyo-e',fundir:'Fundir Ossos',
+};
+
+// Ícone de skill/perk/graça/NP: usa a arte quando existe, senão mostra o emoji antigo.
+function SkillIcon({nome,emoji,size=26,style}){
+  const src=artFor(nome);
+  const[erro,setErro]=useState(false);
+  if(!src||erro)return emoji?<span style={{fontSize:size*0.8,lineHeight:1,...style}}>{emoji}</span>:null;
+  return <img src={src} alt="" width={size} height={size} onError={()=>setErro(true)}
+    style={{width:size,height:size,objectFit:'contain',verticalAlign:'middle',flexShrink:0,...style}}/>;
+}
+
+
+// Tela de escolha de Graça, exibida após vencer um encontro.
+function GracaOfferScreen({camp,offer,onPick}){
+  const held=camp.gracas||{};
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      <div className="panel" style={{maxWidth:620}}>
+        <div style={{textAlign:'center',marginBottom:6}}>
+          <div style={{fontSize:'2rem'}}>🏛️</div>
+          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3}}>GRAÇA DO TRONO</h2>
+          <p style={{color:'var(--parchment-dark)',fontSize:'.78rem',fontStyle:'italic',marginTop:4}}>
+            Um Espírito Heroico estende sua bênção. Escolha uma — ela durará por toda esta jornada.
+          </p>
+        </div>
+        <div className="divider"><span className="divider-text">✦ ESCOLHA UMA ✦</span></div>
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {offer.map(o=>{
+            const g=GRACA_BY_ID[o.id];if(!g)return null;
+            const pat=PATRONOS[g.patrono];
+            const val=g.v(o.lvl);
+            const slot=GRACA_SLOTS.find(s=>s[0]===g.slot);
+            const cur=held[g.slot];
+            const isUpgrade=cur&&cur.id===g.id;
+            const replaces=cur&&cur.id!==g.id?GRACA_BY_ID[cur.id]:null;
+            return(
+              <button key={o.id} onClick={()=>onPick(o)}
+                style={{display:'flex',gap:12,alignItems:'flex-start',textAlign:'left',cursor:'pointer',
+                  padding:'12px 14px',borderRadius:8,width:'100%',
+                  background:'rgba(255,255,255,.02)',border:`1px solid ${pat.color}55`,
+                  transition:'all .18s'}}
+                onMouseEnter={e=>{e.currentTarget.style.background=`${pat.color}18`;e.currentTarget.style.borderColor=pat.color;}}
+                onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.02)';e.currentTarget.style.borderColor=`${pat.color}55`;}}>
+                <div style={{flexShrink:0,filter:`drop-shadow(0 0 8px ${pat.color}88)`,display:'flex',alignItems:'center'}}>
+                  <SkillIcon nome={g.name} emoji={pat.icon} size={48}/>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                    <span className="cinzel" style={{color:pat.color,fontSize:'.9rem',letterSpacing:1}}>{g.name}</span>
+                    <span style={{fontSize:'.62rem',color:'var(--gold)',border:'1px solid var(--gold-dim)',
+                      borderRadius:3,padding:'0 5px'}}>{ROMAN[o.lvl-1]}</span>
+                    {isUpgrade&&<span style={{fontSize:'.62rem',color:'#7ee08a'}}>▲ MELHORIA</span>}
+                  </div>
+                  <div style={{fontSize:'.63rem',color:'var(--parchment-dark)',margin:'2px 0 4px'}}>
+                    {pat.name} · {pat.tag} · {slot?`${slot[2]} ${slot[1]}`:g.slot}
+                  </div>
+                  <div style={{fontSize:'.78rem',color:'var(--parchment)'}}>{g.desc(val)}</div>
+                  {replaces&&(
+                    <div style={{fontSize:'.66rem',color:'#e8a0a0',marginTop:4}}>
+                      ⚠ Substitui: {replaces.name}
+                    </div>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <button className="btn btn-full" style={{marginTop:14,opacity:.7}} onClick={()=>onPick(null)}>
+          Recusar (seguir sem Graça)
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Barra lateral (direita) com a BUILD atual — uma linha por slot, aberta/minimizável.
+function GracaSidebar({camp}){
+  // Em telas largas abre por padrão; no mobile começa minimizada para não cobrir o jogo.
+  const[open,setOpen]=useState(()=>typeof window==='undefined'||window.innerWidth>900);
+  const held=(camp&&camp.gracas)||{};
+  const count=Object.keys(held).filter(k=>held[k]).length;
+  return(
+    <>
+      <button className="graca-sidebar-toggle" onClick={()=>setOpen(o=>!o)}
+        title={open?'Minimizar Graças':'Mostrar Graças'}>{open?'▶':'🏛️'}</button>
+      <div className={`graca-sidebar${open?'':' hidden'}`}>
+        <div className="graca-sidebar-title">🏛️ GRAÇAS DO TRONO</div>
+        <div className="graca-sidebar-sub">{count} de {GRACA_SLOTS.length} slots</div>
+        {GRACA_SLOTS.map(([key,label,icon])=>{
+          const h=held[key];
+          const g=h?GRACA_BY_ID[h.id]:null;
+          if(!g)return(
+            <div key={key} className="graca-slot empty">
+              <div className="graca-slot-head">{icon} {label}</div>
+              <div className="graca-slot-desc">— vazio —</div>
+            </div>
+          );
+          const pat=PATRONOS[g.patrono];
+          const lvl=h.lvl||1;
+          return(
+            <div key={key} className="graca-slot" style={{borderColor:`${pat.color}55`,background:`${pat.color}12`}}>
+              <div className="graca-slot-head">{icon} {label}</div>
+              <div className="graca-slot-name" style={{color:pat.color}}>
+                <SkillIcon nome={g.name} emoji={pat.icon} size={22}/>
+                <span>{g.name}</span>
+                <span className="graca-slot-lvl">{ROMAN[lvl-1]}</span>
+              </div>
+              <div className="graca-slot-desc">{g.desc(g.v(lvl))}</div>
+            </div>
+          );
+        })}
+        {count===0&&(
+          <div style={{fontSize:'.55rem',color:'var(--parchment-dark)',textAlign:'center',
+            fontStyle:'italic',marginTop:4,lineHeight:1.4}}>
+            Vença encontros para receber as bênçãos dos Espíritos Heroicos.
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 const TEA_HOUSE_ITEMS=[
   {id:'cha_revolta',name:'Chá da Revolta',icon:'🍵',cur:'qp',cost:10000,kind:'buff',
    desc:'+20% de Ataque por 5 encontros.'},
@@ -6414,6 +6915,7 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
     :(camp.mapId==='shinohara')?(phase>=maxPhases)
     :(camp.mapId==='shinohara_city')?(phase>=maxPhases)
     :(camp.mapId==='shinohara_battle')?(phase>=maxPhases)
+    :(camp.mapId==='sucessao_prelude')?false
     :(phase>=maxPhases-1);
 
   // ── Casa de Chá: efetua uma compra (um item por vez, ilimitadas ao longo da run) ──
@@ -6438,6 +6940,7 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
     // Cobra a moeda (saldo real do profile)
     const paid=item.cur==='sq'?{...fresh,sq:fresh.sq-item.cost}:{...fresh,qp:fresh.qp-item.cost};
     saveProfile(paid);setProfile(paid);
+    setCamp(c=>({...c,teaBuys:(c.teaBuys||0)+1})); // desafios "Freguês da Casa de Chá" / "Jejum"
 
     // Aplica o efeito
     if(item.kind==='heal'){
@@ -6472,6 +6975,7 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
   return(
     <div className="screen">
       <PartySidebar party={camp.party||[camp.servo]}/>
+      <GracaSidebar camp={camp}/>
       {teaOpen&&(
         <TeaHouseModal party={party} profile={profile} onBuy={buyTeaItem} notif={teaNotif}
           onClose={()=>{setTeaOpen(false);setTeaNotif('');}}/>
@@ -6745,6 +7249,36 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         isGosanjo:true,isBoss:true,
       });
     }
+    // Kurikara II (mapa 6) não tem boss na Campanha — este caso só é usado no modo
+    // TORRE, onde todo andar precisa de um guardião na fase 20 (reusa o Go-Sanjo).
+    if(mid==='kurikara2'){
+      return T({
+        ...GOSANJO,instanceId:'gosanjo_boss',
+        maxHp:GOSANJO.hp,currentHp:GOSANJO.hp,
+        atkScaled:GOSANJO.attack,
+        damage:Math.round(GOSANJO.attack*(GOSANJO.attributes.strength.points/100)),
+        agility:GOSANJO.attributes.agility.points,
+        npBar:0,activeBuffs:[],activeDebuffs:[],
+        cooldowns:{danca:2,selo:3},
+        evadeTurns:0,
+        isGosanjo:true,isBoss:true,
+      });
+    }
+    // Prelúdio (mapa 10) também não tem boss na Campanha — no TORRE é o andar final,
+    // guardado pela Mochizuki Enfurecida.
+    if(mid==='sucessao_prelude'){
+      return T({
+        ...MOCHIZUKI_RAGE,instanceId:'mochizuki_rage_boss',
+        maxHp:MOCHIZUKI_RAGE.hp,currentHp:MOCHIZUKI_RAGE.hp,
+        atkScaled:MOCHIZUKI_RAGE.attack,
+        damage:Math.round(MOCHIZUKI_RAGE.attack*(MOCHIZUKI_RAGE.attributes.strength.points/100)),
+        agility:MOCHIZUKI_RAGE.attributes.agility.points,
+        npBar:20,activeBuffs:[],activeDebuffs:[],
+        cooldowns:{curse:2,orochi:3,kougaryu:1},
+        evadeTurns:0,
+        isMochizuki:true,isBoss:true,
+      });
+    }
     if(mid==='shinohara'){ // Shunoban, o Ciclope Vermelho (mapa 7)
       return T({
         ...SHUNOBAN,instanceId:'shunoban_boss',
@@ -6843,7 +7377,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const lvl=(loadServoXP(def.id)).level;
     // Bônus da Aria/plan só se aplicam ao líder na Campanha (não há party lá).
     const hpBonus=isLeader?ariaHpBonus:0;
-    const npAdd=isLeader?planNpGain:0;
+    // Graça — Portal de Babilônia (Gilgamesh): começa o combate com NP carregado
+    const npAdd=(isLeader?planNpGain:0)+(getGracaEffects(camp).startNpPct||0);
     // GOLDEN RULE: bônus acumulativo de +5% ATK e +5% HP por fase de combate vencida na run.
     const grStacks=camp.goldenRule||0;
     const grMult=1+0.05*grStacks;
@@ -6858,7 +7393,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       }
     }
     const baseHpMax=(m.hpMax||def.getHp(lvl))+hpBonus;
-    const grHpMax=Math.round(baseHpMax*grMult);
+    // Graça — Estandarte Sagrado (Jeanne): +% de HP máximo para o grupo
+    const hpGraca=1+(getGracaEffects(camp).maxHpUpPct||0)/100;
+    const grHpMax=Math.round(baseHpMax*grMult*hpGraca);
     // Preserva o HP proporcional: se o membro entra com HP cheio, continua cheio (agora maior).
     const curHp=(m.hp!=null?m.hp:def.getHp(lvl))+hpBonus;
     const wasFullHp=curHp>=baseHpMax;
@@ -6885,6 +7422,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // Fundir Ossos): recarga ÚNICA e compartilhada por TODO o grupo — usar numa servo
   // trava a skill pros outros também, até a recarga acabar.
   const[masterCd,setMasterCd]=useState({manaBuster:0,transf:0,veneno:0,tormento:0,ossos:0,ukiyoe:0,fundir:0});
+  // ── Rastreadores para conquistas de DESAFIO (por combate) ──
+  const chNpUsed=useRef(false);      // algum Fantasma Nobre foi liberado?
+  const chSkillUsed=useRef(false);   // alguma Skill (Servo ou Mestre) foi usada?
+  const chDmgTaken=useRef(false);    // algum Servo perdeu HP?
+  const thornsPending=useRef(0);     // dano a refletir (Graça da Osakabehime)
+  const lastActorIdx=useRef(null);   // índice do inimigo que agiu por último
+  const gutsUsed=useRef(false);      // Graça da Jeanne já foi consumida neste combate?
+  const killChain=useRef(0);         // inimigos derrotados neste combate (Golden Drive)
   // `servo` = membro ativo da party; `setServo` atualiza esse membro no array.
   const servo=party[activeIdx];
   const setServo=(updater)=>{
@@ -7108,14 +7653,24 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(towerAtkUp>0)atkUp+=towerAtkUp;
     // Casa de Chá — Chá da Revolta: +20% ATK enquanto durar (contado por encontros)
     if(camp.chaBuffs?.atkUp&&(camp.chaBuffs.atkUp.encounters||0)>0)atkUp+=camp.chaBuffs.atkUp.value;
+    // Graça — Embriaguez de Sangue (Shuten Douji): +ATK ao custo de HP por turno
+    const GEdmg=getGracaEffects(camp);
+    atkUp+=(GEdmg.atkUpPct||0);
+    // Graça — Armadura do Sol (Karna): +ATK abaixo de 30% do HP
+    if(GEdmg.lowHpAtkPct&&servo.hp>0&&servo.hp/servo.hpMax<=0.30)atkUp+=GEdmg.lowHpAtkPct;
+    // Graça — Golden Drive (Kintoki): +dano por inimigo já derrotado neste combate
+    if(GEdmg.killChainPct)atkUp+=GEdmg.killChainPct*(killChain.current||0);
     // Passiva de ataque (ex.: Criação de Território da Kiara)
     for(const p of servo.passiveSkills||[]){if(p.effect.type==='atk_passive')atkUp+=p.effect.value;}
     return Math.round(dmg*(1+atkUp/100)*mult);
   }
 
   function applyDmgToEnemy(raw,enemy){
+    const GEe=getGracaEffects(camp);
     let defDown=0;
     for(const d of enemy.activeDebuffs||[]){if(d.type==='defense_down')defDown+=d.value;}
+    // Graça — Brahmastra (Karna): trata parte da defesa inimiga como reduzida
+    defDown+=(GEe.pierceDefPct||0);
     let dmg=raw*(1+defDown/100);
     // Mitigação passiva fixa do Nitro-Type (tanque blindado)
     if(enemy.passiveMitigation){
@@ -7131,6 +7686,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     let mitBuff=0;
     for(const b of enemy.activeBuffs||[]){if(b.type==='mitigation')mitBuff+=b.value;}
     if(mitBuff>0)dmg=dmg*(1-clamp(mitBuff-defDown,0,90)/100);
+    // Graça — Lança da Morte Carmesim (Scáthach): execução em alvos feridos
+    if(GEe.executePct&&enemy.maxHp&&enemy.currentHp/enemy.maxHp<=0.30)dmg*=1+GEe.executePct/100;
+    // Graça — Projeção Contínua (EMIYA): golpe de abertura reforçado
+    if(GEe.firstStrikePct&&turn===1)dmg*=1+GEe.firstStrikePct/100;
     return Math.round(dmg);
   }
 
@@ -7158,12 +7717,35 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(out.currentHp>0&&out.isBoss){
       out.npBar=clamp((out.npBar||0)+((out.attributes?.mana?.gainPercent||1.7)*1.5),0,100);
     }
+    // ── Graças de ABATE: disparam quando o inimigo realmente cai ──
+    if(e.currentHp>0&&out.currentHp<=0){
+      killChain.current=(killChain.current||0)+1; // Golden Drive (Kintoki)
+      const GEk=getGracaEffects(camp);
+      if(GEk.healOnKillPct){ // Bênção de Mikon (Tamamo)
+        const heal=GEk.healOnKillPct;
+        setParty(prev=>prev.map(m=>m.defeated?m:
+          {...m,hp:clamp(m.hp+Math.round(m.hpMax*heal/100),0,m.hpMax)}));
+        addLog(`🦊 Bênção de Mikon: o grupo recupera ${heal}% do HP máximo.`,'heal');
+      }
+      if(GEk.npChargeOnKill){ // Rastreamento (EMIYA)
+        const gain=GEk.npChargeOnKill;
+        setParty(prev=>prev.map((m,i)=>i===activeIdx?{...m,npBar:clamp(m.npBar+gain,0,100)}:m));
+        addLog(`🏹 Rastreamento: +${gain}% da Barra de NP.`,'player');
+      }
+    }
     return out;
   }
 
   function applyDmgToServo(raw,target){
     const tgt=target||servo; // alvo do golpe (default: servo ativo)
     const tdef=PLAYABLE_SERVOS[tgt.id]||SDEF;
+    const GEd=getGracaEffects(camp);
+    // Passo de Pluma (Ushiwakamaru): chance extra de evadir
+    if(GEd.evadeChanceUp&&rollChance(GEd.evadeChanceUp)){
+      addLog(`🪶 Passo de Pluma: ${tdef.name} evade o golpe!`,'player');
+      spawnFx('servo','EVADIU','miss');
+      return 0;
+    }
     // Evasão do Servo alvo (ex.: Olho da Mente do Deon): esquiva total do golpe
     if((tgt.evadeTurns||0)>0){
       addLog(`👁️ ${tdef.name} prevê o golpe e esquiva! (Evasão)`,'player');
@@ -7179,12 +7761,36 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Fleur de Lis (Saber): +15% DEF durante todo o combate do boss
     if(camp.saberBuff)defUp+=SABER_NP.defUp;
     for(const d of tgt.activeDebuffs||[]){if(d.type==='defense_down')defDown+=d.value;}
-    return Math.round(raw*(1-clamp(passiveMit+defUp-defDown,0,95)/100));
+    // Graças: Muralha do Castelo (+def) e Taça do Oni (-def)
+    defUp+=(GEd.defUpPct||0);
+    defDown+=(GEd.defDownPct||0);
+    const finalDmg=Math.round(raw*(1-clamp(passiveMit+defUp-defDown,0,95)/100));
+    // Graça — Luminosité Eternelle (Jeanne): 1× por combate, sobrevive ao golpe fatal.
+    if(GEd.gutsOnce&&!gutsUsed.current&&finalDmg>=tgt.hp&&tgt.hp>0){
+      gutsUsed.current=true;
+      const keep=Math.max(1,Math.round(tgt.hpMax*GEd.gutsOnce/100));
+      addLog(`⛪ Luminosité Eternelle! ${tdef.name} recusa a morte e resiste com ${keep} de HP!`,'np');
+      spawnFx('servo','⛪ GUTS!','heal');
+      chDmgTaken.current=true;
+      return Math.max(0,tgt.hp-keep);
+    }
+    if(finalDmg>0){
+      chDmgTaken.current=true; // desafio "Vitória Imaculada"
+      // Graça de Osakabehime (Armadilha da Reclusa): acumula o dano a refletir.
+      // É descontado do inimigo que agiu, ao fim da ação dele.
+      if(GEd.thornsPct>0)thornsPending.current+=Math.round(finalDmg*GEd.thornsPct/100);
+    }
+    return finalDmg;
   }
 
   function tickServoEffects(s){
     let hp=s.hp;
     let npBar=s.npBar;
+    // ── GRAÇAS: efeitos por turno ──
+    const GEt=getGracaEffects(camp);
+    if(GEt.hpRegenPct)hp=clamp(hp+Math.round(s.hpMax*GEt.hpRegenPct/100),0,s.hpMax);        // Espelho do Sol
+    if(GEt.selfDmgPct)hp=Math.max(1,hp-Math.round(s.hpMax*GEt.selfDmgPct/100));             // Embriaguez de Sangue
+    if(GEt.npPerTurn)npBar=clamp(npBar+GEt.npPerTurn,0,100);                                 // Vigília do Trovão
     // Perk: Pacto do Escudo — regen de HP por turno
     if(perkEffects.hpRegenPerTurn>0)hp=clamp(hp+perkEffects.hpRegenPerTurn,0,s.hpMax);
     // Perk: Poção de Mana — regen de NP por turno
@@ -7352,22 +7958,53 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       }
     }
     let dmg=getServoDmg(1,tgt);
+    // ── GRAÇAS DO TRONO: bônus do ataque básico ──
+    const GE=getGracaEffects(camp);
+    if(GE.atkFlatUp)dmg=Math.round(dmg*(1+GE.atkFlatUp/100)); // Taça do Oni
     // Chance de crítico = Sorte + bônus de buffs ativos (crit_up)
-    let critBonus=0;
+    let critBonus=(GE.critChanceUp||0);
     for(const b of servo.activeBuffs||[]){if(b.type==='crit_up')critBonus+=b.value;}
     // Passiva de crítico (ex.: Manifestação Independente da Kiara)
     for(const p of servo.passiveSkills||[]){if(p.effect.type==='crit_passive')critBonus+=p.effect.value;}
     const isCrit=rollChance(servo.attributes.luck.points+critBonus);
-    if(isCrit)dmg=Math.round(dmg*1.5);
+    if(isCrit)dmg=Math.round(dmg*(1.5+(GE.critMultBonus||0)/100)); // Impacto Áureo
     dmg=applyDmgToEnemy(dmg,tgt);
+    // Dança dos Oito Barcos: chance do golpe acertar duas vezes
+    let doubleHit=false;
+    if(GE.doubleHitChance&&rollChance(GE.doubleHitChance)){
+      doubleHit=true;dmg=Math.round(dmg*1.6); // 2º golpe a 60%
+    }
     recordDamage(dmg); // estatística: maior dano dado
+    // Bênção da Raposa: cura parte do dano causado
+    if(GE.lifestealPct){
+      const heal=Math.round(dmg*GE.lifestealPct/100);
+      if(heal>0){
+        newServo.hp=clamp(newServo.hp+heal,0,newServo.hpMax);
+        addLog(`🦊 Bênção da Raposa: +${heal} de HP.`,'player');
+      }
+    }
     // Skill da Torre — Carisma: chance de ganhar NP ao atacar
     if(towerSk&&towerSk.carisma.lvl>0&&rollChance(towerSk.carisma.npChance)){
       newServo.npBar=clamp(newServo.npBar+towerSk.carisma.npGain,0,100);
       addLog(`👑 Carisma inspira! +${towerSk.carisma.npGain}% de NP.`,'player');
     }
-    const newEnemies=enemies.map((e,i)=>i!==selectedTarget?e:damageEnemy(e,dmg,isCrit?'crit':'dmg'));
-    addLog(`${isCrit?'🔥 CRÍTICO! ':''}${SDEF.name} ataca ${tgt.name}: ${dmg} dano`+(isCrit?' (×1.5)':''),'player');
+    let newEnemies=enemies.map((e,i)=>i!==selectedTarget?e:damageEnemy(e,dmg,isCrit?'crit':'dmg'));
+    // Raio Materno: chance de atordoar · Presas de Orochi: aplica veneno
+    if(GE.stunChance&&rollChance(GE.stunChance)){
+      newEnemies=newEnemies.map((e,i)=>i!==selectedTarget?e:{...e,stunned:(e.stunned||0)+1});
+      addLog(`⚡ Raio Materno atordoa ${tgt.name}!`,'player');
+      spawnFx(tgt.instanceId,'ATORDOADO','stun');
+    }
+    if(GE.poisonOnHitPct){
+      const pDmg=Math.round(dmg*GE.poisonOnHitPct/100);
+      newEnemies=newEnemies.map((e,i)=>{
+        if(i!==selectedTarget)return e;
+        const others=(e.activeDebuffs||[]).filter(d=>d.type!=='poison');
+        return{...e,activeDebuffs:[...others,{type:'poison',value:pDmg,turns:3,curse:true}]};
+      });
+      addLog(`🐍 Presas de Orochi: veneno de ${pDmg}/turno.`,'player');
+    }
+    addLog(`${isCrit?'🔥 CRÍTICO! ':''}${SDEF.name} ataca ${tgt.name}: ${dmg} dano`+(isCrit?' (×1.5)':'')+(doubleHit?' · 🗡️ GOLPE DUPLO!':''),'player');
     setServo(newServo);setEnemies(newEnemies);
     if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
     doEnemyTurn(newServo,newEnemies);
@@ -7380,6 +8017,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(!isServoTurn||enemyChainLock.current){setNotif('Aguarde sua vez na ordem de iniciativa!');return;}
     if((servo.skillLocked||0)>0){setNotif(`Skill travada! (${servo.skillLocked} turno(s) restante(s))`);return;}
     if((servo.cooldowns[skillId]||0)>0){setNotif('Skill em recarga!');return;}
+    chSkillUsed.current=true; // desafio "Puro Aço"
+    const GEs=getGracaEffects(camp); // Graça — Ordem da Mãe: skills carregam NP
     playSpriteAnim(activeIdx,'attack',1200); // skills usam o sprite de ataque
     const skillDef=(SDEF.activeSkills||[]).find(s=>s.id===skillId);
     if(!skillDef)return;
@@ -7387,7 +8026,18 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const eff=skillDef.getEffect(lvl);
     const cd=skillDef.getCD(lvl);
     const et=skillDef.effectType;
-    let newServo={...servo,cooldowns:{...servo.cooldowns,[skillId]:cd}};
+    // Graça — Runas Primordiais (Scáthach): recarga reduzida.
+    // Graça — Jardim de Avalon (Merlin): chance da Skill nem entrar em recarga.
+    let finalCd=Math.max(1,cd-(GEs.skillCdDown||0));
+    if(GEs.skillRefundChance&&rollChance(GEs.skillRefundChance)){
+      finalCd=0;
+      addLog(`🌸 Jardim de Avalon: ${skillDef.name} não entrou em recarga!`,'player');
+    }
+    let newServo={...servo,cooldowns:{...servo.cooldowns,[skillId]:finalCd}};
+    if(GEs.skillNpGain){
+      newServo.npBar=clamp(newServo.npBar+GEs.skillNpGain,0,100);
+      addLog(`⚡ Ordem da Mãe: +${GEs.skillNpGain}% de Barra de NP.`,'player');
+    }
     let newEnemies=[...enemies];
 
     // ── Efeitos genéricos por tipo (compartilhados entre servos) ──
@@ -7560,6 +8210,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Skills do Mestre são um recurso ÚNICO e COMPARTILHADO pelo grupo inteiro —
     // a recarga vale pra todo mundo, não reseta ao trocar de servo ativo.
     if((masterCd[skillKey]||0)>0){setNotif('Skill em recarga!');return;}
+    chSkillUsed.current=true; // desafio "Puro Aço"
     const sk=sv[skillKey];
     setMasterCd(prev=>({...prev,[skillKey]:sk.cd}));
     let newServo={...servo};
@@ -7643,14 +8294,29 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const npLvl=servo.npLevel||1;
     const npDef=SDEF.np.levels[npLvl];
     const npEt=SDEF.np.effectType;
+    chNpUsed.current=true; // desafio "Sem Fantasma Nobre"
+    const GEn=getGracaEffects(camp);
     let dmg=servo.attackBase*(servo.attributes.strength.points/100);
     if(servo.className==='Berserker')dmg*=1.08;
-    let npUp=0;
+    let npUp=(GEn.npDmgUp||0); // Graça: Golden Spark
     for(const b of servo.activeBuffs||[]){if(b.type==='np_damage_up')npUp+=b.value;}
     dmg=Math.round(applyDmgToEnemy(dmg*(1+npUp/100)*(npDef.dmgPct/100),tgt));
     recordDamage(dmg);
 
     let newServo={...servo,npBar:0};
+    // Graça — Ilusão do Mago das Flores (Merlin): devolve parte da Barra de NP
+    if(GEn.npRefundPct){
+      newServo.npBar=clamp(GEn.npRefundPct,0,100);
+      addLog(`🌸 Ilusão do Mago das Flores: ${GEn.npRefundPct}% da Barra de NP retorna.`,'player');
+    }
+    // Graça — Encanto Restaurador (Tamamo): NP cura o grupo
+    if(GEn.npHealPct){
+      const healPct=GEn.npHealPct;
+      newServo.hp=clamp(newServo.hp+Math.round(newServo.hpMax*healPct/100),0,newServo.hpMax);
+      setParty(prev=>prev.map((m,i)=>i===activeIdx?m:(m.defeated?m:
+        {...m,hp:clamp(m.hp+Math.round(m.hpMax*healPct/100),0,m.hpMax)})));
+      addLog(`🦊 Encanto Restaurador: o grupo recupera ${healPct}% do HP máximo.`,'heal');
+    }
     const isAoE=SDEF.np.isAoE;
     const sureHit=SDEF.np.sureHit; // ignora evasão do inimigo (Baobhan)
     const newEnemies=enemies.map((e,i)=>{
@@ -7658,6 +8324,16 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       // NP single-target atinge só o alvo; AoE (Fleur de Lis) atinge todos
       if(!isAoE&&i!==selectedTarget)return e;
       let hit=damageEnemy(e,dmg,'np',sureHit);
+      // Graça de Minamoto no Raikou (Ushi-Gozen): o NP pode atordoar os atingidos.
+      if(GEn.npStunChance&&hit.currentHp>0&&rollChance(GEn.npStunChance)){
+        hit={...hit,stunned:Math.max(hit.stunned||0,1)};
+      }
+      // Graça de Ibuki-Douji (Sopro do Deus Serpente): o NP envenena o alvo.
+      if(GEn.poisonOnNpPct){
+        const pv=Math.round((hit.maxHp||hit.currentHp)*GEn.poisonOnNpPct/100);
+        const others=(hit.activeDebuffs||[]).filter(d=>d.type!=='poison');
+        hit={...hit,activeDebuffs:[...others,{type:'poison',value:pv,turns:3,curse:true}]};
+      }
       // NP da Ibaraki: DEF down no alvo
       if(npEt==='dmg_defdown'){
         hit={...hit,activeDebuffs:[...(hit.activeDebuffs||[]),{type:'defense_down',value:npDef.defDown,turns:SDEF.np.defDownDur}]};
@@ -7784,6 +8460,20 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // estado `orderPtr` fica "congelado" na closure durante ações encadeadas via
   // setTimeout (o React não re-renderiza entre elas). Ler do estado causaria loop.
   function stepOrder(curServo,curEnemies,fromPtr,justDiedIdx){
+    // Graça de Osakabehime (Armadilha da Reclusa): devolve ao inimigo que acabou de
+    // agir o dano acumulado no ataque dele.
+    if(thornsPending.current>0&&lastActorIdx.current!=null&&curEnemies){
+      const li=lastActorIdx.current;
+      const foe=curEnemies[li];
+      if(foe&&foe.currentHp>0){
+        const refl=thornsPending.current;
+        curEnemies[li]={...foe,currentHp:Math.max(0,foe.currentHp-refl)};
+        addLog(`🏯 Armadilha da Reclusa reflete ${refl.toLocaleString()} de dano em ${foe.name}!`,'player');
+        spawnFx(foe.instanceId,`-${refl.toLocaleString()}`,'dmg');
+        setEnemies([...curEnemies]);
+      }
+      thornsPending.current=0;lastActorIdx.current=null;
+    }
     const order=turnOrder;
     let ptr=(fromPtr==null?orderPtr:fromPtr);
     const isDead=(i,mm)=>i===justDiedIdx||!mm||mm.defeated||mm.hp<=0;
@@ -7859,6 +8549,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // Ação de um inimigo específico (índice em `es`). `s` é o servo ALVO sorteado,
   // `targetIdx` é a posição dele na party. Contém a IA de cada tipo.
   function doEnemyAction(actIdx,s,es,curPtr,targetIdx){
+    lastActorIdx.current=actIdx; // Graça da Osakabehime: quem sofre o reflexo
     const n=es.length;
     const tgtIdx=(targetIdx==null?activeIdx:targetIdx);
     const tgtDef=PLAYABLE_SERVOS[s.id]||SDEF; // definição do servo ALVO
@@ -8481,7 +9172,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
       // SQ e QP depositados IMEDIATAMENTE (leitura atômica do storage)
       // Perk "Contos Épicos de um Vagabundo": multiplica a obtenção de SQ e QP
-      const moneyMult=1+(perkEffects.sqQpBonusPercent||0)/100;
+      // Graça de Gilgamesh (Tesouro do Rei): soma mais um multiplicador por cima.
+      const moneyMult=1+(perkEffects.sqQpBonusPercent||0)/100
+        +(getGracaEffects(camp).qpBonusPct||0)/100;
       const sqGain=Math.round((isBoss?5:2)*moneyMult);
       const qpGain=Math.round((isBoss?1500:500)*moneyMult);
       depositSQ(sqGain);
@@ -8531,6 +9224,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         // xpBonus e bondXpBonus são permanentes pela run — mantidos.
         newChaBuffs=Object.keys(nb).length?nb:null;
       }
+      // Rastreadores de jornada para as conquistas de desafio:
+      // que tipos de inimigo já foram derrotados e se algum Servo caiu.
+      const kindsSeen=Array.from(new Set([...(camp.enemyKinds||[]),
+        ...(finalEnemies||[]).map(e=>e.id).filter(Boolean)]));
+      const someoneFell=(camp.anyFell||false)||finalParty.some(m=>m.defeated||m.hp<=0);
       const updatedCamp={...camp,
         party:finalParty,
         servo:finalParty[0]||{...finalServo,npLevel:bondToNP(newBond.level)},
@@ -8538,12 +9236,43 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         npLevel:bondToNP(newBond.level),
         goldenRule:newGolden,
         chaBuffs:newChaBuffs,
+        enemyKinds:kindsSeen,
+        anyFell:someoneFell,
         sqEarned:(camp.sqEarned||0)+sqGain,
         qpEarned:(camp.qpEarned||0)+qpGain,
         xpEarned:(camp.xpEarned||0)+xpGain,
         bondEarned:(camp.bondEarned||0)+bondGain,
         planBonus:null,
       };
+
+      // ── Conquistas de DESAFIO avaliadas ao vencer ──
+      const chIds=[];
+      if(isBoss){
+        if(!chDmgTaken.current)chIds.push('flawless_boss');
+        if(turn<=3)chIds.push('blitz_boss');
+        if(!chNpUsed.current)chIds.push('no_np_boss');
+        if(!chSkillUsed.current)chIds.push('no_skill_boss');
+        if(camp.towerMode){
+          const ids=finalParty.map(m=>m.id);
+          if(ids.length===1)chIds.push('tower_solo');
+          if(!ids.includes(IBARAKI.id))chIds.push('tower_no_ibaraki');
+          if(ids.includes('okuni_caster')&&ids.includes('mochizuki_chiyome')&&ids.includes('sith_archer'))chIds.push('tower_trio_shinohara');
+          // Chegar ao Andar 10 = vencer o boss do Andar 9
+          if((camp.towerFloor||1)>=9)chIds.push('tower_top');
+        }
+      }
+      if((camp.goldenRule||0)+1>=20)chIds.push('run_golden20');
+      // Bestiários: conjuntos de inimigos que convivem no MESMO mapa
+      if(['soldado_minamoto','soldado_fujiwara','kijo','suiko'].every(k=>kindsSeen.includes(k)))chIds.push('run_bestiary');
+      if(['javali','kappa','kaze_kami'].every(k=>kindsSeen.includes(k)))chIds.push('run_wildtrail');
+      if((camp.teaBuys||0)>=8)chIds.push('run_teahouse');
+      const chRes=grantMany(chIds);
+      const profRes=checkProfileAchievements();
+      const allWon=[...chRes.won,...profRes.won];
+      if(allWon.length){
+        setProfile(loadProfile());
+        allWon.forEach(d=>addLog(`${d.icon} CONQUISTA: ${d.name}! +${d.qp.toLocaleString()} QP · +${d.sq} SQ`,'system'));
+      }
 
       setDialogue({text:SDEF.dialogue.win,portrait:SDEF.assets.win||SDEF.assets.default});
       addLog(`✦ Vitória! +${sqGain} SQ · +${qpGain} QP · +${xpGain} XP · +${bondGain} Bond · +${magusGain} EXP Magus`+(newXP.level>servoLvl?` · ✨ SERVO Nv.${newXP.level}!`:'')+(newProfile.magus.level>prevMagusLvl?` · 👑 MESTRE Nv.${newProfile.magus.level}!`:''),'system');
@@ -8580,6 +9309,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   return(
     <div className="screen" style={{padding:'12px'}}>
       <PartySidebar party={party}/>
+      <GracaSidebar camp={camp}/>
       {banditPoison&&<div className="poison-overlay"/>}
       {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
 
@@ -8815,14 +9545,20 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
               return(
                 <button key={sk.id} className="skill-btn" onClick={()=>doSkill(sk.id)} disabled={blocked}
                   style={(!isServoTurn&&cd<=0)?{opacity:.4}:{}}>
-                  {sk.name}
+                  <span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                    <SkillIcon nome={sk.name} size={30}/>
+                    <span>{sk.name}</span>
+                  </span>
                   <span className="skill-cd">{cd>0?`${cd}t recarga`:`Rank ${sk.rank}`}</span>
                 </button>
               );
             })}
             <button className={`btn btn-np`} onClick={doNP} disabled={!npReady||!isServoTurn}
               style={{opacity:(npReady&&isServoTurn)?1:0.4,minWidth:100}}>
-              ⚡ NP{npReady?' PRONTO!':''}
+              <span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                <SkillIcon nome={SDEF.np.name} emoji="⚡" size={44}/>
+                <span>NP{npReady?' PRONTO!':''}</span>
+              </span>
               <span className="skill-cd" style={{display:'block',marginTop:3}}>
                 {npReady?SDEF.np.name+'!':`${Math.round(100-servo.npBar)}% restante`}
               </span>
@@ -8831,16 +9567,21 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
           <div className="divider"><span className="divider-text">SKILLS DO MESTRE</span></div>
           <div className="skills-row">
-            {[['manaBuster','💥 Mana Buster'],['transf','🔮 Transf. Mana'],['veneno','☠️ Veneno'],
-              ...(profile.advSkillsUnlocked?[['tormento','🔥 Tormento'],['ossos','🦴 Ossos']]:[]),
-              ...(profile.achievements&&profile.achievements.defeat_gosanjo?[['ukiyoe','🎴 Ukiyo-e'],['fundir','💀 Fundir Ossos']]:[])
-            ].map(([key,label])=>{
+            {[['manaBuster','Mana Buster','💥'],['transf','Transf. Mana','🔮'],['veneno','Veneno','☠️'],
+              ...(profile.advSkillsUnlocked?[['tormento','Tormento','🔥'],['ossos','Ossos','🦴']]:[]),
+              ...(profile.achievements&&profile.achievements.defeat_gosanjo?[['ukiyoe','Ukiyo-e','🎴'],['fundir','Fundir Ossos','💀']]:[])
+            ].map(([key,label,emoji])=>{
               const cd=masterCd[key]||0;
               const blocked=cd>0||!isServoTurn;
+              // O nome completo (usado para achar a arte) difere do rótulo curto do botão.
+              const nomeArte=MASTER_SKILL_NOME[key]||label;
               return(
                 <button key={key} className="skill-btn" onClick={()=>doProfileSkill(key)} disabled={blocked}
                   style={(!isServoTurn&&cd<=0)?{opacity:.4}:{}}>
-                  {label}
+                  <span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                    <SkillIcon nome={nomeArte} emoji={emoji} size={30}/>
+                    <span>{label}</span>
+                  </span>
                   <span className="skill-cd">{cd>0?`${cd}t recarga`:`Nv.${sv[key].lvl}`}</span>
                 </button>
               );
@@ -8871,6 +9612,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   const[camp,setCamp]=useState(null);
   const[eventType,setEventType]=useState(null);
   const[campResult,setCampResult]=useState(null);
+  // Oferta de Graça pendente: {offer:[{id,lvl}], camp} — mostrada após vencer um encontro
+  const[gracaOffer,setGracaOffer]=useState(null);
   const[notif,setNotif]=useState('');
   const scriptedFightRef=useRef(null); // guarda inimigos de combates roteirizados (ex: Fase 12)
 
@@ -9125,11 +9868,37 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap9&&nextPhase===6){setCamp(advanced);setStage('map9F6');return;}
     if(isMap9&&nextPhase===8){setCamp(advanced);setStage('map9F8');return;}
     if(isMap9&&nextPhase===9){setCamp(advanced);setStage('map9F9');return;}
+    // Mapa 10 (Prelúdio para Guerra de Sucessão): fases fixas 1,3,7,9,11,13,17 (roteiros a definir).
+    const isMap10=(baseCamp.mapId||'bosque')==='sucessao_prelude';
+    if(isMap10&&[1,3,7,9,11,13,17].includes(nextPhase)){
+      setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map10Fixed');return;
+    }
     setCamp(advanced);setStage('map');
   }
 
   function onCombatWin(updatedCamp){
+    // GRAÇAS DO TRONO: ao vencer um encontro, o Trono oferece 3 bênçãos.
+    // (A run inteira acumula as escolhas em camp.gracas.)
+    const offer=rollGracaOffer(updatedCamp,3);
+    if(offer.length){
+      setGracaOffer({offer,camp:updatedCamp});
+      setStage('gracaOffer');
+      return;
+    }
     goToPhase(updatedCamp,updatedCamp.phase+1);
+  }
+
+  // Aplica (ou recusa) a Graça escolhida e segue para a próxima fase.
+  function pickGraca(choice){
+    const pend=gracaOffer;
+    if(!pend){setStage('map');return;}
+    let next=pend.camp;
+    if(choice){
+      const g=GRACA_BY_ID[choice.id];
+      if(g)next={...next,gracas:{...(next.gracas||{}),[g.slot]:{id:choice.id,lvl:choice.lvl}}};
+    }
+    setGracaOffer(null);
+    goToPhase(next,next.phase+1);
   }
 
   // Fim da sequência da Fase 2: recupera 50% HP + Bond, mostra a vila, vai ao mapa
@@ -9247,6 +10016,20 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     const bonusSQ=Math.round(5*multW); const bonusQP=Math.round(500*multW);
     depositSQ(bonusSQ);
     depositQP(bonusQP);
+    // Mapa 10 (sem boss): concede a conquista de conclusão ao terminar a última fase.
+    // Só na CAMPANHA — terminar o andar equivalente na Torre não libera a história.
+    if(!updatedCamp.towerMode&&updatedCamp.mapId==='sucessao_prelude'){
+      const res=grantAchievement('clear_sucessao');
+      if(res.granted)setProfile(res.profile);
+    }
+    // ── Conquistas de DESAFIO por concluir a jornada (só Campanha) ──
+    if(!updatedCamp.towerMode){
+      const runIds=[];
+      if(!updatedCamp.anyFell)runIds.push('run_untouched');
+      if(!(updatedCamp.teaBuys||0))runIds.push('run_no_tea');
+      const r=grantMany(runIds);
+      if(r.won.length)setProfile(loadProfile());
+    }
     // Bônus de XP por concluir a run: pro GRUPO INTEIRO daquela run, não só a Ibaraki.
     const finishParty=(updatedCamp.party&&updatedCamp.party.length)?updatedCamp.party:[updatedCamp.servo||IBARAKI];
     finishParty.forEach(m=>addServoXP(m.id,XP_CAMPAIGN_COMPLETE));
@@ -9420,8 +10203,23 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   }
 
   // Após o diálogo de vitória contra a Mochizuki ENFURECIDA (mapa 9): fim da jornada por ora.
+  // Após o diálogo de vitória contra a Mochizuki Enfurecida (mapa 9): segue para o
+  // Mapa 10 (Prelúdio para Guerra de Sucessão). A conquista já foi concedida no combate.
   function afterMochizukiRageWin(){
-    finishCampaign(camp,true);
+    const prev=camp.party||[camp.servo];
+    const findState=id=>prev.find(m=>m.id===id);
+    const next=buildCampForMap(IBARAKI,'sucessao_prelude',null,false,[IBARAKI,SITH_PLAYABLE,OKUNI_PLAYABLE]);
+    next.party=next.party.map(m=>{
+      const old=findState(m.id);
+      return old?{...m,hp:old.hp,npBar:old.npBar}:m;
+    });
+    next.servo=next.party[0];
+    next.sithJoined=true;
+    next.okuniJoined=true;
+    next.goldenRule=camp.goldenRule||0;
+    next.innUnlocked=true;
+    setCamp(next);
+    setStage('map9Map10Transition');
   }
 
   // Constrói o estado de um novo mapa carregando HP/NP/moedas da jornada
@@ -9741,6 +10539,34 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map9F9')return <StoryScreen profile={profile} script={STORY_MAP9_F9} finishLabel="⚔️ O combate direto começa!" onFinish={()=>setStage('map')}/>;
   if(stage==='map9RageWin')return <StoryScreen profile={profile} script={STORY_MAP9_RAGE_WIN} finishLabel="Continuar →" onFinish={afterMochizukiRageWin}/>;
   if(stage==='map9RageLose')return <StoryScreen profile={profile} script={STORY_MAP9_RAGE_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
+  if(stage==='map9Map10Transition')return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2.5rem',marginBottom:12}}>⚔️</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:8}}>PRELÚDIO PARA GUERRA DE SUCESSÃO</h2>
+        <p style={{color:'var(--parchment)',fontSize:'.85rem',marginBottom:6}}>
+          Shinohara ficou para trás. Com a Okuni agora ao seu lado, o grupo parte rumo ao coração do conflito — mas as grandes casas já se movem, e os soldados dos clãs Minamoto e Fujiwara cruzam o caminho. A verdadeira guerra pelo Selo Imperial está prestes a começar.
+        </p>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.75rem',fontStyle:'italic',marginTop:14}}>
+          [ Cena de abertura a ser escrita ]
+        </p>
+        <button className="btn btn-red btn-full" style={{marginTop:20}} onClick={()=>setStage('map')}>⚔️ Avançar</button>
+      </div>
+    </div>
+  );
+  if(stage==='map10Fixed')return(
+    <div className="screen">
+      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
+        <div style={{fontSize:'2rem',marginBottom:10}}>📜</div>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>PRELÚDIO — FASE {camp.pendingFixedPhase}</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',fontStyle:'italic',marginBottom:16}}>
+          [ Cena fixa a ser escrita ]<br/>
+          Esta é uma fase fixa de história do Mapa 10. O roteiro será adicionado aqui depois.
+        </p>
+        <button className="btn btn-red btn-full" onClick={()=>setStage('map')}>Prosseguir →</button>
+      </div>
+    </div>
+  );
   if(stage==='map6Fixed')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
@@ -9818,6 +10644,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     </div>
   );
   if(stage==='bossLoseStory')return <StoryScreen profile={profile} script={STORY_BOSS_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
+  if(stage==='gracaOffer'&&gracaOffer)return <GracaOfferScreen camp={gracaOffer.camp} offer={gracaOffer.offer} onPick={pickGraca}/>;
   if(stage==='map')return <MapScreen camp={camp} onChoosePath={choosePath} onNavigate={onNavigate} onGiveUp={onGiveUp} profile={profile} setProfile={setProfile} setCamp={setCamp}/>;
   if(stage==='combat')return <CombatScreen camp={camp} isBoss={false} onWin={onCombatWin} onLose={onCombatLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
   if(stage==='boss')return <CombatScreen camp={camp} isBoss={true} onWin={onBossWin} onLose={onBossLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
