@@ -3129,7 +3129,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.72</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.73</p>
       </div>
     </div>
   );
@@ -5298,7 +5298,7 @@ const CAMPAIGN_CHECKPOINTS=[
 
 // Gera um encontro usando a tabela de inimigos do mapa atual.
 // hpMult/atkMult (>1) amplificam os inimigos no modo Torre de Desafios.
-function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1){
+function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1,grupoExtra=0){
   const map=MAPS[mapId]||MAPS.bosque;
   const table=map.enemies;
   const ids=Object.keys(table);
@@ -5306,6 +5306,8 @@ function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1){
   // Inimigos "swarm" (ex.: Kappa) tendem a vir em grupos maiores: +1 alvo por sorteio.
   const swarmIds=ids.filter(id=>table[id].swarm);
   if(swarmIds.length&&Math.random()<0.5)size=Math.min(size+1,5);
+  // Nível de Ameaça alto: grupos maiores (pressão sem depender de one-shot).
+  if(grupoExtra>0&&Math.random()<0.6)size=Math.min(size+grupoExtra,6);
   return Array.from({length:size},(_,i)=>{
     const id=ids[Math.floor(Math.random()*ids.length)];
     const base=table[id];
@@ -7008,6 +7010,55 @@ function GracaSidebar({camp}){
   );
 }
 
+// ══════════════════════════════════════════════════════
+// NÍVEL DE AMEAÇA — dificuldade que acompanha o Mestre
+// ══════════════════════════════════════════════════════
+// Stats fixos ficam triviais conforme o jogador evolui (servos nv25, Magus alto,
+// perks, NP alto, builds de Graça). O índice abaixo mede o poder PERMANENTE do
+// jogador (0 = começo absoluto, 1 = tudo no máximo) e escala os inimigos.
+// A escala é SUBLINEAR de propósito: o jogador continua ficando mais forte na
+// prática — o que muda é que a vantagem deixa de ser esmagadora.
+const AMEACA_PESOS={servo:0.45,magus:0.25,perk:0.20,np:0.10};
+function calcAmeaca(profile,party,npLevel){
+  const p=profile||{};
+  // 1) Nível médio dos Servos em campo (1..25)
+  const lista=(party&&party.length)?party:[{level:1}];
+  const lvMedio=lista.reduce((a,m)=>a+(m.level||1),0)/lista.length;
+  const nServo=clamp((lvMedio-1)/24,0,1);
+  // 2) Nível de Magus (1..60)
+  const nMagus=clamp((((p.magus&&p.magus.level)||1)-1)/(MAGUS_MAX_LEVEL-1),0,1);
+  // 3) Perks acumuladas (soma dos níveis / soma dos tetos)
+  const tetoPerks=Object.values(PERK_DEFS).reduce((a,d)=>a+(d.maxLevel||10),0);
+  const somaPerks=Object.values(p.perks||{}).reduce((a,v)=>a+(v||0),0);
+  const nPerk=clamp(somaPerks/tetoPerks,0,1);
+  // 4) Nível de Fantasma Nobre via Bond (1..5)
+  const nNp=clamp(((npLevel||1)-1)/4,0,1);
+
+  const idx=nServo*AMEACA_PESOS.servo+nMagus*AMEACA_PESOS.magus
+           +nPerk*AMEACA_PESOS.perk+nNp*AMEACA_PESOS.np;
+  return{
+    idx,
+    // Inimigos comuns: HP escala forte, dano escala pouco.
+    // Preferimos lutas mais LONGAS a lutas onde você morre de um golpe.
+    hp:1+2.2*idx,
+    atk:1+0.55*idx,
+    // Bosses já têm HP enorme e dano alto: escalam bem menos, senão viram one-shot.
+    bossHp:1+1.6*idx,
+    bossAtk:1+0.25*idx,
+    // A partir de metade da progressão, grupos ficam maiores.
+    grupoExtra:idx>=0.5?1:0,
+  };
+}
+// Rótulo legível do Nível de Ameaça (mostrado no mapa e no menu)
+function ameacaRotulo(idx){
+  if(idx<0.15)return{nome:'Tranquila',cor:'#7ec98a'};
+  if(idx<0.35)return{nome:'Moderada',cor:'#c9c47e'};
+  if(idx<0.55)return{nome:'Perigosa',cor:'#e0a06a'};
+  if(idx<0.75)return{nome:'Severa',cor:'#e0806a'};
+  if(idx<0.92)return{nome:'Brutal',cor:'#e05a5a'};
+  return{nome:'Cataclísmica',cor:'#c0392b'};
+}
+
 const TEA_HOUSE_ITEMS=[
   {id:'cha_revolta',name:'Chá da Revolta',icon:'🍵',cur:'qp',cost:10000,kind:'buff',
    desc:'+20% de Ataque por 5 encontros.'},
@@ -7581,7 +7632,17 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
             </div>
           </>
         )}
-        <div style={{marginTop:12,fontSize:'.7rem',color:'var(--parchment-dark)',textAlign:'center'}}>
+        {camp.ameaca&&(()=>{
+          const r=ameacaRotulo(camp.ameaca.idx);
+          return(
+            <div style={{marginTop:12,textAlign:'center',fontSize:'.72rem',color:'var(--parchment-dark)',letterSpacing:1}}
+              title={`Comuns: ×${camp.ameaca.hp.toFixed(2)} HP · ×${camp.ameaca.atk.toFixed(2)} ATK\nBosses: ×${camp.ameaca.bossHp.toFixed(2)} HP · ×${camp.ameaca.bossAtk.toFixed(2)} ATK`}>
+              ☠️ AMEAÇA: <span style={{color:r.cor,fontFamily:'Cinzel,serif',letterSpacing:2}}>{r.nome.toUpperCase()}</span>
+              <span style={{opacity:.65}}> · inimigos ×{camp.ameaca.hp.toFixed(1)} HP, ×{camp.ameaca.atk.toFixed(1)} ATK</span>
+            </div>
+          );
+        })()}
+        <div style={{marginTop:8,fontSize:'.7rem',color:'var(--parchment-dark)',textAlign:'center'}}>
           Combate: +{XP_COMBAT_WIN} XP · +500 QP · +30 Bond &nbsp;|&nbsp; Evento: +250 QP &nbsp;|&nbsp; Boss: +{XP_BOSS_WIN} XP · +1500 QP
         </div>
         <button className="btn btn-red btn-full" style={{marginTop:16,opacity:.8}}
@@ -7680,7 +7741,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Boss varia por mapa: Qin (Bosque), Nitro (Vila), Archer (Caminho), Ninja (Kurikara)
     const mid=camp.mapId||'bosque';
     // Multiplicadores da Torre (1 na Campanha)
-    const hpM=camp.towerHpMult||1, atkM=camp.towerAtkMult||1;
+    // Bosses escalam com o Nível de Ameaça, porém bem menos que os comuns.
+    const am=camp.ameaca||{bossHp:1,bossAtk:1};
+    const hpM=(camp.towerHpMult||1)*(am.bossHp||1), atkM=(camp.towerAtkMult||1)*(am.bossAtk||1);
     // Aplica os multiplicadores da Torre ao boss recém-criado
     const T=(b)=>({...b,
       maxHp:Math.round(b.maxHp*hpM),currentHp:Math.round(b.currentHp*hpM),
@@ -7908,8 +7971,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     let enem=isBoss?[createBossInstance()]
       :fixedEnemies?fixedEnemies
       :genEncounterForMap(camp.mapId||'bosque',camp.phase,
-        (camp.towerHpMult||1)*(camp.eliteFight?1.8:1),
-        (camp.towerAtkMult||1)*(camp.eliteFight?1.45:1));
+        (camp.towerHpMult||1)*(camp.eliteFight?1.8:1)*((camp.ameaca&&camp.ameaca.hp)||1),
+        (camp.towerAtkMult||1)*(camp.eliteFight?1.45:1)*((camp.ameaca&&camp.ameaca.atk)||1),
+        (camp.ameaca&&camp.ameaca.grupoExtra)||0);
     // Casa de Chá — efeitos de INÍCIO de combate (consumidos ao entrar na luta):
     const cb=camp.chaBuffs||{};
     if(cb.enemyStartDmgPct||cb.enemyStunTurns){
@@ -10213,6 +10277,9 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
       // (o mapa mostra a prévia e o resultado bate ao escolher o caminho).
       runSeed:carry&&carry.runSeed?carry.runSeed:Math.floor(Math.random()*1e6)+1,
       eventosVistos:carry&&carry.eventosVistos?carry.eventosVistos:[],
+      // Nível de Ameaça: calculado no início da jornada a partir do poder permanente
+      // do Mestre. Fica fixo durante a run para não mudar no meio da luta.
+      ameaca:calcAmeaca(profile,party,npLvl),
     };
   }
 
