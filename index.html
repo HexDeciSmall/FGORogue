@@ -1407,7 +1407,7 @@ const MEMORY_DREAM=[
 // ── QIN LIANGYU (BOSS) ───────────────────────────────
 const QIN={
   id:'qin_liangyu',name:'Qin Liangyu',className:'Lancer',isBoss:true,level:7,
-  attack:5991,hp:9639,
+  attack:2400,hp:26000,
   attributes:{
     strength:{rank:'C',points:rankToPoints('C')},
     agility:{rank:'A',points:rankToPoints('A')},
@@ -2238,13 +2238,24 @@ function allComicTags(){
 
 // ── INIMIGOS COMUNS ──────────────────────────────────
 const ENEMIES_DATA={
-  morcego:{id:'morcego',name:'Morcego Gigante',hp:900,atk:480,agility:55,strPts:30},
-  ghoul:{id:'ghoul',name:'Ghoul',hp:1400,atk:720,agility:25,strPts:40},
-  urso:{id:'urso',name:'Urso Gigante Negro',hp:2200,atk:950,agility:15,strPts:40},
-  banshee:{id:'banshee',name:'Banshee',hp:1800,atk:1100,agility:45,strPts:50},
+  morcego:{id:'morcego',name:'Morcego Gigante',hp:1560,atk:552,agility:88,strPts:45,
+    evasive:18,
+    description:'Voa em zigue-zague pela copa das árvores. Rápido e esquivo, mas morre com um golpe certeiro.'},
+  ghoul:{id:'ghoul',name:'Ghoul',hp:2600,atk:480,agility:42,strPts:50,
+    lifesteal:20,
+    description:'Devorador de cadáveres. Cada mordida bem-sucedida devolve parte da própria carne apodrecida.'},
+  urso:{id:'urso',name:'Urso Gigante Negro',hp:5720,atk:336,agility:18,strPts:55,
+    defensePassive:28,enrage:45,
+    description:'Massa de músculo e pelo. Lento e resistente — e muito mais perigoso quando ferido.'},
+  banshee:{id:'banshee',name:'Banshee',hp:1300,atk:696,agility:70,strPts:55,
+    critChance:40,npDrain:10,
+    description:'Seu lamento perfura a alma: golpes críticos frequentes que também drenam a mana do Servo.'},
 };
 const ENEMY_IDS=Object.keys(ENEMIES_DATA);
-function phaseMult(p){return 1+0.12*(p-1)}
+// Escala por fase. Antes era 0.12/fase, o que em mapas longos (25-35 fases)
+// chegava a 3.9× e fazia inimigos comuns causarem MAIS dano que os bosses.
+// Agora é mais suave e tem teto, mantendo a progressão sem quebrar o balanço.
+function phaseMult(p){return Math.min(1+0.05*(p-1),2.4)}
 function rollGroupSize(phase){
   // Grupos menores para um combate mais justo (servos vão até nv25 e são poucos).
   // Antes chegava a 7-9 inimigos; agora o teto é 4, com maioria de 1-2.
@@ -3118,7 +3129,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.71</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.72</p>
       </div>
     </div>
   );
@@ -4596,7 +4607,7 @@ function ServoSelectScreen({onNavigate,onStartCampaign,profile}){
 // Boss ágil e traiçoeiro: golpes que atordoam, ataque em área e um NP com Evade.
 const NINJA={
   id:'ninja_genji',name:'Ninja do Clã Genji',className:'Assassin',isBoss:true,
-  hp:34000,attack:1400,
+  hp:95000,attack:4900,
   attributes:{
     strength:{rank:'B',points:45},
     agility:{rank:'A',points:55}, // muito rápido — quase sempre age antes
@@ -4634,7 +4645,7 @@ const NINJA={
 // "normais" (é um mapa avançado). A mecânica de múltiplos golpes é o diferencial.
 const GOSANJO={
   id:'gosanjo_shadow',name:'Go-Sanjo Falso: Sombra',className:'Assassin',isBoss:true,
-  hp:52000,attack:2200,
+  hp:160000,attack:6000,
   attributes:{
     strength:{rank:'A',points:50},
     agility:{rank:'A+',points:60}, // altíssima velocidade — quase sempre age primeiro
@@ -4675,7 +4686,7 @@ const GOSANJO={
 // Sem multi-ataque; a ameaça vem do dano por golpe e da chance de atordoar a party.
 const SHUNOBAN={
   id:'shunoban',name:'Shunoban, o Ciclope Vermelho',className:'Berserker',isBoss:true,
-  hp:280000,attack:2600,
+  hp:320000,attack:6600,
   attributes:{
     strength:{rank:'A+',points:60},
     agility:{rank:'D',points:20}, // lento — servos geralmente agem antes
@@ -4709,7 +4720,7 @@ const SHUNOBAN={
 // Muito letal — exige Servo Nv.10 e boas Perks. HP moderado (é ágil, não tanque).
 const ARCHER={
   id:'archer_corrupted',name:'Archer Corrompida',className:'Archer',isBoss:true,
-  hp:120000,attack:1500,
+  hp:140000,attack:4200,
   attributes:{
     strength:{rank:'B',points:40},
     agility:{rank:'A',points:50}, // muito rápida — age antes do Servo
@@ -4764,7 +4775,7 @@ const ARCHER={
 // não é uma esponja de dano, é uma luta de gerenciar janelas de ação.
 const MOCHIZUKI={
   id:'mochizuki_chiyome',name:'Mochizuki Chiyome',className:'Assassin',isBoss:true,
-  hp:400000,attack:2900,
+  hp:460000,attack:18000,
   attributes:{
     strength:{rank:'C',points:30},
     agility:{rank:'A',points:56}, // muito rápida — age antes do Servo
@@ -4822,7 +4833,7 @@ const MOCHIZUKI={
 // controle, mas amplificada: mais HP, mais dano, mais rápida e recargas mais curtas.
 const MOCHIZUKI_RAGE={
   id:'mochizuki_chiyome',name:'Mochizuki Chiyome (Enfurecida)',className:'Assassin',isBoss:true,
-  hp:620000,attack:4200,
+  hp:700000,attack:23500,
   attributes:{
     strength:{rank:'C',points:30},
     agility:{rank:'A+',points:62}, // ainda mais veloz — supera a maioria dos servos
@@ -4941,7 +4952,7 @@ PLAYABLE_SERVOS.mochizuki_chiyome=MOCHIZUKI_PLAYABLE;
 // antes ("CARREGANDO"), dando ao jogador a chance de defender com Mudança de Forma.
 const NITRO={
   id:'samurai_nitro',name:'Samurai Mecanizado Nitro-Type',className:'Berserker',isBoss:true,
-  hp:45000,attack:2000,
+  hp:60000,attack:2500,
   attributes:{
     strength:{rank:'A',points:50},
     agility:{rank:'D',points:20}, // lento — age quase sempre por último
@@ -4951,7 +4962,7 @@ const NITRO={
     np:{rank:'C',points:30},
   },
   passiveMitigation:35, // mitigação passiva fixa de 35% (muro — exige Nv.9-10)
-  missile:{multiplier:7,cooldown:3}, // básico ~1000, míssil ~7000 (punitivo)
+  missile:{multiplier:5,cooldown:3}, // básico ~1250, míssil ~6250 (punitivo, mas sobrevivível)
   dialogue:{
     intro:'⚙️ SISTEMA ATIVADO. ALVOS HOSTIS DETECTADOS. INICIANDO PROTOCOLO DE EXTERMÍNIO.',
     charging:'⚠️ CARREGANDO SILOS DE MÍSSEIS...',
@@ -4998,57 +5009,63 @@ const DEON={
 // 3 arquétipos distintos de bandido. Mecânica nova: o Ladrão de Carteiras
 // rouba 1500 QP se DERROTAR o jogador (se não tiver, leva tudo o que houver).
 const ENEMIES_MAP4={
-  arruaceiro:{id:'arruaceiro',name:'Bandido Arruaceiro',hp:4200,atk:3100,agility:40,strPts:50,
-    description:'Bandido violento e imprudente. Dano altíssimo, mas frágil e sem defesa.'},
-  ladrao:{id:'ladrao',name:'Ladrão de Carteiras',hp:3800,atk:2000,agility:68,strPts:38,
-    stealQP:1500, // se DERROTAR o jogador, rouba 1500 QP (ou tudo, se tiver menos)
-    description:'Larápio veloz e escorregadio. Se te derrotar, foge com 1500 QP da sua bolsa!'},
-  glutao:{id:'glutao',name:'Bandido Glutão',hp:11000,atk:2400,agility:14,strPts:45,
-    description:'Brutamontes de apetite insaciável. HP enorme, mas lentíssimo e previsível.'},
+  arruaceiro:{id:'arruaceiro',name:'Bandido Arruaceiro',hp:8500,atk:1250,agility:42,strPts:50,
+    armorBreak:{value:15,turns:3},
+    description:'Briga sujo: mira nas juntas da armadura para abrir a guarda do Servo.'},
+  ladrao:{id:'ladrao',name:'Ladrão de Carteiras',hp:5100,atk:1438,agility:88,strPts:45,
+    stealQP:1500,evasive:22,
+    description:'Ágil e escorregadio. Se derrotar você, foge com parte do seu QP.'},
+  glutao:{id:'glutao',name:'Bandido Glutão',hp:18700,atk:875,agility:18,strPts:55,
+    defensePassive:28,lifesteal:30,
+    description:'Enorme e insaciável. Cada golpe alimenta sua recuperação.'},
 };
 
 // ── INIMIGOS DO MAPA 5: Kurikara (forças do Clã Genji, era Heian) ──
 const ENEMIES_MAP5={
-  vassalo:{id:'vassalo',name:'Vassalo do Clã Genji',hp:6800,atk:3400,agility:28,strPts:44,
-    description:'Soldado comum do Clã Genji. Ataque básico e firme, mas lento em campo.'},
-  lider:{id:'lider',name:'Líder de Esquadrão',hp:7600,atk:3800,agility:72,strPts:46,
-    description:'Comanda pelotões nas ruas de Kurikara. Ataque mediano, porém muito veloz.'},
-  guerreiro:{id:'guerreiro',name:'Guerreiro Enfurecido',hp:16000,atk:5200,agility:30,strPts:58,
-    defensePassive:25, // mitigação passiva (defesa alta)
-    description:'Berserker de armadura pesada. Dano alto, defesa alta e muito HP — uma muralha furiosa.'},
-  onmyoji:{id:'onmyoji',name:'Mestre Onmyoji',hp:5200,atk:2600,agility:60,strPts:38,
-    isSupport:true, // buffa aliados e pode atordoar
-    description:'Feiticeiro do Clã. Pouca vida, mas fortalece os aliados e atordoa com selos espirituais.'},
+  vassalo:{id:'vassalo',name:'Vassalo do Clã Genji',hp:11500,atk:1550,agility:42,strPts:50,
+    description:'Soldado disciplinado do Genji. Sólido e previsível.'},
+  lider:{id:'lider',name:'Líder de Esquadrão',hp:5750,atk:2248,agility:70,strPts:55,
+    critChance:40,multiHit:2,
+    description:'Veterano de comando: ataca duas vezes por turno e busca pontos vitais.'},
+  guerreiro:{id:'guerreiro',name:'Guerreiro Enfurecido',hp:25300,atk:1085,agility:18,strPts:55,
+    defensePassive:28,enrage:55,
+    description:'Blindado e furioso. Quanto mais perto da morte, mais devastador.'},
+  onmyoji:{id:'onmyoji',name:'Mestre Onmyoji',hp:7475,atk:853,agility:58,strPts:35,
+    npDrain:12,isSupport:true,
+    description:'Estrategista do clã: reforça os aliados e drena a mana do Servo à distância.'},
 };
 
 // ── INIMIGOS DO MAPA 6: Kurikara II (o vácuo após a queda do Clã Genji) ──
 // Sem o Clã controlando a cidade, criaturas corrompidas e criminosos tomam as ruas.
 const ENEMIES_MAP6={
-  ghoul:{id:'ghoul',name:'Ghoul',hp:9000,atk:4400,agility:34,strPts:50,
-    description:'Resto humano corrompido pela mácula de Nara. Vagueia faminto pelas ruas sem lei.'},
-  bandido_armado:{id:'bandido_armado',name:'Bandido Armado',hp:9800,atk:5000,agility:48,strPts:52,
-    description:'Saqueador aproveitando o vácuo de poder. Bem equipado e sem escrúpulos.'},
-  samurai_errante:{id:'samurai_errante',name:'Samurai Errante',hp:15000,atk:6000,agility:55,strPts:60,
-    defensePassive:15, // disciplina marcial: mitigação leve
-    description:'Guerreiro sem senhor após a queda do Clã. Dano alto e técnica refinada — perigo real.'},
-  ladrao_carteira:{id:'ladrao_carteira',name:'Ladrão de Carteira',hp:7000,atk:3200,agility:80,strPts:42,
-    stealQP:2500, // se DERROTAR o jogador, rouba 2500 QP
-    description:'Larápio veloz das ruas caóticas. Se te derrotar, foge com 2500 QP da sua bolsa!'},
+  ghoul:{id:'ghoul',name:'Ghoul',hp:15000,atk:1850,agility:42,strPts:50,
+    lifesteal:25,
+    description:'Ghoul das ruas sem lei. Ataca em busca de carne fresca.'},
+  bandido_armado:{id:'bandido_armado',name:'Bandido Armado',hp:7500,atk:2682,agility:70,strPts:55,
+    critChance:40,
+    description:'Armado com o que saqueou. Dano alto, resistência baixa.'},
+  samurai_errante:{id:'samurai_errante',name:'Samurai Errante',hp:15000,atk:1850,agility:42,strPts:50,
+    defensePassive:15,multiHit:2,
+    description:'Disciplina marcial intacta apesar da queda do clã: dois cortes por investida.'},
+  ladrao_carteira:{id:'ladrao_carteira',name:'Ladrão de Carteira',hp:9000,atk:2128,agility:88,strPts:45,
+    stealQP:2500,evasive:22,
+    description:'Aproveitador do caos. Rouba QP se conseguir derrotar você.'},
 };
 
 // ── INIMIGOS DO MAPA 7: estrada para Shinohara (youkai selvagens) ──
 const ENEMIES_MAP7={
-  ghoul_superior:{id:'ghoul_superior',name:'Ghoul Superior',hp:13000,atk:6200,agility:50,strPts:54,
-    description:'Uma evolução dos ghouls comuns. Tudo equilibrado — resistência, dano e velocidade medianos, sem fraquezas óbvias.'},
-  javali:{id:'javali',name:'Javali Gigante',hp:26000,atk:8000,agility:18,strPts:66,
-    defensePassive:10,
-    description:'Besta colossal da montanha. Lentíssimo, mas com HP imenso e uma investida devastadora.'},
-  kappa:{id:'kappa',name:'Kappa',hp:4200,atk:2400,agility:82,strPts:34,
-    swarm:true, // tende a aparecer em grupos maiores
-    description:'Youkai aquático travesso. Veloz, frágil e de ataque fraco — mas raramente vem sozinho.'},
-  kaze_kami:{id:'kaze_kami',name:'Kaze no Kami',hp:5600,atk:6600,agility:88,strPts:50,
-    poison:{chance:100,pctOfAtk:8,turns:3}, // lâminas de ar sempre envenenam: 8% ATK/turno por 3t
-    description:'Espírito do vento cortante. Rápido e de golpes fortes, porém frágil — suas lâminas de ar envenenam a cada corte.'},
+  ghoul_superior:{id:'ghoul_superior',name:'Ghoul Superior',hp:19000,atk:2150,agility:42,strPts:50,
+    lifesteal:30,
+    description:'Ghoul robusto da estrada. Recupera-se rápido demais para ser ignorado.'},
+  javali:{id:'javali',name:'Javali Gigante',hp:41800,atk:1505,agility:18,strPts:55,
+    defensePassive:28,enrage:50,
+    description:'Colosso da mata. Investida que só piora com o tempo.'},
+  kappa:{id:'kappa',name:'Kappa',hp:8550,atk:1720,agility:82,strPts:40,
+    swarm:true,evasive:18,
+    description:'Youkai aquático que ataca em bando. Individualmente fraco, coletivamente cruel.'},
+  kaze_kami:{id:'kaze_kami',name:'Kaze no Kami',hp:11400,atk:2472,agility:88,strPts:45,
+    poison:{chance:100,pctOfAtk:9,turns:3},aoe:true,
+    description:'Lâminas de vento que atingem o grupo inteiro e sempre deixam cortes envenenados.'},
 };
 
 // ══════════════════════════════════════════════════════
@@ -5058,14 +5075,15 @@ const ENEMIES_MAP7={
 // Valentão (ataque+HP / lento), Guarda-Costas (HP+defesa / fraco e lento),
 // Samurai Veterano (ataque / frágil, mas muito rápido).
 const ENEMIES_MAP8={
-  valentao:{id:'valentao',name:'Valentão',hp:34000,atk:11000,agility:16,strPts:60,
-    description:'Bruto de força descomunal. Golpes pesadíssimos e HP enorme, mas lento — dá tempo de se preparar.'},
-  guarda_costas:{id:'guarda_costas',name:'Guarda-Costas',hp:48000,atk:4200,agility:14,strPts:40,
+  valentao:{id:'valentao',name:'Valentão',hp:24000,atk:2450,agility:42,strPts:50,
+    armorBreak:{value:18,turns:3},
+    description:'Capanga do bordel. Golpes pesados que rasgam a defesa.'},
+  guarda_costas:{id:'guarda_costas',name:'Guarda-Costas',hp:52800,atk:1715,agility:18,strPts:55,
     defensePassive:35,
-    description:'Muralha viva. HP e defesa altíssimos, ataque fraco e lentíssimo — feito para aguentar, não para ferir.'},
-  samurai_veterano:{id:'samurai_veterano',name:'Samurai Veterano',hp:6000,atk:13500,agility:100,strPts:56,
-    critChance:45,
-    description:'Décadas de lâmina. Frágil, mas rápido e com golpes críticos devastadores — mata antes de ser atingido.'},
+    description:'Muralha humana. Existe para absorver dano, não para causá-lo.'},
+  samurai_veterano:{id:'samurai_veterano',name:'Samurai Veterano',hp:12000,atk:3552,agility:70,strPts:55,
+    critChance:45,multiHit:2,
+    description:'Espadachim de elite: duas lâminas por turno e precisão letal.'},
 };
 
 // ══════════════════════════════════════════════════════
@@ -5073,9 +5091,9 @@ const ENEMIES_MAP8={
 // ══════════════════════════════════════════════════════
 // Um único arquétipo: as Cobras Orochi invocadas pela Mochizuki enfurecida.
 const ENEMIES_MAP9={
-  cobra_orochi:{id:'cobra_orochi',name:'Cobra de Orochi',hp:52000,atk:8500,agility:48,strPts:52,
-    poison:{chance:60,pctOfAtk:6,turns:3}, // presas venenosas: 6% ATK/turno por 3t
-    description:'Serpentes brancas emergidas das sombras da kunoichi. HP imenso, dano mediano e velocidade moderada — e suas presas carregam o veneno de Orochi.'},
+  cobra_orochi:{id:'cobra_orochi',name:'Cobra de Orochi',hp:29000,atk:2700,agility:42,strPts:50,
+    poison:{chance:65,pctOfAtk:7,turns:3},lifesteal:20,swarm:true,
+    description:'Serpentes brancas nascidas da sombra da kunoichi. Vêm em números e carregam o veneno de Orochi.'},
 };
 
 // ══════════════════════════════════════════════════════
@@ -5083,16 +5101,18 @@ const ENEMIES_MAP9={
 // ══════════════════════════════════════════════════════
 // Soldados das grandes casas e youkai menores. Sem boss neste mapa.
 const ENEMIES_MAP10={
-  soldado_minamoto:{id:'soldado_minamoto',name:'Soldado Minamoto',hp:38000,atk:15000,agility:22,strPts:58,
-    defensePassive:32,
-    description:'Guerreiro disciplinado do Clã Minamoto. Golpe pesado e armadura resistente, mas lento e de pouca vitalidade — uma muralha ofensiva que demora a alcançar o inimigo.'},
-  soldado_fujiwara:{id:'soldado_fujiwara',name:'Soldado Fujiwara',hp:22000,atk:14500,agility:92,strPts:56,
-    description:'Lâmina veloz do Clã Fujiwara. Ataque forte e rapidíssimo, mas frágil e sem defesa — mata rápido, morre rápido.'},
-  kijo:{id:'kijo',name:'Kijo',hp:16000,atk:5200,agility:96,strPts:40,
-    description:'Ogra menor de movimentos frenéticos. Extremamente rápida, mas de golpe fraco e pouca resistência — irritante mais do que perigosa, sozinha.'},
-  suiko:{id:'suiko',name:'Suiko',hp:18000,atk:11000,agility:88,strPts:52,
-    swarm:true, // tende a aparecer em grupos maiores
-    description:'Youkai aquático em bando. Rápido e de golpe forte, porém frágil — raramente aparece sozinho, e a matilha compensa a fragilidade individual.'},
+  soldado_minamoto:{id:'soldado_minamoto',name:'Soldado Minamoto',hp:74800,atk:2065,agility:18,strPts:55,
+    defensePassive:32,enrage:50,
+    description:'Guerreiro couraçado do Clã Minamoto. Lento, resistente e implacável quando acuado.'},
+  soldado_fujiwara:{id:'soldado_fujiwara',name:'Soldado Fujiwara',hp:17000,atk:4278,agility:70,strPts:55,
+    critChance:42,multiHit:2,
+    description:'Lâmina veloz do Clã Fujiwara: dois cortes por investida, mas pouca resistência.'},
+  kijo:{id:'kijo',name:'Kijo',hp:20400,atk:3392,agility:88,strPts:45,
+    evasive:25,
+    description:'Ogra menor de movimentos frenéticos. Difícil de acertar, fácil de derrubar.'},
+  suiko:{id:'suiko',name:'Suiko',hp:15300,atk:2360,agility:82,strPts:40,
+    swarm:true,lifesteal:22,
+    description:'Youkai aquático em matilha. Rápido, sanguinário e raramente sozinho.'},
 };
 
 // ══════════════════════════════════════════════════════
@@ -5102,17 +5122,18 @@ const ENEMIES_MAP10={
 // Mecânica nova: Vampirismo (Dhampir) — dano baseado no HP MÁXIMO do Servo
 // (ignora defesa) e cura o próprio Dhampir.
 const ENEMIES_MAP3={
-  ghoul3:{id:'ghoul3',name:'Ghoul Superior',hp:5100,atk:2350,agility:32,strPts:40,
-    description:'Morto-vivo evoluído do Caminho. Mais resistente e feroz que os da Vila.'},
-  onmyoji3:{id:'onmyoji3',name:'Onmyoji Ancião',hp:3400,atk:2080,agility:44,strPts:45,
-    poison:{chance:65,pctOfAtk:10,turns:4}, // veneno mais forte que o do mapa 2
-    description:'Feiticeiro ancião de poder corrompido. Seu veneno é mais potente e duradouro.'},
-  dhampir:{id:'dhampir',name:'Dhampir',hp:3600,atk:1900,agility:55,strPts:42,
-    vampirism:{dmgPctOfServoMaxHp:5,healPctOfMaxHp:15}, // dano 5% do HP máx do Servo, cura 15% do próprio
-    description:'Meio-vampiro veloz. Seus ataques drenam a vitalidade máxima do inimigo e o curam.'},
-  javali:{id:'javali',name:'Javali Gigante',hp:8200,atk:2200,agility:18,strPts:50,
-    passiveMitigation:20, // muito HP e defesa — tanque do mapa
-    description:'Besta colossal de couro grosso. HP e defesa altíssimos, mas lento e previsível.'},
+  ghoul3:{id:'ghoul3',name:'Ghoul Superior',hp:6000,atk:950,agility:42,strPts:50,
+    lifesteal:25,
+    description:'Ghoul evoluído pela mana do caminho. Mais forte, mais faminto.'},
+  onmyoji3:{id:'onmyoji3',name:'Onmyoji Ancião',hp:3900,atk:522,agility:58,strPts:35,
+    poison:{chance:70,pctOfAtk:11,turns:4},isSupport:true,
+    description:'Domina maldições antigas. Veneno prolongado e bênçãos aos aliados.'},
+  dhampir:{id:'dhampir',name:'Dhampir',hp:3600,atk:1092,agility:88,strPts:45,
+    vampirism:{dmgPctOfServoMaxHp:5,healPctOfMaxHp:15},evasive:15,
+    description:'Meio-vampiro veloz. Seu dano ignora defesa e converte a vida do Servo na própria.'},
+  javali:{id:'javali',name:'Javali Gigante',hp:13200,atk:665,agility:18,strPts:55,
+    defensePassive:28,enrage:50,
+    description:'Fera couraçada. Investe com fúria crescente conforme perde sangue.'},
 };
 
 // ══════════════════════════════════════════════════════
@@ -5123,16 +5144,17 @@ const ENEMIES_MAP3={
 // esponjas tediosas. O "freio de ~40 runs" vem do XP/custos, não de HP inflado.
 // Propriedades especiais: critChance (Samurai), poison (Onmyoji).
 const ENEMIES_MAP2={
-  bushi:{id:'bushi',name:'Guerreiro Bushi',hp:4680,atk:1960,agility:38,strPts:40,
-    description:'Guerreiro disciplinado da vila. Equilibrado entre ataque e velocidade.'},
-  samurai_errante:{id:'samurai_errante',name:'Samurai Errante',hp:2700,atk:2100,agility:58,strPts:35,
-    critChance:40, // 40% de acertar crítico (×1.5)
-    description:'Espadachim veloz e mortal. Frágil, mas seus golpes críticos ferem fundo.'},
-  ghoul2:{id:'ghoul2',name:'Ghoul',hp:3780,atk:1750,agility:30,strPts:40,
-    description:'Morto-vivo padrão. Equilibrado em tudo, sem grandes fraquezas.'},
-  onmyoji:{id:'onmyoji',name:'Onmyoji Corrompido',hp:2520,atk:1540,agility:42,strPts:45,
-    poison:{chance:60,pctOfAtk:8,turns:3}, // 60% de envenenar: 8% do ATK/turno por 3 turnos
-    description:'Feiticeiro corrompido. Frágil, mas seus ataques envenenam (dano por turno).'},
+  bushi:{id:'bushi',name:'Guerreiro Bushi',hp:4200,atk:700,agility:42,strPts:50,
+    description:'Soldado comum de treinamento regular. Equilibrado em tudo, excepcional em nada.'},
+  samurai_errante:{id:'samurai_errante',name:'Samurai Errante',hp:2100,atk:1015,agility:70,strPts:55,
+    critChance:40,
+    description:'Ronin sem mestre. Frágil, mas seu golpe certeiro corta fundo.'},
+  ghoul2:{id:'ghoul2',name:'Ghoul',hp:9240,atk:490,agility:18,strPts:55,
+    defensePassive:28,lifesteal:25,
+    description:'Ghoul saciado e inchado. Absorve castigo e se recompõe drenando vida.'},
+  onmyoji:{id:'onmyoji',name:'Onmyoji Corrompido',hp:2730,atk:385,agility:58,strPts:35,
+    poison:{chance:60,pctOfAtk:9,turns:3},isSupport:true,
+    description:'Não luta de frente: envenena à distância e fortalece os aliados com talismãs.'},
 };
 
 // Registro de mapas: permite adicionar novos mapas sem reescrever o motor.
@@ -8143,6 +8165,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       spawnFx(e.instanceId,'IMUNE','miss');
       return e;
     }
+    // Esquiva natural de inimigos ágeis (Morcego, Ladrão, Kijo...). Sure Hit ignora.
+    if(e.evasive&&!sureHit&&rollChance(e.evasive)){
+      addLog(`💨 ${e.name} se esquiva do golpe! (${e.evasive}%)`,'enemy');
+      spawnFx(e.instanceId,'ESQUIVOU','miss');
+      return e;
+    }
     spawnFx(e.instanceId,String(dmg),fxKind);
     let out={...e,currentHp:Math.max(0,e.currentHp-dmg)};
     if(out.currentHp<=0&&out.isBoss&&out.gutsState?.active&&out.gutsState.charges>0){
@@ -9506,6 +9534,27 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           addLog(`${qinCrit?'🔥 CRÍTICO! ':''}Qin ataca ${tgtName}: ${qinMit} dano${s.className==='Berserker'?' (+Anti-Berserker×1.5)':''}!`,'enemy');
           spawnFx('servo',String(qinMit),qinCrit?'crit':'dmg');
         }
+      } else if(e.isSupport&&rollChance(55)&&es.some((o,oi)=>oi!==i&&o.currentHp>0)){
+        // ── SUPORTE (Onmyoji): em vez de atacar, reforça ou cura os aliados ──
+        const vivos=es.map((o,oi)=>({o,oi})).filter(x=>x.oi!==i&&x.o.currentHp>0);
+        if(Math.random()<0.5){
+          vivos.forEach(({o,oi})=>{es[oi]={...o,
+            activeBuffs:[...(o.activeBuffs||[]).filter(b=>b.type!=='atk_up'),{type:'atk_up',value:25,turns:3}]};});
+          addLog(`📿 ${e.name} entoa um cântico! Aliados ganham +25% de Ataque.`,'enemy');
+          spawnFx(e.instanceId,'📿 BÊNÇÃO','heal');
+        } else {
+          vivos.forEach(({o,oi})=>{const cura=Math.round(o.maxHp*0.12);
+            es[oi]={...o,currentHp:Math.min(o.maxHp,o.currentHp+cura)};
+            spawnFx(o.instanceId,`+${cura}`,'heal');});
+          addLog(`📿 ${e.name} conjura um talismã de cura nos aliados! (+12% HP)`,'enemy');
+        }
+        // Drena a mana do Servo, se souber
+        if(e.npDrain){
+          const perda=Math.min(s.npBar,e.npDrain);
+          s.npBar=clamp(s.npBar-perda,0,100);
+          if(perda>0){addLog(`🌀 ${e.name} drena ${Math.round(perda)}% da Barra de NP de ${tgtName}!`,'enemy');
+            spawnFx('servo','🌀 NP DRENADO','stun');}
+        }
       } else {
         // Inimigo comum — o Servo pode esquivar (Agility)
         const dodgeCh=5+Math.max(0,(servo.attributes.agility.points-e.agility))/2+(camp.saberBuff?SABER_NP.evasionUp:0)+(servoEvadePassive);
@@ -9516,16 +9565,53 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           // "Medo" (Lança de Haste Branca da Qin): reduz o ATK do inimigo
           let fearReduction=0;
           for(const d of e.activeDebuffs||[]){if(d.type==='attack_down')fearReduction+=d.value;}
-          // Crítico (Samurai Errante): critChance% de chance de ×1.5
           let dmgBase=Math.round(e.damage*(1-fearReduction/100));
+          // Buff de ataque vindo de um Onmyoji aliado
+          for(const b of e.activeBuffs||[]){if(b.type==='atk_up')dmgBase=Math.round(dmgBase*(1+b.value/100));}
+          // FÚRIA: abaixo de 30% do HP, o inimigo golpeia muito mais forte
+          const enfurecido=e.enrage&&e.currentHp>0&&(e.currentHp/e.maxHp)<=0.30;
+          if(enfurecido)dmgBase=Math.round(dmgBase*(1+e.enrage/100));
+          // MULTI-GOLPE: divide o dano em N acertos (total um pouco maior que 1 golpe)
+          const golpes=Math.max(1,e.multiHit||1);
+          if(golpes>1)dmgBase=Math.round(dmgBase*1.25/golpes);
+          // Crítico
           const isCrit=e.critChance&&rollChance(e.critChance);
           if(isCrit)dmgBase=Math.round(dmgBase*1.5);
-          const rawDmg=applyDmgToServo(dmgBase,s);
+          let rawDmg=0;
+          for(let g=0;g<golpes;g++)rawDmg+=applyDmgToServo(dmgBase,s);
           s.hp=Math.max(0,s.hp-rawDmg);
           // Tomar dano gera NP pro Servo (1.5× o ganho de ataque)
           s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
-          addLog(`${isCrit?'🔥 CRÍTICO! ':''}${e.name} ataca: ${rawDmg} dano!`,'enemy');
+          addLog(`${isCrit?'🔥 CRÍTICO! ':''}${enfurecido?'😡 FÚRIA! ':''}${e.name} ataca${golpes>1?` ${golpes}× `:': '}${rawDmg} dano!`,'enemy');
           spawnFx('servo',String(rawDmg),isCrit?'crit':'dmg');
+          // ROUBO DE VIDA: converte parte do dano em cura
+          if(e.lifesteal&&rawDmg>0){
+            const cura=Math.round(rawDmg*e.lifesteal/100);
+            es[i]={...es[i],currentHp:Math.min(e.maxHp,es[i].currentHp+cura)};
+            addLog(`🩸 ${e.name} absorve ${cura} de vida do golpe.`,'enemy');
+            spawnFx(e.instanceId,`+${cura}`,'heal');
+          }
+          // QUEBRA-ARMADURA: reduz a defesa do Servo por alguns turnos
+          if(e.armorBreak){
+            const outros=(s.activeDebuffs||[]).filter(d=>d.type!=='defense_down');
+            s.activeDebuffs=[...outros,{type:'defense_down',value:e.armorBreak.value,turns:e.armorBreak.turns}];
+            addLog(`🛡️ ${e.name} rasga a guarda de ${tgtName}! −${e.armorBreak.value}% de defesa por ${e.armorBreak.turns}t.`,'enemy');
+            spawnFx('servo','🛡️ QUEBRADA','stun');
+          }
+          // DRENO DE MANA
+          if(e.npDrain){
+            const perda=Math.min(s.npBar,e.npDrain);
+            s.npBar=clamp(s.npBar-perda,0,100);
+            if(perda>0){addLog(`🌀 ${e.name} drena ${Math.round(perda)}% da Barra de NP!`,'enemy');
+              spawnFx('servo','🌀 NP DRENADO','stun');}
+          }
+          // ÁREA: respinga no resto do grupo
+          if(e.aoe){
+            const resp=Math.round(rawDmg*0.55);
+            setParty(prev=>prev.map((m,mi)=>(mi===tgtIdx||m.defeated||m.hp<=0)?m:
+              {...m,hp:Math.max(0,m.hp-resp)}));
+            addLog(`🌪️ O golpe de ${e.name} atinge o grupo inteiro! ${resp} de dano em cada aliado.`,'enemy');
+          }
           // Veneno (Onmyoji Corrompido): chance de aplicar dano-por-turno
           if(e.poison&&rollChance(e.poison.chance)){
             const poisonDmg=Math.round(e.atkScaled*e.poison.pctOfAtk/100);
