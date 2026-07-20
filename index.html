@@ -35,6 +35,35 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 /* ── Scrollbar ── */
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--smoke)}
+/* ══════ RESSONÂNCIA DO TRONO (teste de personalidade — em breve) ══════ */
+.ressonancia-card{display:flex;gap:16px;align-items:flex-start;padding:16px 18px;
+  border-radius:10px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(ellipse 90% 120% at 12% 0%, rgba(192,57,43,.14), transparent 60%),
+    linear-gradient(150deg, rgba(14,10,11,.9), rgba(6,5,6,.96));
+  border:1px solid var(--edge)}
+/* fio de luz correndo na borda superior */
+.ressonancia-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--crimson),transparent);
+  animation:ressLinha 4s ease-in-out infinite}
+@keyframes ressLinha{0%,100%{opacity:.25}50%{opacity:.9}}
+.ressonancia-selo{flex-shrink:0;width:56px;height:56px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:1.7rem;
+  color:var(--crimson-soft);
+  border:1px solid rgba(192,57,43,.45);
+  background:radial-gradient(circle at 50% 45%, rgba(192,57,43,.20), transparent 70%);
+  animation:ressPulso 3.6s ease-in-out infinite}
+@keyframes ressPulso{
+  0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.30);transform:scale(1)}
+  50%{box-shadow:0 0 22px 4px rgba(192,57,43,.18);transform:scale(1.04)}}
+.ressonancia-status{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.ressonancia-badge{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:3px;
+  color:var(--gold);border:1px solid var(--gold-dim);border-radius:3px;padding:3px 10px;
+  background:rgba(201,162,39,.08)}
+@media(max-width:520px){
+  .ressonancia-card{flex-direction:column;align-items:center;text-align:center}
+}
+
 ::-webkit-scrollbar-thumb{background:var(--crimson-dim);border-radius:3px}
 
 /* ── Layout base ── */
@@ -3129,7 +3158,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.74</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.76</p>
       </div>
     </div>
   );
@@ -4209,6 +4238,27 @@ function ProfileScreen({onNavigate,profile,setProfile}){
             <div>
               <div style={{fontSize:'1.5rem',fontFamily:'Cinzel,serif',color:'var(--red-bright)',letterSpacing:1}}>{(profile.stats?.highestDamage||0).toLocaleString()}</div>
               <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:1,marginTop:2}}>MAIOR DANO</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="divider"><span className="divider-text">✦ RESSONÂNCIA DO TRONO ✦</span></div>
+        <div className="ressonancia-card">
+          <div className="ressonancia-selo">🜃</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div className="cinzel" style={{color:'var(--crimson-soft)',fontSize:'.92rem',letterSpacing:2}}>
+              QUAL SERVO VOCÊ INVOCARIA?
+            </div>
+            <p style={{fontSize:'.75rem',color:'var(--parchment-dark)',lineHeight:1.65,margin:'6px 0 0'}}>
+              O Trono dos Heróis não responde ao acaso. Ele escuta o Mestre — seus ideais, seus medos,
+              o que você faria quando ninguém estivesse olhando — e envia aquele cuja alma ressoa com a sua.
+              Um exame profundo do seu espírito determinará qual Espírito Heroico atenderia ao <i>seu</i> chamado.
+            </p>
+            <div className="ressonancia-status">
+              <span className="ressonancia-badge">EM BREVE</span>
+              <span style={{fontSize:'.66rem',color:'var(--parchment-dark)',letterSpacing:1}}>
+                Ritual em preparação
+              </span>
             </div>
           </div>
         </div>
@@ -5350,7 +5400,20 @@ const CAMPAIGN_CHECKPOINTS=[
 
 // Gera um encontro usando a tabela de inimigos do mapa atual.
 // hpMult/atkMult (>1) amplificam os inimigos no modo Torre de Desafios.
-function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1,grupoExtra=0){
+// Escalada QUALITATIVA: conforme a ameaça sobe, inimigos comuns passam a contar
+// com mecânicas que não tinham. Isso obriga o jogador a mudar de tática em vez de
+// só encarar números maiores.
+function escalarHabilidades(base,idx){
+  const e={...base};
+  if(idx>=0.30&&!e.critChance)e.critChance=25;                       // aprendem a mirar pontos vitais
+  if(idx>=0.45&&!e.enrage)e.enrage=35;                               // lutam melhor acuados
+  if(idx>=0.60&&!e.armorBreak&&!e.isSupport)e.armorBreak={value:12,turns:2};
+  if(idx>=0.72&&!e.multiHit&&!e.isSupport)e.multiHit=2;              // golpes encadeados
+  if(idx>=0.85)e.lifesteal=(e.lifesteal||0)+15;                      // sustentam-se no combate
+  if(idx>=0.95&&!e.npDrain)e.npDrain=8;                              // atacam sua mana
+  return e;
+}
+function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1,grupoExtra=0,idxAmeaca=0){
   const map=MAPS[mapId]||MAPS.bosque;
   const table=map.enemies;
   const ids=Object.keys(table);
@@ -5362,7 +5425,7 @@ function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1,grupoExtra=0){
   if(grupoExtra>0&&Math.random()<0.6)size=Math.min(size+grupoExtra,6);
   return Array.from({length:size},(_,i)=>{
     const id=ids[Math.floor(Math.random()*ids.length)];
-    const base=table[id];
+    const base=escalarHabilidades(table[id],idxAmeaca);
     const m=phaseMult(phase);
     const hp=Math.round(base.hp*m*hpMult);
     const atk=Math.round(base.atk*m*atkMult);
@@ -7111,6 +7174,31 @@ function ameacaRotulo(idx){
   return{nome:'Cataclísmica',cor:'#c0392b'};
 }
 
+// ── AMEAÇA DINÂMICA ──────────────────────────────────
+// O poder do jogador não é só permanente: DENTRO da run ele ainda ganha
+// Golden Rule (+5% ATK e HP por fase, chegando a ×2.75) e a build de Graças
+// (5 slots × nível III). Se a ameaça ficasse congelada no início da jornada,
+// o fim da run seria sempre trivial. Aqui ela acompanha esse crescimento.
+function ameacaAtual(camp,profile){
+  if(!camp)return{idx:0,hp:1,atk:1,bossHp:1,bossAtk:1,grupoExtra:0};
+  const base=camp.ameaca||calcAmeaca(profile||{},camp.party||[camp.servo],camp.npLevel);
+  // Poder acumulado NESTA jornada
+  const nGolden=clamp((camp.goldenRule||0)/30,0,1);
+  const gracas=Object.values(camp.gracas||{}).filter(Boolean);
+  const nGraca=clamp(gracas.reduce((a,g)=>a+(g.lvl||1),0)/(GRACA_SLOTS.length*3),0,1);
+  const idxRun=nGolden*0.6+nGraca*0.4;
+  // 60% progressão permanente + 40% poder acumulado na run
+  const idx=clamp((base.idx||0)*0.6+idxRun*0.4,0,1);
+  return{
+    idx,idxBase:base.idx||0,idxRun,
+    hp:1+3.2*idx,      // teto ×4.2
+    atk:1+1.10*idx,    // teto ×2.1
+    bossHp:1+2.4*idx,  // teto ×3.4
+    bossAtk:1+0.50*idx,// teto ×1.5
+    grupoExtra:idx>=0.5?1:0,
+  };
+}
+
 const TEA_HOUSE_ITEMS=[
   {id:'cha_revolta',name:'Chá da Revolta',icon:'🍵',cur:'qp',cost:10000,kind:'buff',
    desc:'+20% de Ataque por 5 encontros.'},
@@ -7863,13 +7951,14 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
             🎲 MODO À LA CARTE
           </div>
         )}
-        {camp.ameaca&&(()=>{
-          const r=ameacaRotulo(camp.ameaca.idx);
+        {(()=>{
+          const AM=ameacaAtual(camp,profile);
+          const r=ameacaRotulo(AM.idx);
           return(
             <div style={{marginTop:12,textAlign:'center',fontSize:'.72rem',color:'var(--parchment-dark)',letterSpacing:1}}
-              title={`Comuns: ×${camp.ameaca.hp.toFixed(2)} HP · ×${camp.ameaca.atk.toFixed(2)} ATK\nBosses: ×${camp.ameaca.bossHp.toFixed(2)} HP · ×${camp.ameaca.bossAtk.toFixed(2)} ATK`}>
+              title={`Comuns: ×${AM.hp.toFixed(2)} HP · ×${AM.atk.toFixed(2)} ATK\nBosses: ×${AM.bossHp.toFixed(2)} HP · ×${AM.bossAtk.toFixed(2)} ATK\n\nProgressão permanente: ${(AM.idxBase*100).toFixed(0)}%\nPoder acumulado nesta jornada: ${(AM.idxRun*100).toFixed(0)}%`}>
               ☠️ AMEAÇA: <span style={{color:r.cor,fontFamily:'Cinzel,serif',letterSpacing:2}}>{r.nome.toUpperCase()}</span>
-              <span style={{opacity:.65}}> · inimigos ×{camp.ameaca.hp.toFixed(1)} HP, ×{camp.ameaca.atk.toFixed(1)} ATK</span>
+              <span style={{opacity:.65}}> · inimigos ×{AM.hp.toFixed(1)} HP, ×{AM.atk.toFixed(1)} ATK</span>
             </div>
           );
         })()}
@@ -7981,7 +8070,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const mid=camp.mapId||'bosque';
     // Multiplicadores da Torre (1 na Campanha)
     // Bosses escalam com o Nível de Ameaça, porém bem menos que os comuns.
-    const am=camp.ameaca||{bossHp:1,bossAtk:1};
+    const am=ameacaAtual(camp,profile);
     const hpM=(camp.towerHpMult||1)*(am.bossHp||1), atkM=(camp.towerAtkMult||1)*(am.bossAtk||1);
     // Aplica os multiplicadores da Torre ao boss recém-criado
     const T=(b)=>({...b,
@@ -8209,10 +8298,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   if(initialEnemiesRef.current===null){
     let enem=isBoss?[createBossInstance()]
       :fixedEnemies?fixedEnemies
-      :genEncounterForMap(camp.mapId||'bosque',camp.phase,
-        (camp.towerHpMult||1)*(camp.eliteFight?1.8:1)*((camp.ameaca&&camp.ameaca.hp)||1),
-        (camp.towerAtkMult||1)*(camp.eliteFight?1.45:1)*((camp.ameaca&&camp.ameaca.atk)||1),
-        (camp.ameaca&&camp.ameaca.grupoExtra)||0);
+      :(()=>{const AM=ameacaAtual(camp,profile);
+        return genEncounterForMap(camp.mapId||'bosque',camp.phase,
+          (camp.towerHpMult||1)*(camp.eliteFight?1.8:1)*AM.hp,
+          (camp.towerAtkMult||1)*(camp.eliteFight?1.45:1)*AM.atk,
+          AM.grupoExtra,AM.idx);})();
     // Casa de Chá — efeitos de INÍCIO de combate (consumidos ao entrar na luta):
     const cb=camp.chaBuffs||{};
     if(cb.enemyStartDmgPct||cb.enemyStunTurns){
