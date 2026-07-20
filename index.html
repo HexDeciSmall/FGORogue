@@ -3129,7 +3129,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.73</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.74</p>
       </div>
     </div>
   );
@@ -3817,10 +3817,10 @@ function CodexScreen({onNavigate,profile}){
 function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
   // Party: até 3 servos distintos (ids curtos). O 1º escolhido é o líder.
   const[partySel,setPartySel]=useState(['ibaraki']);
-  const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE,okuni:OKUNI_PLAYABLE,mochizuki:MOCHIZUKI_PLAYABLE,kiara:GACHA_SERVOS.kiara_summer,skadi:GACHA_SERVOS.skadi_summer,okita:GACHA_SERVOS.okita_saber,okita_alter:GACHA_SERVOS.okita_alter};
   const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',okuni:'okuni_caster',mochizuki:'mochizuki_chiyome',kiara:'kiara_summer',skadi:'skadi_summer',okita:'okita_saber',okita_alter:'okita_alter'};
   const done=profile.achievements||{};
   const owned=profile.gachaOwned||[];
+  const disponiveis=servosDisponiveis(profile);
   const SERVOS=[
     {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',art:IBARAKI.assets.default,
      ready:true,unlock:null},
@@ -3922,6 +3922,27 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
           onClick={()=>partySel.length>=1&&onStart(partySel.map(id=>TOWER_SERVO_OBJ[id]),TOWER_ORDER[0])}>
           🗼 &nbsp; Iniciar Escalada {partySel.length<1?'(monte a party!)':`(${partySel.length} servo${partySel.length>1?'s':''})`}
         </button>
+        <div className="divider"><span className="divider-text">✦ MODO ALTERNATIVO ✦</span></div>
+        <div style={{background:'rgba(192,57,43,.07)',border:'1px solid var(--edge)',borderRadius:8,
+          padding:'12px 14px',marginBottom:10}}>
+          <div className="cinzel" style={{color:'var(--crimson-soft)',fontSize:'.9rem',letterSpacing:2,marginBottom:4}}>
+            🎲 À LA CARTE
+          </div>
+          <p style={{fontSize:'.74rem',color:'var(--parchment-dark)',lineHeight:1.6,marginBottom:10}}>
+            O Trono escolhe por você. A escalada começa com <b>um único Servo sorteado</b> entre os que
+            você libertou. Durante a Torre, o evento <b>Invocação</b> oferece novos Servos para recrutar —
+            e cabe a você decidir quem fica, quem sai e em que ordem lutam.
+          </p>
+          <button className="btn btn-full btn-red" style={{padding:'12px'}}
+            disabled={!disponiveis.length}
+            onClick={()=>{
+              const sorteado=disponiveis[Math.floor(Math.random()*disponiveis.length)];
+              onStart([TOWER_SERVO_OBJ[sorteado.id]],TOWER_ORDER[0],true);
+            }}>
+            🎲 &nbsp; Iniciar À La Carte {disponiveis.length?`(${disponiveis.length} Servos no sorteio)`:'(nenhum Servo)'}
+          </button>
+        </div>
+
         <button className="btn btn-full btn-red" style={{marginBottom:8}} onClick={onOpenShop}>🏪 &nbsp; Loja da Torre</button>
         <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar</button>
       </div>
@@ -5253,6 +5274,37 @@ const MAPS={
 //  - 20 fases por mapa (boss sempre na fase 20)
 //  - inimigos com dano/HP amplificados (towerMult)
 //  - sem fases fixas de história; encontros 100% aleatórios
+// ══════════════════════════════════════════════════════
+// CATÁLOGO DE SERVOS JOGÁVEIS (usado pela Torre e pelo modo À La Carte)
+// ══════════════════════════════════════════════════════
+const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE,
+  okuni:OKUNI_PLAYABLE,mochizuki:MOCHIZUKI_PLAYABLE,kiara:GACHA_SERVOS.kiara_summer,
+  skadi:GACHA_SERVOS.skadi_summer,okita:GACHA_SERVOS.okita_saber,okita_alter:GACHA_SERVOS.okita_alter};
+const TOWER_SERVO_LISTA=[
+  {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',unlock:null},
+  {id:'qin',name:'Qin Liangyu',classe:'Lancer',unlock:'defeat_qin'},
+  {id:'deon',name:"Chevalier D'Eon",classe:'Saber',unlock:'defeat_nitro'},
+  {id:'archer',name:'Baobhan Sith',classe:'Archer',unlock:'defeat_archer'},
+  {id:'okuni',name:'Izumo no Okuni',classe:'Caster',unlock:'defeat_gosanjo',lockText:'Derrote o Go-Sanjo'},
+  {id:'mochizuki',name:'Mochizuki Chiyome',classe:'Assassin',unlock:'defeat_mochizuki',lockText:'Derrote a Mochizuki'},
+  {id:'kiara',name:'Sessyoin Kiara',classe:'Moon Cancer',unlock:'gacha',gachaId:'kiara_summer',lockText:'Banner Pull'},
+  {id:'skadi',name:'Scáthach-Skadi',classe:'Ruler',unlock:'gacha',gachaId:'skadi_summer',lockText:'Banner Pull'},
+  {id:'okita',name:'Okita Souji',classe:'Saber',unlock:'gacha',gachaId:'okita_saber',lockText:'Banner Pull'},
+  {id:'okita_alter',name:'Okita Souji Alter',classe:'Alter Ego',unlock:'gacha',gachaId:'okita_alter',lockText:'Banner Pull'},
+];
+// O jogador tem acesso a este servo?
+function servoLiberado(s,profile){
+  const done=profile.achievements||{};
+  const owned=profile.gachaOwned||[];
+  if(s.unlock===null)return true;
+  if(s.unlock==='gacha')return owned.includes(s.gachaId);
+  return !!done[s.unlock];
+}
+// Lista dos servos que o jogador realmente pode usar
+function servosDisponiveis(profile){
+  return TOWER_SERVO_LISTA.filter(s=>servoLiberado(s,profile));
+}
+
 const TOWER_MAPS={
   bosque:{id:'bosque',name:'Floresta',phases:20,enemies:ENEMIES_DATA,boss:'qin_liangyu',
     towerHpMult:1.5,towerAtkMult:1.4},
@@ -7330,10 +7382,27 @@ const EVENTOS=[
       run:c=>{const r=_qp(c,1100);return{camp:r.camp,msg:`Negócio é negócio. +${r.g} QP.`};}},
      {label:'Seguir viagem',hint:'Nada acontece',run:c=>({camp:c,msg:'Vocês se desculpam e seguem.'})},
    ]},
+
+  // ── Evento exclusivo do modo À LA CARTE ──
+  {id:'invocar',titulo:'🔮 Círculo de Invocação',
+   desc:'Um círculo mágico intacto pulsa no chão de pedra. O catalisador ainda tem carga — o suficiente para chamar um Espírito Heroico ao seu lado.',
+   cond:c=>!!c.alaCarte,
+   opts:[
+     {label:'Realizar a invocação',hint:'Escolha 1 entre 3 Servos para recrutar',
+      run:c=>({camp:c,msg:'O círculo se acende. Três presenças respondem ao chamado...',then:'invocar'})},
+     {label:'Não perturbar o círculo',hint:'Nada acontece',
+      run:c=>({camp:c,msg:'Vocês contornam o círculo em silêncio.'})},
+   ]},
 ];
 const EVENTO_BY_ID=Object.fromEntries(EVENTOS.map(e=>[e.id,e]));
 // Sorteia um evento válido que ainda não apareceu nesta jornada.
 function rollEvento(camp){
+  // No modo À La Carte o Círculo de Invocação é a espinha dorsal da run,
+  // então tem prioridade frequente sobre os demais eventos.
+  if(camp.alaCarte&&Math.random()<0.45){
+    const inv=EVENTO_BY_ID.invocar;
+    if(inv&&(!inv.cond||inv.cond(camp)))return inv;
+  }
   const vistos=camp.eventosVistos||[];
   let pool=EVENTOS.filter(e=>(!e.cond||e.cond(camp))&&!vistos.includes(e.id));
   if(!pool.length)pool=EVENTOS.filter(e=>!e.cond||e.cond(camp)); // esgotou: pode repetir
@@ -7382,6 +7451,162 @@ function TreasureScreen({camp,setProfile,onFinish}){
             <button className="btn btn-full" onClick={()=>onFinish({...camp,peregrinoSalvo:false})}>Seguir em Frente →</button>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Tela de INVOCAÇÃO (modo À La Carte): escolhe 1 entre 3 Servos ──
+// Se a equipe já estiver cheia (3), pede quem será substituído.
+function InvocarScreen({camp,profile,ofertas,onConfirmar,onCancelar}){
+  const[escolhido,setEscolhido]=useState(null);
+  const party=camp.party||[camp.servo];
+  const cheia=party.length>=3;
+
+  function pegar(s){
+    if(!cheia){onConfirmar(s,null);return;}
+    setEscolhido(s); // precisa escolher quem sai
+  }
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      <div className="panel" style={{maxWidth:600}}>
+        <div style={{textAlign:'center',marginBottom:8}}>
+          <div style={{fontSize:'2.2rem'}}>🔮</div>
+          <h2 className="cinzel" style={{color:'var(--crimson-soft)',letterSpacing:3}}>CÍRCULO DE INVOCAÇÃO</h2>
+        </div>
+        {!escolhido?(
+          <>
+            <p style={{color:'var(--parchment-dark)',fontSize:'.78rem',fontStyle:'italic',
+              textAlign:'center',marginBottom:14}}>
+              Três Espíritos Heroicos respondem ao chamado. Apenas um pode ser fixado neste mundo.
+            </p>
+            <div style={{display:'flex',flexDirection:'column',gap:9}}>
+              {ofertas.map(s=>{
+                const obj=TOWER_SERVO_OBJ[s.id];
+                const xp=loadServoXP(obj.id);
+                return(
+                  <button key={s.id} onClick={()=>pegar(s)}
+                    style={{display:'flex',gap:12,alignItems:'center',textAlign:'left',cursor:'pointer',
+                      padding:'11px 14px',borderRadius:7,width:'100%',
+                      background:'rgba(255,255,255,.02)',border:'1px solid var(--edge)',transition:'all .18s'}}
+                    onMouseEnter={e=>{e.currentTarget.style.background='rgba(192,57,43,.08)';e.currentTarget.style.borderColor='var(--crimson)';}}
+                    onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.02)';e.currentTarget.style.borderColor='var(--edge)';}}>
+                    <img src={obj.assets&&(obj.assets.default||obj.assets.profile)} alt=""
+                      style={{width:48,height:48,objectFit:'cover',objectPosition:'center 15%',
+                        borderRadius:6,border:'1px solid var(--edge)'}}
+                      onError={e=>{e.target.style.display='none';}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="cinzel" style={{color:'var(--parchment)',fontSize:'.9rem',letterSpacing:1}}>{s.name}</div>
+                      <div style={{fontSize:'.68rem',color:'var(--red-bright)'}}>{s.classe} · Nv.{xp.level}</div>
+                      <div style={{fontSize:'.66rem',color:'var(--parchment-dark)',marginTop:2}}>
+                        ATK {obj.getAtk(xp.level).toLocaleString()} · HP {obj.getHp(xp.level).toLocaleString()}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {cheia&&(
+              <p style={{fontSize:'.7rem',color:'#e8a0a0',textAlign:'center',marginTop:12}}>
+                ⚠ Sua equipe está cheia — você escolherá quem será dispensado.
+              </p>
+            )}
+          </>
+        ):(
+          <>
+            <p style={{color:'var(--parchment)',fontSize:'.8rem',textAlign:'center',marginBottom:12}}>
+              <b>{escolhido.name}</b> aguarda. Quem deixará a equipe?
+            </p>
+            <div style={{display:'flex',flexDirection:'column',gap:9}}>
+              {party.map((m,i)=>{
+                const def=PLAYABLE_SERVOS[m.id]||IBARAKI;
+                return(
+                  <button key={m.id} onClick={()=>onConfirmar(escolhido,i)}
+                    style={{display:'flex',gap:12,alignItems:'center',textAlign:'left',cursor:'pointer',
+                      padding:'11px 14px',borderRadius:7,width:'100%',
+                      background:'rgba(255,255,255,.02)',border:'1px solid rgba(192,57,43,.35)'}}>
+                    <img src={def.assets&&(def.assets.default||def.assets.profile)} alt=""
+                      style={{width:44,height:44,objectFit:'cover',objectPosition:'center 15%',borderRadius:6}}
+                      onError={e=>{e.target.style.display='none';}}/>
+                    <div style={{flex:1}}>
+                      <div className="cinzel" style={{color:'var(--parchment)',fontSize:'.85rem'}}>{def.name}</div>
+                      <div style={{fontSize:'.66rem',color:'var(--parchment-dark)'}}>
+                        HP {m.hp}/{m.hpMax} · NP {Math.round(m.npBar)}%{i===0?' · LÍDER':''}
+                      </div>
+                    </div>
+                    <span style={{color:'#e8a0a0',fontSize:'.7rem'}}>DISPENSAR</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button className="btn btn-full" style={{marginTop:12}} onClick={()=>setEscolhido(null)}>← Escolher outro Servo</button>
+          </>
+        )}
+        <button className="btn btn-full" style={{marginTop:10,opacity:.75}} onClick={onCancelar}>
+          Recusar a invocação
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Tela de GERENCIAR EQUIPE: reordenar e dispensar Servos ──
+function PartyManageScreen({camp,setCamp,onVoltar}){
+  const party=camp.party||[camp.servo];
+  function aplicar(nova){
+    setCamp(c=>({...c,party:nova,servo:nova[0]}));
+  }
+  function mover(i,d){
+    const j=i+d;if(j<0||j>=party.length)return;
+    const nova=[...party];[nova[i],nova[j]]=[nova[j],nova[i]];
+    aplicar(nova);
+  }
+  function dispensar(i){
+    if(party.length<=1)return; // nunca fica sem ninguém
+    aplicar(party.filter((_,k)=>k!==i));
+  }
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      <div className="panel" style={{maxWidth:560}}>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:4}}>⚙️ GERENCIAR EQUIPE</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.76rem',marginBottom:14,fontStyle:'italic'}}>
+          O primeiro da lista é o <b>líder</b> e começa os combates em campo. A ordem também define
+          quem entra quando alguém cai.
+        </p>
+        <div style={{display:'flex',flexDirection:'column',gap:9}}>
+          {party.map((m,i)=>{
+            const def=PLAYABLE_SERVOS[m.id]||IBARAKI;
+            const caido=m.defeated||m.hp<=0;
+            return(
+              <div key={m.id} style={{display:'flex',gap:10,alignItems:'center',
+                padding:'10px 12px',borderRadius:7,
+                background:i===0?'rgba(192,57,43,.09)':'rgba(0,0,0,.25)',
+                border:`1px solid ${i===0?'var(--edge)':'rgba(120,120,120,.2)'}`,
+                opacity:caido?.5:1}}>
+                <img src={def.assets&&(def.assets.default||def.assets.profile)} alt=""
+                  style={{width:44,height:44,objectFit:'cover',objectPosition:'center 15%',borderRadius:6}}
+                  onError={e=>{e.target.style.display='none';}}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div className="cinzel" style={{color:i===0?'var(--gold)':'var(--parchment)',fontSize:'.85rem'}}>
+                    {i===0?'★ ':''}{def.name}{caido?' (caído)':''}
+                  </div>
+                  <div style={{fontSize:'.66rem',color:'var(--parchment-dark)'}}>
+                    Nv.{m.level} · HP {m.hp}/{m.hpMax} · NP {Math.round(m.npBar)}%
+                  </div>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:3}}>
+                  <button className="btn btn-sm" style={{padding:'2px 8px',fontSize:'.65rem'}}
+                    disabled={i===0} onClick={()=>mover(i,-1)}>▲</button>
+                  <button className="btn btn-sm" style={{padding:'2px 8px',fontSize:'.65rem'}}
+                    disabled={i===party.length-1} onClick={()=>mover(i,1)}>▼</button>
+                </div>
+                <button className="btn btn-sm btn-red" style={{fontSize:'.62rem'}}
+                  disabled={party.length<=1} onClick={()=>dispensar(i)}>Dispensar</button>
+              </div>
+            );
+          })}
+        </div>
+        <button className="btn btn-red btn-full" style={{marginTop:16}} onClick={onVoltar}>← Voltar ao mapa</button>
       </div>
     </div>
   );
@@ -7471,7 +7696,7 @@ function TeaHouseModal({party,profile,onBuy,notif,onClose}){
   );
 }
 
-function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,setCamp}){
+function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,setCamp,onGerenciarParty}){
   const[teaOpen,setTeaOpen]=useState(false);
   const{servo,phase,maxPhases}=camp;
   const curMap=(camp.towerMode?TOWER_MAPS[camp.mapId]:MAPS[camp.mapId])||MAPS.bosque;
@@ -7632,6 +7857,12 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
             </div>
           </>
         )}
+        {camp.alaCarte&&(
+          <div style={{textAlign:'center',marginTop:10,fontSize:'.7rem',letterSpacing:2,
+            color:'var(--crimson-soft)',fontFamily:'Cinzel,serif'}}>
+            🎲 MODO À LA CARTE
+          </div>
+        )}
         {camp.ameaca&&(()=>{
           const r=ameacaRotulo(camp.ameaca.idx);
           return(
@@ -7645,7 +7876,12 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
         <div style={{marginTop:8,fontSize:'.7rem',color:'var(--parchment-dark)',textAlign:'center'}}>
           Combate: +{XP_COMBAT_WIN} XP · +500 QP · +30 Bond &nbsp;|&nbsp; Evento: +250 QP &nbsp;|&nbsp; Boss: +{XP_BOSS_WIN} XP · +1500 QP
         </div>
-        <button className="btn btn-red btn-full" style={{marginTop:16,opacity:.8}}
+        {camp.towerMode&&(
+          <button className="btn btn-full" style={{marginTop:14}} onClick={onGerenciarParty}>
+            ⚙️ &nbsp; Gerenciar Equipe ({(camp.party||[camp.servo]).length}/3)
+          </button>
+        )}
+        <button className="btn btn-red btn-full" style={{marginTop:10,opacity:.8}}
           onClick={()=>{if(confirm('Desistir da jornada atual? Você mantém tudo que já ganhou até aqui (SQ, QP, XP e Bond), mas a run atual é encerrada.'))onGiveUp();}}>
           🏳️ Desistir da Jornada
         </button>
@@ -7657,7 +7893,7 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
 // ══════════════════════════════════════════════════════
 // EVENTO
 // ══════════════════════════════════════════════════════
-function EventScreen({camp,evento,onFinish,setProfile,onCombat,onGraca}){
+function EventScreen({camp,evento,onFinish,setProfile,onCombat,onGraca,onInvocar}){
   const ev=evento;
   const [res,setRes]=useState(null); // {msg, camp, then}
   if(!ev)return(
@@ -7669,9 +7905,11 @@ function EventScreen({camp,evento,onFinish,setProfile,onCombat,onGraca}){
 
   function escolher(opt){
     const out=opt.run(camp)||{};
-    // Marca o evento como já visto nesta jornada (evita repetição)
-    const novoCamp={...(out.camp||camp),
-      eventosVistos:[...(camp.eventosVistos||[]),ev.id]};
+    // Marca o evento como já visto nesta jornada (evita repetição).
+    // O Círculo de Invocação é a exceção: pode reaparecer ao longo da Torre.
+    const vistos=ev.id==='invocar'?(camp.eventosVistos||[])
+      :[...(camp.eventosVistos||[]),ev.id];
+    const novoCamp={...(out.camp||camp),eventosVistos:vistos};
     setProfile(loadProfile()); // moedas podem ter mudado
     setRes({msg:out.msg||'',camp:novoCamp,then:out.then,falhou:out.falhou});
   }
@@ -7679,6 +7917,7 @@ function EventScreen({camp,evento,onFinish,setProfile,onCombat,onGraca}){
   function continuar(){
     if(res.then==='combat'){onCombat(res.camp);return;}
     if(res.then==='graca'){onGraca(res.camp);return;}
+    if(res.then==='invocar'){onInvocar(res.camp);return;}
     onFinish(res.camp);
   }
 
@@ -10219,6 +10458,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   const[gracaOffer,setGracaOffer]=useState(null);
   // Conquistas de Graça recém-obtidas: {camp, won:[def]} — celebradas antes de avançar
   const[gracaWon,setGracaWon]=useState(null);
+  // Oferta de Invocação (modo À La Carte): {ofertas:[servo], camp}
+  const[invocacao,setInvocacao]=useState(null);
   const[notif,setNotif]=useState('');
   const scriptedFightRef=useRef(null); // guarda inimigos de combates roteirizados (ex: Fase 12)
 
@@ -10303,11 +10544,12 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   }
 
   // Inicia uma run da Torre de Desafios (roguelike puro) com a party (até 3 servos).
-  function startTower(partyServos,mapId){
+  function startTower(partyServos,mapId,alaCarte){
     setProfile(incRuns());
     const leader=partyServos[0];
     const c=buildCampForMap(leader,mapId,null,true,partyServos);
     c.towerFloor=1; // começa no Andar 1 (escalada contínua)
+    c.alaCarte=!!alaCarte; // modo aleatório: 1 servo sorteado + evento de Invocação
     setCamp(c);
     setStage('map');
   }
@@ -10894,6 +11136,42 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     goToPhase(nextCamp,camp.phase+1);
   }
 
+  // Abre o Círculo de Invocação: sorteia 3 Servos liberados que não estão na equipe.
+  function abrirInvocacao(c){
+    const naParty=(c.party||[c.servo]).map(m=>m.id);
+    const pool=servosDisponiveis(profile)
+      .filter(s=>!naParty.includes(TOWER_SERVO_OBJ[s.id].id));
+    if(!pool.length){setNotif('Nenhum Servo disponível para invocar.');onEventFinish(c);return;}
+    const sorteio=[...pool].sort(()=>Math.random()-0.5).slice(0,3);
+    setInvocacao({ofertas:sorteio,camp:c});
+    setStage('invocar');
+  }
+
+  // Recruta o Servo escolhido. `trocarIdx` = quem sai (null se havia vaga).
+  function confirmarInvocacao(servoSel,trocarIdx){
+    const pend=invocacao;if(!pend)return;
+    const c=pend.camp;
+    const obj=TOWER_SERVO_OBJ[servoSel.id];
+    const xp=loadServoXP(obj.id);
+    const bond=loadBond(obj.id);
+    const novo={
+      ...obj,level:xp.level,
+      attackBase:obj.getAtk(xp.level),
+      hpMax:obj.getHp(xp.level),hp:obj.getHp(xp.level),
+      npBar:0,npLevel:bondToNP(bond.level),
+      activeBuffs:[],activeDebuffs:[],stunned:0,
+      cooldowns:Object.fromEntries((obj.activeSkills||[]).map(k=>[k.id,0])),
+      gutsCharges:(obj.passiveSkills||[]).some(pp=>pp.effect&&pp.effect.type==='guts')?1:0,
+      tempGuts:null,evadeTurns:0,defeated:false,
+    };
+    const party=[...(c.party||[c.servo])];
+    if(trocarIdx==null)party.push(novo); else party[trocarIdx]=novo;
+    const nc={...c,party,servo:party[0]};
+    setInvocacao(null);
+    setNotif(`✨ ${obj.name} atendeu ao chamado!`);
+    onEventFinish(nc);
+  }
+
   function onEventFinish(finishedCamp){
     // Usa o camp finalizado (com planBonus/buffs aplicados), não o estado antigo
     const base=finishedCamp||camp;
@@ -11263,17 +11541,22 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     </div>
   );
   if(stage==='gracaOffer'&&gracaOffer)return <GracaOfferScreen camp={gracaOffer.camp} offer={gracaOffer.offer} onPick={pickGraca}/>;
-  if(stage==='map')return <MapScreen camp={camp} onChoosePath={choosePath} onNavigate={onNavigate} onGiveUp={onGiveUp} profile={profile} setProfile={setProfile} setCamp={setCamp}/>;
+  if(stage==='map')return <MapScreen camp={camp} onChoosePath={choosePath} onNavigate={onNavigate} onGiveUp={onGiveUp} profile={profile} setProfile={setProfile} setCamp={setCamp} onGerenciarParty={()=>setStage('party')}/>;
   if(stage==='combat')return <CombatScreen camp={camp} isBoss={false} onWin={onCombatWin} onLose={onCombatLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
   if(stage==='boss')return <CombatScreen camp={camp} isBoss={true} onWin={onBossWin} onLose={onBossLose} onFlee={onCombatFlee} setCamp={setCamp} profile={profile} setProfile={setProfile}/>;
   if(stage==='event')return <EventScreen camp={camp} evento={eventoAtual} onFinish={onEventFinish}
     setProfile={setProfile}
     onCombat={c=>{setCamp(c);setStage('combat');}}
+    onInvocar={abrirInvocacao}
     onGraca={c=>{let o=rollGracaOffer(c,3);
       if(c.gracaBonusLvl)o=o.map(x=>({...x,lvl:c.gracaBonusLvl})); // Encruzilhada Amaldiçoada
       const c2={...c,gracaBonusLvl:undefined};
       if(o.length){setGracaOffer({offer:o,camp:c2});setStage('gracaOffer');}else onEventFinish(c2);}}/>;
   if(stage==='treasure')return <TreasureScreen camp={camp} setProfile={setProfile} onFinish={onEventFinish}/>;
+  if(stage==='invocar'&&invocacao)return <InvocarScreen camp={invocacao.camp} profile={profile}
+    ofertas={invocacao.ofertas} onConfirmar={confirmarInvocacao}
+    onCancelar={()=>{const c=invocacao.camp;setInvocacao(null);onEventFinish(c);}}/>;
+  if(stage==='party')return <PartyManageScreen camp={camp} setCamp={setCamp} onVoltar={()=>setStage('map')}/>;
 
   // Tela de resultado
   const xpFinal=loadServoXP(IBARAKI.id);
