@@ -3158,7 +3158,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.81</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.82</p>
       </div>
     </div>
   );
@@ -6131,6 +6131,63 @@ const STORY_MAP9_F9={
 // TRANSIÇÃO MAPA 9 → 10 — O CONTRATO DA OKUNI
 // ══════════════════════════════════════════════════════
 // A Okuni se torna Serva definitiva do Mestre. A partir daqui a party é de 3.
+// ══════════════════════════════════════════════════════
+// MAPA 10 — FASES FIXAS (Prelúdio para Guerra de Sucessão)
+// ══════════════════════════════════════════════════════
+
+// Fase 3 — A Okuni como voz da razão; o peso da morte da Assassin.
+const STORY_MAP10_F3={
+  start:[
+    {type:'narration',text:'Com a chegada da Okuni ao grupo, a presença dela é estranhamente reconfortante. Sua energia mágica, que sempre foi como um mar turbulento, se apresentava agora como uma calmaria agradável.'},
+    {type:'narration',text:'A derrota da Assassin lhe deixou com um gosto amargo na boca. Aquela garota parece ter sofrido e, mesmo assim, no final da sua vida ela ainda não havia se redimido, nem sua dor havia cessado.'},
+    {type:'okuni',expr:'think',name:'OKUNI',text:'Hmm? Você parece preocupado com algo. Eu sou uma sacerdotisa, então curar a alma — ou fazer com que ela tenha um repouso confortante — é um dos meus melhores dotes.'},
+    {type:'master',text:'A situação da Assassin... não foi um bom desfecho…'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Às vezes a crueldade pode ser piedade. Um líder e um mestre precisa ser cruel e usar a força para manter a ordem, para evitar que o caos se instale — o que se revela uma forma maior de piedade a longo prazo.'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Não existe uma resposta que vá te satisfazer em relação a isso, mas diria que sentir culpa só vai te pesar nas escolhas que deveriam ser feitas.'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Estou vendo que terei que ser a voz da razão nessa equipe….'},
+    {type:'archer',expr:'sith_pis',name:'BAOBHAN SITH',text:'Quer dizer algo com isso?'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Hehe.'},
+  ],
+};
+
+// Fase 7 — A guerra se intensifica; o grupo parte para Hyuchi.
+const STORY_MAP10_F7={
+  start:[
+    {type:'narration',text:'Se passaram alguns dias, e a quantidade de soldados na cidade e nas redondezas fica cada vez mais intensa. A guerra do outro lado estava se intensificando — mas, mesmo interrogando alguns deles, nenhuma informação foi obtida com êxito.'},
+    {type:'ibaraki',expr:'exp2',name:'IBARAKI',text:'Eles são bem durões, hein? Como que essa lealdade cresceu tanto nos últimos anos?'},
+    {type:'archer',expr:'sith_ow',name:'BAOBHAN SITH',text:'Certamente estão sob a influência de uma grande pessoa. Minha mãe falava de um rei que vivia em um reino abençoado pelo grande dragão, que deu ao povo o seu filho — e por conta disso o povo acreditava fielmente nesse homem. Sua fé pelo rei era inabalável. Deve ser algo semelhante: para lutarem assim, precisam de um grande general.'},
+    {type:'masterThought',text:'Hmm…. pelas datas, ainda o Fujiwara no Michinaga deve estar no poder, o que faria sentido. Mas ele estar envolvido no evento da guerra de sucessão é estranho.'},
+    {type:'okuni',expr:'think',name:'OKUNI',text:'As coisas parecem muito turbulentas para aquele lado. Com nossa força atual, contra um servo de grande calibre ainda deve resultar em derrota — mas precisamos entender a situação para ver o real resultado.'},
+    {type:'narration',text:'O grupo passa a fazer os preparativos para sair da cidade. A próxima localidade seria Hyuchi, onde certamente o conflito da guerra ainda existe.'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Hyuchi é uma enorme fortaleza em guerra. O clã Minamoto estava se preparando para invadir, pelas notícias dos habitantes locais, já que até então estava tendo recrutamento dos homens.'},
+    {type:'ibaraki',expr:'exp1',name:'IBARAKI',text:'Como vamos nos mover? Você perdeu aquele golem estranho.'},
+    {type:'okuni',expr:'preocupada',name:'OKUNI',text:'Teremos que usar animais dessa vez. Mesmo com a mana do mestre, não serei capaz de invocar o Zanza… A não ser que esperemos por alguns dias, talvez semanas, para juntar mana o suficiente. Mas essa é a pior das opções.'},
+    {type:'archer',expr:'sith_ow',name:'BAOBHAN SITH',text:'A cada dia que ficamos em um lugar parado é o suficiente para o inimigo avançar dois passos à nossa frente. E já começamos essa peregrinação atrasada.'},
+    {type:'archer',expr:'sith_ahh',name:'BAOBHAN SITH',text:'Mas se o objetivo foi eliminar os mestres da guerra de sucessão, demos um grande passo.'},
+  ],
+};
+
+// Fase 9 — SONHO/MEMÓRIA: a noite no bosque, o cantil e a espada de osso da Shuten.
+const STORY_MAP10_F9={
+  start:[
+    {type:'narration',dream:true,text:'Assim que a noite cai, um sonho se manifesta. Uma memória recente começa a ser construída.'},
+    {type:'glitch'},
+    {type:'narration',dream:true,text:'Naquele bosque escuro, logo após aquela estranha mulher ter usado um estranho magecraft com um crânio, você sente todos os seus circuitos mágicos sendo invadidos por algo rancoroso — algo maligno, de uma fome e uma sede sem fim.'},
+    {type:'narration',dream:true,text:'Enquanto cai no chão dando gritos de dor, aquela dupla que estava conversando para, e se aproxima.'},
+    {type:'unknown',dream:true,name:'?????',art:'assets/servos/tsuna/tsuna_serio.png',text:'Hey, quem está aí?'},
+    {type:'unknown',dream:true,name:'????',art:'assets/servos/shuten/shuten_bleed.png',text:'Você não vai ter chance contra os dois… fufu, use isso.'},
+    {type:'narration',dream:true,text:'Aquela estranha mulher com chifres lhe entrega um cantil e uma espada de osso, que não é afiada nem resistente, mas emana uma energia estranha. Ao tocar na espada, aquela dor que você sentia foi sendo reduzida aos poucos — e um brilho vermelho surgiu, saindo da parte de baixo do seu pulso.'},
+    {type:'ibaraki',expr:'exp2',name:'?????',text:'Eu sou a líder do clã oni do Monte Ooe. Não estou acostumada a receber ordens. Cuidado para não ter a garganta cortada. Hm? O que o cheiro da Shuten está fazendo em você?! O sangue dela, ainda?! Espera…'},
+    {type:'ibaraki',expr:'exp2',name:'?????',text:'Não é isso. Você parece estranhamente conectado a ela… hmmm…'},
+    {type:'narration',dream:true,text:'Ela olha ao redor, observando aquele homem e a mulher que parecem estar apontando armas contra o seu "mestre". Então faz uma cara de ódio.'},
+    {type:'ibaraki',expr:'expDerrota',name:'?????',text:'Grr! Você…. você aqui, seu maldito! Tsuna!!!'},
+    {type:'narration',dream:true,text:'Ela puxa sua espada de osso, e um embate se inicia. Aquela pequena garota conseguiu lidar com ambos os inimigos à frente — parecia uma fúria anormal, golpes carregados de rancor e violência.'},
+    {type:'narration',dream:true,text:'Essa batalha fez com que os dois inimigos tivessem que recuar.'},
+    {type:'glitch'},
+    {type:'narration',text:'Então a luz do sol começa a aparecer, o que faz com que aquele sonho fosse finalizado ali — mas com grandes informações.'},
+  ],
+};
+
 const STORY_MAP9_MAP10={
   start:[
     {type:'narration',text:'Assim que o clima tenso se dissipa, e o grupo se vê em bons lençóis, eles se sentam próximos de um palanque que poderia ter sido usado para os generais incentivarem seus camaradas.'},
@@ -6556,7 +6613,12 @@ function StoryScreen({profile,script=STORY_INTRO,finishLabel='⚔️ Adentrar o 
     );
     if(m.type==='unknown')return(
       <div key={i} className={`chat-msg left${m.dream?' dream':''}`}>
-        <div className="chat-avatar-unknown">?</div>
+        {/* Voz desconhecida pode ter arte (rosto visto, identidade ainda oculta) */}
+        {m.art
+          ?<img className="chat-avatar" src={m.art} alt="?"
+             style={{borderColor:'rgba(150,150,180,.55)',filter:'saturate(.85)'}}
+             onError={e=>{e.target.style.display='none';}}/>
+          :<div className="chat-avatar-unknown">?</div>}
         <div className="chat-body">
           <div className="chat-name unknown">{m.name||'VOZ DESCONHECIDA'}</div>
           <div className={`chat-bubble mystic${m.dream?' dream':''}`}>{m.text}</div>
@@ -10916,7 +10978,10 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     // Mapa 10 (Prelúdio para Guerra de Sucessão): fases fixas 1,3,7,9,11,13,17 (roteiros a definir).
     const isMap10=(baseCamp.mapId||'bosque')==='sucessao_prelude';
     if(isMap10&&nextPhase===1){setCamp(advanced);setStage('map9Map10Transition');return;}
-    if(isMap10&&[3,7,9,11,13,17].includes(nextPhase)){
+    if(isMap10&&nextPhase===3){setCamp(advanced);setStage('map10F3');return;}
+    if(isMap10&&nextPhase===7){setCamp(advanced);setStage('map10F7');return;}
+    if(isMap10&&nextPhase===9){setCamp(advanced);setStage('map10F9');return;}
+    if(isMap10&&[11,13,17].includes(nextPhase)){
       setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map10Fixed');return;
     }
     setCamp(advanced);setStage('map');
@@ -11637,6 +11702,12 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   if(stage==='map9RageLose')return <StoryScreen profile={profile} script={STORY_MAP9_RAGE_LOSE} finishLabel="Continuar →" onFinish={()=>setStage('result')}/>;
   if(stage==='map9Map10Transition')return <StoryScreen profile={profile} script={STORY_MAP9_MAP10}
     finishLabel="⚔️ Rumo a Nara e Kyoto" onFinish={()=>setStage('map')}/>;
+  if(stage==='map10F3')return <StoryScreen profile={profile} script={STORY_MAP10_F3}
+    finishLabel="Seguir em Frente →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map10F7')return <StoryScreen profile={profile} script={STORY_MAP10_F7}
+    finishLabel="⚔️ Partir para Hyuchi" onFinish={()=>setStage('map')}/>;
+  if(stage==='map10F9')return <StoryScreen profile={profile} script={STORY_MAP10_F9}
+    finishLabel="🌅 Despertar" onFinish={()=>setStage('map')}/>;
   if(stage==='map10Fixed')return(
     <div className="screen">
       <div className="panel" style={{textAlign:'center',maxWidth:480}}>
