@@ -3158,7 +3158,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.79</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.81</p>
       </div>
     </div>
   );
@@ -5395,7 +5395,7 @@ const CAMPAIGN_CHECKPOINTS=[
   {mapId:'shinohara',name:'Estrada de Shinohara',phases:15,unlock:'clear_kurikara2',boss:'???',party2:true},
   {mapId:'shinohara_city',name:'Shinohara',phases:35,unlock:'defeat_shunoban',boss:'Mochizuki Chiyome',party2:true},
   {mapId:'shinohara_battle',name:'Batalha de Shinohara',phases:10,unlock:'defeat_mochizuki',boss:'Mochizuki (Enfurecida)',party2:true},
-  {mapId:'sucessao_prelude',name:'Prelúdio para Guerra de Sucessão',phases:18,unlock:'defeat_mochizuki_rage',boss:'—',party2:true},
+  {mapId:'sucessao_prelude',name:'Prelúdio para Guerra de Sucessão',phases:18,unlock:'defeat_mochizuki_rage',boss:'—',party3:true},
 ];
 
 // Gera um encontro usando a tabela de inimigos do mapa atual.
@@ -7039,6 +7039,63 @@ function SkillIcon({nome,emoji,size=26,style}){
 // Tela de escolha de Graça, exibida após vencer um encontro.
 function GracaOfferScreen({camp,offer,onPick}){
   const held=camp.gracas||{};
+  // Quando a escolha vai SUBSTITUIR uma Graça já equipada, pedimos confirmação
+  // mostrando lado a lado a atual e a nova.
+  const[confirmar,setConfirmar]=useState(null); // {oferta, atual}
+  function tentarEscolher(o){
+    const g=GRACA_BY_ID[o.id];
+    const cur=held[g.slot];
+    if(cur&&cur.id!==o.id){setConfirmar({oferta:o,atual:cur});return;}
+    onPick(o); // slot vazio ou melhoria da mesma Graça: aplica direto
+  }
+
+  if(confirmar){
+    const gNovo=GRACA_BY_ID[confirmar.oferta.id];
+    const gAtual=GRACA_BY_ID[confirmar.atual.id];
+    const pNovo=PATRONOS[gNovo.patrono], pAtual=PATRONOS[gAtual.patrono];
+    const slot=GRACA_SLOTS.find(x=>x[0]===gNovo.slot);
+    const Card=({g,pat,lvl,rotulo,cor})=>(
+      <div style={{flex:1,minWidth:0,padding:'12px 13px',borderRadius:8,
+        background:'rgba(0,0,0,.28)',border:`1px solid ${cor}55`}}>
+        <div style={{fontSize:'.6rem',letterSpacing:2,color:cor,fontFamily:'Cinzel,serif',marginBottom:6}}>{rotulo}</div>
+        <div style={{display:'flex',gap:9,alignItems:'center',marginBottom:6}}>
+          <SkillIcon nome={g.name} emoji={pat.icon} size={38}/>
+          <div style={{minWidth:0}}>
+            <div className="cinzel" style={{color:pat.color,fontSize:'.82rem'}}>{g.name}</div>
+            <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>{pat.name} · Nível {ROMAN[lvl-1]}</div>
+          </div>
+        </div>
+        <div style={{fontSize:'.73rem',color:'var(--parchment)',lineHeight:1.5}}>{g.desc(g.v(lvl))}</div>
+      </div>
+    );
+    return(
+      <div className="screen" style={{padding:'20px 12px'}}>
+        <div className="panel" style={{maxWidth:640}}>
+          <div style={{textAlign:'center',marginBottom:4}}>
+            <div style={{fontSize:'1.8rem'}}>⚠️</div>
+            <h2 className="cinzel" style={{color:'var(--crimson-soft)',letterSpacing:3}}>SUBSTITUIR GRAÇA?</h2>
+            <p style={{color:'var(--parchment-dark)',fontSize:'.76rem',fontStyle:'italic',marginTop:4}}>
+              O slot {slot?`${slot[2]} ${slot[1]}`:gNovo.slot} já está ocupado. A Graça atual será
+              <b> perdida para sempre</b> nesta jornada.
+            </p>
+          </div>
+          <div style={{display:'flex',gap:10,alignItems:'stretch',margin:'14px 0',flexWrap:'wrap'}}>
+            <Card g={gAtual} pat={pAtual} lvl={confirmar.atual.lvl||1} rotulo="ATUAL — SERÁ PERDIDA" cor="#e0806a"/>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',
+              color:'var(--gold)',fontSize:'1.4rem',padding:'0 2px'}}>➜</div>
+            <Card g={gNovo} pat={pNovo} lvl={confirmar.oferta.lvl} rotulo="NOVA" cor="#7ee08a"/>
+          </div>
+          <button className="btn btn-red btn-full" onClick={()=>{const o=confirmar.oferta;setConfirmar(null);onPick(o);}}>
+            ✔ Confirmar substituição
+          </button>
+          <button className="btn btn-full" style={{marginTop:8}} onClick={()=>setConfirmar(null)}>
+            ← Voltar e escolher outra
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
       <div className="panel" style={{maxWidth:620}}>
@@ -7049,6 +7106,44 @@ function GracaOfferScreen({camp,offer,onPick}){
             Um Espírito Heroico estende sua bênção. Escolha uma — ela durará por toda esta jornada.
           </p>
         </div>
+        {/* Build atual: evita ter que lembrar de cabeça o que já está equipado */}
+        <div className="divider"><span className="divider-text">SUA BUILD ATUAL</span></div>
+        <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:4}}>
+          {GRACA_SLOTS.map(([key,label,icone])=>{
+            const cur=held[key];
+            const g=cur?GRACA_BY_ID[cur.id]:null;
+            const pat=g?PATRONOS[g.patrono]:null;
+            // Algum item da oferta disputa este slot?
+            const disputado=offer.some(o=>{const og=GRACA_BY_ID[o.id];return og&&og.slot===key;});
+            return(
+              <div key={key} title={g?`${g.name} — ${g.desc(g.v(cur.lvl||1))}`:`Slot ${label} vazio`}
+                style={{flex:'1 1 120px',minWidth:110,padding:'7px 9px',borderRadius:6,
+                  background:g?`${pat.color}12`:'rgba(255,255,255,.02)',
+                  border:`1px solid ${disputado?'var(--gold-dim)':(g?`${pat.color}44`:'rgba(120,120,120,.22)')}`,
+                  opacity:g?1:.55}}>
+                <div style={{fontSize:'.56rem',letterSpacing:1.5,color:'var(--parchment-dark)',
+                  display:'flex',alignItems:'center',gap:4}}>
+                  <span>{icone} {label.toUpperCase()}</span>
+                  {disputado&&<span style={{color:'var(--gold)'}}>◆</span>}
+                </div>
+                {g?(
+                  <div style={{display:'flex',alignItems:'center',gap:5,marginTop:3}}>
+                    <SkillIcon nome={g.name} emoji={pat.icon} size={18}/>
+                    <span style={{color:pat.color,fontSize:'.68rem',fontFamily:'Cinzel,serif',
+                      overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{g.name}</span>
+                    <span style={{fontSize:'.56rem',color:'var(--gold)'}}>{ROMAN[(cur.lvl||1)-1]}</span>
+                  </div>
+                ):(
+                  <div style={{fontSize:'.66rem',color:'var(--parchment-dark)',marginTop:3,fontStyle:'italic'}}>vazio</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <p style={{fontSize:'.6rem',color:'var(--parchment-dark)',textAlign:'center',marginBottom:2}}>
+          ◆ slot disputado por uma das opções abaixo
+        </p>
+
         <div className="divider"><span className="divider-text">✦ ESCOLHA UMA ✦</span></div>
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
           {offer.map(o=>{
@@ -7060,7 +7155,7 @@ function GracaOfferScreen({camp,offer,onPick}){
             const isUpgrade=cur&&cur.id===g.id;
             const replaces=cur&&cur.id!==g.id?GRACA_BY_ID[cur.id]:null;
             return(
-              <button key={o.id} onClick={()=>onPick(o)}
+              <button key={o.id} onClick={()=>tentarEscolher(o)}
                 style={{display:'flex',gap:12,alignItems:'flex-start',textAlign:'left',cursor:'pointer',
                   padding:'12px 14px',borderRadius:8,width:'100%',
                   background:'rgba(255,255,255,.02)',border:`1px solid ${pat.color}55`,
@@ -10659,13 +10754,18 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     setProfile(incRuns()); // conta cada nova run iniciada
     const cp=CAMPAIGN_CHECKPOINTS.find(c=>c.mapId===mapId);
     // Mapas com party de 2 (Kurikara e cidade): já entram com Ibaraki + Sith.
-    if(cp&&cp.party2){
-      const c=buildCampForMap(servo,mapId,null,false,[IBARAKI,SITH_PLAYABLE]);
+    if(cp&&(cp.party2||cp.party3)){
+      // party3: a partir do Mapa 10 a Okuni é Serva definitiva do Mestre.
+      const equipe=cp.party3?[IBARAKI,SITH_PLAYABLE,OKUNI_PLAYABLE]:[IBARAKI,SITH_PLAYABLE];
+      const c=buildCampForMap(servo,mapId,null,false,equipe);
       c.sithJoined=true;
+      if(cp.party3)c.okuniJoined=true;
       setCamp(c);
       // Mapas 5 e 6 têm a Fase 1 como cena fixa — dispara o diálogo de abertura.
       if(mapId==='kurikara_city'){setStage('map5F1');return;}
       if(mapId==='kurikara2'){setStage('map6F1');return;}
+      // Mapa 10 abre com a cena do contrato da Okuni.
+      if(mapId==='sucessao_prelude'){setStage('map9Map10Transition');return;}
       setStage('map');
       return;
     }
@@ -10815,7 +10915,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap9&&nextPhase===9){setCamp(advanced);setStage('map9F9');return;}
     // Mapa 10 (Prelúdio para Guerra de Sucessão): fases fixas 1,3,7,9,11,13,17 (roteiros a definir).
     const isMap10=(baseCamp.mapId||'bosque')==='sucessao_prelude';
-    if(isMap10&&[1,3,7,9,11,13,17].includes(nextPhase)){
+    if(isMap10&&nextPhase===1){setCamp(advanced);setStage('map9Map10Transition');return;}
+    if(isMap10&&[3,7,9,11,13,17].includes(nextPhase)){
       setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map10Fixed');return;
     }
     setCamp(advanced);setStage('map');
