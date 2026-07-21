@@ -3158,7 +3158,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.78</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.79</p>
       </div>
     </div>
   );
@@ -7298,11 +7298,14 @@ const EVENTOS=[
       run:c=>({camp:_curarGrupo(c,30),msg:'Uma calma antiga percorre o grupo. Todos recuperam 30% do HP.'})},
      {label:'Profanar o altar',hint:'+30% ATK por 3 encontros · −20% HP máximo pela jornada',
       run:c=>{
+        // A penalidade é guardada na jornada (e não no hpMax do membro), porque o
+        // hpMax é recalculado a partir da definição do Servo a cada combate.
+        const cb={...(c.chaBuffs||{}),atkUp:{value:30,encounters:3},
+          hpMaxPenaltyPct:((c.chaBuffs&&c.chaBuffs.hpMaxPenaltyPct)||0)+20};
         const party=(c.party||[c.servo]).map(m=>{
           const novoMax=Math.max(1,Math.round(m.hpMax*0.8));
           return{...m,hpMax:novoMax,hp:Math.min(m.hp,novoMax)};
         });
-        const cb={...(c.chaBuffs||{}),atkUp:{value:30,encounters:3}};
         return{camp:{...c,party,servo:party[0],chaBuffs:cb},
           msg:'Você arranca as oferendas. Um poder amargo se espalha — mas algo foi permanentemente perdido.'};
       }},
@@ -8258,19 +8261,26 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         if(camp.planBonus.defUp)buffs.push({type:'defense_up',value:camp.planBonus.defUp,turns:3,id:'plan_def'});
       }
     }
-    const baseHpMax=(m.hpMax||def.getHp(lvl))+hpBonus;
+    // IMPORTANTE: a base do HP tem que vir da DEFINIÇÃO do Servo, igual ao ATK logo
+    // abaixo. Usar `m.hpMax` (que já vinha multiplicado do combate anterior) fazia o
+    // Golden Rule COMPOR a cada fase — o HP virava exponencial (bilhões na fase 30).
+    const baseHpMax=def.getHp(lvl)+hpBonus;
     // Graça — Estandarte Sagrado (Jeanne): +% de HP máximo para o grupo
     const hpGraca=1+(getGracaEffects(camp).maxHpUpPct||0)/100;
-    const grHpMax=Math.round(baseHpMax*grMult*hpGraca);
-    // Preserva o HP proporcional: se o membro entra com HP cheio, continua cheio (agora maior).
-    const curHp=(m.hp!=null?m.hp:def.getHp(lvl))+hpBonus;
-    const wasFullHp=curHp>=baseHpMax;
+    // Evento Altar Abandonado (profanar): penalidade de HP máximo por toda a jornada
+    const penHp=1-Math.min(80,(camp.chaBuffs&&camp.chaBuffs.hpMaxPenaltyPct)||0)/100;
+    const grHpMax=Math.max(1,Math.round(baseHpMax*grMult*hpGraca*penHp));
+    // Preserva o DANO já sofrido: reescala o HP atual na mesma proporção do novo máximo,
+    // em vez de multiplicá-lo de novo (o que também acumulava).
+    const prevMax=m.hpMax||grHpMax;
+    const curHp=(m.hp!=null?m.hp:baseHpMax);
+    const wasFullHp=curHp>=prevMax;
     return{
       ...m,
       level:lvl,
       attackBase:Math.round(def.getAtk(lvl)*grMult),
       hpMax:grHpMax,
-      hp:wasFullHp?grHpMax:Math.round(curHp*grMult),
+      hp:wasFullHp?grHpMax:clamp(Math.round(curHp*(grHpMax/Math.max(1,prevMax))),1,grHpMax),
       npBar:clamp((m.npBar||0)+npAdd,0,100),
       npLevel:m.npLevel||bondToNP(loadBond(def.id).level),
       activeBuffs:buffs,
