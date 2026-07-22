@@ -3271,7 +3271,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.96</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.97</p>
       </div>
     </div>
   );
@@ -3794,8 +3794,9 @@ function PatronosView({profile,sel,setSel}){
       <div>
         <div style={{display:'flex',gap:14,alignItems:'center',marginBottom:6}}>
           <div style={{width:70,height:70,display:'flex',alignItems:'center',justifyContent:'center',
-            fontSize:'2.4rem',borderRadius:8,border:`1px solid ${pat.color}66`,background:`${pat.color}14`}}>
-            {pat.icon}
+            fontSize:'2.4rem',borderRadius:8,border:`1px solid ${pat.color}66`,background:`${pat.color}14`,
+            overflow:'hidden'}}>
+            <PatronoIcon pat={pat} size={68}/>
           </div>
           <div style={{flex:1}}>
             <div className="cinzel" style={{color:pat.color,fontSize:'1.15rem',letterSpacing:1}}>{pat.name}</div>
@@ -3815,7 +3816,7 @@ function PatronosView({profile,sel,setSel}){
               <div key={g.id} style={{padding:'10px 12px',borderRadius:6,
                 border:`1px solid ${pat.color}44`,background:'rgba(0,0,0,.25)'}}>
                 <div style={{display:'flex',alignItems:'center',gap:10}}>
-                  <SkillIcon nome={g.name} emoji={pat.icon} size={34}/>
+                  <GracaDuoIcon pat={pat} nome={g.name} size={34}/>
                   <div style={{flex:1,minWidth:0}}>
                     <div className="cinzel" style={{color:pat.color,fontSize:'.88rem',letterSpacing:.5}}>{g.name}</div>
                     <div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>
@@ -3860,7 +3861,7 @@ function PatronosView({profile,sel,setSel}){
                 background:`${p.color}10`,border:`1px solid ${p.color}44`,transition:'all .18s'}}
               onMouseEnter={e=>{e.currentTarget.style.background=`${p.color}22`;e.currentTarget.style.borderColor=p.color;}}
               onMouseLeave={e=>{e.currentTarget.style.background=`${p.color}10`;e.currentTarget.style.borderColor=`${p.color}44`;}}>
-              <span style={{fontSize:'1.6rem',flexShrink:0}}>{p.icon}</span>
+              <PatronoIcon pat={p} size={38}/>
               <span style={{flex:1,minWidth:0}}>
                 <span className="cinzel" style={{color:p.color,fontSize:'.82rem',display:'block'}}>{p.name}</span>
                 <span style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>{p.tag} · {qtd} {qtd===1?'Graça':'Graças'}</span>
@@ -7322,28 +7323,28 @@ const GRACA_SLOTS=[
   ['util','Utilidade','🎴'],
 ];
 const PATRONOS={
-  tamamo:{id:'tamamo',name:'Tamamo-no-Mae',icon:'🦊',color:'#ff9ec4',tag:'Sustento'},
-  kintoki:{id:'kintoki',name:'Sakata Kintoki',icon:'🌟',color:'#ffd54f',tag:'Explosão'},
-  raikou:{id:'raikou',name:'Minamoto no Raikou',icon:'⚡',color:'#b388ff',tag:'Controle'},
-  ushiwaka:{id:'ushiwaka',name:'Ushiwakamaru',icon:'🗡️',color:'#80deea',tag:'Velocidade'},
-  ibuki:{id:'ibuki',name:'Ibuki-Douji',icon:'🐍',color:'#66bb6a',tag:'Veneno'},
-  shuten:{id:'shuten',name:'Shuten Douji',icon:'👹',color:'#ce93d8',tag:'Risco'},
-  osakabe:{id:'osakabe',name:'Osakabehime',icon:'🏯',color:'#90a4ae',tag:'Defesa'},
-  gilgamesh:{id:'gilgamesh',name:'Gilgamesh',icon:'👑',color:'#ffb74d',tag:'Riqueza'},
-  scathach:{id:'scathach',name:'Scáthach',icon:'🔱',color:'#9575cd',tag:'Letalidade'},
-  merlin:{id:'merlin',name:'Merlin',icon:'🌸',color:'#f48fb1',tag:'Sonho'},
-  jeanne:{id:'jeanne',name:"Jeanne d'Arc",icon:'⛪',color:'#fff176',tag:'Proteção'},
-  emiya:{id:'emiya',name:'EMIYA',icon:'🏹',color:'#a1887f',tag:'Projeção'},
-  karna:{id:'karna',name:'Karna',icon:'☀️',color:'#ff8a65',tag:'Perfuração'},
-  cu:{id:'cu',name:'Cú Chulainn',icon:'🔱',color:'#4aa3d9',tag:'Instinto'},
-  nightingale:{id:'nightingale',name:'Florence Nightingale',icon:'⚕️',color:'#d96a8a',tag:'Cura'},
-  medusa:{id:'medusa',name:'Medusa',icon:'👁️',color:'#a06ad9',tag:'Petrificação'},
-  ozymandias:{id:'ozymandias',name:'Ozymandias',icon:'☀',color:'#e0b84a',tag:'Majestade'},
-  mordred:{id:'mordred',name:'Mordred',icon:'⚔️',color:'#c0392b',tag:'Rebelião'},
-  enkidu:{id:'enkidu',name:'Enkidu',icon:'⛓️',color:'#7ec98a',tag:'Cadeia'},
-  nero:{id:'nero',name:'Nero Claudius',icon:'🌹',color:'#e0555f',tag:'Palco'},
-  cleopatra:{id:'cleopatra',name:'Cleópatra',icon:'🐍',color:'#d9b44a',tag:'Encanto'},
-  arjuna:{id:'arjuna',name:'Arjuna',icon:'🏹',color:'#5fa8d9',tag:'Julgamento'}
+  tamamo:{id:'tamamo',name:'Tamamo-no-Mae',icon:'🦊',color:'#ff9ec4',tag:'Sustento',art:'tamamo'},
+  kintoki:{id:'kintoki',name:'Sakata Kintoki',icon:'🌟',color:'#ffd54f',tag:'Explosão',art:'sakata'},
+  raikou:{id:'raikou',name:'Minamoto no Raikou',icon:'⚡',color:'#b388ff',tag:'Controle',art:'raikou'},
+  ushiwaka:{id:'ushiwaka',name:'Ushiwakamaru',icon:'🗡️',color:'#80deea',tag:'Velocidade',art:'ushiwa'},
+  ibuki:{id:'ibuki',name:'Ibuki-Douji',icon:'🐍',color:'#66bb6a',tag:'Veneno',art:'ibuki'},
+  shuten:{id:'shuten',name:'Shuten Douji',icon:'👹',color:'#ce93d8',tag:'Risco',art:'shuten'},
+  osakabe:{id:'osakabe',name:'Osakabehime',icon:'🏯',color:'#90a4ae',tag:'Defesa',art:'osakabe'},
+  gilgamesh:{id:'gilgamesh',name:'Gilgamesh',icon:'👑',color:'#ffb74d',tag:'Riqueza',art:'gil'},
+  scathach:{id:'scathach',name:'Scáthach',icon:'🔱',color:'#9575cd',tag:'Letalidade',art:'scath'},
+  merlin:{id:'merlin',name:'Merlin',icon:'🌸',color:'#f48fb1',tag:'Sonho',art:'merlin'},
+  jeanne:{id:'jeanne',name:"Jeanne d'Arc",icon:'⛪',color:'#fff176',tag:'Proteção',art:'jeanne'},
+  emiya:{id:'emiya',name:'EMIYA',icon:'🏹',color:'#a1887f',tag:'Projeção',art:'emiya'},
+  karna:{id:'karna',name:'Karna',icon:'☀️',color:'#ff8a65',tag:'Perfuração',art:'karna'},
+  cu:{id:'cu',name:'Cú Chulainn',icon:'🔱',color:'#4aa3d9',tag:'Instinto',art:'cu'},
+  nightingale:{id:'nightingale',name:'Florence Nightingale',icon:'⚕️',color:'#d96a8a',tag:'Cura',art:'nightin'},
+  medusa:{id:'medusa',name:'Medusa',icon:'👁️',color:'#a06ad9',tag:'Petrificação',art:'medusa'},
+  ozymandias:{id:'ozymandias',name:'Ozymandias',icon:'☀',color:'#e0b84a',tag:'Majestade',art:'ozy'},
+  mordred:{id:'mordred',name:'Mordred',icon:'⚔️',color:'#c0392b',tag:'Rebelião',art:'mordred'},
+  enkidu:{id:'enkidu',name:'Enkidu',icon:'⛓️',color:'#7ec98a',tag:'Cadeia',art:'enkidu'},
+  nero:{id:'nero',name:'Nero Claudius',icon:'🌹',color:'#e0555f',tag:'Palco',art:'nero'},
+  cleopatra:{id:'cleopatra',name:'Cleópatra',icon:'🐍',color:'#d9b44a',tag:'Encanto',art:'cleo'},
+  arjuna:{id:'arjuna',name:'Arjuna',icon:'🏹',color:'#5fa8d9',tag:'Julgamento',art:'arjuna'}
 };
 // v(lvl) = magnitude por nível (I, II, III)
 const V=(a,b,c)=>lvl=>[a,b,c][Math.min(lvl,3)-1];
@@ -7688,6 +7689,38 @@ function SkillIcon({nome,emoji,size=26,style}){
 }
 
 
+// ── Arte dos Patronos ──
+// Mesma estratégia do SkillIcon: tenta variações de caminho/extensão e, se nada
+// carregar, cai no emoji do patrono. Assim nada quebra se um arquivo faltar.
+const PATRONO_ART_DIRS=['assets/patronos/','assets/patrono/'];
+function patronoCandidates(pat){
+  if(!pat||!pat.art)return[];
+  const out=[];
+  for(const d of PATRONO_ART_DIRS)for(const ext of ['.png','.PNG'])out.push(d+pat.art+ext);
+  return out;
+}
+function PatronoIcon({pat,size=30,style}){
+  const cands=patronoCandidates(pat);
+  const[i,setI]=useState(0);
+  useEffect(()=>{setI(0);},[pat&&pat.id]);
+  if(!pat)return null;
+  if(!cands.length||i>=cands.length)
+    return <span style={{fontSize:size*0.8,lineHeight:1,...style}}>{pat.icon}</span>;
+  return <img src={cands[i]} alt="" width={size} height={size}
+    onError={()=>setI(n=>n+1)}
+    style={{width:size,height:size,objectFit:'contain',verticalAlign:'middle',flexShrink:0,
+      borderRadius:4,...style}}/>;
+}
+// Dupla [Patrono][Skill] usada na oferta e no codex.
+function GracaDuoIcon({pat,nome,size=30,gap=4}){
+  return(
+    <span style={{display:'inline-flex',alignItems:'center',gap,flexShrink:0}}>
+      <PatronoIcon pat={pat} size={size}/>
+      <SkillIcon nome={nome} emoji={pat?pat.icon:null} size={size}/>
+    </span>
+  );
+}
+
 // Tela de escolha de Graça, exibida após vencer um encontro.
 function GracaOfferScreen({camp,offer,onPick}){
   const held=camp.gracas||{};
@@ -7711,7 +7744,7 @@ function GracaOfferScreen({camp,offer,onPick}){
         background:'rgba(0,0,0,.28)',border:`1px solid ${cor}55`}}>
         <div style={{fontSize:'.6rem',letterSpacing:2,color:cor,fontFamily:'Cinzel,serif',marginBottom:6}}>{rotulo}</div>
         <div style={{display:'flex',gap:9,alignItems:'center',marginBottom:6}}>
-          <SkillIcon nome={g.name} emoji={pat.icon} size={38}/>
+          <GracaDuoIcon pat={pat} nome={g.name} size={34}/>
           <div style={{minWidth:0}}>
             <div className="cinzel" style={{color:pat.color,fontSize:'.82rem'}}>{g.name}</div>
             <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>{pat.name} · Nível {ROMAN[lvl-1]}</div>
@@ -7815,7 +7848,7 @@ function GracaOfferScreen({camp,offer,onPick}){
                 onMouseEnter={e=>{e.currentTarget.style.background=`${pat.color}18`;e.currentTarget.style.borderColor=pat.color;}}
                 onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.02)';e.currentTarget.style.borderColor=`${pat.color}55`;}}>
                 <div style={{flexShrink:0,filter:`drop-shadow(0 0 8px ${pat.color}88)`,display:'flex',alignItems:'center'}}>
-                  <SkillIcon nome={g.name} emoji={pat.icon} size={48}/>
+                  <GracaDuoIcon pat={pat} nome={g.name} size={44} gap={6}/>
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
@@ -7874,7 +7907,7 @@ function GracaSidebar({camp}){
             <div key={key} className="graca-slot" style={{borderColor:`${pat.color}55`,background:`${pat.color}12`}}>
               <div className="graca-slot-head">{icon} {label}</div>
               <div className="graca-slot-name" style={{color:pat.color}}>
-                <SkillIcon nome={g.name} emoji={pat.icon} size={22}/>
+                <GracaDuoIcon pat={pat} nome={g.name} size={20} gap={3}/>
                 <span>{g.name}</span>
                 <span className="graca-slot-lvl">{ROMAN[lvl-1]}</span>
               </div>
