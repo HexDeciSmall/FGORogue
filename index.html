@@ -689,11 +689,10 @@ function bondToNP(bond){
   if(bond>=13)return 5;if(bond>=10)return 4;
   if(bond>=7)return 3;if(bond>=4)return 2;return 1;
 }
-function bondReq(lvl){
-  const table={1:600,2:1200,3:2400,4:4800};
-  if(table[lvl])return table[lvl];
-  let v=table[4];for(let i=4;i<lvl;i++)v*=2;return v;
-}
+// Custo do Bond por nível. ANTES a curva DOBRAVA a cada nível acima do 4, o que
+// levava a números impossíveis (bond 24->25 pedia 5 bilhões de pontos — algo como
+// 4,8 milhões de jornadas). Agora cresce de forma linear e alcançável.
+function bondReq(lvl){return 500+250*(lvl-1);}
 
 // ── XP do Servo ──────────────────────────────────────
 // XP necessário para ir de Nv.N → Nv.N+1
@@ -3272,7 +3271,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.93</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.96</p>
       </div>
     </div>
   );
@@ -7618,29 +7617,44 @@ const SKILL_ART_BASE=(()=>{
   const groups={
     skill_bonus:['Mana Buster','Golden Drive'],
     skill_ataque:['Natureza Demoníaca','Energizador de Raiz','Carisma','Sorvete de Verão',
-      'Bênção da Raposa','Punho Dourado','Raio Materno','Taça do Oni','Projeção Contínua'],
-    skill_debuff:['Rampage de Oni','Deixe o Lírio Branco Brilhar'],
+      'Bênção da Raposa','Punho Dourado','Raio Materno','Taça do Oni','Projeção Contínua',
+      'Esfinge Imperial','Aura do Rei-Sol','Rebelião Contra o Pai'],
+    skill_debuff:['Rampage de Oni','Deixe o Lírio Branco Brilhar','Runas de Batalha','Triagem de Guerra'],
     skill_def:['Mudança de Forma','Ossos que não são meus','Impacto Áureo','Passo de Pluma','Muralha do Castelo'],
     skill_barra:['Transferência de Mana','Poder Divino (Tinta)','Perdida em Pensamentos numa Noite de Verão',
       'Persistência','Encanto Restaurador','Golden Spark','Ushi-Gozen'],
     skill_poison:['Veneno de Brasilisco','Presas de Orochi'],
     skill_inflict:['Tormento','Sucessora Abençoada','Artes Amaldiçoadas (Oráculo)'],
-    skill_efect:['Ukiyo-e','Sacerdotisa do Selo','Ordem da Mãe','Vigília do Trovão','Rastreamento'],
-    skill_negative:['Fundir Ossos','Sanguessuga de Fada','Embriaguez de Sangue'],
-    skill_npregen:['Poção de Mana','Sopro do Deus Serpente','Última Gota','Ilusão do Mago das Flores'],
-    skill_regen:['Pacto do Escudo'],
+    skill_efect:['Ukiyo-e','Sacerdotisa do Selo','Ordem da Mãe','Vigília do Trovão','Rastreamento',
+      'Foco Inabalável'],
+    skill_negative:['Fundir Ossos','Sanguessuga de Fada','Embriaguez de Sangue','Correntes do Céu'],
+    skill_npregen:['Poção de Mana','Sopro do Deus Serpente','Última Gota','Ilusão do Mago das Flores',
+      'Vínculo de Argila'],
+    skill_regen:['Pacto do Escudo','Disciplina de Nightingale','Cirurgia no Campo','Domus Aurea'],
     skill_rand:['Contos Épicos de um Vagabundo','Espelho do Sol','Armadilha da Reclusa','Tesouro do Rei'],
     skill_guts:['Orbe Cromático','Lança de Haste Branca'],
     skill_av:['Natureza de Soldado Leal'],
-    skill_star:['Abolição de Rufiões','Marionete Kagura','Constituição Fraca','Portal de Babilônia'],
+    skill_star:['Abolição de Rufiões','Marionete Kagura','Constituição Fraca','Portal de Babilônia',
+      'Presságio do Vagante'],
     skill_evade:['Olho da Mente (Verdadeiro)','Kouga-ryuu','Palácio de Conchas','Olho da Mente (Falso)'],
     skill_beat:['Bela Aparência','Bênção de Mikon'],
-    skill_quick:['Grimalkin','Runa Primordial (Verão)','Shukuchi','Dança dos Oito Barcos'],
+    skill_quick:['Grimalkin','Runa Primordial (Verão)','Shukuchi','Dança dos Oito Barcos','Gáe Bolg'],
     skill_vv:['Novo Okuni Kabuki','Extremo','Lança da Morte Carmesim','Brahmastra'],
     skill_arts:['Maldição de Orochi','Jardim de Avalon','Estandarte Sagrado'],
     skill_mermaid:['Carne de Sereia'],
-    skill_npup:['Inabalável','Runas Primordiais'],
+    skill_npup:['Inabalável','Runas Primordiais','Ramesseum Tentyris'],
     skill_invenc:['Luminosité Eternelle','Armadura do Sol'],
+    // ── Grupos novos (Perks e Graças dos patronos recentes) ──
+    skill_cute:['Favor do Trono','Carisma da Rainha'],
+    skill_resist:['Herança do Trono'],
+    skill_buster:['Espólios de Guerra','Clarent Blood Arthur','Fulgor do Imperador'],
+    skill_hp:['Batalha Contínua','Filho da Natureza'],
+    skill_atord:['Olhar Petrificante'],
+    skill_mystic:['Olhos Místicos: Cibelle'],
+    skill_break:['Bellerophon','Agni Gandiva'],
+    skill_time:['Orgulho do Cavaleiro','Rosa do Palco'],
+    skill_charm:['Beijo da Serpente','Uraeus Astrape'],
+    skill_hand:['Juízo do Arqueiro'],
     // ── Fantasmas Nobres (44x44) ──
     np_buster:['Rashōmon Daiengi','Zekken Mukyusandan'],
     np_arts:['Canção da Lealdade Abnegada','Fleur de Lis',"Nirmāṇarati Heaven's Foam",
