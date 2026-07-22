@@ -3281,7 +3281,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.98</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.99</p>
       </div>
     </div>
   );
@@ -5844,14 +5844,63 @@ const CAMPAIGN_CHECKPOINTS=[
 // Escalada QUALITATIVA: conforme a ameaça sobe, inimigos comuns passam a contar
 // com mecânicas que não tinham. Isso obriga o jogador a mudar de tática em vez de
 // só encarar números maiores.
+// ══════════════════════════════════════════════════════
+// AFIXOS DE AMEAÇA — o que realmente exige estratégia
+// ══════════════════════════════════════════════════════
+// Números maiores só deixam a luta LONGA. O que muda a forma de jogar é o
+// encontro pedir uma resposta diferente. A partir de certa ameaça, grupos
+// inteiros passam a vir marcados por um afixo — anunciado antes da luta.
+const AFIXOS=[
+  {id:'carapaca',nome:'Carapaça de Ferro',icone:'🛡️',min:0.30,
+   desc:'Nenhum golpe isolado tira mais que 12% do HP. Explosão não resolve — desgaste resolve.',
+   aplicar:e=>({...e,damageCap:{pctMaxHp:12}})},
+  {id:'matilha',nome:'Matilha Faminta',icone:'🩸',min:0.35,
+   desc:'Todos drenam vida a cada golpe. Deixar um vivo é deixá-lo se curar.',
+   aplicar:e=>({...e,lifesteal:(e.lifesteal||0)+22})},
+  {id:'presagio',nome:'Presságio de Sangue',icone:'👤',min:0.45,
+   desc:'Cada inimigo se ergue uma vez com 25% do HP. Contas de dano precisam do dobro.',
+   aplicar:e=>e.isBoss?e:({...e,revive:{pct:25}})},
+  {id:'veu',nome:'Véu de Maldição',icone:'🌑',min:0.40,
+   desc:'Os golpes amaldiçoam: seu Ataque cai a cada acerto recebido.',
+   aplicar:e=>({...e,curse:{value:14,turns:3}})},
+  {id:'espinhos',nome:'Coroa de Espinhos',icone:'🌵',min:0.50,
+   desc:'Refletem parte do dano recebido. Atacar sem pensar cobra o preço.',
+   aplicar:e=>({...e,thorns:18})},
+  {id:'enxame',nome:'Passo de Fantasma',icone:'💨',min:0.55,
+   desc:'Esquivos e velozes: agem antes e erram menos. Controle vale mais que força.',
+   aplicar:e=>({...e,evasive:(e.evasive||0)+20,agility:Math.round((e.agility||30)*1.35)})},
+  {id:'famintos',nome:'Sede de Mana',icone:'🔮',min:0.60,
+   desc:'Drenam sua Barra de NP. Guardar o Fantasma Nobre deixa de ser opção.',
+   aplicar:e=>({...e,npDrain:(e.npDrain||0)+12})},
+  {id:'coro',nome:'Coro de Lamentos',icone:'🌫️',min:0.65,
+   desc:'Golpes atingem o grupo inteiro em respingo. Concentrar dano vira risco.',
+   aplicar:e=>({...e,aoe:true})},
+];
+// Sorteia um afixo para o encontro. A chance sobe com a ameaça; abaixo de 0.30
+// nunca acontece, para não punir quem está começando.
+function rollAfixo(idx,seed){
+  if(idx<0.30)return null;
+  const chance=clamp(0.18+(idx-0.30)*1.15,0,0.72); // ~18% no começo, até 72% no auge
+  const r=(seed==null?Math.random():seedRand(seed));
+  if(r>chance)return null;
+  const pool=AFIXOS.filter(a=>idx>=a.min);
+  if(!pool.length)return null;
+  const r2=(seed==null?Math.random():seedRand(seed+7717));
+  return pool[Math.floor(r2*pool.length)%pool.length];
+}
 function escalarHabilidades(base,idx){
   const e={...base};
-  if(idx>=0.30&&!e.critChance)e.critChance=25;                       // aprendem a mirar pontos vitais
-  if(idx>=0.45&&!e.enrage)e.enrage=35;                               // lutam melhor acuados
-  if(idx>=0.60&&!e.armorBreak&&!e.isSupport)e.armorBreak={value:12,turns:2};
-  if(idx>=0.72&&!e.multiHit&&!e.isSupport)e.multiHit=2;              // golpes encadeados
-  if(idx>=0.85)e.lifesteal=(e.lifesteal||0)+15;                      // sustentam-se no combate
-  if(idx>=0.95&&!e.npDrain)e.npDrain=8;                              // atacam sua mana
+  // Limiares antecipados: antes as camadas só apareciam no fim da progressão, e a
+  // maioria das lutas era travada sem mecânica nenhuma. Agora chegam mais cedo e
+  // se acumulam, de modo que cada faixa de ameaça tem um "sabor" próprio.
+  if(idx>=0.22&&!e.critChance)e.critChance=25;                       // aprendem a mirar pontos vitais
+  if(idx>=0.34&&!e.enrage)e.enrage=35;                               // lutam melhor acuados
+  if(idx>=0.45&&!e.armorBreak&&!e.isSupport)e.armorBreak={value:12,turns:2};
+  if(idx>=0.56&&!e.multiHit&&!e.isSupport)e.multiHit=2;              // golpes encadeados
+  if(idx>=0.66)e.lifesteal=(e.lifesteal||0)+15;                      // sustentam-se no combate
+  if(idx>=0.76&&!e.npDrain)e.npDrain=8;                              // atacam sua mana
+  if(idx>=0.86&&!e.curse)e.curse={value:12,turns:2};                 // maldição corrói seu Ataque
+  if(idx>=0.94&&!e.evasive)e.evasive=15;                             // difíceis de acertar
   return e;
 }
 function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1,grupoExtra=0,idxAmeaca=0){
@@ -5864,9 +5913,12 @@ function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1,grupoExtra=0,idxAmeac
   if(swarmIds.length&&Math.random()<0.5)size=Math.min(size+1,5);
   // Nível de Ameaça alto: grupos maiores (pressão sem depender de one-shot).
   if(grupoExtra>0&&Math.random()<0.6)size=Math.min(size+grupoExtra,6);
+  // Afixo do encontro: marca o grupo INTEIRO e muda a tática exigida.
+  const afixo=rollAfixo(idxAmeaca);
   return Array.from({length:size},(_,i)=>{
     const id=ids[Math.floor(Math.random()*ids.length)];
-    const base=escalarHabilidades(table[id],idxAmeaca);
+    let base=escalarHabilidades(table[id],idxAmeaca);
+    if(afixo)base=afixo.aplicar(base);
     const m=phaseMult(phase);
     const hp=Math.round(base.hp*m*hpMult);
     const atk=Math.round(base.atk*m*atkMult);
@@ -5876,6 +5928,7 @@ function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1,grupoExtra=0,idxAmeac
       atkScaled:atk,
       damage:Math.round(atk*base.strPts/100),
       activeDebuffs:[],stunned:0,
+      afixo:afixo?{id:afixo.id,nome:afixo.nome,icone:afixo.icone,desc:afixo.desc}:null,
     };
   }).sort((a,b)=>b.agility-a.agility);
 }
@@ -7962,7 +8015,8 @@ function GracaSidebar({camp}){
 // jogador (0 = começo absoluto, 1 = tudo no máximo) e escala os inimigos.
 // A escala é SUBLINEAR de propósito: o jogador continua ficando mais forte na
 // prática — o que muda é que a vantagem deixa de ser esmagadora.
-const AMEACA_PESOS={servo:0.45,magus:0.25,perk:0.20,np:0.10};
+// Pesos da medição de poder. O que conta é o que REALMENTE entra em combate.
+const AMEACA_PESOS={servo:0.34,magus:0.18,perk:0.18,np:0.10,laplace:0.20};
 function calcAmeaca(profile,party,npLevel){
   const p=profile||{};
   // 1) Nível médio dos Servos em campo (1..25)
@@ -7971,15 +8025,25 @@ function calcAmeaca(profile,party,npLevel){
   const nServo=clamp((lvMedio-1)/24,0,1);
   // 2) Nível de Magus (1..60)
   const nMagus=clamp((((p.magus&&p.magus.level)||1)-1)/(MAGUS_MAX_LEVEL-1),0,1);
-  // 3) Perks acumuladas (soma dos níveis / soma dos tetos)
-  const tetoPerks=Object.values(PERK_DEFS).reduce((a,d)=>a+(d.maxLevel||10),0);
-  const somaPerks=Object.values(p.perks||{}).reduce((a,v)=>a+(v||0),0);
-  const nPerk=clamp(somaPerks/tetoPerks,0,1);
+  // 3) Perks — conta só as EQUIPADAS. Comprar níveis em perks que ficam no banco
+  //    não aumenta seu poder de combate, então não deve aumentar a ameaça.
+  const eq=(p.equippedPerks||DEFAULT_EQUIPPED).slice(0,MAX_EQUIPPED_PERKS);
+  const tetoEq=eq.reduce((a,id)=>a+((PERK_DEFS[id]&&PERK_DEFS[id].maxLevel)||10),0)||1;
+  const somaEq=eq.reduce((a,id)=>a+((p.perks||{})[id]||0),0);
+  const nPerk=clamp(somaEq/tetoEq,0,1);
   // 4) Nível de Fantasma Nobre via Bond (1..5)
   const nNp=clamp(((npLevel||1)-1)/4,0,1);
+  // 5) Reforço Laplace — poder permanente que antes passava totalmente despercebido.
+  //    Um grupo com +2000 de ATK e HP em cada Servo é MUITO mais forte, e a ameaça
+  //    precisa enxergar isso.
+  const idsParty=(lista.map(m=>m.id).filter(Boolean));
+  const fontes=idsParty.length?idsParty:Object.keys(PLAYABLE_SERVOS||{}).slice(0,1);
+  let somaLap=0;
+  for(const id of fontes){const l=loadLaplace(id);somaLap+=(l.hp||0)+(l.atk||0);}
+  const nLap=clamp(somaLap/((fontes.length||1)*LAPLACE_TETO*2),0,1);
 
   const idx=nServo*AMEACA_PESOS.servo+nMagus*AMEACA_PESOS.magus
-           +nPerk*AMEACA_PESOS.perk+nNp*AMEACA_PESOS.np;
+           +nPerk*AMEACA_PESOS.perk+nNp*AMEACA_PESOS.np+nLap*AMEACA_PESOS.laplace;
   return{
     idx,
     // O HP dos inimigos continua escalando forte, mas o DANO agora acompanha:
@@ -9462,6 +9526,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     }
     spawnFx(e.instanceId,String(dmg),fxKind);
     let out={...e,currentHp:Math.max(0,e.currentHp-dmg)};
+    // Afixo Coroa de Espinhos: parte do dano recebido volta para o Servo ativo.
+    if(e.thorns&&dmg>0){
+      const refl=Math.max(1,Math.round(dmg*e.thorns/100));
+      setParty(prev=>prev.map((m,mi)=>mi!==activeIdx||m.defeated?m:
+        {...m,hp:Math.max(0,m.hp-refl)}));
+      addLog(`🌵 Coroa de Espinhos devolve ${refl} de dano!`,'enemy');
+      spawnFx('servo',`🌵 ${refl}`,'dmg');
+    }
     // Graça — Juízo do Arqueiro (Arjuna): executa inimigos COMUNS abaixo do limiar
     if(!e.isBoss&&out.currentHp>0&&e.maxHp){
       const GEx=getGracaEffects(camp);
@@ -11369,6 +11441,28 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           </div>
         </div>
       )}
+
+      {/* ─── AFIXO DO ENCONTRO ─── anunciado antes de agir, para permitir plano */}
+      {(()=>{
+        const af=(enemies||[]).find(e=>e&&e.afixo&&e.currentHp>0);
+        if(!af)return null;
+        const a=af.afixo;
+        return(
+          <div style={{maxWidth:840,width:'100%',marginBottom:8,padding:'9px 13px',borderRadius:8,
+            background:'linear-gradient(90deg,rgba(192,57,43,.20),rgba(0,0,0,.30))',
+            border:'1px solid rgba(224,90,90,.55)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:9}}>
+              <span style={{fontSize:'1.3rem',flexShrink:0}}>{a.icone}</span>
+              <div style={{minWidth:0}}>
+                <div className="cinzel" style={{color:'#e0806a',fontSize:'.8rem',letterSpacing:1.5}}>
+                  {a.nome.toUpperCase()}
+                </div>
+                <div style={{fontSize:'.68rem',color:'var(--parchment)',lineHeight:1.45}}>{a.desc}</div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={{maxWidth:840,width:'100%',display:'flex',gap:10,alignItems:'flex-start'}}>
         {/* ─── TURN ORDER (iniciativa) — coluna à esquerda ─── */}
