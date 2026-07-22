@@ -2640,6 +2640,16 @@ const ACHIEVEMENTS=[
   // ── DESAFIOS DAS GRAÇAS DO TRONO ──
   {id:'defeat_enigma',name:'O Que Ficou Para Trás',desc:'Derrote o Enigma, o Espectro Fantasmagórico.',qp:60000,sq:75,icon:'👁️'},
   {id:'clear_pensamentos',name:'Pensamentos Restantes',desc:'Complete o Mapa 11.',qp:52000,sq:65,icon:'🌫️'},
+  {id:'duo_imperadores',name:'Dois Tronos, Um Palco',desc:'Tenha Graças de Nero Claudius e Ozymandias ao mesmo tempo.',qp:26000,sq:34,icon:'🌹'},
+  {id:'duo_mahabharata',name:'Os Meios-Irmãos',desc:'Tenha Graças de Arjuna e Karna ao mesmo tempo.',qp:30000,sq:38,icon:'🏹'},
+  {id:'duo_serpentes',name:'A Górgona e a Rainha',desc:'Tenha Graças de Medusa e Cleópatra ao mesmo tempo.',qp:26000,sq:34,icon:'🐍'},
+  {id:'duo_lanca',name:'Mestra e Discípulo',desc:'Tenha Graças de Cú Chulainn e Scáthach ao mesmo tempo.',qp:26000,sq:34,icon:'🔱'},
+  {id:'duo_amizade',name:'A Epopeia',desc:'Tenha Graças de Gilgamesh e Enkidu ao mesmo tempo.',qp:32000,sq:40,icon:'⛓️'},
+  {id:'duo_estandarte',name:'A Rebelde e a Santa',desc:'Tenha Graças de Mordred e Jeanne d\'Arc ao mesmo tempo.',qp:26000,sq:34,icon:'⚔️'},
+  {id:'duo_misericordia',name:'As Que Salvam',desc:'Tenha Graças de Florence Nightingale e Jeanne d\'Arc ao mesmo tempo.',qp:26000,sq:34,icon:'⚕️'},
+  {id:'duo_arqueiros',name:'Ideais Opostos',desc:'Tenha Graças de Arjuna e EMIYA ao mesmo tempo.',qp:26000,sq:34,icon:'🎯'},
+  {id:'graca_tresmundos',name:'Três Mundos, Um Trono',desc:'Tenha, ao mesmo tempo, Graças de um patrono japonês, um europeu e um do mundo antigo.',qp:38000,sq:46,icon:'🌍'},
+  {id:'graca_novoolimpo',name:'O Novo Olimpo',desc:'Preencha os 5 slots usando apenas patronos vindos de além do Extremo Oriente.',qp:45000,sq:55,icon:'🏛️'},
   {id:'graca_first',name:'Primeira Bênção',desc:'Receba sua primeira Graça do Trono.',qp:8000,sq:12,icon:'🏛️',challenge:true},
   {id:'graca_full',name:'Trono Completo',desc:'Preencha os 5 slots de Graça numa mesma jornada.',qp:30000,sq:40,icon:'✴️',challenge:true},
   {id:'graca_lv3',name:'Bênção Suprema',desc:'Leve uma Graça ao nível III.',qp:22000,sq:30,icon:'🔺',challenge:true},
@@ -3271,7 +3281,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.97</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.98</p>
       </div>
     </div>
   );
@@ -7593,6 +7603,24 @@ function checkGracaAchievements(gracas){
   if(tem('emiya','gilgamesh'))ids.push('duo_rivals');    // a rivalidade clássica
   if(tem('jeanne','karna'))ids.push('duo_martyrs');      // ambos mártires por doação
   if(tem('scathach','merlin'))ids.push('duo_magi');      // runas e magia
+  // ── Duos dos patronos novos ──
+  if(tem('nero','ozymandias'))ids.push('duo_imperadores'); // dois imperadores do palco e do sol
+  if(tem('arjuna','karna'))ids.push('duo_mahabharata');    // meios-irmãos rivais do Mahabharata
+  if(tem('medusa','cleopatra'))ids.push('duo_serpentes');  // a górgona e a rainha da serpente
+  if(tem('cu','scathach'))ids.push('duo_lanca');           // discípulo e mestra de Gáe Bolg
+  if(tem('gilgamesh','enkidu'))ids.push('duo_amizade');    // a amizade da Epopeia
+  if(tem('mordred','jeanne'))ids.push('duo_estandarte');   // a rebelde e a santa
+  if(tem('nightingale','jeanne'))ids.push('duo_misericordia'); // as duas que salvam
+  if(tem('arjuna','emiya'))ids.push('duo_arqueiros');      // arqueiros de ideais opostos
+  // Um patrono de cada era: Japão, Europa e o resto do mundo antigo
+  const JP=['tamamo','kintoki','raikou','ushiwaka','ibuki','shuten','osakabe'];
+  const EU=['merlin','jeanne','mordred','cu','scathach','nero','nightingale'];
+  const AN=['gilgamesh','enkidu','ozymandias','medusa','cleopatra','karna','arjuna'];
+  if(uniq.some(p=>JP.includes(p))&&uniq.some(p=>EU.includes(p))&&uniq.some(p=>AN.includes(p)))
+    ids.push('graca_tresmundos');
+  // Build inteira formada só por patronos adicionados depois da fundação
+  const NOVOS=['cu','nightingale','medusa','ozymandias','mordred','enkidu','nero','cleopatra','arjuna'];
+  if(held.length>=GRACA_SLOTS.length&&uniq.every(p=>NOVOS.includes(p)))ids.push('graca_novoolimpo');
   return ids;
 }
 
