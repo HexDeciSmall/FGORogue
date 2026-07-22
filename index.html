@@ -732,6 +732,61 @@ function addServoXP(servoId,pts){
   return s;
 }
 
+// ══════════════════════════════════════════════════════
+// LAPLACE — itens de reforço permanente (nos moldes do Fou)
+// ══════════════════════════════════════════════════════
+// Só caem em batalhas de ELITE e de BOSS. A cada 10 unidades, o Servo ganha
+// +100 de HP ou +100 de ATK permanentes.
+const LAPLACE_POR_UPGRADE=10;   // unidades consumidas por reforço
+const LAPLACE_GANHO_UPGRADE=100;// quanto cada reforço concede
+const LAPLACE_TETO=2000;        // teto por Servo, em cada atributo
+
+// Ordem dos mapas da campanha — define o "andar" do boss para o drop.
+const LAPLACE_ORDEM_MAPAS=['bosque','tennobara','tortuoso','kurikara','kurikara_city',
+  'kurikara2','shinohara','shinohara_city','shinohara_battle','sucessao_prelude','pensamentos_restantes'];
+
+// Quantidade que cai numa vitória. Elite = 1. Boss = 5, subindo de 3 em 3
+// conforme o mapa avança (Mapa 1: 5 · Mapa 2: 8 · ... · Mapa 11: 35).
+function laplaceDropTotal(mapId,isBoss,isElite){
+  if(isBoss){
+    const i=Math.max(0,LAPLACE_ORDEM_MAPAS.indexOf(mapId||'bosque'));
+    return 5+3*i;
+  }
+  return isElite?1:0;
+}
+// Divide o total entre HP e ATK de forma variada (nunca previsível).
+function laplaceSplit(total){
+  if(total<=0)return{hp:0,atk:0};
+  if(total===1)return Math.random()<0.5?{hp:1,atk:0}:{hp:0,atk:1};
+  // Entre 30% e 70% vai para HP; o resto para ATK.
+  const hp=Math.max(1,Math.min(total-1,Math.round(total*(0.3+Math.random()*0.4))));
+  return{hp,atk:total-hp};
+}
+
+// Estoque de itens (no perfil) e reforços já aplicados (por Servo).
+const LAPLACE_KEY=id=>`oni_tactics_laplace_${id}`;
+function loadLaplace(id){
+  try{const r=localStorage.getItem(LAPLACE_KEY(id));return r?JSON.parse(r):{hp:0,atk:0};}
+  catch{return{hp:0,atk:0};}
+}
+function saveLaplace(id,st){try{localStorage.setItem(LAPLACE_KEY(id),JSON.stringify(st));}catch{}}
+// Credita itens no perfil de forma atômica (mesmo padrão de SQ/QP).
+function depositLaplace(hp,atk){
+  const p=loadProfile();
+  const updated={...p,laplaceHp:(p.laplaceHp||0)+hp,laplaceAtk:(p.laplaceAtk||0)+atk};
+  saveProfile(updated);
+  return updated;
+}
+
+// ── TREINAMENTO NO TRONO: comprar níveis com SQ ──
+// Custo para ir de `lvl` -> `lvl+1`. Progressão linear pesada: 50, 75, 100, 125...
+// Subir um Servo do 1 ao teto custa 8.100 SQ — caro de propósito: é uma via
+// alternativa ao XP de jornada, não um atalho barato.
+function sqCostForLevel(lvl){return 50+25*(lvl-1);}
+// Custo acumulado de `de` até `ate` (inclusive do salto final).
+function sqCostRange(de,ate){
+  let t=0;for(let l=de;l<ate;l++)t+=sqCostForLevel(l);return t;
+}
 // Sobe exatamente 1 nível (recompensa fixa de história), respeitando o teto.
 function levelUpServo(servoId){
   let s=loadServoXP(servoId);
@@ -3217,7 +3272,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.89</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.93</p>
       </div>
     </div>
   );
@@ -3312,7 +3367,7 @@ const CODEX=[
    details:[
      {title:'HISTÓRIA',body:'Um estranho no ninho. Ele não se lembra muito de como chegou ao local — apenas se viu perdido no bosque, com poucas lembranças e uma névoa densa onde deveria estar seu passado. Está preso ao lado de um servo emocionalmente desequilibrado e de temperamento explosivo, uma Oni que tanto pode salvá-lo quanto devorá-lo.\n\nAlgo nele não é normal. Sua conexão com a Mana é alta demais para um humano comum, como se seu próprio corpo fosse um catalisador — o sangue, a carne, os fluidos, tudo parece carregar um poder que ele não compreende. Fragmentos soltos o perseguem: um frasco estranho que alguém lhe entregou, vozes distorcidas na memória, uma sensação de que seus ossos não são bem os seus. Quem o trouxe até aqui? O que ele foi antes de esquecer? Cada passo pelo bosque parece menos uma jornada de fuga e mais um retorno a algo que ele preferiria não lembrar.'},
      {title:'A ORIGEM DOS SELOS',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
-      body:'O primeiro Selo de Comando não foi concedido por nenhum sistema: surgiu como um brilho vermelho sob o pulso no instante em que ele tocou a espada de osso da Shuten. Mais tarde, diante do braço decepado de Asahina, o magecraft "Fundir Osso" reagiu sozinho às suas intenções — tão natural quanto respirar — e drenou os três selos do morto, completando o que fora gasto contra a Archer e acrescentando dois traços verticais ao lado do tridente. Arrancar selos de outros Mestres funciona. E ele soube disso antes de aprender.'},
+      body:'Os Selos de Comando desta guerra são todos sustentados pelo Selo Imperial de Jade — os dele não são exceção. O que houve de anômalo foi o momento: o brilho vermelho só emergiu sob seu pulso porque Alaya já o havia escolhido como uma de suas variáveis, e porque naquele instante ele se tornou o Mestre da Berserker. O selo não foi criado pela espada; foi o vínculo com a Ibaraki que o fez aparecer. Mais tarde, diante do braço decepado de Asahina, o magecraft "Fundir Osso" reagiu sozinho às suas intenções — tão natural quanto respirar — e drenou os três selos do morto, completando o que fora gasto contra a Archer e acrescentando dois traços verticais ao lado do tridente. Arrancar selos de outros Mestres funciona. E ele soube disso antes de aprender.'},
      {title:'SABER O QUE NÃO DEVERIA',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
       body:'A frase escapou sem esforço: "isso não seria uma tarefa de cirurgia mágica?". Era a primeira vez dele em tudo — selos, servos, guerra — e ainda assim a informação já estava lá. O mesmo se repete com datas e nomes: ele situa Fujiwara no Michinaga no poder, sabe que Hyuchi é fortaleza dos Taira e que será atacada duas vezes pelos Minamoto, e reconhece figuras que "ainda é cedo demais" para existirem. A sensação de saber mais do que deveria fica mais evidente a cada dia — e conversa diretamente com o que aquelas três vozes chamaram de "aquele defeito".'},
      {title:'O SONHO DA NOITE 1',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
@@ -3354,7 +3409,7 @@ const CODEX=[
    details:[
      {title:'IDENTIDADE',body:'Uma das Oni que surgiram na Capital Imperial durante o período Heian, cometendo exaustivamente todo tipo de atrocidade. Diz-se que Ibaraki-Douji era considerada subordinada de Shuten-Douji, que vivia no Monte Ooe. Durante o "Extermínio dos Oni do Monte Ooe" por Minamoto-no-Raikou e seus Quatro Reis Celestiais, Ibaraki cruzou espadas com Watanabe-no-Tsuna, um dos Quatro Reis. Por suas anedotas e vestígios, é classificada como uma "Anti-Heroína".'},
      {title:'O PRIMEIRO ENCONTRO',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
-      body:'O Mestre recuperou a memória da noite em que se conheceram — e ela não começou com uma invocação, mas com um resgate. A Ibaraki surgiu naquele bosque, sentiu o cheiro do sangue da Shuten no Mestre e ficou desconcertada com a ligação entre os dois. Então reconheceu o homem que apontava armas contra ele: Watanabe no Tsuna, o mesmo dos Quatro Reis Celestiais com quem cruzou espadas no Monte Ooe. Puxou a espada de osso e enfrentou os dois inimigos sozinha, com uma fúria descrita como anormal — golpes carregados de rancor puro — até forçá-los a recuar. Ela se apresentou como o que sempre foi: a líder do clã oni do Monte Ooe, que não está acostumada a receber ordens.'},
+      body:'O Mestre recuperou a memória da noite em que se conheceram — e ela não começou com uma invocação, mas com um resgate. A Ibaraki surgiu naquele bosque, sentiu o cheiro do sangue da Shuten no Mestre e ficou desconcertada com a ligação entre os dois. Então reconheceu o homem que apontava armas contra ele: Watanabe no Tsuna, o mesmo dos Quatro Reis Celestiais com quem cruzou espadas no Monte Ooe. Retomou a Bone Sword (Nameless) — sua própria espada, que a Shuten carregava e acabara de entregar ao Mestre — e enfrentou os dois inimigos sozinha, com uma fúria descrita como anormal — golpes carregados de rancor puro — até forçá-los a recuar. Ela se apresentou como o que sempre foi: a líder do clã oni do Monte Ooe, que não está acostumada a receber ordens.'},
      {title:'LENDA',body:'Na verdade, Ibaraki-Douji não era subordinada de Shuten-Douji — acredita-se que existiu como "a líder dos Oni do Monte Ooe". Shuten nasceu do Grande Deus Ibuki do Monte Ibuki (isto é, Yamata no Orochi) e de um humano. Era apropriado que Abe-no-Seimei, autoridade da antiga Kyoto, prestasse atenção a tal ser. No entanto, quem de fato liderava os Oni do Monte Ooe não era outro senão Ibaraki-Douji.'},
      {title:'APARÊNCIA',body:'Uma garota de cabelos loiros e olhos escarlates cor de sangue. Na anedota do Rashōmon, apareceu na figura de uma "bela mulher".\n\nÉ uma Serva de estatura baixa. Cabelo loiro claro, com duas franjas encaracoladas nas laterais e cortado reto na altura das coxas; olhos de um dourado brilhante. Orelhas pontudas e brincos que lembram contas pretas. Seus chifres se projetam da testa, variando do preto ao vermelho. Veste um yukata curto e folgado (da cor de seu cabelo, com padrão floral multicolorido nas mangas), sobre uma blusa branca decotada, com um colar de grandes contas pretas e uma faixa cor de vinho amarrada em laço nas costas. Como o yukata é folgado, os ombros ficam à mostra.\n\nSuas unhas são afiadas como garras, negras por natureza. Mãos e pés são de um vermelho-sangue antinatural, que se funde à pele pálida em tatuagens tribais que sobem das mãos aos ombros e dos pés até abaixo dos joelhos. Anda descalça, com tiras pretas no peito do pé.'},
      {title:'PERSONALIDADE',body:'Uma Oni nascida neste mundo com aparência desumana. Na infância, foi estritamente disciplinada pela mãe, de linhagem nobre, para aprender o orgulho de uma Oni — ainda que, vista de fora, tal criação estivesse mais próxima do assédio do que do amor.\n\nEmbora sua aparência exale inocência, seu ser é o de um Oni: ferir humanos, devorá-los, amar o sangue. Não tem, porém, grande inclinação ao prazer egoísta de matar; não é uma Oni que traz desordem ao mundo — devora humanos como um ser vivo, próxima de um animal selvagem. Mesmo fascinada por doces, sua natureza não é a de uma jovem humana: dependendo das circunstâncias, pode devorar o próprio humano que a atraiu com doces. Nunca subestime um leão. Mas, se alguém conseguir alimentá-la, ela poderá exibir um sorriso encantador.'},
@@ -3470,7 +3525,7 @@ const CODEX=[
      {title:'A GAROTA DO SONHO',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
       body:'Foi ela — a pequena Oni de corpo ensanguentado — quem o Mestre encontrou no sonho da Noite 1, no bosque das árvores gigantes. Ferida após um golpe de Sakata (Kintoki), ela se arrastou até ele e, com um crânio humano na mão e um "vai doer só um pouquinho", tocou seus ossos. Foi esse toque que transformou o corpo do Mestre — a origem da sua skill "Ossos que não são meus".'},
      {title:'A NOITE DA INVOCAÇÃO',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
-      body:'A memória finalmente se completou. Foi a Shuten quem distorceu os circuitos mágicos do Mestre naquele bosque — e foi ela quem, vendo que ele não teria chance contra os dois perseguidores, lhe entregou duas coisas: um cantil e uma espada de osso. Ao tocar a lâmina, a dor cessou e um brilho vermelho surgiu sob o pulso: o primeiro Selo de Comando. Ela desapareceu no instante em que a Ibaraki foi invocada, e não voltou a se mostrar.'},
+      body:'A memória finalmente se completou. Foi a Shuten quem distorceu os circuitos mágicos do Mestre naquele bosque — e foi ela quem, vendo que ele não teria chance contra os dois perseguidores, lhe entregou duas coisas: um cantil e a Bone Sword (Nameless) — a espada da própria Ibaraki, que a Shuten vinha carregando. Ao tocar a lâmina, a dor cessou, e o vínculo com a Berserker se firmou: o primeiro Selo de Comando emergiu sob o pulso. Ela desapareceu no instante em que a Ibaraki foi invocada, e não voltou a se mostrar. Entregar a espada da irmã a um estranho não foi acaso — foi ela quem escolheu quem seria o Mestre da Ibaraki.'},
      {title:'O CANTIL DO OCIDENTE',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
       body:'Segundo a Ibaraki, o cantil é um espólio raro que a Shuten adquiriu: contém veneno de Basilisco, criatura do ocidente, e tem a propriedade de armazenar seu conteúdo de forma quase infinita. É dele que vem a skill de Mestre "Veneno de Brasilisco". A Ibaraki é enfática: a irmã não daria algo assim por capricho. Se ela escolheu entregar, havia um motivo — e o Mestre deveria se sentir honrado.'},
      {title:'IMPOSSÍVEL DE ENCONTRAR',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
@@ -4222,7 +4277,11 @@ function AchievementsScreen({onNavigate,profile}){
 function ProfileScreen({onNavigate,profile,setProfile}){
   const[nick,setNick]=useState(profile.nickname);
   const[notif,setNotif]=useState('');
+  const[treinando,setTreinando]=useState(null); // Servo aberto no Treinamento no Trono
   const sv=profileSkillValues(profile.skills);
+  // Clicar num Servo abre a tela de compra de níveis com SQ
+  if(treinando)return <ServoTrainScreen servoId={treinando} onBack={()=>setTreinando(null)}
+    profile={profile} setProfile={setProfile}/>;
 
   function save(){
     const p={...profile,nickname:nick.trim()||'Mestre'};
@@ -4414,7 +4473,8 @@ function ProfileScreen({onNavigate,profile,setProfile}){
           const img=(def.sprites&&def.sprites.idle)||idleGuess;
           const staticFallback=def.assets.combat||def.assets.default;
           return(
-            <div key={r.id} className="char-card">
+            <div key={r.id} className="char-card" onClick={()=>setTreinando(r.id)}
+              title={`Treinar ${def.name} com SQ`} style={{cursor:'pointer'}}>
               <img className="char-card-img" src={img} alt={def.name}
                 onError={ev=>{ev.target.onerror=null;ev.target.src=staticFallback;}}/>
               <div className="char-card-body">
@@ -4426,6 +4486,14 @@ function ProfileScreen({onNavigate,profile,setProfile}){
                   <div className="bond-label" style={{fontSize:'.6rem',marginBottom:4}}>Bond {sbond.level} → {sbond.level+1} &nbsp;|&nbsp; NP Nv.{snp}</div>
                   <Bar label="" current={sbond.points} max={bondReq(sbond.level)} type="np" showNumbers={true}/>
                 </div>
+                {(()=>{const lp=loadLaplace(r.id);return(lp.hp||lp.atk)?(
+                  <div style={{marginTop:4,fontSize:'.6rem',textAlign:'center',color:'var(--parchment-dark)'}}>
+                    🧬 {lp.hp?`+${lp.hp} HP`:''}{lp.hp&&lp.atk?' · ':''}{lp.atk?`+${lp.atk} ATK`:''}
+                  </div>
+                ):null;})()}
+                <div style={{marginTop:6,fontSize:'.62rem',color:'var(--gold)',textAlign:'center',opacity:.85}}>
+                  {sxp.level>=MAX_LEVEL?'✦ nível máximo':`⚔️ treinar · ${sqCostForLevel(sxp.level)} SQ`}
+                </div>
               </div>
             </div>
           );
@@ -4433,9 +4501,187 @@ function ProfileScreen({onNavigate,profile,setProfile}){
         </div>
         <p style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:8,fontStyle:'italic'}}>
           Combate +{XP_COMBAT_WIN} XP · Confiança +{XP_TRUST_EVENT} XP · Boss +{XP_BOSS_WIN} XP · Bond: Confiança +150 · Combate +30
+          <br/>🧬 Laplace no estoque: <b style={{color:'#7ee08a'}}>{profile.laplaceHp||0} HP</b> · <b style={{color:'#e0806a'}}>{profile.laplaceAtk||0} ATK</b> — clique num Servo para treinar e aplicar.
         </p>
 
         <button className="btn btn-full" style={{marginTop:20}} onClick={()=>onNavigate('menu')}>← Voltar</button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// TREINAMENTO NO TRONO — comprar níveis de Servo com SQ
+// ══════════════════════════════════════════════════════
+function ServoTrainScreen({servoId,onBack,profile,setProfile}){
+  const def=PLAYABLE_SERVOS[servoId];
+  const[sxp,setSxp]=useState(()=>loadServoXP(servoId));
+  const[notif,setNotif]=useState('');
+  const[qtd,setQtd]=useState(1); // quantos níveis comprar de uma vez
+  const[lap,setLap]=useState(()=>loadLaplace(servoId)); // reforços já aplicados
+
+  // Aplica um reforço Laplace (10 itens -> +100 no atributo), respeitando o teto.
+  function aplicarLaplace(tipo){
+    const fresh=loadProfile();
+    const estoque=tipo==='hp'?(fresh.laplaceHp||0):(fresh.laplaceAtk||0);
+    if(estoque<LAPLACE_POR_UPGRADE){
+      setNotif(`Você precisa de ${LAPLACE_POR_UPGRADE} Laplace ${tipo.toUpperCase()} (tem ${estoque}).`);return;
+    }
+    const atual=loadLaplace(servoId);
+    if((atual[tipo]||0)>=LAPLACE_TETO){
+      setNotif(`Este Servo já atingiu o teto de +${LAPLACE_TETO} de ${tipo.toUpperCase()}.`);return;
+    }
+    const novo={...atual,[tipo]:(atual[tipo]||0)+LAPLACE_GANHO_UPGRADE};
+    saveLaplace(servoId,novo);
+    const pp=tipo==='hp'
+      ?{...fresh,laplaceHp:estoque-LAPLACE_POR_UPGRADE}
+      :{...fresh,laplaceAtk:estoque-LAPLACE_POR_UPGRADE};
+    saveProfile(pp);setProfile(pp);setLap(novo);
+    setNotif(`+${LAPLACE_GANHO_UPGRADE} de ${tipo.toUpperCase()} permanentes para ${def.name}!`);
+  }
+  if(!def)return null;
+
+  const sq=profile.sq||0;
+  const noTeto=sxp.level>=MAX_LEVEL;
+  const maxCompravel=Math.max(0,MAX_LEVEL-sxp.level);
+  const q=clamp(qtd,1,Math.max(1,maxCompravel));
+  const custo=sqCostRange(sxp.level,sxp.level+q);
+  const podePagar=sq>=custo&&!noTeto&&q<=maxCompravel;
+
+  // Quantos níveis o SQ atual compraria (para o botão "máximo possível")
+  let compraveis=0,acc=0;
+  for(let l=sxp.level;l<MAX_LEVEL;l++){
+    if(acc+sqCostForLevel(l)>sq)break;
+    acc+=sqCostForLevel(l);compraveis++;
+  }
+
+  function treinar(){
+    const fresh=loadProfile();
+    if((fresh.sq||0)<custo){setNotif('SQ insuficiente.');return;}
+    const atual=loadServoXP(servoId);
+    if(atual.level>=MAX_LEVEL){setNotif('Este Servo já está no nível máximo.');return;}
+    const alvo=Math.min(MAX_LEVEL,atual.level+q);
+    const custoReal=sqCostRange(atual.level,alvo);
+    if((fresh.sq||0)<custoReal){setNotif('SQ insuficiente.');return;}
+    const novo={level:alvo,xp:0};
+    saveServoXP(servoId,novo);
+    const pp={...fresh,sq:fresh.sq-custoReal};
+    saveProfile(pp);setProfile(pp);setSxp(novo);
+    setNotif(`${def.name} avançou para o Nv.${alvo}! (−${custoReal.toLocaleString()} SQ)`);
+    setQtd(1);
+  }
+
+  const atkAgora=def.getAtk(sxp.level)+(lap.atk||0),hpAgora=def.getHp(sxp.level)+(lap.hp||0);
+  const atkDepois=def.getAtk(Math.min(MAX_LEVEL,sxp.level+q))+(lap.atk||0);
+  const hpDepois=def.getHp(Math.min(MAX_LEVEL,sxp.level+q))+(lap.hp||0);
+
+  return(
+    <div className="screen">
+      <div className="panel" style={{maxWidth:560}}>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,textAlign:'center'}}>TREINAMENTO NO TRONO</h2>
+        <p style={{textAlign:'center',color:'var(--parchment-dark)',fontSize:'.74rem',fontStyle:'italic',marginTop:2}}>
+          Gaste Saint Quartz para forjar a lenda antes que a jornada a exija.
+        </p>
+
+        <div style={{display:'flex',gap:14,alignItems:'center',margin:'16px 0 10px'}}>
+          <img src={(def.sprites&&def.sprites.idle)||def.assets.combat||def.assets.default} alt={def.name}
+            style={{width:86,height:86,objectFit:'cover',borderRadius:8,border:'1px solid var(--gold-dim)'}}
+            onError={ev=>{ev.target.onerror=null;ev.target.src=def.assets.default;}}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div className="cinzel" style={{color:'var(--gold)',fontSize:'1rem'}}>{def.name}</div>
+            <div style={{fontSize:'.72rem',color:'var(--parchment-dark)'}}>{def.className} · Nv.{sxp.level}{noTeto&&' (máximo)'}</div>
+            <div style={{fontSize:'.72rem',color:'var(--parchment)',marginTop:4}}>
+              ATK {atkAgora.toLocaleString()} · HP {hpAgora.toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+        {!noTeto&&(
+          <>
+            <div className="divider"><span className="divider-text">QUANTOS NÍVEIS</span></div>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'center',marginBottom:10}}>
+              {[1,5,10].filter(v=>v<=maxCompravel).map(v=>(
+                <button key={v} className="btn" style={{padding:'6px 14px',fontSize:'.75rem',
+                  borderColor:q===v?'var(--gold)':undefined}} onClick={()=>setQtd(v)}>+{v}</button>
+              ))}
+              {compraveis>0&&(
+                <button className="btn" style={{padding:'6px 14px',fontSize:'.75rem',
+                  borderColor:q===compraveis?'var(--gold)':undefined}} onClick={()=>setQtd(compraveis)}>
+                  Máx ({compraveis})
+                </button>
+              )}
+              {maxCompravel>0&&(
+                <button className="btn" style={{padding:'6px 14px',fontSize:'.75rem',
+                  borderColor:q===maxCompravel?'var(--gold)':undefined}} onClick={()=>setQtd(maxCompravel)}>
+                  Até o teto ({maxCompravel})
+                </button>
+              )}
+            </div>
+
+            <div style={{padding:'12px 14px',borderRadius:8,background:'rgba(0,0,0,.26)',
+              border:'1px solid var(--gold-dim)',marginBottom:12}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:'.78rem',marginBottom:6}}>
+                <span style={{color:'var(--parchment-dark)'}}>Nv.{sxp.level} ➜ Nv.{Math.min(MAX_LEVEL,sxp.level+q)}</span>
+                <span style={{color:podePagar?'#7ee08a':'var(--crimson-soft)'}}>{custo.toLocaleString()} SQ</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:'.74rem',color:'var(--parchment)'}}>
+                <span>ATK {atkAgora.toLocaleString()} ➜ <b style={{color:'var(--gold)'}}>{atkDepois.toLocaleString()}</b></span>
+                <span>HP {hpAgora.toLocaleString()} ➜ <b style={{color:'var(--gold)'}}>{hpDepois.toLocaleString()}</b></span>
+              </div>
+              <div style={{fontSize:'.66rem',color:'var(--parchment-dark)',marginTop:6}}>
+                Próximo nível avulso: {sqCostForLevel(sxp.level)} SQ · o custo sobe 25 SQ a cada nível.
+              </div>
+            </div>
+
+            <button className="btn btn-red btn-full" disabled={!podePagar} onClick={treinar}
+              style={{opacity:podePagar?1:.5}}>
+              ⚔️ Treinar — {custo.toLocaleString()} SQ
+            </button>
+          </>
+        )}
+        {noTeto&&(
+          <p style={{textAlign:'center',color:'var(--gold)',fontSize:'.8rem',margin:'14px 0'}}>
+            ✦ Este Servo alcançou o nível máximo ({MAX_LEVEL}).
+          </p>
+        )}
+
+        {/* ── REFORÇO LAPLACE ── */}
+        <div className="divider"><span className="divider-text">🧬 REFORÇO LAPLACE</span></div>
+        <p style={{textAlign:'center',fontSize:'.66rem',color:'var(--parchment-dark)',
+          fontStyle:'italic',marginBottom:8}}>
+          Recuperado apenas em batalhas de Elite e de Boss. Cada {LAPLACE_POR_UPGRADE} unidades
+          concedem +{LAPLACE_GANHO_UPGRADE} permanentes (teto de +{LAPLACE_TETO} por atributo).
+        </p>
+        <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+          {[['hp','HP','#7ee08a',profile.laplaceHp||0],['atk','ATK','#e0806a',profile.laplaceAtk||0]].map(([k,rot,cor,estoque])=>{
+            const aplicado=lap[k]||0;
+            const noTetoLap=aplicado>=LAPLACE_TETO;
+            const pode=estoque>=LAPLACE_POR_UPGRADE&&!noTetoLap;
+            return(
+              <div key={k} style={{flex:'1 1 190px',padding:'11px 12px',borderRadius:8,
+                background:'rgba(0,0,0,.26)',border:`1px solid ${cor}44`}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5}}>
+                  <span className="cinzel" style={{color:cor,fontSize:'.8rem'}}>Laplace {rot}</span>
+                  <span style={{fontSize:'.72rem',color:'var(--parchment)'}}>{estoque} un.</span>
+                </div>
+                <div style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginBottom:7}}>
+                  Aplicado: <b style={{color:cor}}>+{aplicado}</b> / {LAPLACE_TETO}
+                </div>
+                <button className="btn btn-full" disabled={!pode} onClick={()=>aplicarLaplace(k)}
+                  style={{padding:'6px 8px',fontSize:'.72rem',opacity:pode?1:.45}}>
+                  {noTetoLap?'✦ no teto':`Usar ${LAPLACE_POR_UPGRADE} → +${LAPLACE_GANHO_UPGRADE} ${rot}`}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <p style={{textAlign:'center',fontSize:'.75rem',color:'var(--parchment-dark)',marginTop:12}}>
+          Saint Quartz disponível: <b style={{color:'var(--gold)'}}>{sq.toLocaleString()}</b>
+        </p>
+        {notif&&<p style={{textAlign:'center',color:'var(--gold)',fontSize:'.76rem',marginTop:6}}>{notif}</p>}
+
+        <button className="btn btn-full" style={{marginTop:14}} onClick={onBack}>← Voltar ao Perfil</button>
       </div>
     </div>
   );
@@ -6352,7 +6598,9 @@ const STORY_MAP10_F7={
   ],
 };
 
-// Fase 9 — SONHO/MEMÓRIA: a noite no bosque, o cantil e a espada de osso da Shuten.
+// Fase 9 — SONHO/MEMÓRIA: a noite no bosque, o cantil e a Bone Sword (Nameless).
+// A narração mantém "espada de osso" de propósito: no sonho o Mestre ainda não
+// sabe que a lâmina é da própria Ibaraki. O nome só aparece no Codex.
 const STORY_MAP10_F9={
   start:[
     {type:'narration',dream:true,text:'Assim que a noite cai, um sonho se manifesta. Uma memória recente começa a ser construída.'},
@@ -7659,13 +7907,14 @@ function calcAmeaca(profile,party,npLevel){
            +nPerk*AMEACA_PESOS.perk+nNp*AMEACA_PESOS.np;
   return{
     idx,
-    // Inimigos comuns: HP escala forte, dano escala pouco.
-    // Preferimos lutas mais LONGAS a lutas onde você morre de um golpe.
+    // O HP dos inimigos continua escalando forte, mas o DANO agora acompanha:
+    // com Graças, perks e regen percentual, lutas longas viraram lutas seguras.
+    // A ameaça precisa ameaçar — sem chegar a matar em um golpe.
     hp:1+2.2*idx,
-    atk:1+0.55*idx,
-    // Bosses já têm HP enorme e dano alto: escalam bem menos, senão viram one-shot.
+    atk:1+1.15*idx,
+    // Bosses batem forte por natureza; escalam menos para não virarem one-shot.
     bossHp:1+1.6*idx,
-    bossAtk:1+0.25*idx,
+    bossAtk:1+0.60*idx,
     // A partir de metade da progressão, grupos ficam maiores.
     grupoExtra:idx>=0.5?1:0,
   };
@@ -7698,9 +7947,9 @@ function ameacaAtual(camp,profile){
   return{
     idx,idxBase:base.idx||0,idxRun,
     hp:1+3.2*idx,      // teto ×4.2
-    atk:1+1.10*idx,    // teto ×2.1
+    atk:1+1.80*idx,    // teto ×2.8 (era ×2.1 — dano não acompanhava o HP)
     bossHp:1+2.4*idx,  // teto ×3.4
-    bossAtk:1+0.50*idx,// teto ×1.5
+    bossAtk:1+0.90*idx,// teto ×1.9 (era ×1.5)
     grupoExtra:idx>=0.5?1:0,
   };
 }
@@ -8769,7 +9018,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // IMPORTANTE: a base do HP tem que vir da DEFINIÇÃO do Servo, igual ao ATK logo
     // abaixo. Usar `m.hpMax` (que já vinha multiplicado do combate anterior) fazia o
     // Golden Rule COMPOR a cada fase — o HP virava exponencial (bilhões na fase 30).
-    const baseHpMax=def.getHp(lvl)+hpBonus;
+    // Reforço Laplace: soma permanente conquistada com os itens de Elite/Boss
+    const lap=loadLaplace(def.id);
+    const baseHpMax=def.getHp(lvl)+hpBonus+(lap.hp||0);
     // Graça — Estandarte Sagrado (Jeanne): +% de HP máximo para o grupo
     const hpGraca=1+(getGracaEffects(camp).maxHpUpPct||0)/100;
     // Evento Altar Abandonado (profanar): penalidade de HP máximo por toda a jornada
@@ -8783,7 +9034,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     return{
       ...m,
       level:lvl,
-      attackBase:Math.round(def.getAtk(lvl)*grMult
+      attackBase:Math.round((def.getAtk(lvl)+(lap.atk||0))*grMult
         // Perk Herança do Trono: +ATK por Graça equipada nesta jornada
         *(1+((perkEffects.atkPerGraca||0)*Object.values(camp.gracas||{}).filter(Boolean).length)/100)),
       hpMax:grHpMax,
@@ -10868,6 +11119,16 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       const qpGain=Math.round((isBoss?1500:500)*moneyMult);
       depositSQ(sqGain);
       let newProfile=depositQP(qpGain);
+      // ── LAPLACE: só cai em Elite e Boss ──
+      const lapTotal=laplaceDropTotal(camp.mapId||'bosque',isBoss,!!camp.eliteFight);
+      if(lapTotal>0){
+        const lap=laplaceSplit(lapTotal);
+        newProfile=depositLaplace(lap.hp,lap.atk);
+        const partes=[];
+        if(lap.hp)partes.push(`${lap.hp}× Laplace HP`);
+        if(lap.atk)partes.push(`${lap.atk}× Laplace ATK`);
+        addLog(`🧬 ${partes.join(' · ')} recuperado${lapTotal>1?'s':''} do campo!`,'np');
+      }
       // Só o boss do BOSQUE (Qin) desbloqueia as Perks avançadas.
       if(isBoss&&(camp.mapId||'bosque')==='bosque')newProfile=markQinDefeated();
       // Conquista por derrotar cada boss (paga QP+SQ uma vez)
