@@ -2400,38 +2400,79 @@ function depositQP(amount){
 
 // ─── PERKS ───────────────────────────────────────────
 const PERK_DEFS={
+  // ── AS CINCO ORIGINAIS, REPAGINADAS ──
+  // Cada uma ganhou um segundo efeito que conversa com os sistemas novos
+  // (Graças, salas, ameaça), para deixarem de ser só "+X% passivo".
   energizador:{
     id:'energizador',name:'Energizador de Raiz',icon:'⚡',
-    desc:lvl=>`Aumenta o Ataque do Servo em +${lvl*5}% (passivo permanente)`,
-    effect:lvl=>({type:'perk_atk_up',value:lvl*5}),
-    costAtLevel:lvl=>800*(2**(lvl-1)), // custo pra comprar o lvl (já no lvl anterior)
+    desc:lvl=>`+${lvl*5}% de Ataque · +${lvl*3}% de dano crítico`,
+    effect:lvl=>({type:'perk_atk_up',value:lvl*5,critDmg:lvl*3}),
+    costAtLevel:lvl=>800*(2**(lvl-1)),
+    maxLevel:10,
   },
   pocaoMana:{
     id:'pocaoMana',name:'Poção de Mana',icon:'🔮',
-    desc:lvl=>`Regenera +${(1+0.5*(lvl-1)).toFixed(1)}% de Barra de NP por turno`,
-    effect:lvl=>({type:'perk_np_regen',value:parseFloat((1+0.5*(lvl-1)).toFixed(1))}),
+    desc:lvl=>`+${(1+0.5*(lvl-1)).toFixed(1)}% de NP por turno · começa cada combate com ${lvl*3}% de NP`,
+    effect:lvl=>({type:'perk_np_regen',value:1+0.5*(lvl-1),startNp:lvl*3}),
     costAtLevel:lvl=>800*(2**(lvl-1)),
+    maxLevel:10,
   },
   pactoEscudo:{
     id:'pactoEscudo',name:'Pacto do Escudo',icon:'🛡️',
-    desc:lvl=>`Regenera +${400+50*(lvl-1)} HP por turno`,
-    effect:lvl=>({type:'perk_hp_regen',value:400+50*(lvl-1)}),
+    // Regen em PORCENTAGEM do HP máximo: valor fixo virava irrelevante conforme
+    // os Servos sobem de nível e acumulam Golden Rule.
+    desc:lvl=>`Regenera ${(0.6*lvl).toFixed(1)}% do HP máximo por turno · −${Math.min(40,lvl*4)}% de dano recebido abaixo de 30% de HP`,
+    effect:lvl=>({type:'perk_hp_regen',value:0.6*lvl,lowHpMit:Math.min(40,lvl*4)}),
     costAtLevel:lvl=>800*(2**(lvl-1)),
+    maxLevel:10,
   },
-  // ── Perks avançadas: desbloqueadas ao derrotar Qin Liangyu 1x ──
   contosEpicos:{
     id:'contosEpicos',name:'Contos Épicos de um Vagabundo',icon:'📜',
+    desc:lvl=>`+${lvl*50}% de SQ e QP · +${lvl*35}% de recompensa em salas de Tesouro`,
+    effect:lvl=>({type:'perk_sq_qp_up',value:lvl*50,treasure:lvl*35}),
     maxLevel:3,requiresQinDefeat:true,
-    desc:lvl=>`Aumenta a obtenção de SQ e QP em +${lvl*50}%`,
-    effect:lvl=>({type:'perk_sq_qp_up',value:lvl*50}),
-    costAtLevel:lvl=>2500+lvl*2500, // 5000 / 7500 / 10000
+    costAtLevel:lvl=>2500+lvl*2500,
   },
   orbeCromatico:{
     id:'orbeCromatico',name:'Orbe Cromático',icon:'💠',
+    desc:lvl=>`Revive o Servo com ${lvl*10}% de HP e NP (1x por jornada) · ${lvl>=5?'invencível por 1 turno ao reviver':'invencibilidade ao reviver a partir do Nv.5'}`,
+    effect:lvl=>({type:'perk_orbe',value:lvl*10,reviveInvuln:lvl>=5}),
     maxLevel:10,requiresQinDefeat:true,
-    desc:lvl=>`Ao ser derrotado, revive o Servo com ${lvl*10}% de HP e ${lvl*10}% de NP (1x por campanha)`,
-    effect:lvl=>({type:'perk_orbe',value:lvl*10}),
-    costAtLevel:lvl=>1500*lvl, // 1500 / 3000 / 4500 ... 15000
+    costAtLevel:lvl=>1500*lvl,
+  },
+
+  // ── PERKS NOVAS: ligadas às mecânicas modernas ──
+  favorTrono:{
+    id:'favorTrono',name:'Favor do Trono',icon:'🏛️',
+    desc:lvl=>`+${lvl*12}% de chance das Graças ofertadas virem em nível superior`,
+    effect:lvl=>({type:'perk_graca_luck',value:lvl*12}),
+    maxLevel:5,unlockAch:'graca_first',
+    lockMsg:'Desbloqueada ao receber sua primeira Graça do Trono...',
+    costAtLevel:lvl=>3000*lvl,
+  },
+  heranca:{
+    id:'heranca',name:'Herança do Trono',icon:'✴️',
+    desc:lvl=>`+${lvl*4}% de Ataque para cada Graça equipada (até +${lvl*4*5}%)`,
+    effect:lvl=>({type:'perk_atk_per_graca',value:lvl*4}),
+    maxLevel:5,unlockAch:'graca_full',
+    lockMsg:'Desbloqueada ao preencher os 5 slots de Graça numa jornada...',
+    costAtLevel:lvl=>4000*lvl,
+  },
+  espolios:{
+    id:'espolios',name:'Espólios de Guerra',icon:'💀',
+    desc:lvl=>`+${lvl*25}% de recompensa em salas de Elite · −${Math.min(30,lvl*6)}% do dano extra que Elites causam`,
+    effect:lvl=>({type:'perk_elite',value:lvl*25,eliteMit:Math.min(30,lvl*6)}),
+    maxLevel:5,unlockAch:'defeat_shunoban',
+    lockMsg:'Desbloqueada ao abater o Ciclope Vermelho...',
+    costAtLevel:lvl=>3500*lvl,
+  },
+  presagio:{
+    id:'presagio',name:'Presságio do Vagante',icon:'🌟',
+    desc:lvl=>`Começa cada jornada com ${lvl*3} acúmulos de Golden Rule (+${lvl*15}% de ATK e HP de saída)`,
+    effect:lvl=>({type:'perk_golden_start',value:lvl*3}),
+    maxLevel:5,unlockAch:'clear_sucessao',
+    lockMsg:'Desbloqueada ao atravessar o Prelúdio da Guerra de Sucessão...',
+    costAtLevel:lvl=>5000*lvl,
   },
 };
 const PERK_IDS=Object.keys(PERK_DEFS);
@@ -2445,18 +2486,34 @@ const MAX_EQUIPPED_PERKS=3;
 function getPerkEffects(profileObj={}){
   const perks=profileObj.perks||{};
   const equipped=(profileObj.equippedPerks||DEFAULT_EQUIPPED).slice(0,MAX_EQUIPPED_PERKS);
-  const effects={atkUpPercent:0,npRegenPercent:0,hpRegenPerTurn:0,sqQpBonusPercent:0,orbeRevivePercent:0};
+  const effects={atkUpPercent:0,npRegenPercent:0,hpRegenPctPerTurn:0,sqQpBonusPercent:0,orbeRevivePercent:0,
+    // ── efeitos novos ──
+    critDmgPercent:0,   // Energizador: dano crítico
+    startNpPercent:0,   // Poção de Mana: NP inicial
+    lowHpMitPercent:0,  // Pacto do Escudo: redução com pouca vida
+    treasureBonus:0,    // Contos Épicos: salas de Tesouro
+    reviveInvuln:false, // Orbe: invencibilidade ao reviver
+    gracaLuck:0,        // Favor do Trono: chance de nível superior
+    atkPerGraca:0,      // Herança: ATK por Graça equipada
+    eliteBonus:0,       // Espólios: recompensa de Elite
+    eliteMit:0,         // Espólios: mitiga o extra do Elite
+    goldenStart:0,      // Presságio: acúmulos iniciais de Golden Rule
+  };
   for(const id of equipped){
     const lvl=perks[id]||0;
     if(lvl<=0)continue;
     const def=PERK_DEFS[id];
     if(!def)continue;
     const eff=def.effect(lvl);
-    if(eff.type==='perk_atk_up')effects.atkUpPercent+=eff.value;
-    if(eff.type==='perk_np_regen')effects.npRegenPercent+=eff.value;
-    if(eff.type==='perk_hp_regen')effects.hpRegenPerTurn+=eff.value;
-    if(eff.type==='perk_sq_qp_up')effects.sqQpBonusPercent+=eff.value;
-    if(eff.type==='perk_orbe')effects.orbeRevivePercent+=eff.value;
+    if(eff.type==='perk_atk_up'){effects.atkUpPercent+=eff.value;effects.critDmgPercent+=eff.critDmg||0;}
+    if(eff.type==='perk_np_regen'){effects.npRegenPercent+=eff.value;effects.startNpPercent+=eff.startNp||0;}
+    if(eff.type==='perk_hp_regen'){effects.hpRegenPctPerTurn+=eff.value;effects.lowHpMitPercent+=eff.lowHpMit||0;}
+    if(eff.type==='perk_sq_qp_up'){effects.sqQpBonusPercent+=eff.value;effects.treasureBonus+=eff.treasure||0;}
+    if(eff.type==='perk_orbe'){effects.orbeRevivePercent+=eff.value;if(eff.reviveInvuln)effects.reviveInvuln=true;}
+    if(eff.type==='perk_graca_luck')effects.gracaLuck+=eff.value;
+    if(eff.type==='perk_atk_per_graca')effects.atkPerGraca+=eff.value;
+    if(eff.type==='perk_elite'){effects.eliteBonus+=eff.value;effects.eliteMit+=eff.eliteMit||0;}
+    if(eff.type==='perk_golden_start')effects.goldenStart+=eff.value;
   }
   return effects;
 }
@@ -2527,6 +2584,8 @@ const ACHIEVEMENTS=[
   {id:'roster_lv20',name:'Treinador de Espíritos',desc:'Tenha 3 Servos no nível 20 ou mais.',qp:42000,sq:55,icon:'📈',challenge:true},
 
   // ── DESAFIOS DAS GRAÇAS DO TRONO ──
+  {id:'defeat_enigma',name:'O Que Ficou Para Trás',desc:'Derrote o Enigma, o Espectro Fantasmagórico.',qp:60000,sq:75,icon:'👁️'},
+  {id:'clear_pensamentos',name:'Pensamentos Restantes',desc:'Complete o Mapa 11.',qp:52000,sq:65,icon:'🌫️'},
   {id:'graca_first',name:'Primeira Bênção',desc:'Receba sua primeira Graça do Trono.',qp:8000,sq:12,icon:'🏛️',challenge:true},
   {id:'graca_full',name:'Trono Completo',desc:'Preencha os 5 slots de Graça numa mesma jornada.',qp:30000,sq:40,icon:'✴️',challenge:true},
   {id:'graca_lv3',name:'Bênção Suprema',desc:'Leve uma Graça ao nível III.',qp:22000,sq:30,icon:'🔺',challenge:true},
@@ -3158,7 +3217,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.82</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v1.89</p>
       </div>
     </div>
   );
@@ -3252,6 +3311,10 @@ const CODEX=[
    info:'Um estranho no ninho. Não se lembra de como chegou ao bosque, e desperta perdido com poucas lembranças. Preso a um servo emocionalmente desequilibrado e de temperamento explosivo, precisa sobreviver aos Caminhos Cegos — sem saber quem é, nem por que sua conexão com a Mana é tão anormalmente alta.',
    details:[
      {title:'HISTÓRIA',body:'Um estranho no ninho. Ele não se lembra muito de como chegou ao local — apenas se viu perdido no bosque, com poucas lembranças e uma névoa densa onde deveria estar seu passado. Está preso ao lado de um servo emocionalmente desequilibrado e de temperamento explosivo, uma Oni que tanto pode salvá-lo quanto devorá-lo.\n\nAlgo nele não é normal. Sua conexão com a Mana é alta demais para um humano comum, como se seu próprio corpo fosse um catalisador — o sangue, a carne, os fluidos, tudo parece carregar um poder que ele não compreende. Fragmentos soltos o perseguem: um frasco estranho que alguém lhe entregou, vozes distorcidas na memória, uma sensação de que seus ossos não são bem os seus. Quem o trouxe até aqui? O que ele foi antes de esquecer? Cada passo pelo bosque parece menos uma jornada de fuga e mais um retorno a algo que ele preferiria não lembrar.'},
+     {title:'A ORIGEM DOS SELOS',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'O primeiro Selo de Comando não foi concedido por nenhum sistema: surgiu como um brilho vermelho sob o pulso no instante em que ele tocou a espada de osso da Shuten. Mais tarde, diante do braço decepado de Asahina, o magecraft "Fundir Osso" reagiu sozinho às suas intenções — tão natural quanto respirar — e drenou os três selos do morto, completando o que fora gasto contra a Archer e acrescentando dois traços verticais ao lado do tridente. Arrancar selos de outros Mestres funciona. E ele soube disso antes de aprender.'},
+     {title:'SABER O QUE NÃO DEVERIA',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'A frase escapou sem esforço: "isso não seria uma tarefa de cirurgia mágica?". Era a primeira vez dele em tudo — selos, servos, guerra — e ainda assim a informação já estava lá. O mesmo se repete com datas e nomes: ele situa Fujiwara no Michinaga no poder, sabe que Hyuchi é fortaleza dos Taira e que será atacada duas vezes pelos Minamoto, e reconhece figuras que "ainda é cedo demais" para existirem. A sensação de saber mais do que deveria fica mais evidente a cada dia — e conversa diretamente com o que aquelas três vozes chamaram de "aquele defeito".'},
      {title:'O SONHO DA NOITE 1',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
       body:'Em Kurikara, dormindo na pousada Kogarashi-kan, o Mestre reviveu uma memória enterrada. Num bosque de árvores gigantes, ouviu duas figuras não-humanas — uma delas a General Qin, outra um homem — falando de "uma garota ferida" golpeada por Sakata. Então, uma pequena Oni ensanguentada agarrou sua perna. Com um crânio humano na mão e um "vai doer só um pouquinho", ela tocou seus ossos.\n\nA dor foi insuportável: seus ossos pareciam querer sair da própria pele. Ele desmaiou. Ao acordar suado na cama, entendeu que aquilo não era um sonho comum, mas a origem de algo dentro de si — a semente da sua skill "Ossos que não são meus". A Oni era a Shuten Douji, a mesma "Voz Desconhecida" que zomba a cada queda dele.'},
      {title:'AS DATAS NÃO BATEM',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
@@ -3290,6 +3353,8 @@ const CODEX=[
    info:'A Oni de Rashōmon, companheira do Mestre. Impulsiva, gulosa e provocadora, mas leal à sua maneira. No passado, foi amiga de Shuten Douji no Monte Ooe — até um homem com uma espada em chamas arrancar seu braço.',
    details:[
      {title:'IDENTIDADE',body:'Uma das Oni que surgiram na Capital Imperial durante o período Heian, cometendo exaustivamente todo tipo de atrocidade. Diz-se que Ibaraki-Douji era considerada subordinada de Shuten-Douji, que vivia no Monte Ooe. Durante o "Extermínio dos Oni do Monte Ooe" por Minamoto-no-Raikou e seus Quatro Reis Celestiais, Ibaraki cruzou espadas com Watanabe-no-Tsuna, um dos Quatro Reis. Por suas anedotas e vestígios, é classificada como uma "Anti-Heroína".'},
+     {title:'O PRIMEIRO ENCONTRO',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'O Mestre recuperou a memória da noite em que se conheceram — e ela não começou com uma invocação, mas com um resgate. A Ibaraki surgiu naquele bosque, sentiu o cheiro do sangue da Shuten no Mestre e ficou desconcertada com a ligação entre os dois. Então reconheceu o homem que apontava armas contra ele: Watanabe no Tsuna, o mesmo dos Quatro Reis Celestiais com quem cruzou espadas no Monte Ooe. Puxou a espada de osso e enfrentou os dois inimigos sozinha, com uma fúria descrita como anormal — golpes carregados de rancor puro — até forçá-los a recuar. Ela se apresentou como o que sempre foi: a líder do clã oni do Monte Ooe, que não está acostumada a receber ordens.'},
      {title:'LENDA',body:'Na verdade, Ibaraki-Douji não era subordinada de Shuten-Douji — acredita-se que existiu como "a líder dos Oni do Monte Ooe". Shuten nasceu do Grande Deus Ibuki do Monte Ibuki (isto é, Yamata no Orochi) e de um humano. Era apropriado que Abe-no-Seimei, autoridade da antiga Kyoto, prestasse atenção a tal ser. No entanto, quem de fato liderava os Oni do Monte Ooe não era outro senão Ibaraki-Douji.'},
      {title:'APARÊNCIA',body:'Uma garota de cabelos loiros e olhos escarlates cor de sangue. Na anedota do Rashōmon, apareceu na figura de uma "bela mulher".\n\nÉ uma Serva de estatura baixa. Cabelo loiro claro, com duas franjas encaracoladas nas laterais e cortado reto na altura das coxas; olhos de um dourado brilhante. Orelhas pontudas e brincos que lembram contas pretas. Seus chifres se projetam da testa, variando do preto ao vermelho. Veste um yukata curto e folgado (da cor de seu cabelo, com padrão floral multicolorido nas mangas), sobre uma blusa branca decotada, com um colar de grandes contas pretas e uma faixa cor de vinho amarrada em laço nas costas. Como o yukata é folgado, os ombros ficam à mostra.\n\nSuas unhas são afiadas como garras, negras por natureza. Mãos e pés são de um vermelho-sangue antinatural, que se funde à pele pálida em tatuagens tribais que sobem das mãos aos ombros e dos pés até abaixo dos joelhos. Anda descalça, com tiras pretas no peito do pé.'},
      {title:'PERSONALIDADE',body:'Uma Oni nascida neste mundo com aparência desumana. Na infância, foi estritamente disciplinada pela mãe, de linhagem nobre, para aprender o orgulho de uma Oni — ainda que, vista de fora, tal criação estivesse mais próxima do assédio do que do amor.\n\nEmbora sua aparência exale inocência, seu ser é o de um Oni: ferir humanos, devorá-los, amar o sangue. Não tem, porém, grande inclinação ao prazer egoísta de matar; não é uma Oni que traz desordem ao mundo — devora humanos como um ser vivo, próxima de um animal selvagem. Mesmo fascinada por doces, sua natureza não é a de uma jovem humana: dependendo das circunstâncias, pode devorar o próprio humano que a atraiu com doces. Nunca subestime um leão. Mas, se alguém conseguir alimentá-la, ela poderá exibir um sorriso encantador.'},
@@ -3342,6 +3407,8 @@ const CODEX=[
    reveal:p=>!!(p.achievements&&p.achievements.defeat_archer),
    info:'A Fada Carniceira do Caminho Tortuoso, enfrentada como "Archer Corrompida". Uma mulher de olhos brancos e sem vida, incapaz de formar frases — só gritos de dor. Rápida e cruel, drena a vida de suas presas. A mesma que o velho da carroça avistou.',
    details:[
+     {title:'A MEMÓRIA DA MÃE',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'Ao ver a lealdade impossível dos soldados na estrada de Hyuchi, ela recorreu a uma lembrança da própria mãe: um rei de um reino abençoado pelo grande dragão, que deu ao povo o seu filho — e por isso a fé daquela gente no homem era inabalável. Para ela, disciplina daquele nível não nasce de ordem: nasce de crença. Onde há soldados assim, há um grande general. É a primeira vez que ela cita a mãe sem ironia.'},
      {title:'IDENTIDADE',body:'Seu verdadeiro nome é Cavaleira Fada Tristan (Tam Lin Tristan), membro dos Cavaleiros da Távola Redonda da Grã-Bretanha das Fadas. Recebe tratamento favorável como "filha" e sucessora de Morgan, governante da Grã-Bretanha Perdida — uma das duas fadas criadas como bruxas em uma Grã-Bretanha onde a magia é considerada desnecessária.\n\nSeu nome como fada é Baobhan Sith, uma fada feminina das lendas escocesas. A própria palavra significa "mulher fada". Diz-se que aparece à noite para drenar a força vital das pessoas e matá-las. Tem predileção por sangue e é vulnerável à luz solar. Muitas fadas têm tanto "benefício" quanto "mal", mas Baobhan Sith é uma fada maligna que só causa "mal". Parece uma bela mulher humana, mas seus pés, escondidos sob a longa saia, são de fada — os calcanhares são "cascos de veado".\n\nOutrora era gentil, mas os Fae a maltratavam constantemente, até que Morgan (então chamada Aesc) a resgatou e adotou como filha, ensinando-a a ser cruel — transformando-a na vil e perigosa Cavaleira das Fadas.'},
      {title:'APARÊNCIA',body:'Uma personagem elegante de forte estética gótica. Longos cabelos esvoaçantes de um rosa profundo e vibrante, com mechas pretas misturadas, que emolduram seu rosto. Usa gargantilha e luvas longas até abaixo dos cotovelos.\n\nSeu traje mistura design vitoriano com elementos de fantasia. A cor principal é um vermelho carmesim intenso, com detalhes em preto e branco de atmosfera gótica: um top espartilhado e, sobre ele, uma jaqueta estruturada que se abre em cauda pontiaguda como asas. A saia tem múltiplas camadas alternando branco e uma sobreposição escura, adornadas com renda, fitas e babados. As meias são de vermelho profundo com cadarço preto ao centro, terminando em botas de plataforma de salto alto com ornamentos em forma de garras.'},
      {title:'PERSONALIDADE',body:'Diplomática e ativa, com a postura de uma governante que fala de seus desejos sem pudor e trabalha para realizá-los. Hedonista, vive apenas o momento presente, satisfazendo-se enquanto se sente bem naquele instante.\n\nPrefere a diversão, como qualquer fada — mas a única coisa "divertida" que conhece são as vozes de sofrimento dos desfavorecidos. Atormenta e pisoteia os fracos, fadas ou humanos. (Como nunca recebeu amor e sua "mãe" Morgan só a elogiava quando ela "atormentava os fracos", aprendeu a gostar disso.) Boas e puras ações a enojam profundamente, e ela faz questão de vilipendiá-las: "É óbvio que é porque eu as acho entediantes."\n\nSeu único hobby era o vandalismo. Acabou cativada pelos "saltos altos" da História Humana Correta e tornou-se colecionadora de sapatos — nisso, é sincera e diligente. No quarto dela, porém, os pés de fada cortados dos calcanhares que colecionou são guardados como tesouros.\n\nRevela-se que Baobhan Sith fora outrora uma fada bondosa, traída e mutilada pelas fadas ingratas. Morgan a encontrou com os membros arrancados e a adotou, criando-a para suprimir sua bondade. Por trás da crueldade reside uma garota aterrorizada com a possibilidade de perder o amor da mãe adotiva, à beira da loucura — sua obsessão por alcançar objetivos a leva a se ferir involuntariamente, a ponto de perder os próprios membros.'},
@@ -3373,6 +3440,28 @@ const CODEX=[
    art:'assets/servos/ninja/ninja_encounter.jpg',
    reveal:p=>!!(p.achievements&&p.achievements.defeat_ninja),
    info:'Um assassino silencioso dos arredores de Kurikara. O clã Genji não deixa testemunhas. Ágil e traiçoeiro, usa veneno e shurikens, e desaparece num piscar de olhos com seu golpe supremo.'},
+  {id:'hyuchi',cat:'npc',name:'Hyuchi e a Guerra',classe:'Localidade',
+   art:null,
+   reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+   info:'A fortaleza para onde o grupo se dirige, e o conflito que já consome a região antes mesmo da Guerra de Sucessão começar de verdade.',
+   details:[
+     {title:'A FORTALEZA',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'Hyuchi é uma enorme fortaleza erguida pelo Clã Taira. Pelos relatos dos moradores, o Clã Minamoto vem recrutando homens e se prepara para invadir. O Mestre sabe — sem saber como sabe — que ela não será atacada uma vez, mas duas: é assim que a história é narrada. O grupo partiu para lá de carruagem, puxada por um cavalo comprado com a grana furtada dos ladrões em Kurikara.'},
+     {title:'MICHINAGA NO PODER',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'Pelas datas, Fujiwara no Michinaga deveria estar no auge da influência — o que explica a disciplina impossível dos soldados na estrada. Segundo a Sith, lealdade daquele nível não vem de ordem, e sim de fé: onde há soldados assim, há um grande general. O que não se explica é por que Michinaga estaria envolvido no evento da Guerra de Sucessão. A Okuni é clara: contra um Servo de grande calibre, a força atual do grupo ainda resultaria em derrota.'},
+     {title:'MUSASHIMARU',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'O cavalo que puxa a carruagem, batizado pelo Mestre numa noite qualquer — para desconcerto da Ibaraki e da Sith, que não decoram nem nomes de humanos. A Okuni, porém, ficou parada olhando para o animal e repetindo o nome baixinho: "parece ser um nome de alguém que seria importante". O Mestre concordou — do jeito que as coisas estão, não duvidaria que ele apareça por essas bandas, por mais que ainda seja cedo demais historicamente.'},
+   ]},
+  {id:'tsuna',cat:'npc',name:'"Tsuna"',classe:'???',
+   art:null,
+   reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+   info:'O homem que a Ibaraki reconheceu no bosque, na noite em que tudo começou. Ela cuspiu o nome com ódio: "Tsuna". Estava acompanhado de uma mulher, e os dois perseguiam a Shuten — e apontaram armas contra o Mestre.',
+   details:[
+     {title:'WATANABE NO TSUNA',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'Se o nome corresponde à lenda, trata-se de um dos Quatro Reis Celestiais de Minamoto no Raikou — o mesmo com quem a Ibaraki cruzou espadas durante o Extermínio dos Oni do Monte Ooe. Na versão mais conhecida da história, ele decepa o braço dela na Ponte Rashomon. A fúria "anormal" com que ela o atacou naquela noite não era de estranho: era de quem reencontra o próprio algoz.'},
+     {title:'A CAÇADA',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'A dupla não estava atrás do Mestre — estava atrás da Shuten. Ele foi um obstáculo no caminho, alguém que aparecera caído no chão gritando de dor. Foram forçados a recuar diante da Ibaraki, mas nada indica que tenham desistido. Se ambos permanecem nesta guerra, e se os Quatro Reis Celestiais operam juntos, o grupo tem inimigos que ainda não se apresentaram.'},
+   ]},
   {id:'shuten',cat:'servo',name:'Shuten Douji',classe:'???',
    art:null,
    reveal:p=>(p.stats&&p.stats.runs||0)>0,
@@ -3380,6 +3469,12 @@ const CODEX=[
    details:[
      {title:'A GAROTA DO SONHO',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
       body:'Foi ela — a pequena Oni de corpo ensanguentado — quem o Mestre encontrou no sonho da Noite 1, no bosque das árvores gigantes. Ferida após um golpe de Sakata (Kintoki), ela se arrastou até ele e, com um crânio humano na mão e um "vai doer só um pouquinho", tocou seus ossos. Foi esse toque que transformou o corpo do Mestre — a origem da sua skill "Ossos que não são meus".'},
+     {title:'A NOITE DA INVOCAÇÃO',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'A memória finalmente se completou. Foi a Shuten quem distorceu os circuitos mágicos do Mestre naquele bosque — e foi ela quem, vendo que ele não teria chance contra os dois perseguidores, lhe entregou duas coisas: um cantil e uma espada de osso. Ao tocar a lâmina, a dor cessou e um brilho vermelho surgiu sob o pulso: o primeiro Selo de Comando. Ela desapareceu no instante em que a Ibaraki foi invocada, e não voltou a se mostrar.'},
+     {title:'O CANTIL DO OCIDENTE',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'Segundo a Ibaraki, o cantil é um espólio raro que a Shuten adquiriu: contém veneno de Basilisco, criatura do ocidente, e tem a propriedade de armazenar seu conteúdo de forma quase infinita. É dele que vem a skill de Mestre "Veneno de Brasilisco". A Ibaraki é enfática: a irmã não daria algo assim por capricho. Se ela escolheu entregar, havia um motivo — e o Mestre deveria se sentir honrado.'},
+     {title:'IMPOSSÍVEL DE ENCONTRAR',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'Ao ser questionada sobre o paradeiro da irmã, a Ibaraki foi direta: se a Shuten decidiu se esconder, não há como localizá-la. Ela é o oposto da Mochizuki, que se expunha pelo próprio orgulho. Está morta como todos eles, portanto deve estar nesta guerra na mesma condição — um Servo. Em algum lugar, observando.'},
      {title:'ELO COM O MESTRE',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.defeat_gosanjo),
       body:'A Shuten conhece o Mestre de antes de tudo. É a "Voz Desconhecida" que zomba a cada derrota mandando "começar de novo", como se controlasse o próprio fio do tempo dele. Ao ver o Go-Sanjo tombado, mencionou a Raikou — a caçadora de onis Minamoto no Raikou — sugerindo que os eventos de Kurikara tocam uma teia bem maior do que aparentam. Por que ela zela pelo Mestre, e o que fez a ele naquele bosque, ainda são perguntas em aberto.'},
    ]},
@@ -3475,6 +3570,10 @@ const CODEX=[
    ],
    details:[
      {title:'A ARTISTA DE IZUMO',body:'Uma artista do período Azuchi-Momoyama, tida como a progenitora das primeiras danças Kabuki, que ao longo dos séculos se tornaram o Kabuki atual. Diz-se que era sacerdotisa do santuário de Izumo e viajou por várias províncias apresentando suas danças — extremamente populares, quase hipnóticas. Quando as autoridades julgaram que perturbavam a moral pública, ela teria desaparecido sem deixar rastro.\n\nAdora novidades: ao ser invocada, absorve costumes e expressões da época e os sublima como arte própria — daí seu jeito peculiar de falar, cheio de palavras estrangeiras impróprias para sua origem.'},
+     {title:'O CONTRATO',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'Depois de Shinohara, foi ela quem pediu — não com a pose de sempre, mas de cabeça baixa, mexendo as mãos, precisando dar dois tapinhas no próprio rosto antes de encarar o Mestre. O motivo era prático: uma Serva sem Mestre queima a própria reserva para se manter, e a dela estava no fim. O Mestre, com a Mana que tem, era a única âncora à vista. Foi ela também quem apontou o uso do braço decepado de Asahina. Firmado o contrato, ela deixou de ser uma Caster sem dono — e prometeu exorcizar todas as dificuldades no caminho dele até o fim dos tempos.'},
+     {title:'A VOZ DA RAZÃO',spoiler:true,reveal:p=>!!(p.achievements&&p.achievements.clear_sucessao),
+      body:'Sob o exagero teatral existe alguém frio quando precisa. Diante do peso que a morte da Mochizuki deixou no Mestre, ela não ofereceu consolo: "às vezes a crueldade pode ser piedade". Um líder precisa usar a força para manter a ordem e evitar que o caos se instale — o que, a longo prazo, se revela a maior das piedades. Não existe resposta que satisfaça, disse ela; sentir culpa só pesa nas escolhas que ainda precisam ser feitas. Ela mesma diagnosticou seu papel no grupo: a voz da razão. Perdeu o Zanzaburou na armadilha de Shinohara e não tem mana para reinvocá-lo.'},
      {title:'A CAÇADORA DE AYAKASHI',body:'Seu segredo mais importante: sob a artista existe uma Sacerdotisa do Selamento, que sela e destrói demônios. Ayakashi-Hunter, Izumo no Okuni! Nascida numa vila de Izumo que produzia essas sacerdotisas (vistas como hereges), foi sequestrada ainda criança e submetida a um treinamento cruel como sacerdotisa descartável. Nunca conheceu o rosto dos pais — mas cresceu corajosa e alegre, sem se deixar distorcer pelo infortúnio.'},
      {title:'ZANZABUROU',body:'O guerreiro mecânico que a segue era, na origem, o cadáver de um deus antigo (Ama-no-Sakagami) selado dentro de Izumo. Ao remodelá-lo em seu Código Místico pessoal, Okuni fez o deus perder seu poder original. Ainda que seja apenas um fantoche, o Zanzaburou parece proteger Okuni por vontade própria — com vontade própria.'},
      {title:'A JORNADA E O NP',body:'Um dia, toda a sua aldeia foi destruída da noite para o dia por um deus maligno que uma amiga sacerdotisa libertara. Sozinha, Okuni perseguiu esse deus por muitas províncias — mas jamais conseguiu destruí-lo, e esse arrependimento se tornou a essência dela como Espírito Heroico.\n\nSeu Fantasma Nobre, "Okuni Repertoire: Kabuki of the Izumo Wild God", é a primeira e mais poderosa de suas dezoito danças: com o Zanzaburou e uma odachi, tece um Grande Campo de Selamento que aprisiona todo o mal. Muda de forma e características mesmo após ser invocado — reflexo de quem sempre busca novas expressões.'},
@@ -4355,6 +4454,9 @@ function ShopScreen({onNavigate,profile,setProfile}){
     const fresh=loadProfile(); // leitura fresca: nunca gasta em cima de saldo desatualizado
     const def=PERK_DEFS[id];
     const maxLvl=def.maxLevel||10;
+    if(def.unlockAch&&!(fresh.achievements&&fresh.achievements[def.unlockAch])){
+      setNotif(def.lockMsg||'Perk ainda bloqueada.');return;
+    }
     if(def.requiresQinDefeat&&(fresh.qinDefeats||0)<1){
       setNotif('🔒 Derrote Qin Liangyu para desbloquear esta Perk!');return;
     }
@@ -4445,14 +4547,14 @@ function ShopScreen({onNavigate,profile,setProfile}){
         </div>
 
         {/* Efeitos ativos resumidos */}
-        {(effects.atkUpPercent>0||effects.npRegenPercent>0||effects.hpRegenPerTurn>0||effects.sqQpBonusPercent>0||effects.orbeRevivePercent>0)&&(
+        {(effects.atkUpPercent>0||effects.npRegenPercent>0||effects.hpRegenPctPerTurn>0||effects.sqQpBonusPercent>0||effects.orbeRevivePercent>0)&&(
           <div style={{background:'rgba(0,0,0,0.3)',border:'1px solid rgba(255,255,255,0.08)',
             borderRadius:3,padding:'10px 14px',marginBottom:16,
             display:'flex',gap:16,flexWrap:'wrap'}}>
             <span style={{fontSize:'.7rem',color:'var(--gold-dim)',letterSpacing:1,width:'100%',fontFamily:'Cinzel,serif'}}>BÔNUS ATIVOS EM BATALHA</span>
             {effects.atkUpPercent>0&&<span style={{fontSize:'.8rem',color:'#ffd080'}}>⚡ ATK +{effects.atkUpPercent}%</span>}
             {effects.npRegenPercent>0&&<span style={{fontSize:'.8rem',color:'#90caf9'}}>🔮 NP +{effects.npRegenPercent}%/turno</span>}
-            {effects.hpRegenPerTurn>0&&<span style={{fontSize:'.8rem',color:'#a5d6a7'}}>🛡️ HP +{effects.hpRegenPerTurn}/turno</span>}
+            {effects.hpRegenPctPerTurn>0&&<span style={{fontSize:'.8rem',color:'#a5d6a7'}}>🛡️ HP +{effects.hpRegenPctPerTurn.toFixed(1)}%/turno</span>}
             {effects.sqQpBonusPercent>0&&<span style={{fontSize:'.8rem',color:'#ffd257'}}>📜 SQ/QP +{effects.sqQpBonusPercent}%</span>}
             {effects.orbeRevivePercent>0&&<span style={{fontSize:'.8rem',color:'#b39ddb'}}>💠 Revive {effects.orbeRevivePercent}% (1x/run)</span>}
           </div>
@@ -4465,7 +4567,8 @@ function ShopScreen({onNavigate,profile,setProfile}){
           const maxLvl=def.maxLevel||10;
           const curLvl=perks[id]||0;
           const nextLvl=curLvl+1;
-          const locked=def.requiresQinDefeat&&!qinUnlocked;
+          const locked=(def.requiresQinDefeat&&!qinUnlocked)
+            ||(def.unlockAch&&!(profile.achievements&&profile.achievements[def.unlockAch]));
           const isEquipped=equipped.includes(id);
           const cost=!locked&&curLvl<maxLvl?def.costAtLevel(nextLvl):null;
           const canAfford=cost!==null&&(profile.qp||0)>=cost;
@@ -4902,6 +5005,53 @@ const MOCHIZUKI={
 // ── BOSS DO MAPA 9: Mochizuki Chiyome ENFURECIDA (2ª fase) ──
 // Forçada pelo Selo de Asahina a canalizar Orochi por completo. É a mesma luta de
 // controle, mas amplificada: mais HP, mais dano, mais rápida e recargas mais curtas.
+// ══════════════════════════════════════════════════════
+// ENIGMA — Espectro Fantasmagórico (boss do Mapa 11)
+// ══════════════════════════════════════════════════════
+// Criatura colossal de véu branco e quatro braços ósseos.
+// Mecânicas próprias:
+//  · VÉU BRANCO — 55% de redução de dano enquanto ativo.
+//  · QUATRO BRAÇOS — ataca uma vez por braço restante. Perde um braço ao cruzar
+//    80%/60%/40%/20% de HP, e CADA braço perdido dissipa o véu por 2 turnos.
+//    Isso cria janelas de vulnerabilidade: quebrar limiares é o caminho.
+//  · LAMENTO DOS QUE FICARAM — a cada 3 turnos atinge o grupo inteiro e amaldiçoa.
+//  · PENSAMENTO RESTANTE — ao cair, ergue-se uma vez com 30% do HP, um só braço,
+//    sem véu e com fúria: o último pensamento que se recusa a partir.
+const ENIGMA={
+  id:'enigma',name:'Enigma',className:'Espectro Fantasmagórico',isBoss:true,
+  hp:880000,attack:9800,
+  attributes:{
+    strength:{rank:'A',points:50},
+    agility:{rank:'D',points:22},   // colossal e lento — quase sempre age por último
+    luck:{rank:'E',points:10},
+    endurance:{rank:'EX',points:100},
+    mana:{rank:'B',points:40,gainPercent:1.8},
+    np:{rank:'A',points:50},
+  },
+  npRegenPerTurn:5,
+  veilReduction:55,   // % de redução enquanto o véu estiver intacto
+  veilBreakTurns:2,   // turnos que o véu fica dissipado ao perder um braço
+  armThresholds:[80,60,40,20], // % de HP em que cada braço se parte
+  skills:{
+    lamento:{cd:3,aoePct:60,curseValue:20,curseTurns:3},
+  },
+  np:{name:'Réquiem dos Que Não Partiram',dmgMult:3.4,curseValue:25,curseTurns:3,stunChance:35,stunTurns:1},
+  dialogue:{
+    intro:'...vocês também vieram deixar alguma coisa para trás?',
+    lamento:'ESCUTEM. ESCUTEM O QUE FICOU.',
+    arm:'...um a menos. Ainda sobram tantos.',
+    veil:'O véu se abre. Não olhem por muito tempo.',
+    np:'TUDO O QUE NÃO FOI DITO... CAIA SOBRE VOCÊS!',
+    revive:'...ainda não. Ainda resta um pensamento.',
+    death:'Ah... enfim... posso parar de lembrar...',
+  },
+  assets:{
+    combat:'assets/servos/enigma/enigma_combat.png',
+    default:'assets/servos/enigma/enigma_combat.png',
+    encounter:'assets/servos/enigma/enigma_encounter.jpg',
+  },
+};
+
 const MOCHIZUKI_RAGE={
   id:'mochizuki_chiyome',name:'Mochizuki Chiyome (Enfurecida)',className:'Assassin',isBoss:true,
   hp:700000,attack:23500,
@@ -5229,6 +5379,31 @@ const ENEMIES_MAP2={
 };
 
 // Registro de mapas: permite adicionar novos mapas sem reescrever o motor.
+
+// ══════════════════════════════════════════════════════
+// MAPA 11 — "Pensamentos Restantes"
+// ══════════════════════════════════════════════════════
+// Região onde os mortos não terminam de morrer. Nada de soldados de clã aqui:
+// são guerreiros sem bandeira, presos ao próprio rancor.
+// Curva: hpBase 40000 · atkBase 3250 (passo seguinte ao Mapa 10).
+const ENEMIES_MAP11={
+  ronin_espectral:{id:'ronin_espectral',name:'Ronin Espectral',hp:40000,atk:3250,agility:44,strPts:50,
+    lifesteal:20,revive:{pct:30},
+    description:'Samurai sem mestre que se recusa a admitir que morreu. Ao ser derrubado, seu pensamento restante o ergue mais uma vez.'},
+  guerreiro_sem_rosto:{id:'guerreiro_sem_rosto',name:'Guerreiro Sem Rosto',hp:88000,atk:2275,agility:16,strPts:55,
+    defensePassive:34,damageCap:{pctMaxHp:14},
+    description:'Perdeu o nome, o rosto e o motivo. Sem identidade para ferir, nenhum golpe isolado o abala de verdade.'},
+  onryo:{id:'onryo',name:'Onryō',hp:20000,atk:4713,agility:72,strPts:55,
+    critChance:42,curse:{value:20,turns:3},
+    description:'Espírito de rancor puro. Cada golpe carrega uma maldição que enfraquece o braço de quem o enfrenta.'},
+  hitodama:{id:'hitodama',name:'Hitodama',hp:18000,atk:2600,agility:86,strPts:40,
+    swarm:true,evasive:26,aoe:true,
+    description:'Chamas de alma desgarradas. Vêm em cardume, escapam das lâminas e queimam o grupo inteiro.'},
+  miko_esquecida:{id:'miko_esquecida',name:'Miko Esquecida',hp:26000,atk:1788,agility:58,strPts:35,
+    isSupport:true,npDrain:14,curse:{value:15,turns:2},
+    description:'Sacerdotisa que continua rezando por um vilarejo que não existe mais. Ampara os mortos e drena a mana dos vivos.'},
+};
+
 const MAPS={
   bosque:{
     id:'bosque',name:'Bosque dos Caminhos Cegos',phases:12,
@@ -5315,6 +5490,14 @@ const MAPS={
     fixedPhases:[1,3,7,9,11,13,17],
     boss:null,
   },
+  pensamentos_restantes:{
+    id:'pensamentos_restantes',name:'Pensamentos Restantes',phases:23,
+    enemies:ENEMIES_MAP11,
+    // Atalho pelos vilarejos rumo a Hyuchi. Fases fixas: 3,6,8,11,15,17,20,22.
+    intro:null,introFinishLabel:'⚔️ Avançar',
+    fixedPhases:[3,6,8,11,15,17,20,22],
+    boss:'enigma',
+  },
 };
 
 // ══════════════════════════════════════════════════════
@@ -5381,7 +5564,8 @@ const TOWER_ORDER=['bosque','tennobara','tortuoso','kurikara','kurikara_city','k
 // Qual conquista libera cada mapa/servo da Torre
 const TOWER_UNLOCK={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja',
   kurikara_city:'defeat_gosanjo',kurikara2:'clear_kurikara2',shinohara:'defeat_shunoban',
-  shinohara_city:'defeat_mochizuki',shinohara_battle:'defeat_mochizuki_rage',sucessao_prelude:'clear_sucessao'};
+  shinohara_city:'defeat_mochizuki',shinohara_battle:'defeat_mochizuki_rage',sucessao_prelude:'clear_sucessao',
+  pensamentos_restantes:'defeat_enigma'};
 
 // Checkpoints da Campanha: cada mapa libera ao derrotar o boss do mapa anterior.
 // O primeiro (bosque) está sempre disponível. Party de 2 (Ibaraki+Sith) nos mapas 4 e 5.
@@ -5396,6 +5580,7 @@ const CAMPAIGN_CHECKPOINTS=[
   {mapId:'shinohara_city',name:'Shinohara',phases:35,unlock:'defeat_shunoban',boss:'Mochizuki Chiyome',party2:true},
   {mapId:'shinohara_battle',name:'Batalha de Shinohara',phases:10,unlock:'defeat_mochizuki',boss:'Mochizuki (Enfurecida)',party2:true},
   {mapId:'sucessao_prelude',name:'Prelúdio para Guerra de Sucessão',phases:18,unlock:'defeat_mochizuki_rage',boss:'—',party3:true},
+  {mapId:'pensamentos_restantes',name:'Pensamentos Restantes',phases:23,unlock:'clear_sucessao',boss:'Enigma',party3:true},
 ];
 
 // Gera um encontro usando a tabela de inimigos do mapa atual.
@@ -6188,6 +6373,61 @@ const STORY_MAP10_F9={
   ],
 };
 
+// Fase 11 — A Shuten, o cantil e o veneno de Basilisco.
+const STORY_MAP10_F11={
+  start:[
+    {type:'masterThought',text:'Então aquela "Shuten" que foi responsável por distorcer meu círculo mágico....'},
+    {type:'master',text:'Hey, Berserker, pode me dizer mais sobre a Shuten? Sabe onde ela poderia estar?'},
+    {type:'ibaraki',expr:'exp1',name:'IBARAKI',text:'Ooh, Mestre, você finalmente decidiu se aliar ao Monte Ooe?! Eu sei tudo sobre a minha irmã Shuten! Mas sobre o paradeiro dela... Hmmmm.... Eu não saberia dizer. Ela definitivamente foi morta assim como eu, então ela deve estar na mesma situação, sendo um servo.'},
+    {type:'master',text:'Recentemente me lembrei da noite em que a gente se conheceu. Antes de lhe invocar, acredito que a responsável por isso foi a Shuten — uma garota linda de cabelos roxo-escuro, com chifres semelhantes aos seus.'},
+    {type:'master',text:'E pela conversa daqueles outros dois servos, certamente eles estavam atrás dela. Mas assim que lhe invoquei, ela desapareceu.'},
+    {type:'ibaraki',expr:'exp3',name:'IBARAKI',text:'Isso bate com o cheiro que senti vindo de você naquele dia. Hmmm, se ela decidiu se esconder, dificilmente seremos capazes de localizá-la. Diferente da Assassin que enfrentamos — ela não era boa nisso, já que era do tipo que se mostrava por conta do seu grande orgulho. Mesmo assim, não pode ser menosprezada por isso.'},
+    {type:'master',text:'Entendo, entendo. Sem pistas por aqui, então.'},
+    {type:'ibaraki',expr:'exp3',name:'IBARAKI',text:'Pense comigo, Mestre: se ela decidiu te dar algo tão importante, sinta-se honrado. Ela não faria isso por puro capricho, nem por motivos tão fracos.'},
+    {type:'master',text:'Você fala do cantil com veneno?'},
+    {type:'ibaraki',expr:'exp1',name:'IBARAKI',text:'Sim, sim! Esse foi um grande espólio que ela adquiriu — um veneno muito raro vindo do ocidente, de uma criatura chamada Basilisco.'},
+    {type:'ibaraki',expr:'exp1',name:'IBARAKI',text:'Pode usar à vontade. Esse cantil tem a capacidade de armazenar algo para todo o sempre, de forma quase infinita.'},
+    {type:'master',text:'Vou pensar nisso.'},
+  ],
+};
+
+// Fase 13 — A carruagem e a partida para Hyuchi.
+const STORY_MAP10_F13={
+  start:[
+    {type:'archer',expr:'sith_ow',name:'BAOBHAN SITH',text:'Esses soldados estão estragando meu dia. Já que temos um destino, vamos avançar logo?'},
+    {type:'master',text:'Sim, já irei começar os preparativos para a nossa saída.'},
+    {type:'narration',text:'Algumas horas depois, a carruagem já estava preparada com um cavalo, comprado usando a grana furtada dos ladrões em Kurikara.'},
+    {type:'archer',expr:'sith_pis',name:'BAOBHAN SITH',text:'Farei companhia para você. A sensação de andar em uma carruagem me traz boas memórias — claro, sendo guiada por um cavalo.'},
+    {type:'master',text:'Certo, peguei o jeito também de como usar essas rédeas.'},
+    {type:'archer',expr:'sith_ahh',name:'BAOBHAN SITH',text:'Haha, não se preocupe. Uma das minhas habilidades, mesmo não sendo alguém da classe Rider, é Riding — e ainda alta. Por mais que seja por outro motivo.'},
+    {type:'master',text:'Essa última parte me pareceu suspeita....'},
+    {type:'narration',text:'Então partem rumo a Hyuchi, uma fortaleza feita pelo Clã Taira, que logo logo será atacada pelo Clã Minamoto. Não uma, mas duas vezes — é assim que a história é narrada.'},
+  ],
+};
+
+// Fase 17 — Musashimaru, o cavalo. E a única do grupo que leva o nome a sério.
+const STORY_MAP10_F17={
+  start:[
+    {type:'narration',text:'Os primeiros dias da viagem são movimentados. Alguns encontros com Yokais e soldados na estrada faziam a viagem ser mais lenta do que o previsto.'},
+    {type:'okuni',expr:'think',name:'OKUNI',text:'Pelo mapa que pegamos "emprestado sem devolução" daquele grupo de soldados, a rota que estão fazendo é usar a estrada principal. Se continuar assim, chegaremos muito tarde em Hyuchi... Então nem aqui vamos sair da estrada principal: vamos para essa área de vilarejos como um corte de caminho.'},
+    {type:'archer',expr:'sith_ow',name:'BAOBHAN SITH',text:'Faria o mesmo, levando em consideração que por esse caminho seria mais distante, mas evitaremos alguns embates desnecessários.'},
+    {type:'archer',expr:'sith_ow',name:'BAOBHAN SITH',text:'Pouparemos alguns recursos.'},
+    {type:'master',text:'Pode deixar, vou alterar a rota. O Musashimaru vai ficar feliz em não ter que se encontrar com tantos inimigos assim.'},
+    {type:'ibaraki',expr:'exp2',name:'IBARAKI',text:'Musashimaru?'},
+    {type:'master',text:'Na noite passada decidi o nome para o cavalo.'},
+    {type:'ibaraki',expr:'expDerrota',name:'IBARAKI',text:'...... Você se apegou a ele assim?'},
+    {type:'master',text:'Já é nosso companheiro há alguns dias, era óbvio que me apegaria. E sou eu que estou guiando — chamar ele de "cavalo" é estranho. É tipo chamar as pessoas não pelos nomes, mas por "humano".'},
+    {type:'ibaraki',expr:'exp2',name:'IBARAKI',text:'Eeh..... Mas eu não decoro nome dos humanos.'},
+    {type:'archer',expr:'sith_ahh',name:'BAOBHAN SITH',text:'Igualmente aqui. Lembrar esses nomes estranhos que vocês colocam em suas crianças é pedir para que não sejam gravados.'},
+    {type:'master',text:'Minhas primeiras duas companhias são não-humanas...... Cadê o senso tão falado do Trono dos Heróis......'},
+    {type:'narration',text:'Enquanto o grupo fazia sua esquete de comédia diária, uma pessoa estava parada olhando fixamente para o cavalo. A Okuni, que não demonstrava nenhum comentário abusivo ou irônico, estava quieta até demais.'},
+    {type:'okuni',expr:'normal',name:'OKUNI',text:'Musashimaru.... Musashimaru.... Mestre, você é horrível para nomes..... Mas gostei de como soa. Parece ser um nome de alguém que seria importante.'},
+    {type:'master',text:'Do jeito que as coisas estão, não duvido que ele apareça por essas bandas — por mais que ainda seja muito cedo historicamente.'},
+    {type:'okuni',expr:'feliz',name:'OKUNI',text:'Terei grandes expectativas, então.'},
+    {type:'narration',text:'Depois de um leve descanso, o grupo entra no novo percurso.'},
+  ],
+};
+
 const STORY_MAP9_MAP10={
   start:[
     {type:'narration',text:'Assim que o clima tenso se dissipa, e o grupo se vê em bons lençóis, eles se sentam próximos de um palanque que poderia ter sido usado para os generais incentivarem seus camaradas.'},
@@ -6848,6 +7088,15 @@ const PATRONOS={
   jeanne:{id:'jeanne',name:"Jeanne d'Arc",icon:'⛪',color:'#fff176',tag:'Proteção'},
   emiya:{id:'emiya',name:'EMIYA',icon:'🏹',color:'#a1887f',tag:'Projeção'},
   karna:{id:'karna',name:'Karna',icon:'☀️',color:'#ff8a65',tag:'Perfuração'},
+  cu:{id:'cu',name:'Cú Chulainn',icon:'🔱',color:'#4aa3d9',tag:'Instinto'},
+  nightingale:{id:'nightingale',name:'Florence Nightingale',icon:'⚕️',color:'#d96a8a',tag:'Cura'},
+  medusa:{id:'medusa',name:'Medusa',icon:'👁️',color:'#a06ad9',tag:'Petrificação'},
+  ozymandias:{id:'ozymandias',name:'Ozymandias',icon:'☀',color:'#e0b84a',tag:'Majestade'},
+  mordred:{id:'mordred',name:'Mordred',icon:'⚔️',color:'#c0392b',tag:'Rebelião'},
+  enkidu:{id:'enkidu',name:'Enkidu',icon:'⛓️',color:'#7ec98a',tag:'Cadeia'},
+  nero:{id:'nero',name:'Nero Claudius',icon:'🌹',color:'#e0555f',tag:'Palco'},
+  cleopatra:{id:'cleopatra',name:'Cleópatra',icon:'🐍',color:'#d9b44a',tag:'Encanto'},
+  arjuna:{id:'arjuna',name:'Arjuna',icon:'🏹',color:'#5fa8d9',tag:'Julgamento'}
 };
 // v(lvl) = magnitude por nível (I, II, III)
 const V=(a,b,c)=>lvl=>[a,b,c][Math.min(lvl,3)-1];
@@ -6946,6 +7195,82 @@ const GRACAS=[
    v:V(35,55,80),desc:v=>`O Fantasma Nobre tem ${v}% de chance de atordoar os atingidos.`,eff:v=>({npStunChance:v})},
   {id:'s_np',patrono:'shuten',slot:'np',name:'Última Gota',
    v:V(40,65,95),desc:v=>`+${v}% de dano do Fantasma Nobre, mas perde 6% do HP máximo por turno.`,eff:v=>({npDmgUp:v,selfDmgPct:6})},
+
+  // ══════════════════════════════════════════════════════
+  // PATRONOS NOVOS — mecânicas inéditas
+  // ══════════════════════════════════════════════════════
+
+  // ── CÚ CHULAINN · Instinto ──
+  {id:'cu_batalha',patrono:'cu',slot:'def',name:'Batalha Contínua',
+   v:V(12,9,6),desc:v=>`Nenhum golpe isolado tira mais que ${v}% do seu HP máximo.`,eff:v=>({dmgCapPct:v})},
+  {id:'cu_gaebolg',patrono:'cu',slot:'atk',name:'Gáe Bolg',
+   v:V(25,40,60),desc:v=>`+${v}% de dano contra Bosses e inimigos de Elite.`,eff:v=>({bossDmgUp:v})},
+  {id:'cu_runas',patrono:'cu',slot:'util',name:'Runas de Batalha',
+   v:V(25,40,60),desc:v=>`${v}% de chance de resistir a debuffs inimigos (maldição, veneno, quebra-armadura).`,eff:v=>({debuffResistPct:v})},
+
+  // ── FLORENCE NIGHTINGALE · Cura ──
+  {id:'night_triagem',patrono:'nightingale',slot:'util',name:'Triagem de Guerra',
+   v:V(30,50,75),desc:v=>`${v}% de chance de remover um debuff seu a cada turno.`,eff:v=>({cleanseChance:v})},
+  {id:'night_disciplina',patrono:'nightingale',slot:'def',name:'Disciplina de Nightingale',
+   v:V(3,5,8),desc:v=>`Regenera ${v}% do HP máximo por turno.`,eff:v=>({hpRegenPct:v})},
+  {id:'night_cirurgia',patrono:'nightingale',slot:'skill',name:'Cirurgia no Campo',
+   v:V(20,32,45),desc:v=>`Ao derrotar um inimigo, cura ${v}% do HP máximo.`,eff:v=>({healOnKillPct:v})},
+
+  // ── MEDUSA · Petrificação ──
+  {id:'medusa_olhar',patrono:'medusa',slot:'atk',name:'Olhar Petrificante',
+   v:V(30,50,75),desc:v=>`Acertos críticos têm ${v}% de chance de atordoar o inimigo.`,eff:v=>({stunOnCrit:v})},
+  {id:'medusa_misticos',patrono:'medusa',slot:'util',name:'Olhos Místicos: Cibelle',
+   v:V(15,25,38),desc:v=>`Reduz a Agilidade de todos os inimigos em ${v}% — você age antes.`,eff:v=>({enemySlowPct:v})},
+  {id:'medusa_bellerophon',patrono:'medusa',slot:'np',name:'Bellerophon',
+   v:V(20,32,45),desc:v=>`Seu Fantasma Nobre ignora ${v}% da mitigação inimiga.`,eff:v=>({npPierce:v})},
+
+  // ── OZYMANDIAS · Majestade ──
+  {id:'ozy_esfinge',patrono:'ozymandias',slot:'atk',name:'Esfinge Imperial',
+   v:V(20,32,45),desc:v=>`+${v}% de dano enquanto estiver com o HP cheio.`,eff:v=>({fullHpDmgPct:v})},
+  {id:'ozy_ramesseum',patrono:'ozymandias',slot:'np',name:'Ramesseum Tentyris',
+   v:V(30,48,70),desc:v=>`+${v}% de dano do Fantasma Nobre.`,eff:v=>({npDmgUp:v})},
+  {id:'ozy_farao',patrono:'ozymandias',slot:'util',name:'Aura do Rei-Sol',
+   v:V(15,25,35),desc:v=>`Começa cada combate com +${v}% de Ataque por 3 turnos.`,eff:v=>({startAtkBuff:v})},
+
+  // ── MORDRED · Rebelião ──
+  {id:'mordred_clarent',patrono:'mordred',slot:'atk',name:'Clarent Blood Arthur',
+   v:V(4,6,9),desc:v=>`Ganha +${v}% de Ataque acumulativo a cada turno de combate.`,eff:v=>({rageStackPct:v})},
+  {id:'mordred_rebeliao',patrono:'mordred',slot:'np',name:'Rebelião Contra o Pai',
+   v:V(25,40,60),desc:v=>`+${v}% de dano do Fantasma Nobre quando abaixo de 50% do HP.`,eff:v=>({npDmgLowHp:v})},
+  {id:'mordred_orgulho',patrono:'mordred',slot:'skill',name:'Orgulho do Cavaleiro',
+   v:V(20,32,45),desc:v=>`${v}% de chance das suas skills não entrarem em recarga.`,eff:v=>({skillRefundChance:v})},
+
+  // ── ENKIDU · Cadeia ──
+  {id:'enkidu_correntes',patrono:'enkidu',slot:'skill',name:'Correntes do Céu',
+   v:V(10,16,24),desc:v=>`${v}% de chance de um inimigo perder o turno.`,eff:v=>({enemySkipChance:v})},
+  {id:'enkidu_vinculo',patrono:'enkidu',slot:'def',name:'Vínculo de Argila',
+   v:V(6,10,15),desc:v=>`Ganha ${v}% de Barra de NP sempre que sofre dano.`,eff:v=>({npGainOnHurt:v})},
+  {id:'enkidu_natureza',patrono:'enkidu',slot:'util',name:'Filho da Natureza',
+   v:V(12,20,30),desc:v=>`+${v}% de HP máximo para todo o grupo.`,eff:v=>({maxHpUpPct:v})},
+
+  // ── NERO CLAUDIUS (Palco) — recompensa agir e escalar ──
+  {id:'nero_fulgor',patrono:'nero',slot:'atk',name:'Fulgor do Imperador',
+   v:V(4,7,10),desc:v=>`Cada ataque acumula +${v}% de dano neste combate (reinicia a cada combate).`,eff:v=>({rampDmgPct:v})},
+  {id:'nero_domus',patrono:'nero',slot:'np',name:'Domus Aurea',
+   v:V(15,25,40),desc:v=>`Seu Fantasma Nobre também cura o grupo em ${v}% do dano causado.`,eff:v=>({npLifestealPct:v})},
+  {id:'nero_rosa',patrono:'nero',slot:'util',name:'Rosa do Palco',
+   v:V(20,32,50),desc:v=>`Ao usar uma Skill, +${v}% de chance de ela não entrar em recarga.`,eff:v=>({skillRefundChance:v})},
+
+  // ── CLEÓPATRA (Encanto) — manipula o inimigo ──
+  {id:'cleo_encanto',patrono:'cleopatra',slot:'skill',name:'Beijo da Serpente',
+   v:V(12,20,30),desc:v=>`${v}% de chance de um inimigo atacar a si mesmo no turno dele.`,eff:v=>({charmChance:v})},
+  {id:'cleo_carisma',patrono:'cleopatra',slot:'atk',name:'Carisma da Rainha',
+   v:V(10,17,25),desc:v=>`+${v}% de dano contra inimigos com algum debuff ativo.`,eff:v=>({dmgVsDebuffedPct:v})},
+  {id:'cleo_uraeus',patrono:'cleopatra',slot:'util',name:'Uraeus Astrape',
+   v:V(8,13,20),desc:v=>`Ao acertar, ${v}% de chance de reduzir a Defesa do inimigo em 20% (3t).`,eff:v=>({onHitDefDownChance:v})},
+
+  // ── ARJUNA (Julgamento) — punir e executar ──
+  {id:'arjuna_agni',patrono:'arjuna',slot:'np',name:'Agni Gandiva',
+   v:V(25,40,60),desc:v=>`Seu Fantasma Nobre ignora ${v}% de toda mitigação e véu do alvo.`,eff:v=>({npTrueDmgPct:v})},
+  {id:'arjuna_foco',patrono:'arjuna',slot:'atk',name:'Foco Inabalável',
+   v:V(15,25,40),desc:v=>`+${v}% de dano, mas some se você tiver qualquer debuff ativo.`,eff:v=>({focusDmgPct:v})},
+  {id:'arjuna_juizo',patrono:'arjuna',slot:'def',name:'Juízo do Arqueiro',
+   v:V(10,16,24),desc:v=>`Executa inimigos comuns que caírem abaixo de ${v}% de HP.`,eff:v=>({executeThreshold:v})}
 ];
 const GRACA_BY_ID=Object.fromEntries(GRACAS.map(g=>[g.id,g]));
 // Agrega os efeitos de todas as Graças ativas da run num único objeto de números.
@@ -6985,9 +7310,12 @@ function rollGracaOffer(camp,count=3){
     if(!picked.includes(g))picked.push(g);
   }
   // Define o nível ofertado: se já possui a mesma graça, oferece o próximo nível.
+  // Perk Favor do Trono: chance de a Graça ofertada já vir em nível superior.
+  const sorte=(getActivePerkEffects().gracaLuck||0);
   return picked.map(g=>{
     const cur=held[g.slot];
-    const lvl=(cur&&cur.id===g.id)?Math.min(3,(cur.lvl||1)+1):1;
+    let lvl=(cur&&cur.id===g.id)?Math.min(3,(cur.lvl||1)+1):1;
+    if(sorte>0&&lvl<3&&Math.random()*100<sorte)lvl=Math.min(3,lvl+1);
     return{id:g.id,lvl};
   });
 }
@@ -7683,7 +8011,8 @@ function TreasureScreen({camp,setProfile,onFinish}){
   const[premio,setPremio]=useState(null);
   function abrir(){
     const pe=getActivePerkEffects();
-    const mult=1+(pe.sqQpBonusPercent||0)/100+(getGracaEffects(camp).qpBonusPct||0)/100;
+    const mult=1+(pe.sqQpBonusPercent||0)/100+(getGracaEffects(camp).qpBonusPct||0)/100
+      +(pe.treasureBonus||0)/100; // Perk Contos Épicos: salas de Tesouro
     // O peregrino que você curou deixou sua retribuição neste cofre.
     const pereg=!!camp.peregrinoSalvo;
     const qp=Math.round((800+Math.floor(Math.random()*700))*mult*(pereg?2.5:1));
@@ -8302,6 +8631,24 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         isMochizuki:true,isBoss:true,
       });
     }
+    if(mid==='pensamentos_restantes'){ // Enigma (mapa 11)
+      return T({
+        ...ENIGMA,instanceId:'enigma_boss',
+        maxHp:ENIGMA.hp,currentHp:ENIGMA.hp,
+        atkScaled:ENIGMA.attack,
+        damage:Math.round(ENIGMA.attack*(ENIGMA.attributes.strength.points/100)),
+        agility:ENIGMA.attributes.agility.points,
+        npBar:0,activeBuffs:[],activeDebuffs:[],
+        cooldowns:{lamento:2},
+        evadeTurns:0,
+        arms:4,               // braços ósseos restantes
+        armsBroken:0,         // quantos limiares já foram cruzados
+        veilActive:true,      // véu branco intacto
+        veilDownTurns:0,      // turnos restantes com o véu dissipado
+        remainingThought:true,// ainda tem o "pensamento restante" (revive 1x)
+        isEnigma:true,isBoss:true,
+      });
+    }
     if(mid==='shinohara'){ // Shunoban, o Ciclope Vermelho (mapa 7)
       return T({
         ...SHUNOBAN,instanceId:'shunoban_boss',
@@ -8404,7 +8751,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Evento Fonte de Mana Corrompida: NP inicial extra pelos próximos encontros.
     const fonteNp=(camp.chaBuffs&&camp.chaBuffs.fonteNp&&(camp.chaBuffs.fonteNp.encounters||0)>0)
       ?camp.chaBuffs.fonteNp.value:0;
-    const npAdd=(isLeader?planNpGain:0)+(getGracaEffects(camp).startNpPct||0)+fonteNp;
+    const npAdd=(isLeader?planNpGain:0)+(getGracaEffects(camp).startNpPct||0)+fonteNp
+      +(perkEffects.startNpPercent||0); // Perk Poção de Mana
     // GOLDEN RULE: bônus acumulativo de +5% ATK e +5% HP por fase de combate vencida na run.
     const grStacks=camp.goldenRule||0;
     const grMult=1+0.05*grStacks;
@@ -8435,12 +8783,16 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     return{
       ...m,
       level:lvl,
-      attackBase:Math.round(def.getAtk(lvl)*grMult),
+      attackBase:Math.round(def.getAtk(lvl)*grMult
+        // Perk Herança do Trono: +ATK por Graça equipada nesta jornada
+        *(1+((perkEffects.atkPerGraca||0)*Object.values(camp.gracas||{}).filter(Boolean).length)/100)),
       hpMax:grHpMax,
       hp:wasFullHp?grHpMax:clamp(Math.round(curHp*(grHpMax/Math.max(1,prevMax))),1,grHpMax),
       npBar:clamp((m.npBar||0)+npAdd,0,100),
       npLevel:m.npLevel||bondToNP(loadBond(def.id).level),
-      activeBuffs:buffs,
+      activeBuffs:[...buffs,
+        // Graça — Aura do Rei-Sol (Ozymandias): entra em combate já fortalecido
+        ...(getGracaEffects(camp).startAtkBuff?[{type:'atk_up',value:getGracaEffects(camp).startAtkBuff,turns:3}]:[])],
       // Evento Fonte de Mana Corrompida: entra envenenado no combate seguinte.
       activeDebuffs:(camp.chaBuffs&&camp.chaBuffs.fontePoison)
         ?[{type:'poison',value:Math.round(grHpMax*0.05),turns:3}]:[],
@@ -8465,6 +8817,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   const chSkillUsed=useRef(false);   // alguma Skill (Servo ou Mestre) foi usada?
   const chDmgTaken=useRef(false);    // algum Servo perdeu HP?
   const thornsPending=useRef(0);     // dano a refletir (Graça da Osakabehime)
+  const rampStacks=useRef(0);        // acúmulos do Fulgor do Imperador (Nero)
   const lastActorIdx=useRef(null);   // índice do inimigo que agiu por último
   // Estado mais fresco do servo ATIVO. Necessário porque a cadeia de turnos
   // trata o servo recebido como sendo o ativo — mas os inimigos sorteiam alvos.
@@ -8492,7 +8845,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       :(()=>{const AM=ameacaAtual(camp,profile);
         return genEncounterForMap(camp.mapId||'bosque',camp.phase,
           (camp.towerHpMult||1)*(camp.eliteFight?1.8:1)*AM.hp,
-          (camp.towerAtkMult||1)*(camp.eliteFight?1.45:1)*AM.atk,
+          (camp.towerAtkMult||1)*AM.atk
+          *(camp.eliteFight?(1+0.45*(1-(perkEffects.eliteMit||0)/100)):1), // Perk Espólios mitiga o extra
           AM.grupoExtra,AM.idx);})();
     // Casa de Chá — efeitos de INÍCIO de combate (consumidos ao entrar na luta):
     const cb=camp.chaBuffs||{};
@@ -8579,9 +8933,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       const agi=(m.attributes?.agility?.points)||30;
       entries.push({kind:'servo',ref:i,init:agi+SERVO_SPEED_BONUS+1+Math.floor(Math.random()*20),name:(PLAYABLE_SERVOS[m.id]||IBARAKI).name});
     });
+    // Graça — Olhos Místicos: Cibelle (Medusa): retarda todos os inimigos.
+    const lentidao=1-(getGracaEffects(camp).enemySlowPct||0)/100;
     enemyArr.forEach((e,i)=>{
       if(e.currentHp<=0)return;
-      const agi=e.agility||e.attributes?.agility?.points||25;
+      const agiBase=e.agility||e.attributes?.agility?.points||25;
+      const agi=Math.round(agiBase*lentidao);
       // Inimigos comuns não recebem bônus (servos agem antes). Bosses recebem um bônus
       // parcial para preservar seu design: um boss veloz ainda pode superar os servos.
       const bonus=e.isBoss?18:0;
@@ -8710,12 +9067,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     return Math.round(dmg*(1+atkUp/100)*mult);
   }
 
-  function applyDmgToEnemy(raw,enemy){
+  function applyDmgToEnemy(raw,enemy,isNpHit=false){
     const GEe=getGracaEffects(camp);
     let defDown=0;
     for(const d of enemy.activeDebuffs||[]){if(d.type==='defense_down')defDown+=d.value;}
     // Graça — Brahmastra (Karna): trata parte da defesa inimiga como reduzida
     defDown+=(GEe.pierceDefPct||0);
+    // Graça — Bellerophon (Medusa): o Fantasma Nobre ignora parte da mitigação
+    if(isNpHit&&GEe.npPierce)defDown+=GEe.npPierce;
     let dmg=raw*(1+defDown/100);
     // Mitigação passiva fixa do Nitro-Type (tanque blindado)
     if(enemy.passiveMitigation){
@@ -8727,14 +9086,34 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       const mit=clamp(enemy.defensePassive-defDown,0,85);
       dmg=dmg*(1-mit/100);
     }
+    // ── VÉU BRANCO do Enigma: forte redução enquanto intacto ──
+    if(enemy.isEnigma&&enemy.veilActive&&(enemy.veilDownTurns||0)<=0){
+      const veu=clamp((enemy.veilReduction||55)-defDown,0,85);
+      dmg=dmg*(1-veu/100);
+    }
+    // ── TETO DE DANO (Guerreiro Sem Rosto): nenhum golpe isolado passa de X% do HP ──
+    // Neutraliza picos de dano (NP) sem tornar o inimigo imortal contra ataques normais.
+    if(enemy.damageCap&&enemy.maxHp){
+      const teto=Math.round(enemy.maxHp*enemy.damageCap.pctMaxHp/100);
+      if(dmg>teto)dmg=teto;
+    }
     // Mitigação temporária da Archer (buff do Fae Vampirism)
     let mitBuff=0;
     for(const b of enemy.activeBuffs||[]){if(b.type==='mitigation')mitBuff+=b.value;}
     if(mitBuff>0)dmg=dmg*(1-clamp(mitBuff-defDown,0,90)/100);
+    // Graça — Gáe Bolg (Cú Chulainn): dano extra contra Bosses e Elites
+    if(GEe.bossDmgUp&&(enemy.isBoss||camp.eliteFight))dmg*=1+GEe.bossDmgUp/100;
+    // Graça — Bellerophon (Medusa): o NP ignora parte da mitigação
     // Graça — Lança da Morte Carmesim (Scáthach): execução em alvos feridos
     if(GEe.executePct&&enemy.maxHp&&enemy.currentHp/enemy.maxHp<=0.30)dmg*=1+GEe.executePct/100;
     // Graça — Projeção Contínua (EMIYA): golpe de abertura reforçado
     if(GEe.firstStrikePct&&turn===1)dmg*=1+GEe.firstStrikePct/100;
+    // Graça — Agni Gandiva (Arjuna): o NP ignora X% de TODA mitigação/véu.
+    // Mistura o dano mitigado com o dano cru na proporção pedida.
+    if(isNpHit&&GEe.npTrueDmgPct){
+      const p=clamp(GEe.npTrueDmgPct,0,100)/100;
+      dmg=dmg*(1-p)+raw*p;
+    }
     return Math.round(dmg);
   }
 
@@ -8757,6 +9136,50 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     }
     spawnFx(e.instanceId,String(dmg),fxKind);
     let out={...e,currentHp:Math.max(0,e.currentHp-dmg)};
+    // Graça — Juízo do Arqueiro (Arjuna): executa inimigos COMUNS abaixo do limiar
+    if(!e.isBoss&&out.currentHp>0&&e.maxHp){
+      const GEx=getGracaEffects(camp);
+      if(GEx.executeThreshold&&(out.currentHp/e.maxHp)*100<=GEx.executeThreshold){
+        addLog(`⚖️ Juízo do Arqueiro! ${e.name} é executado.`,'np');
+        spawnFx(e.instanceId,'⚖️ EXECUTADO','crit');
+        out={...out,currentHp:0};
+      }
+    }
+
+    // ── ENIGMA: quebra dos braços ósseos ──
+    // Cruzar cada limiar parte um braço (menos ataques por turno) E dissipa o véu
+    // por alguns turnos — a janela de vulnerabilidade que o jogador precisa buscar.
+    if(out.isEnigma&&out.currentHp>0&&out.maxHp){
+      const pct=(out.currentHp/out.maxHp)*100;
+      const limiares=out.armThresholds||[80,60,40,20];
+      const devemEstarQuebrados=limiares.filter(t=>pct<=t).length;
+      if(devemEstarQuebrados>(out.armsBroken||0)){
+        const novos=devemEstarQuebrados-(out.armsBroken||0);
+        out={...out,armsBroken:devemEstarQuebrados,
+          arms:Math.max(1,4-devemEstarQuebrados),
+          veilDownTurns:(out.veilBreakTurns||2)+((out.veilDownTurns||0)>0?out.veilDownTurns:0)};
+        addLog(`💀 Um braço ósseo do Enigma se parte! (${out.arms} restantes) — o véu se dissipa por ${out.veilDownTurns} turnos!`,'np');
+        spawnFx(out.instanceId,'BRAÇO PARTIDO','crit');
+        if(novos>0&&ENIGMA.dialogue)addLog(`Enigma — "${ENIGMA.dialogue.veil}"`,'enemy');
+      }
+    }
+    // ── ENIGMA: PENSAMENTO RESTANTE (revive único) ──
+    if(out.currentHp<=0&&out.isEnigma&&out.remainingThought){
+      const rev=Math.round(out.maxHp*0.30);
+      out={...out,currentHp:rev,remainingThought:false,
+        arms:1,armsBroken:4,veilActive:false,veilDownTurns:0,
+        damage:Math.round((out.damage||0)*1.8),
+        activeBuffs:[...(out.activeBuffs||[]),{type:'atk_up',value:80,turns:99}]};
+      addLog(`👁️ ${e.name} — "${ENIGMA.dialogue.revive}" O véu cai. Resta um único braço — e toda a fúria.`,'np');
+      spawnFx(e.instanceId,'👁️ PENSAMENTO RESTANTE','heal');
+    }
+    // ── RESSURGIR (Ronin Espectral): o pensamento que não aceita ter morrido ──
+    if(out.currentHp<=0&&out.revive&&!out.revived){
+      const rev=Math.max(1,Math.round(out.maxHp*out.revive.pct/100));
+      out={...out,currentHp:rev,revived:true};
+      addLog(`👤 ${e.name} se ergue outra vez — o pensamento dele ainda não terminou. (${rev} HP)`,'np');
+      spawnFx(e.instanceId,'👤 RESSURGE','heal');
+    }
     if(out.currentHp<=0&&out.isBoss&&out.gutsState?.active&&out.gutsState.charges>0){
       const g=out.gutsState;
       const reviveHp=Math.round(out.maxHp*g.revivePercent/100);
@@ -8797,6 +9220,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       spawnFx('servo','EVADIU','miss');
       return 0;
     }
+    // Perk Pacto do Escudo: quanto mais ferido, mais resistente
+    let perkLowHp=0;
+    if(perkEffects.lowHpMitPercent&&tgt.hpMax&&(tgt.hp/tgt.hpMax)<=0.30)
+      perkLowHp=perkEffects.lowHpMitPercent;
     // Evasão do Servo alvo (ex.: Olho da Mente do Deon): esquiva total do golpe
     if((tgt.evadeTurns||0)>0){
       addLog(`👁️ ${tdef.name} prevê o golpe e esquiva! (Evasão)`,'player');
@@ -8817,7 +9244,18 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Evento Encruzilhada Amaldiçoada: penalidade de defesa por toda a jornada
     defDown+=((camp.chaBuffs&&camp.chaBuffs.maldicaoDef)||0);
     defDown+=(GEd.defDownPct||0);
-    const finalDmg=Math.round(raw*(1-clamp(passiveMit+defUp-defDown,0,95)/100));
+    let finalDmg=Math.round(raw*(1-clamp(passiveMit+defUp-defDown,0,95)/100));
+    // Perk Pacto do Escudo: aplica a redução por vida baixa antes do golpe final
+    if(perkLowHp>0){
+      finalDmg=Math.round(finalDmg*(1-perkLowHp/100));
+    }
+    // Graça — Batalha Contínua (Cú Chulainn): teto de dano por golpe
+    if(GEd.dmgCapPct&&tgt.hpMax){
+      const teto=Math.round(tgt.hpMax*GEd.dmgCapPct/100);
+      if(finalDmg>teto)finalDmg=teto;
+    }
+    // Graça — Vínculo de Argila (Enkidu): ganha NP ao sofrer dano
+    if(GEd.npGainOnHurt&&finalDmg>0)tgt.npBar=clamp((tgt.npBar||0)+GEd.npGainOnHurt,0,100);
     // Graça — Luminosité Eternelle (Jeanne): 1× por combate, sobrevive ao golpe fatal.
     if(GEd.gutsOnce&&!gutsUsed.current&&finalDmg>=tgt.hp&&tgt.hp>0){
       gutsUsed.current=true;
@@ -8845,7 +9283,10 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(GEt.selfDmgPct)hp=Math.max(1,hp-Math.round(s.hpMax*GEt.selfDmgPct/100));             // Embriaguez de Sangue
     if(GEt.npPerTurn)npBar=clamp(npBar+GEt.npPerTurn,0,100);                                 // Vigília do Trovão
     // Perk: Pacto do Escudo — regen de HP por turno
-    if(perkEffects.hpRegenPerTurn>0)hp=clamp(hp+perkEffects.hpRegenPerTurn,0,s.hpMax);
+    if(perkEffects.hpRegenPctPerTurn>0){
+      const cura=Math.round(s.hpMax*perkEffects.hpRegenPctPerTurn/100);
+      hp=clamp(hp+cura,0,s.hpMax);
+    }
     // Perk: Poção de Mana — regen de NP por turno
     if(perkEffects.npRegenPercent>0)npBar=clamp(npBar+perkEffects.npRegenPercent,0,100);
     // Passiva de regeneração de NP (Criação de Território da Sith)
@@ -8879,7 +9320,16 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       npLocked:Math.max(0,(s.npLocked||0)-1), // trava de NP da Archer (Blessed Scion)
       skillLocked:Math.max(0,(s.skillLocked||0)-1), // trava de Skill (própria + Mestre) — ex: Mochizuki
       activeBuffs:(s.activeBuffs||[]).map(b=>({...b,turns:b.turns-1})).filter(b=>b.turns>0),
-      activeDebuffs:(s.activeDebuffs||[]).map(d=>({...d,turns:d.turns-1})).filter(d=>d.turns>0),
+      activeDebuffs:(()=>{
+        let ds=(s.activeDebuffs||[]).map(d=>({...d,turns:d.turns-1})).filter(d=>d.turns>0);
+        // Graça — Triagem de Guerra (Nightingale): remove um debuff por turno
+        const ch=(getGracaEffects(camp).cleanseChance||0);
+        if(ch>0&&ds.length&&rollChance(ch)){
+          const removido=ds[0];ds=ds.slice(1);
+          addLog(`⚕️ Triagem de Guerra remove um debuff (${removido.type})!`,'player');
+        }
+        return ds;
+      })(),
       cooldowns:Object.fromEntries(Object.entries(s.cooldowns||{}).map(([k,v])=>[k,Math.max(0,v-1)])),
     };
   }
@@ -8937,6 +9387,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       s.hp=Math.max(1,Math.round(s.hpMax*orbePct/100));
       s.npBar=clamp(orbePct,0,100);
       setCamp({...camp,orbeUsed:true});
+      // Orbe Nv.5+: reergue-se intocável por 1 turno
+      if(perkEffects.reviveInvuln){
+        s.evadeTurns=Math.max(s.evadeTurns||0,1);
+        addLog('💠 O Orbe envolve o Servo — invencível por 1 turno!','np');
+      }
       addLog(`💠 ORBE CROMÁTICO! O Servo recusa a queda e revive com ${orbePct}% de HP e NP! (1x por campanha)`,'np');
       spawnFx('servo',`💠 +${orbePct}%`,'heal');
       return true;
@@ -9019,8 +9474,22 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     for(const b of servo.activeBuffs||[]){if(b.type==='crit_up')critBonus+=b.value;}
     // Passiva de crítico (ex.: Manifestação Independente da Kiara)
     for(const p of servo.passiveSkills||[]){if(p.effect.type==='crit_passive')critBonus+=p.effect.value;}
+    // Graça — Esfinge Imperial (Ozymandias): mais dano com o HP cheio
+    if(GE.fullHpDmgPct&&servo.hp>=servo.hpMax)dmg=Math.round(dmg*(1+GE.fullHpDmgPct/100));
+    // Graça — Clarent Blood Arthur (Mordred): fúria acumulativa por turno
+    if(GE.rageStackPct)dmg=Math.round(dmg*(1+GE.rageStackPct*Math.max(0,turn-1)/100));
+    // Graça — Fulgor do Imperador (Nero): cada ataque escala o dano neste combate
+    if(GE.rampDmgPct){dmg=Math.round(dmg*(1+GE.rampDmgPct*rampStacks.current/100));rampStacks.current++;}
+    // Graça — Carisma da Rainha (Cleópatra): mais dano em inimigo com debuff
+    if(GE.dmgVsDebuffedPct&&(tgt.activeDebuffs||[]).length>0)dmg=Math.round(dmg*(1+GE.dmgVsDebuffedPct/100));
+    // Graça — Foco Inabalável (Arjuna): bônus que some se VOCÊ tiver debuff
+    if(GE.focusDmgPct&&!(servo.activeDebuffs||[]).length)dmg=Math.round(dmg*(1+GE.focusDmgPct/100));
     const isCrit=rollChance(servo.attributes.luck.points+critBonus);
-    if(isCrit)dmg=Math.round(dmg*(1.5+(GE.critMultBonus||0)/100)); // Impacto Áureo
+    // Impacto Áureo (Graça) + Energizador de Raiz (Perk) somam ao multiplicador crítico
+    if(isCrit)dmg=Math.round(dmg*(1.5+((GE.critMultBonus||0)+(perkEffects.critDmgPercent||0))/100));
+    // Graça — Olhar Petrificante (Medusa): críticos podem atordoar
+    let petrificou=false;
+    if(isCrit&&GE.stunOnCrit&&rollChance(GE.stunOnCrit))petrificou=true;
     dmg=applyDmgToEnemy(dmg,tgt);
     // Dança dos Oito Barcos: chance do golpe acertar duas vezes
     let doubleHit=false;
@@ -9042,11 +9511,33 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       addLog(`👑 Carisma inspira! +${towerSk.carisma.npGain}% de NP.`,'player');
     }
     let newEnemies=enemies.map((e,i)=>i!==selectedTarget?e:damageEnemy(e,dmg,isCrit?'crit':'dmg'));
+    // Graça — Olhar Petrificante (Medusa): aplica o atordoamento do crítico
+    if(petrificou){
+      newEnemies=newEnemies.map((e,i)=>(i!==selectedTarget||e.currentHp<=0)?e:{...e,stunned:Math.max(e.stunned||0,1)});
+      const alvo=newEnemies[selectedTarget];
+      if(alvo&&alvo.currentHp>0){
+        addLog(`👁️ Olhar Petrificante! ${alvo.name} é petrificado e perde o próximo turno!`,'np');
+        spawnFx(alvo.instanceId,'👁️ PETRIFICADO','stun');
+      }
+    }
     // Raio Materno: chance de atordoar · Presas de Orochi: aplica veneno
     if(GE.stunChance&&rollChance(GE.stunChance)){
       newEnemies=newEnemies.map((e,i)=>i!==selectedTarget?e:{...e,stunned:(e.stunned||0)+1});
       addLog(`⚡ Raio Materno atordoa ${tgt.name}!`,'player');
       spawnFx(tgt.instanceId,'ATORDOADO','stun');
+    }
+    // Graça — Uraeus Astrape (Cleópatra): ao acertar, chance de reduzir a Defesa
+    if(GE.onHitDefDownChance&&rollChance(GE.onHitDefDownChance)){
+      newEnemies=newEnemies.map((e,i)=>{
+        if(i!==selectedTarget||e.currentHp<=0)return e;
+        const others=(e.activeDebuffs||[]).filter(d=>d.type!=='defense_down');
+        return{...e,activeDebuffs:[...others,{type:'defense_down',value:20,turns:3}]};
+      });
+      const alvo=newEnemies[selectedTarget];
+      if(alvo&&alvo.currentHp>0){
+        addLog(`🐍 Uraeus Astrape: a Defesa de ${alvo.name} cai 20%!`,'player');
+        spawnFx(alvo.instanceId,'DEF −20%','stun');
+      }
     }
     if(GE.poisonOnHitPct){
       const pDmg=Math.round(dmg*GE.poisonOnHitPct/100);
@@ -9353,10 +9844,22 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(servo.className==='Berserker')dmg*=1.08;
     let npUp=(GEn.npDmgUp||0); // Graça: Golden Spark
     for(const b of servo.activeBuffs||[]){if(b.type==='np_damage_up')npUp+=b.value;}
-    dmg=Math.round(applyDmgToEnemy(dmg*(1+npUp/100)*(npDef.dmgPct/100),tgt));
+    // Graça — Rebelião Contra o Pai (Mordred): NP mais forte quando ferido
+    if(GEn.npDmgLowHp&&servo.hpMax&&(servo.hp/servo.hpMax)<0.50)npUp+=GEn.npDmgLowHp;
+    dmg=Math.round(applyDmgToEnemy(dmg*(1+npUp/100)*(npDef.dmgPct/100),tgt,true)); // true = golpe de NP
     recordDamage(dmg);
 
     let newServo={...servo,npBar:0};
+    // Graça — Domus Aurea (Nero): o Fantasma Nobre cura o grupo com base no dano
+    if(GEn.npLifestealPct){
+      const heal=Math.round(dmg*GEn.npLifestealPct/100);
+      if(heal>0){
+        newServo.hp=clamp(newServo.hp+heal,0,newServo.hpMax);
+        setParty(prev=>prev.map((m,i)=>i===activeIdx?m:(m.defeated?m:
+          {...m,hp:clamp(m.hp+heal,0,m.hpMax)})));
+        addLog(`🌹 Domus Aurea: o palco restaura ${heal} de HP ao grupo.`,'heal');
+      }
+    }
     // Graça — Ilusão do Mago das Flores (Merlin): devolve parte da Barra de NP
     if(GEn.npRefundPct){
       newServo.npBar=clamp(GEn.npRefundPct,0,100);
@@ -9619,6 +10122,22 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       const e=es[i];
       if(!e||e.currentHp<=0){stepOrder(seguirCom(),es,curPtr);return;}
 
+      // Graça — Correntes do Céu (Enkidu): prende o inimigo antes que ele aja
+      const GEsk=getGracaEffects(camp);
+      if(GEsk.enemySkipChance&&rollChance(GEsk.enemySkipChance)){
+        addLog(`⛓️ Correntes do Céu prendem ${e.name}! Ele perde o turno.`,'np');
+        spawnFx(e.instanceId,'⛓️ PRESO','stun');
+        stepOrder(seguirCom(),es,curPtr);return;
+      }
+      // Graça — Beijo da Serpente (Cleópatra): o inimigo se ataca no lugar de agir
+      if(!e.isBoss&&GEsk.charmChance&&rollChance(GEsk.charmChance)){
+        const auto=Math.round((e.damage||e.atkScaled||1000));
+        es[i]={...e,currentHp:Math.max(0,e.currentHp-auto)};
+        addLog(`🐍 Beijo da Serpente! ${e.name} se volta contra si mesmo: ${auto} de dano.`,'np');
+        spawnFx(e.instanceId,`💋 ${auto}`,'crit');
+        if(checkWin(es)){endCombat(true,seguirCom(),es);return;}
+        stepOrder(seguirCom(),es,curPtr);return;
+      }
       if((e.stunned||0)>0){
         addLog(`${e.name} está Atordoado e perde o turno!`,'system');
         spawnFx(e.instanceId,'ATORDOADO','stun');
@@ -10049,6 +10568,45 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           addLog(`${nitro.name} desfere um golpe mecânico: ${mit} de dano.`,'enemy');
           spawnFx('servo',String(mit),'dmg');
         }
+      } else if(e.isEnigma){
+        // ── IA DO ENIGMA ──
+        const en=es[i];
+        // Conta o véu voltando a se fechar
+        if((en.veilDownTurns||0)>0){
+          const restantes=en.veilDownTurns-1;
+          es[i]={...en,veilDownTurns:restantes,veilActive:restantes>0?en.veilActive:true};
+          if(restantes===0)addLog('🕸️ O véu branco do Enigma se refaz.','enemy');
+        }
+        const cur=es[i];
+        // LAMENTO DOS QUE FICARAM — atinge o grupo inteiro e amaldiçoa
+        if((cur.cooldowns?.lamento||0)===0){
+          const sk=ENIGMA.skills.lamento;
+          const dano=Math.round(cur.damage*sk.aoePct/100);
+          addLog(`Enigma — "${ENIGMA.dialogue.lamento}"`,'enemy');
+          spawnFx(cur.instanceId,'LAMENTO','crit');
+          const real=applyDmgToServo(dano,s);
+          s.hp=Math.max(0,s.hp-real);
+          setParty(prev=>prev.map((m,mi)=>(mi===tgtIdx||m.defeated||m.hp<=0)?m:
+            {...m,hp:Math.max(0,m.hp-Math.round(real*0.8)),
+             activeDebuffs:[...(m.activeDebuffs||[]).filter(d=>d.type!=='attack_down'),
+               {type:'attack_down',value:sk.curseValue,turns:sk.curseTurns}]}));
+          s.activeDebuffs=[...(s.activeDebuffs||[]).filter(d=>d.type!=='attack_down'),
+            {type:'attack_down',value:sk.curseValue,turns:sk.curseTurns}];
+          addLog(`🌫️ O lamento atinge todo o grupo! ${real} de dano e −${sk.curseValue}% de Ataque por ${sk.curseTurns}t.`,'enemy');
+          es[i]={...cur,cooldowns:{...cur.cooldowns,lamento:sk.cd}};
+          break act;
+        }
+        // ATAQUE COM OS BRAÇOS ÓSSEOS — um golpe por braço restante
+        const bracos=Math.max(1,cur.arms||1);
+        const porBraco=Math.round(cur.damage*1.35/bracos);
+        let total=0;
+        for(let b=0;b<bracos;b++)total+=applyDmgToServo(porBraco,s);
+        s.hp=Math.max(0,s.hp-total);
+        s.npBar=clamp(s.npBar+servo.attributes.mana.gainPercent*1.5,0,100);
+        addLog(`${e.name} desce ${bracos} ${bracos>1?'braços ósseos':'braço ósseo'} sobre ${tgtName}: ${total} de dano!`,'enemy');
+        spawnFx('servo',String(total),'dmg');
+        es[i]={...cur,cooldowns:Object.fromEntries(
+          Object.entries(cur.cooldowns||{}).map(([k,v])=>[k,Math.max(0,v-1)]))};
       } else if(e.isBoss){
         // IA da Qin
         const qin=es[i];
@@ -10183,11 +10741,23 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
             spawnFx(e.instanceId,`+${cura}`,'heal');
           }
           // QUEBRA-ARMADURA: reduz a defesa do Servo por alguns turnos
-          if(e.armorBreak){
+          // Graça — Runas de Batalha (Cú Chulainn): resiste a debuffs
+          const resisteDebuff=()=>{
+            const r=(getGracaEffects(camp).debuffResistPct||0);
+            return r>0&&rollChance(r);
+          };
+          if(e.armorBreak&&!resisteDebuff()){
             const outros=(s.activeDebuffs||[]).filter(d=>d.type!=='defense_down');
             s.activeDebuffs=[...outros,{type:'defense_down',value:e.armorBreak.value,turns:e.armorBreak.turns}];
             addLog(`🛡️ ${e.name} rasga a guarda de ${tgtName}! −${e.armorBreak.value}% de defesa por ${e.armorBreak.turns}t.`,'enemy');
             spawnFx('servo','🛡️ QUEBRADA','stun');
+          }
+          // MALDIÇÃO (Onryō, Miko): reduz o Ataque do Servo por alguns turnos
+          if(e.curse&&!resisteDebuff()){
+            const outros=(s.activeDebuffs||[]).filter(d=>d.type!=='attack_down');
+            s.activeDebuffs=[...outros,{type:'attack_down',value:e.curse.value,turns:e.curse.turns}];
+            addLog(`🌑 ${e.name} amaldiçoa ${tgtName}! −${e.curse.value}% de Ataque por ${e.curse.turns}t.`,'enemy');
+            spawnFx('servo','🌑 MALDIÇÃO','stun');
           }
           // DRENO DE MANA
           if(e.npDrain){
@@ -10291,7 +10861,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       // SQ e QP depositados IMEDIATAMENTE (leitura atômica do storage)
       // Perk "Contos Épicos de um Vagabundo": multiplica a obtenção de SQ e QP
       // Graça de Gilgamesh (Tesouro do Rei): soma mais um multiplicador por cima.
-      const eliteBonus=camp.eliteFight?2:1;
+      const eliteBonus=camp.eliteFight?(2+(perkEffects.eliteBonus||0)/100):1; // Perk Espólios
       const moneyMult=(1+(perkEffects.sqQpBonusPercent||0)/100
         +(getGracaEffects(camp).qpBonusPct||0)/100)*eliteBonus;
       const sqGain=Math.round((isBoss?5:2)*moneyMult);
@@ -10302,7 +10872,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       if(isBoss&&(camp.mapId||'bosque')==='bosque')newProfile=markQinDefeated();
       // Conquista por derrotar cada boss (paga QP+SQ uma vez)
       if(isBoss){
-        const achId={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja',kurikara_city:'defeat_gosanjo',shinohara:'defeat_shunoban',shinohara_city:'defeat_mochizuki',shinohara_battle:'defeat_mochizuki_rage'}[camp.mapId||'bosque'];
+        const achId={bosque:'defeat_qin',tennobara:'defeat_nitro',tortuoso:'defeat_archer',kurikara:'defeat_ninja',kurikara_city:'defeat_gosanjo',shinohara:'defeat_shunoban',shinohara_city:'defeat_mochizuki',shinohara_battle:'defeat_mochizuki_rage',pensamentos_restantes:'defeat_enigma'}[camp.mapId||'bosque'];
         if(achId){
           const res=grantAchievement(achId);
           if(res.granted){
@@ -10804,6 +11374,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
       orbeUsed:false,
       // Semente da jornada: torna o sorteio das SALAS determinístico por fase
       // (o mapa mostra a prévia e o resultado bate ao escolher o caminho).
+      // Perk Presságio do Vagante: começa a jornada com acúmulos de Golden Rule
+      goldenRule:carry&&carry.goldenRule!=null?carry.goldenRule:(getPerkEffects(profile).goldenStart||0),
       runSeed:carry&&carry.runSeed?carry.runSeed:Math.floor(Math.random()*1e6)+1,
       eventosVistos:carry&&carry.eventosVistos?carry.eventosVistos:[],
       // Nível de Ameaça: calculado no início da jornada a partir do poder permanente
@@ -10981,8 +11553,13 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(isMap10&&nextPhase===3){setCamp(advanced);setStage('map10F3');return;}
     if(isMap10&&nextPhase===7){setCamp(advanced);setStage('map10F7');return;}
     if(isMap10&&nextPhase===9){setCamp(advanced);setStage('map10F9');return;}
-    if(isMap10&&[11,13,17].includes(nextPhase)){
-      setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map10Fixed');return;
+    if(isMap10&&nextPhase===11){setCamp(advanced);setStage('map10F11');return;}
+    if(isMap10&&nextPhase===13){setCamp(advanced);setStage('map10F13');return;}
+    if(isMap10&&nextPhase===17){setCamp(advanced);setStage('map10F17');return;}
+    // Mapa 11 (Pensamentos Restantes): fases fixas 3,6,8,11,15,17,20,22 (roteiros a definir).
+    const isMap11=(baseCamp.mapId||'bosque')==='pensamentos_restantes';
+    if(isMap11&&[3,6,8,11,15,17,20,22].includes(nextPhase)){
+      setCamp({...advanced,pendingFixedPhase:nextPhase});setStage('map11Fixed');return;
     }
     setCamp(advanced);setStage('map');
   }
@@ -11146,6 +11723,10 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     // Só na CAMPANHA — terminar o andar equivalente na Torre não libera a história.
     if(!updatedCamp.towerMode&&updatedCamp.mapId==='sucessao_prelude'){
       const res=grantAchievement('clear_sucessao');
+      if(res.granted)setProfile(res.profile);
+    }
+    if(!updatedCamp.towerMode&&updatedCamp.mapId==='pensamentos_restantes'){
+      const res=grantAchievement('clear_pensamentos');
       if(res.granted)setProfile(res.profile);
     }
     // ── Conquistas de DESAFIO por concluir a jornada (só Campanha) ──
@@ -11708,16 +12289,20 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     finishLabel="⚔️ Partir para Hyuchi" onFinish={()=>setStage('map')}/>;
   if(stage==='map10F9')return <StoryScreen profile={profile} script={STORY_MAP10_F9}
     finishLabel="🌅 Despertar" onFinish={()=>setStage('map')}/>;
-  if(stage==='map10Fixed')return(
+  if(stage==='map10F11')return <StoryScreen profile={profile} script={STORY_MAP10_F11}
+    finishLabel="Seguir em Frente →" onFinish={()=>setStage('map')}/>;
+  if(stage==='map10F13')return <StoryScreen profile={profile} script={STORY_MAP10_F13}
+    finishLabel="🐴 Partir com Musashimaru" onFinish={()=>setStage('map')}/>;
+  if(stage==='map10F17')return <StoryScreen profile={profile} script={STORY_MAP10_F17}
+    finishLabel="🛤️ Tomar o atalho" onFinish={()=>setStage('map')}/>;
+  if(stage==='map11Fixed')return(
     <div className="screen">
-      <div className="panel" style={{textAlign:'center',maxWidth:480}}>
-        <div style={{fontSize:'2rem',marginBottom:10}}>📜</div>
-        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>PRELÚDIO — FASE {camp.pendingFixedPhase}</h2>
-        <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',fontStyle:'italic',marginBottom:16}}>
-          [ Cena fixa a ser escrita ]<br/>
-          Esta é uma fase fixa de história do Mapa 10. O roteiro será adicionado aqui depois.
+      <div className="panel" style={{maxWidth:520,textAlign:'center'}}>
+        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:6}}>PENSAMENTOS RESTANTES — FASE {camp.pendingFixedPhase}</h2>
+        <p style={{color:'var(--parchment-dark)',fontSize:'.75rem',fontStyle:'italic',marginTop:14}}>
+          [ Cena fixa a ser escrita ]
         </p>
-        <button className="btn btn-red btn-full" onClick={()=>setStage('map')}>Prosseguir →</button>
+        <button className="btn btn-red btn-full" style={{marginTop:16}} onClick={()=>setStage('map')}>Seguir em Frente →</button>
       </div>
     </div>
   );
