@@ -3281,7 +3281,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v1.99</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.01</p>
       </div>
     </div>
   );
@@ -7584,6 +7584,66 @@ const GRACAS=[
    v:V(10,16,24),desc:v=>`Executa inimigos comuns que caírem abaixo de ${v}% de HP.`,eff:v=>({executeThreshold:v})}
 ];
 const GRACA_BY_ID=Object.fromEntries(GRACAS.map(g=>[g.id,g]));
+
+// ══════════════════════════════════════════════════════
+// SINERGIAS DE GRAÇA — combos ativos entre patronos ligados
+// ══════════════════════════════════════════════════════
+// Ter Graças de DOIS patronos ligados por lenda ativa um bônus lendário próprio,
+// somado aos efeitos normais. Isso premia montar a build com intenção, não só
+// pegar o maior número. Cada sinergia reusa chaves de efeito que o combate já
+// consome — nenhuma mecânica nova é necessária.
+const SINERGIAS=[
+  {id:'duo_orochi',patronos:['shuten','ibuki'],nome:'Sangue do Orochi',icone:'🐍',
+   desc:'O veneno da serpente de oito cabeças corre nas veias: +18% de dano e envenena a cada golpe.',
+   eff:{atkUpPct:18,poisonOnHitPct:8}},
+  {id:'duo_minamoto',patronos:['raikou','ushiwaka'],nome:'Sangue Minamoto',icone:'⚔️',
+   desc:'A linhagem guerreira desperta: +15% de dano e +1 acúmulo de crítico.',
+   eff:{atkUpPct:15,critChanceUp:12}},
+  {id:'duo_shitenno',patronos:['raikou','kintoki'],nome:'Reis Celestiais',icone:'🌟',
+   desc:'Os Shitennō lutam como um só: +20% de dano em Fantasma Nobre e carrega NP ao abater.',
+   eff:{npDmgUp:20,npChargeOnKill:10}},
+  {id:'duo_rivals',patronos:['emiya','gilgamesh'],nome:'Rivalidade Eterna',icone:'🏹',
+   desc:'A tensão entre o Rei e o arqueiro afia cada disparo: golpe de abertura +30% e perfura defesa.',
+   eff:{firstStrikePct:30,pierceDefPct:15}},
+  {id:'duo_martyrs',patronos:['jeanne','karna'],nome:'Chama dos Mártires',icone:'🔥',
+   desc:'Quem se doa não cai fácil: sobrevive a um golpe fatal por combate e cura ao abater.',
+   eff:{gutsOnce:20,healOnKillPct:10}},
+  {id:'duo_magi',patronos:['scathach','merlin'],nome:'Segredos dos Magi',icone:'🌸',
+   desc:'Runa e ilusão se entrelaçam: +2 de NP por turno e devolve parte do NP após usá-lo.',
+   eff:{npPerTurn:2,npRefundPct:20}},
+  {id:'duo_imperadores',patronos:['nero','ozymandias'],nome:'Dois Tronos',icone:'👑',
+   desc:'A presença imperial esmaga: começa o combate fortalecido e escala a cada ataque.',
+   eff:{startAtkBuff:25,rampDmgPct:5}},
+  {id:'duo_mahabharata',patronos:['arjuna','karna'],nome:'Duelo do Kurukshetra',icone:'☀️',
+   desc:'O duelo dos meios-irmãos transcende: o Fantasma Nobre ignora parte da mitigação e perfura.',
+   eff:{npTrueDmgPct:25,npPierce:20}},
+  {id:'duo_serpentes',patronos:['medusa','cleopatra'],nome:'Rainhas Serpente',icone:'🐍',
+   desc:'O olhar e o encanto paralisam: chance de atordoar no crítico e de enfeitiçar o inimigo.',
+   eff:{stunOnCrit:20,charmChance:12}},
+  {id:'duo_lanca',patronos:['cu','scathach'],nome:'Herança de Gáe Bolg',icone:'🔱',
+   desc:'A lança que sempre acerta o coração: execução reforçada e defesa perfurada.',
+   eff:{executePct:15,pierceDefPct:18}},
+  {id:'duo_amizade',patronos:['gilgamesh','enkidu'],nome:'A Amizade da Epopeia',icone:'⛓️',
+   desc:'Lado a lado, nada os detém: +22% de HP máximo e prende o inimigo antes que ele aja.',
+   eff:{maxHpUpPct:22,enemySkipChance:14}},
+  {id:'duo_estandarte',patronos:['mordred','jeanne'],nome:'Estandarte e Rebelião',icone:'🚩',
+   desc:'A santa protege, a rebelde ataca: +18% de dano e reduz o dano recebido.',
+   eff:{atkUpPct:18,defUpPct:14}},
+  {id:'duo_misericordia',patronos:['nightingale','jeanne'],nome:'Mãos que Salvam',icone:'⚕️',
+   desc:'A vontade de curar não conhece limite: regenera a cada turno e cura ao abater.',
+   eff:{hpRegenPct:6,healOnKillPct:12}},
+  {id:'duo_arqueiros',patronos:['arjuna','emiya'],nome:'Arqueiros Opostos',icone:'🎯',
+   desc:'Precisão absoluta: +25% de crítico e o primeiro golpe sempre acerta com força.',
+   eff:{critChanceUp:25,firstStrikePct:20}},
+];
+const SINERGIA_BY_ID=Object.fromEntries(SINERGIAS.map(x=>[x.id,x]));
+
+// Quais sinergias estão ATIVAS na build atual (2 patronos ligados presentes).
+function sinergiasAtivas(gracas){
+  const held=Object.values(gracas||{}).filter(Boolean);
+  const pats=new Set(held.map(h=>{const g=GRACA_BY_ID[h.id];return g&&g.patrono;}).filter(Boolean));
+  return SINERGIAS.filter(s=>s.patronos.every(p=>pats.has(p)));
+}
 // Agrega os efeitos de todas as Graças ativas da run num único objeto de números.
 function getGracaEffects(camp){
   const out={};
@@ -7594,6 +7654,10 @@ function getGracaEffects(camp){
     const val=def.v(h.lvl||1);
     const e=def.eff(val)||{};
     for(const k of Object.keys(e))out[k]=(out[k]||0)+e[k];
+  }
+  // Sinergias ativas: somam seus efeitos por cima dos individuais.
+  for(const s of sinergiasAtivas(held)){
+    for(const k of Object.keys(s.eff))out[k]=(out[k]||0)+s.eff[k];
   }
   return out;
 }
@@ -7607,18 +7671,37 @@ function rollGracaOffer(camp,count=3){
     if(cur&&cur.id===g.id&&(cur.lvl||1)>=3)return false;
     return true;
   });
+  // RATE-UP: Graças que você JÁ possui (e que ainda podem subir de nível) entram
+  // no sorteio com peso muito maior. Com dezenas de Graças, reencontrar uma da sua
+  // build para evoluí-la era raro demais — a maioria das ofertas não ajudava.
+  const RATE_UP=9; // uma Graça já possuída tem ~9x mais chance de ser sorteada
+  function pesoDe(g){
+    const cur=held[g.slot];
+    return(cur&&cur.id===g.id)?RATE_UP:1;
+  }
+  // Sorteio ponderado sem reposição.
+  function sortearPonderado(candidatos){
+    const arr=[...candidatos];
+    let total=arr.reduce((a,g)=>a+pesoDe(g),0);
+    let r=Math.random()*total;
+    for(let i=0;i<arr.length;i++){r-=pesoDe(arr[i]);if(r<=0)return arr.splice(i,1)[0];}
+    return arr.splice(Math.floor(Math.random()*arr.length),1)[0];
+  }
   const picked=[];const usedPatronos=new Set();
-  const shuffled=[...pool].sort(()=>Math.random()-0.5);
-  // 1ª passada: um por patrono (variedade)
-  for(const g of shuffled){
-    if(picked.length>=count)break;
+  let restante=[...pool];
+  // 1ª passada: um por patrono (variedade), mas com o peso do rate-up.
+  while(picked.length<count&&restante.length){
+    const g=sortearPonderado(restante);
+    if(!g)break;
     if(usedPatronos.has(g.patrono))continue;
     picked.push(g);usedPatronos.add(g.patrono);
   }
-  // 2ª passada: completa se faltar
-  for(const g of shuffled){
-    if(picked.length>=count)break;
-    if(!picked.includes(g))picked.push(g);
+  // 2ª passada: completa se faltar (sem exigir patrono único), ainda ponderado.
+  restante=pool.filter(g=>!picked.includes(g));
+  while(picked.length<count&&restante.length){
+    const g=sortearPonderado(restante);
+    if(!g)break;
+    picked.push(g);
   }
   // Define o nível ofertado: se já possui a mesma graça, oferece o próximo nível.
   // Perk Favor do Trono: chance de a Graça ofertada já vir em nível superior.
@@ -7910,6 +7993,53 @@ function GracaOfferScreen({camp,offer,onPick}){
           ◆ slot disputado por uma das opções abaixo
         </p>
 
+        {/* ── SINERGIAS: ativas agora + as que uma das opções desbloquearia ── */}
+        {(()=>{
+          const ativas=sinergiasAtivas(held);
+          const patsAtuais=new Set(Object.values(held).filter(Boolean)
+            .map(h=>{const g=GRACA_BY_ID[h.id];return g&&g.patrono;}).filter(Boolean));
+          const patsOferta=new Set(offer.map(o=>{const g=GRACA_BY_ID[o.id];return g&&g.patrono;}).filter(Boolean));
+          // Sinergia "a um passo": falta exatamente 1 patrono, e ele está na oferta atual.
+          const aUmPasso=SINERGIAS.filter(sn=>{
+            if(ativas.some(a=>a.id===sn.id))return false;
+            const faltam=sn.patronos.filter(pt=>!patsAtuais.has(pt));
+            return faltam.length===1&&patsOferta.has(faltam[0]);
+          });
+          if(!ativas.length&&!aUmPasso.length)return null;
+          return(
+            <div style={{margin:'4px 0 2px',padding:'8px 11px',borderRadius:8,
+              background:'rgba(224,180,74,.07)',border:'1px solid rgba(224,180,74,.3)'}}>
+              {ativas.map(sn=>(
+                <div key={sn.id} style={{display:'flex',gap:7,alignItems:'flex-start',marginBottom:4}}>
+                  <span style={{fontSize:'1rem',flexShrink:0}}>{sn.icone}</span>
+                  <div style={{minWidth:0}}>
+                    <span style={{color:'var(--gold)',fontSize:'.72rem',fontFamily:'Cinzel,serif'}}>
+                      {sn.nome} <span style={{color:'#7ee08a',fontSize:'.6rem'}}>● ATIVA</span>
+                    </span>
+                    <div style={{fontSize:'.64rem',color:'var(--parchment-dark)',lineHeight:1.4}}>{sn.desc}</div>
+                  </div>
+                </div>
+              ))}
+              {aUmPasso.map(sn=>(
+                <div key={sn.id} style={{display:'flex',gap:7,alignItems:'flex-start',marginBottom:4,opacity:.82}}>
+                  <span style={{fontSize:'1rem',flexShrink:0}}>{sn.icone}</span>
+                  <div style={{minWidth:0}}>
+                    <span style={{color:'var(--parchment)',fontSize:'.72rem',fontFamily:'Cinzel,serif'}}>
+                      {sn.nome} <span style={{color:'#e0b84a',fontSize:'.6rem'}}>◇ A UM PASSO</span>
+                    </span>
+                    <div style={{fontSize:'.64rem',color:'var(--parchment-dark)',lineHeight:1.4}}>
+                      Escolha uma Graça {(() => {
+                        const falta=sn.patronos.find(pt=>!patsAtuais.has(pt));
+                        const P=PATRONOS[falta];return P?P.name:falta;
+                      })()} para ativar esta sinergia.
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
         <div className="divider"><span className="divider-text">✦ ESCOLHA UMA ✦</span></div>
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
           {offer.map(o=>{
@@ -8002,6 +8132,22 @@ function GracaSidebar({camp}){
             Vença encontros para receber as bênçãos dos Espíritos Heroicos.
           </div>
         )}
+        {(() => {
+          const sins=sinergiasAtivas(held);
+          if(!sins.length)return null;
+          return(
+            <div style={{marginTop:6,paddingTop:6,borderTop:'1px solid rgba(224,180,74,.3)'}}>
+              <div style={{fontSize:'.55rem',color:'var(--gold)',fontFamily:'Cinzel,serif',
+                letterSpacing:1,textAlign:'center',marginBottom:4}}>✦ SINERGIAS ✦</div>
+              {sins.map(sn=>(
+                <div key={sn.id} title={sn.desc} style={{fontSize:'.6rem',color:'#e0b84a',
+                  display:'flex',alignItems:'center',gap:4,marginBottom:2}}>
+                  <span>{sn.icone}</span><span>{sn.nome}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </>
   );
