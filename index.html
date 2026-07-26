@@ -445,6 +445,46 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .dmg-float.stun{color:#c07ce0;font-size:.7rem;letter-spacing:1px}
 .dmg-float.poison{color:#b84cf0;font-weight:700;text-shadow:0 0 10px rgba(0,0,0,.95),0 0 18px rgba(160,60,220,.7)}
 .dmg-float.buff{color:var(--gold);font-size:.72rem;letter-spacing:1px}
+
+/* ══ EFEITOS DE IMPACTO — camada sobre o alvo/atacante ══ */
+.impact-layer{position:absolute;inset:0;pointer-events:none;z-index:6;overflow:visible}
+.fx-slash{position:absolute;top:50%;left:50%;width:150%;height:5px;
+  transform:translate(-50%,-50%) rotate(-38deg);
+  background:linear-gradient(90deg,transparent,#fff 45%,#ffe9c2 55%,transparent);
+  border-radius:3px;filter:drop-shadow(0 0 7px rgba(255,220,150,.9));
+  animation:slashSweep .38s ease-out forwards}
+@keyframes slashSweep{
+  0%{opacity:0;transform:translate(-90%,-50%) rotate(-38deg) scaleX(.2)}
+  30%{opacity:1}
+  100%{opacity:0;transform:translate(-10%,-50%) rotate(-38deg) scaleX(1.15)}}
+.fx-flash{position:absolute;inset:-8%;border-radius:12px;
+  background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.85),rgba(255,150,90,.3) 45%,transparent 70%);
+  mix-blend-mode:screen;animation:flashOut .34s ease-out forwards}
+@keyframes flashOut{0%{opacity:0;transform:scale(.6)}25%{opacity:1}100%{opacity:0;transform:scale(1.25)}}
+.fx-crit{position:absolute;top:42%;left:50%;width:70%;height:70%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(255,215,90,.9),rgba(255,160,40,.4) 40%,transparent 68%);
+  mix-blend-mode:screen;animation:critBurst .5s ease-out forwards}
+@keyframes critBurst{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(0)}
+  30%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5) rotate(45deg)}}
+.fx-np-ring{position:absolute;top:50%;left:50%;width:20%;height:20%;border-radius:50%;
+  border:3px solid rgba(140,195,255,.85);transform:translate(-50%,-50%);
+  filter:drop-shadow(0 0 10px rgba(79,195,247,.8));animation:npRing .7s ease-out forwards}
+.fx-np-ring.r2{animation-delay:.12s;border-color:rgba(200,225,255,.7)}
+.fx-np-ring.r3{animation-delay:.24s;border-color:rgba(120,160,255,.6)}
+@keyframes npRing{0%{opacity:0;width:10%;height:10%}20%{opacity:1}
+  100%{opacity:0;width:150%;height:150%}}
+.fx-skill-aura{position:absolute;bottom:12%;left:50%;width:80%;height:90%;
+  transform:translateX(-50%);border-radius:50% 50% 40% 40%;
+  background:linear-gradient(0deg,var(--auraCor,rgba(201,162,39,.55)),transparent 72%);
+  mix-blend-mode:screen;animation:auraRise .7s ease-out forwards}
+@keyframes auraRise{0%{opacity:0;transform:translateX(-50%) translateY(18%) scaleY(.7)}
+  35%{opacity:.95}100%{opacity:0;transform:translateX(-50%) translateY(-8%) scaleY(1.1)}}
+.fx-spark{position:absolute;top:46%;left:50%;width:4px;height:4px;border-radius:50%;
+  background:#ffe9b0;filter:drop-shadow(0 0 4px rgba(255,200,120,.9));
+  animation:sparkFly .5s ease-out forwards}
+@keyframes sparkFly{0%{opacity:1;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:translate(var(--sx,20px),var(--sy,-24px)) scale(.2)}}
 @keyframes panelShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
 .shake{animation:panelShake .4s ease}
 /* ── Splash de Full Art (encounter) ── */
@@ -3281,7 +3321,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.01</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.02</p>
       </div>
     </div>
   );
@@ -7876,6 +7916,44 @@ function PatronoIcon({pat,size=30,style}){
       borderRadius:4,...style}}/>;
 }
 // Dupla [Patrono][Skill] usada na oferta e no codex.
+// Camada de efeito de impacto sobre um sprite. Recebe a lista de impactos
+// que atingem AQUELE alvo e desenha corte/clarão/faíscas conforme o tipo.
+function ImpactLayer({items}){
+  if(!items||!items.length)return null;
+  return(
+    <div className="impact-layer">
+      {items.map(im=>{
+        if(im.tipo==='np'){
+          return(
+            <React.Fragment key={im.id}>
+              <span className="fx-np-ring"/><span className="fx-np-ring r2"/><span className="fx-np-ring r3"/>
+              <span className="fx-flash" style={{background:'radial-gradient(circle at 50% 45%,rgba(180,220,255,.85),rgba(90,150,255,.3) 45%,transparent 70%)'}}/>
+            </React.Fragment>
+          );
+        }
+        if(im.tipo==='skill'){
+          return <span key={im.id} className="fx-skill-aura" style={{'--auraCor':im.cor||'rgba(201,162,39,.55)'}}/>;
+        }
+        // hit e crit: corte + clarão + faíscas (crit é maior e dourado)
+        const sparks=im.tipo==='crit'?7:4;
+        return(
+          <React.Fragment key={im.id}>
+            <span className="fx-flash"/>
+            <span className="fx-slash"/>
+            {im.tipo==='crit'&&<span className="fx-crit"/>}
+            {Array.from({length:sparks}).map((_,i)=>{
+              const ang=(Math.PI*2*i)/sparks+Math.random();
+              const dist=18+Math.random()*22;
+              return <span key={i} className="fx-spark" style={{
+                '--sx':`${Math.cos(ang)*dist}px`,'--sy':`${Math.sin(ang)*dist-10}px`}}/>;
+            })}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
 function GracaDuoIcon({pat,nome,size=30,gap=4}){
   return(
     <span style={{display:'inline-flex',alignItems:'center',gap,flexShrink:0}}>
@@ -9416,6 +9494,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   // ── Efeitos visuais flutuantes (dano/cura/buff/esquiva) ──
   const[fx,setFx]=useState([]);
+  const[impacts,setImpacts]=useState([]); // efeitos visuais sobre o alvo/atacante
   // ── SPRITES ANIMADOS: estado de animação por servo da party ──
   // Guarda qual GIF cada servo exibe agora: 'idle' (padrão), 'attack' ou 'np'.
   // Ao disparar uma ação, troca para o GIF correspondente e volta ao idle depois.
@@ -9507,6 +9586,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const left=22+Math.random()*50; // posição horizontal variada p/ números não se sobreporem
     setFx(prev=>[...prev,{id,targetId,text,kind,left}]);
     setTimeout(()=>setFx(prev=>prev.filter(f=>f.id!==id)),950);
+  }
+  // Efeito de impacto sobre um alvo. tipo: 'hit'|'crit'|'np'|'skill'. cor = aura da skill.
+  function spawnImpact(targetId,tipo='hit',cor){
+    const id=Date.now()+Math.random();
+    setImpacts(prev=>[...prev,{id,targetId,tipo,cor}]);
+    setTimeout(()=>setImpacts(prev=>prev.filter(f=>f.id!==id)),720);
   }
 
   const sv=profileSkillValues(profile.skills);
@@ -9671,6 +9756,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       return e;
     }
     spawnFx(e.instanceId,String(dmg),fxKind);
+    // Efeito de impacto: NP mostra anéis; crítico mostra estrela; golpe comum, corte.
+    spawnImpact(e.instanceId,fxKind==='np'?'np':fxKind==='crit'?'crit':'hit');
     let out={...e,currentHp:Math.max(0,e.currentHp-dmg)};
     // Afixo Coroa de Espinhos: parte do dano recebido volta para o Servo ativo.
     if(e.thorns&&dmg>0){
@@ -10108,6 +10195,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     chSkillUsed.current=true; // desafio "Puro Aço"
     const GEs=getGracaEffects(camp); // Graça — Ordem da Mãe: skills carregam NP
     playSpriteAnim(activeIdx,'attack',1200); // skills usam o sprite de ataque
+    spawnImpact('servo','skill','rgba(201,162,39,.6)'); // aura dourada ao usar Skill
     const skillDef=(SDEF.activeSkills||[]).find(s=>s.id===skillId);
     if(!skillDef)return;
     const lvl=1;
@@ -10299,6 +10387,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // a recarga vale pra todo mundo, não reseta ao trocar de servo ativo.
     if((masterCd[skillKey]||0)>0){setNotif('Skill em recarga!');return;}
     chSkillUsed.current=true; // desafio "Puro Aço"
+    spawnImpact('servo','skill','rgba(224,90,74,.6)'); // aura carmesim das Skills de Mestre
     const sk=sv[skillKey];
     setMasterCd(prev=>({...prev,[skillKey]:sk.cd}));
     let newServo={...servo};
@@ -11677,6 +11766,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                   {active&&fx.filter(f=>f.targetId==='servo').map(f=>(
                     <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'-4%',zIndex:5}}>{f.text}</span>
                   ))}
+                  {active&&<ImpactLayer items={impacts.filter(im=>im.targetId==='servo')}/>}
                   {isTurn&&<div className="arena-glow" style={{bottom:hasSprites?76:30,width:w*0.5,height:26}}/>}
                   <img key={k} src={src} alt={mdef.name}
                     style={{width:'100%',height:h,transformOrigin:'center bottom',
@@ -11735,6 +11825,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                   {fx.filter(f=>f.targetId===e.instanceId).map(f=>(
                     <span key={f.id} className={`dmg-float ${f.kind}`} style={{left:`${f.left}%`,top:'-12%',zIndex:5}}>{f.text}</span>
                   ))}
+                  <ImpactLayer items={impacts.filter(im=>im.targetId===e.instanceId)}/>
                   <img key={eK} src={hasBossSprites?bossSpriteSrc:(e.isBoss?bossArt:(e.sprite||enemySprite(e)))} alt={e.name}
                     style={{width:'100%',height:h,transformOrigin:'center bottom',
                       // A boss fica à DIREITA olhando para a ESQUERDA: se a arte original olha
