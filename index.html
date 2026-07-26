@@ -838,6 +838,588 @@ function levelUpServo(servoId){
 // Registro dos servos jogáveis, por id. Preenchido conforme cada servo é definido.
 const PLAYABLE_SERVOS={};
 
+// ══════════════════════════════════════════════════════
+// RESSONÂNCIA DO TRONO — teste de personalidade → invocação
+// ══════════════════════════════════════════════════════
+// Cada Servo é um VETOR nos mesmos 9 eixos (−5 a +5). O teste constrói o vetor
+// do jogador e encontra o Servo de menor distância. Vetores são compactos de
+// propósito: o sistema escala pra dezenas de Servos sem estourar o arquivo.
+// Os eixos e a calibração vêm do "Protocolo de Calibração" (ver notas de design):
+// mapeia-se a DISPOSIÇÃO do personagem do FGO, nunca a circunstância nem a lenda.
+const RESSONANCIA_EIXOS=[
+  {id:'ideal',   nome:'Ideal ↔ Pragmático',   neg:'Pragmático',pos:'Ideal'},
+  {id:'altru',   nome:'Altruísmo ↔ Ego',       neg:'Ego',      pos:'Altruísmo'},
+  {id:'ordem',   nome:'Ordem ↔ Caos',          neg:'Caos',     pos:'Ordem'},
+  {id:'razao',   nome:'Razão ↔ Paixão',        neg:'Paixão',   pos:'Razão'},
+  {id:'vinculo', nome:'Vínculo ↔ Solidão',     neg:'Solidão',  pos:'Vínculo'},
+  {id:'preserv', nome:'Preservar ↔ Destruir',  neg:'Destruir', pos:'Preservar'},
+  {id:'franq',   nome:'Franqueza ↔ Reserva',   neg:'Reserva',  pos:'Franqueza'},
+  {id:'esper',   nome:'Esperança ↔ Fatalismo', neg:'Fatalismo',pos:'Esperança'},
+  {id:'autov',   nome:'Autovalor',             neg:'Autoddepreciação',pos:'Autoconfiança'},
+];
+// Banco inicial — 8 Servos bem espalhados no espaço de personalidade.
+// vetor: [ideal, altru, ordem, razao, vinculo, preserv, franq, esper, autov]
+// ── MBTI: os 16 tipos com nome e leitura curta (camada de identidade) ──
+// A comunidade TYPE-MOON tipa os personagens com bom embasamento, então usamos
+// isso como âncora. O MBTI dá o "tipo" do jogador; os 9 eixos dão a nuance fina.
+const MBTI_TIPOS={
+  INTJ:{nome:'O Arquiteto',desc:'Estrategista independente. Enxerga sistemas onde outros veem caos e planeja em silêncio para moldá-los.'},
+  INTP:{nome:'O Lógico',desc:'Mente curiosa e teórica. Vive de entender como as coisas funcionam, mais fascinado por ideias do que por pessoas.'},
+  ENTJ:{nome:'O Comandante',desc:'Líder nato e implacável. Vê o objetivo, traça a rota e espera que o mundo acompanhe seu ritmo.'},
+  ENTP:{nome:'O Inovador',desc:'Provocador brilhante. Adora desafiar consensos e girar qualquer ideia até encontrar um ângulo que ninguém viu.'},
+  INFJ:{nome:'O Advogado',desc:'Idealista reservado. Guiado por uma convicção interior profunda e uma leitura quase sobrenatural das pessoas.'},
+  INFP:{nome:'O Mediador',desc:'Alma sensível e leal aos próprios valores. Busca significado e harmonia, e sente o mundo com intensidade silenciosa.'},
+  ENFJ:{nome:'O Protagonista',desc:'Inspirador magnético. Enxerga o potencial nos outros e os conduz com calor, carisma e senso de propósito.'},
+  ENFP:{nome:'O Ativista',desc:'Espírito livre e caloroso. Movido por paixão, possibilidade e a fome de viver tudo com intensidade.'},
+  ISTJ:{nome:'O Logístico',desc:'Guardião do dever. Confiável, metódico e fiel à palavra dada, carrega responsabilidades sem reclamar.'},
+  ISFJ:{nome:'O Defensor',desc:'Protetor abnegado. Cuida dos outros nos bastidores, atento a necessidades que ninguém mais percebe.'},
+  ESTJ:{nome:'O Executivo',desc:'Organizador firme. Valoriza ordem, tradição e resultados, e assume o comando quando ninguém mais o faz.'},
+  ESFJ:{nome:'O Cônsul',desc:'Coração da comunidade. Zeloso, sociável e dedicado a manter todos amparados e unidos.'},
+  ISTP:{nome:'O Virtuoso',desc:'Mestre prático. Calmo sob pressão, resolve problemas com as mãos e a lógica, sem alarde.'},
+  ISFP:{nome:'O Aventureiro',desc:'Artista discreto. Vive o presente pela beleza e pela emoção, fiel a si mesmo mais que a regras.'},
+  ESTP:{nome:'O Empreendedor',desc:'Vivedor de instinto. Encara o perigo de frente e prospera na ação, no risco e na adrenalina do agora.'},
+  ESFP:{nome:'O Animador',desc:'Presença radiante. Ama o palco da vida, o brilho do momento e arrastar todos para a alegria consigo.'},
+};
+
+const RESSONANCIA_SERVOS=[
+  {id:'mash',nome:'Mash Kyrielight',classe:'Shielder',emoji:'🛡️',art:'mash',mbti:'ISFJ',
+   vetor:{ideal:2,altru:5,ordem:4,razao:1,vinculo:5,preserv:5,franq:-3,esper:0,autov:-4},
+   essencia:'Existe para proteger, mas se considera indigna de ser protegida. Mede o próprio valor por uma régua que jamais aplicaria a outra pessoa.',
+   frase:'Se minha espada... não, se meu escudo puder lhe ser útil, farei tudo ao meu alcance.'},
+  {id:'artoria',nome:'Artoria Pendragon',classe:'Saber',emoji:'👑',art:'artoria',mbti:'ISTJ',
+   vetor:{ideal:5,altru:4,ordem:5,razao:5,vinculo:-2,preserv:4,franq:1,esper:0,autov:2},
+   essencia:'Abriu mão da própria humanidade pelo ideal de um rei perfeito. Carrega o peso de um reino sem se permitir um só arrependimento — ainda que sonhe com a vida que não viveu.',
+   frase:'Se algo é maligno, devo corrigir seu caminho por mim mesmo.'},
+  {id:'gilgamesh',nome:'Gilgamesh',classe:'Archer',emoji:'⚜️',art:'gil',mbti:'ENTJ',
+   vetor:{ideal:1,altru:-4,ordem:2,razao:0,vinculo:-3,preserv:-1,franq:5,esper:2,autov:5},
+   essencia:'O Rei dos Heróis, que julga tudo e todos a partir de si mesmo. Não é crueldade — é a certeza absoluta de quem nunca precisou duvidar do próprio valor.',
+   frase:'Não há nada neste mundo que já não seja meu.'},
+  {id:'jeanne',nome:'Jeanne d\'Arc',classe:'Ruler',emoji:'⚜️',art:'jeanne',mbti:'INFJ',
+   vetor:{ideal:5,altru:5,ordem:3,razao:-1,vinculo:2,preserv:4,franq:4,esper:5,autov:2},
+   essencia:'Fé inabalável mesmo diante da fogueira. Não guarda rancor de quem a condenou — sua esperança pelos outros nunca vacila, mesmo quando nada resta para si.',
+   frase:'Mesmo que ninguém acredite, eu seguirei acreditando.'},
+  {id:'medea',nome:'Medea',classe:'Caster',emoji:'🗡️',art:'medea',mbti:'INFJ',
+   vetor:{ideal:-1,altru:-3,ordem:1,razao:-2,vinculo:-3,preserv:-2,franq:-3,esper:-4,autov:-1},
+   essencia:'Traída por todos a quem se entregou, aprendeu a confiar apenas na própria astúcia. A Bruxa da Traição não é má — é alguém que decidiu ferir antes de ser ferida de novo.',
+   frase:'Amor? Já paguei caro demais por essa palavra.'},
+  {id:'cu',nome:'Cú Chulainn',classe:'Lancer',emoji:'🔱',art:'cu',mbti:'ESTP',
+   vetor:{ideal:2,altru:1,ordem:-1,razao:-2,vinculo:2,preserv:0,franq:5,esper:3,autov:4},
+   essencia:'Um guerreiro que encara a própria morte de frente, sem drama. Vive pela emoção da batalha e pela lealdade simples, mas não é tolo — sabe exatamente quando está sendo enviado para morrer.',
+   frase:'Se é pra morrer, que seja lutando. O resto é conversa.'},
+  {id:'nero',nome:'Nero Claudius',classe:'Saber',emoji:'🌹',art:'nero',mbti:'ESFP',
+   vetor:{ideal:3,altru:1,ordem:0,razao:-2,vinculo:2,preserv:1,franq:5,esper:4,autov:5},
+   essencia:'Uma imperatriz-artista que ama o mundo tão intensamente quanto quer ser amada por ele. Sua autoconfiança é genuína, não vaidade oca — ela realmente acredita que o belo redime tudo.',
+   frase:'Admire-me! Pois toda a minha vida foi uma obra de arte!'},
+  {id:'jalter',nome:'Jeanne Alter',classe:'Avenger',emoji:'🔥',art:'jalter',mbti:'ENFP',
+   vetor:{ideal:-3,altru:-2,ordem:-4,razao:-1,vinculo:-1,preserv:-5,franq:5,esper:-4,autov:3},
+   essencia:'Nascida do ódio e do desejo de vingança, rejeita o papel de santa que lhe impuseram. Cuspe fogo em quem espera pureza dela — mas há uma honestidade brutal em recusar ser o que não é.',
+   frase:'Santa? Eu? Não me faça rir. Eu queimo — é só o que sei fazer, e faço bem.'},
+  {id:'enkidu',nome:'Enkidu',classe:'Lancer',emoji:'🌿',art:'enkidu',mbti:'INTJ',
+   vetor:{ideal:3,altru:2,ordem:1,razao:4,vinculo:4,preserv:2,franq:2,esper:1,autov:2},
+   essencia:'Uma arma dos deuses que escolheu a amizade acima do próprio propósito. Sereno e observador, mede tudo pela lógica — exceto quando se trata do único vínculo que decidiu proteger.',
+   frase:'Eu nasci uma ferramenta. Mas foi a amizade que me tornou alguém.'},
+  {id:'richard',nome:'Richard Coração de Leão',classe:'Saber',emoji:'🦁',art:'richard',mbti:'ENFJ',
+   vetor:{ideal:4,altru:3,ordem:2,razao:0,vinculo:3,preserv:2,franq:4,esper:5,autov:4},
+   essencia:'Um rei-cavaleiro de entusiasmo contagiante, que vive a lenda arturiana como um sonho de menino. Lidera pelo carisma e pela alegria genuína, arrastando todos consigo rumo ao glorioso.',
+   frase:'Que aventura magnífica nos espera! Venha, o mundo é vasto demais para hesitar!'},
+  {id:'aoko',nome:'Aoko Aozaki',classe:'Foreigner',emoji:'✨',art:'aoko',mbti:'ENTJ',
+   vetor:{ideal:2,altru:0,ordem:-1,razao:3,vinculo:1,preserv:0,franq:5,esper:3,autov:5},
+   essencia:'A Feiticeira Azul, teimosa e explosiva, que enfrenta o impossível na base da força de vontade. Não recua de ninguém, esconde o cuidado por trás da arrogância, e nunca admite estar errada.',
+   frase:'Não me subestime. Eu não perco — recuso-me a perder.'},
+  {id:'alice',nome:'Alice Kuonji',classe:'Caster',emoji:'🎎',art:'alice',mbti:'INTP',
+   vetor:{ideal:0,altru:0,ordem:0,razao:5,vinculo:-1,preserv:0,franq:-2,esper:1,autov:2},
+   essencia:'Uma maga jovem de calma perturbadora, mais à vontade entre bonecas e teorias do que entre pessoas. Observa o mundo com distância analítica e uma curiosidade que não conhece sentimentalismo.',
+   frase:'As pessoas são imprevisíveis. As regras da magia, não. Prefiro as regras.'},
+  {id:'gilles',nome:'Gilles de Rais',classe:'Caster',emoji:'📖',art:'gilles',mbti:'ENFP',
+   vetor:{ideal:-4,altru:-2,ordem:-5,razao:-5,vinculo:1,preserv:-4,franq:-1,esper:-2,autov:-3},
+   essencia:'Um homem que amou intensamente demais e, ao perder tudo, converteu essa paixão em desespero e loucura. Sua entrega ardente permaneceu — mas voltada ao abismo, não à luz.',
+   frase:'Se o céu me tirou tudo o que amei, então que venha o abismo me ouvir!'},
+  {id:'musashi',nome:'Miyamoto Musashi',classe:'Saber',emoji:'⚔️',art:'musashi',mbti:'ESFP',
+   vetor:{ideal:2,altru:1,ordem:-2,razao:1,vinculo:1,preserv:0,franq:5,esper:4,autov:5},
+   essencia:'Uma espadachim errante que busca o Vazio pelo puro prazer do caminho. Livre, brincalhona e destemida, vive cada duelo e cada refeição com a mesma fome de estar plenamente viva.',
+   frase:'A vida é curta demais pra levar a sério! Mas a espada... a espada eu levo.'},
+  {id:'castoria',nome:'Artoria Caster (Castoria)',classe:'Caster',emoji:'💙',art:'castoria',mbti:'INFJ',
+   vetor:{ideal:4,altru:5,ordem:1,razao:1,vinculo:4,preserv:5,franq:2,esper:5,autov:0},
+   essencia:'Uma fada gentil que carrega a forma de um rei que nunca chegou a ser. Doce e encorajadora, acredita nas pessoas com uma ternura que a Artoria original jamais se permitiu — e ampara sem pedir nada em troca.',
+   frase:'Você não precisa carregar tudo sozinho. Eu acredito em você — descanse um pouco.'},
+  {id:'oberon',nome:'Oberon',classe:'Pretender',emoji:'🦋',art:'oberon',mbti:'ENTP',
+   vetor:{ideal:-3,altru:-1,ordem:-4,razao:2,vinculo:-2,preserv:-4,franq:-4,esper:-4,autov:1},
+   essencia:'Um rei das fadas que se odeia por existir e disfarça o desespero em charme e ironia. Cada palavra encantadora esconde uma agenda mais sombria — ele mente até para si mesmo sobre o que realmente quer.',
+   frase:'Sonhos são lindos, não são? Pena que eu exista justamente para quebrá-los.'},
+  {id:'mozart',nome:'Wolfgang Mozart',classe:'Caster',emoji:'🎼',art:'mozart',mbti:'ENTP',
+   vetor:{ideal:1,altru:1,ordem:-3,razao:1,vinculo:1,preserv:0,franq:5,esper:3,autov:4},
+   essencia:'Um gênio irreverente que zomba de tudo e de todos, mas ama a música acima de qualquer etiqueta. Fala o que pensa sem filtro, provoca por diversão e trata a arte com uma seriedade que reserva a pouquíssimas coisas.',
+   frase:'Regras? A música não obedece a ninguém — e eu tampouco.'},
+  {id:'indra',nome:'Indra',classe:'Lancer',emoji:'⚡',art:'indra',mbti:'ENTP',
+   vetor:{ideal:0,altru:-2,ordem:-1,razao:2,vinculo:-2,preserv:-1,franq:4,esper:2,autov:5},
+   essencia:'Um rei dos deuses volúvel e imprevisível, que age por capricho divino mais do que por qualquer princípio. Poderoso e provocador, faz o que lhe apraz e raramente presta contas de suas próprias reviravoltas.',
+   frase:'Os deuses não devem explicações. Nós simplesmente somos — e agimos.'},
+  {id:'kriemhild',nome:'Kriemhild',classe:'Berserker',emoji:'💔',art:'kriemhild',mbti:'INFP',
+   vetor:{ideal:2,altru:-1,ordem:-1,razao:-3,vinculo:4,preserv:-3,franq:1,esper:-1,autov:2},
+   essencia:'Um amor tão absoluto que se torna destruição. Devotada ao marido além da morte, transforma a dor da perda numa vingança inabalável — movida inteiramente pelo sentimento, sem um átomo de cálculo frio.',
+   frase:'Por amor eu perdoaria o mundo inteiro. Por amor, também o queimarei.'},
+  {id:'nobukatsu',nome:'Oda Nobukatsu',classe:'Archer',emoji:'🎭',art:'nobukatsu',mbti:'INFP',
+   vetor:{ideal:1,altru:0,ordem:-1,razao:-3,vinculo:2,preserv:-2,franq:-3,esper:-2,autov:-5},
+   essencia:'Eternamente à sombra de uma irmã genial, carrega a dor de nunca ser bom o bastante. Sensível e ressentido, sonha em ser reconhecido — e sua fragileza é, ao mesmo tempo, sua ferida e sua humanidade.',
+   frase:'Eu só queria... que uma vez, alguém olhasse para mim e não para ela.'},
+  {id:'karna',nome:'Karna',classe:'Lancer',emoji:'☀️',art:'karna',mbti:'ISTP',
+   vetor:{ideal:4,altru:3,ordem:1,razao:3,vinculo:0,preserv:1,franq:2,esper:2,autov:3},
+   essencia:'O filho do sol, generoso ao ponto de dar tudo o que tem sem esperar nada. Frio na aparência e desapegado, mas movido por um senso de justiça e caridade inabalável — julga pouco e concede muito.',
+   frase:'Peça o que quiser. Se está em minhas mãos dar, será dado.'},
+  {id:'salieri',nome:'Antonio Salieri',classe:'Avenger',emoji:'🎻',art:'salieri',mbti:'ISTP',
+   vetor:{ideal:-1,altru:-1,ordem:0,razao:2,vinculo:-2,preserv:-2,franq:-3,esper:-4,autov:-5},
+   essencia:'Consumido pela inveja de um talento que jamais alcançaria, afundou no ressentimento silencioso. Reservado e amargo, carrega o veneno de quem se mede eternamente contra um gênio — e sempre se acha menor.',
+   frase:'Eu trabalhei a vida inteira... e ainda assim, nunca fui ele.'},
+  {id:'baobhan',nome:'Baobhan Sith',classe:'Archer',emoji:'🩸',art:'baobhan',mbti:'ISFP',
+   vetor:{ideal:-1,altru:-1,ordem:-2,razao:0,vinculo:1,preserv:-1,franq:4,esper:2,autov:5},
+   essencia:'Uma fada sedutora e vaidosa que age pelo próprio prazer e capricho. Sob a frivolidade encantadora há uma lealdade inesperada a quem conquista seu afeto — mas ninguém manda nela, só ela mesma.',
+   frase:'Eu faço o que quero, quando quero. Se te agrada, considere-se sortudo.'},
+  {id:'arash',nome:'Arash',classe:'Archer',emoji:'🏹',art:'arash',mbti:'ISFP',
+   vetor:{ideal:4,altru:5,ordem:1,razao:0,vinculo:2,preserv:4,franq:3,esper:5,autov:2},
+   essencia:'Um herói simples e de coração imenso, que daria a própria vida sem hesitar por um amanhã melhor. Sem grandes discursos nem ambições — apenas um homem bom que faz o que é certo e sorri ao fazê-lo.',
+   frase:'Se a minha vida comprar a paz de vocês, então é um preço barato. Sorria por mim.'},
+  {id:'meltryllis',nome:'Meltryllis',classe:'Alter Ego',emoji:'👠',art:'meltryllis',mbti:'ISFP',
+   vetor:{ideal:0,altru:-2,ordem:-2,razao:-1,vinculo:2,preserv:-3,franq:4,esper:-2,autov:3},
+   essencia:'Orgulhosa e cortante, esconde uma vulnerabilidade profunda atrás do desdém e da crueldade. Difícil de agradar e mais difícil de conquistar — mas quem atravessa suas espinhas encontra uma lealdade ferozmente sincera.',
+   frase:'Não pense que sou gentil. E não ouse pensar que eu me importo... muito.'},
+  {id:'ozymandias',nome:'Ozymandias',classe:'Rider',emoji:'☀️',art:'ozy',mbti:'ESTJ',
+   vetor:{ideal:3,altru:1,ordem:4,razao:2,vinculo:1,preserv:2,franq:5,esper:4,autov:5},
+   essencia:'O Rei dos Reis, o Faraó Sol, cuja autoridade é tão absoluta quanto justa. Exige grandeza de si e dos outros, reconhece o mérito onde ele existe, e governa com uma confiança que jamais precisou de permissão.',
+   frase:'Eu sou o Sol encarnado. Aja com grandeza diante de mim, e serás reconhecido.'},
+  {id:'benienma',nome:'Benienma',classe:'Saber',emoji:'🌾',art:'benienma',mbti:'ESTJ',
+   vetor:{ideal:2,altru:2,ordem:5,razao:3,vinculo:2,preserv:3,franq:4,esper:2,autov:1},
+   essencia:'Rigorosa e trabalhadora, exige disciplina e capricho de todos — a começar de si mesma. Sua severidade vem do cuidado: ela cobra porque quer que você seja melhor, e não descansa enquanto o trabalho não estiver perfeito.',
+   frase:'Refaça. Um trabalho bem feito é a única forma de respeito que aceito.'},
+  {id:'ibaraki_r',nome:'Ibaraki Douji',classe:'Berserker',emoji:'👹',art:'ibaraki',mbti:'ESTJ',
+   vetor:{ideal:1,altru:-1,ordem:2,razao:0,vinculo:1,preserv:-1,franq:5,esper:3,autov:5},
+   essencia:'Uma oni orgulhosa que não se curva a ninguém e exige o que é seu por direito. Teimosa e direta, mascara com arrogância um senso de honra genuíno — e uma lealdade relutante a quem prova ser digno de sua confiança.',
+   frase:'Eu sou uma oni! Não venha me dar ordens — eu tomo o que é meu!'},
+  {id:'parvati',nome:'Parvati',classe:'Lancer',emoji:'💗',art:'parvati',mbti:'ESFJ',
+   vetor:{ideal:3,altru:5,ordem:2,razao:0,vinculo:5,preserv:4,franq:2,esper:5,autov:1},
+   essencia:'A deusa da devoção, gentil e amorosa ao ponto de colocar a felicidade alheia sempre acima da própria. Tímida no amor mas inabalável no cuidado, enxerga o melhor nas pessoas e nutre cada vínculo com ternura sincera.',
+   frase:'A felicidade de quem eu amo é a minha própria. Deixe-me cuidar de você.'},
+  {id:'raikou',nome:'Minamoto no Raikou',classe:'Berserker',emoji:'🌸',art:'raikou',mbti:'ESFJ',
+   vetor:{ideal:1,altru:3,ordem:3,razao:-4,vinculo:5,preserv:0,franq:-1,esper:2,autov:3},
+   essencia:'Um amor maternal tão avassalador que beira a obsessão. Devotada a proteger e cuidar dos seus, transborda afeto — mas seu zelo pode se tornar sufocante, pois nada a detém quando acredita agir pelo bem de quem ama.',
+   frase:'Deixe a mamãe cuidar de tudo. Eu jamais permitirei que nada lhe aconteça... jamais.'},
+  {id:'gawain',nome:'Gawain',classe:'Saber',emoji:'🌞',art:'gawain',mbti:'ESFJ',
+   vetor:{ideal:5,altru:4,ordem:5,razao:1,vinculo:3,preserv:3,franq:4,esper:4,autov:3},
+   essencia:'O Cavaleiro do Sol, cortês e leal até o âmago, que serve seu rei com devoção inabalável. Cumpre seu dever com honra e gentileza, coloca o código de cavalaria acima de si, e trata cada pessoa com a dignidade que acredita ser devida.',
+   frase:'Por meu rei e por meu dever, minha lâmina não conhece hesitação.'},
+  {id:'lilith',nome:'Lilith',classe:'Berserker',emoji:'🌙',art:'lilith',mbti:'ENFP',
+   vetor:{ideal:-1,altru:0,ordem:-3,razao:-2,vinculo:3,preserv:-1,franq:4,esper:3,autov:2},
+   essencia:'Uma criança impulsiva de emoções vastas e incontroláveis, que ama e teme com a mesma intensidade. Carente de afeto e pura em seus impulsos, age pelo coração sem filtro algum — para o bem e para o caos.',
+   frase:'Você vai ficar comigo, não vai? Prometa que não vai me deixar sozinha!'},
+  {id:'ishtar',nome:'Ishtar',classe:'Archer',emoji:'💎',art:'ishtar',mbti:'ENFP',
+   vetor:{ideal:0,altru:-2,ordem:-2,razao:0,vinculo:0,preserv:-1,franq:5,esper:4,autov:5},
+   essencia:'Uma deusa caprichosa, orgulhosa e deslumbrante, que faz o que bem entende e espera adoração em troca. Volúvel como o brilho de Vênus, esconde uma competência genuína atrás da vaidade e do egoísmo charmoso.',
+   frase:'Considere-se honrado! Não é todo dia que uma deusa dá atenção a você.'},
+  {id:'artoria_alter',nome:'Artoria Pendragon (Alter)',classe:'Saber',emoji:'🖤',art:'artoria_alter',mbti:'ISTJ',
+   vetor:{ideal:2,altru:0,ordem:5,razao:5,vinculo:-3,preserv:0,franq:2,esper:-2,autov:4},
+   essencia:'O rei que abandonou os ideais ingênuos e abraçou a lógica fria do resultado. Para salvar o reino, faria o que o eu anterior jamais faria — sacrifícios sem culpa, decisões sem hesitação. O fim justifica os meios.',
+   frase:'Ideais não salvam ninguém. Apenas o poder de realizá-los importa.'},
+  {id:'ryougi',nome:'Shiki Ryougi',classe:'Saber',emoji:'🔪',art:'ryougi',mbti:'ISTP',
+   vetor:{ideal:1,altru:0,ordem:0,razao:4,vinculo:0,preserv:0,franq:-2,esper:0,autov:5},
+   essencia:'Calma, cortante e economicamente distante, vive num equilíbrio silencioso com a morte que enxerga em tudo. Não desperdiça palavras nem sentimentos — mas sob a frieza há uma lealdade quieta e uma humanidade que ela mesma custa a admitir.',
+   frase:'Matar ou não matar... no fim, é só mais uma escolha. Eu escolho por mim.'},
+  {id:'ryougi_void',nome:'Shiki Ryougi (VOID)',classe:'Saber',emoji:'⚫',art:'ryougi_void',mbti:'INTP',
+   vetor:{ideal:0,altru:-2,ordem:0,razao:5,vinculo:-4,preserv:-1,franq:-3,esper:-1,autov:3},
+   essencia:'A personalidade original conectada ao Vazio — serena, impessoal e absoluta. Observa a existência de uma distância quase divina, sem apego nem crueldade, apenas a clareza fria de quem compreende o Nada de onde tudo veio.',
+   frase:'Vida e morte são a mesma linha. Eu apenas... vejo onde ela termina.'},
+  {id:'demeter',nome:'Demeter',classe:'Lancer',emoji:'🌾',art:'demeter',mbti:'ISFJ',
+   vetor:{ideal:2,altru:5,ordem:3,razao:0,vinculo:5,preserv:5,franq:2,esper:3,autov:1},
+   essencia:'A deusa-mãe da colheita, cujo amor nutridor abraça a todos como filhos. Paciente e provedora, encontra propósito em cuidar e fazer florescer — e sua dor mais profunda é a de uma mãe separada de quem ama.',
+   frase:'Venha, coma, descanse. Enquanto eu estiver aqui, ninguém passará fome.'},
+  {id:'arjuna',nome:'Arjuna',classe:'Archer',emoji:'🏹',art:'arjuna',mbti:'INTJ',
+   vetor:{ideal:4,altru:1,ordem:4,razao:4,vinculo:0,preserv:2,franq:-2,esper:0,autov:-2},
+   essencia:'Um herói perfeito por fora e atormentado por dentro, que persegue a virtude com disciplina implacável. Reprime as próprias emoções em nome do dever e carrega, em silêncio, o peso de nunca se sentir bom o suficiente diante dos deuses.',
+   frase:'Eu devo ser perfeito. É a única forma de justificar o que me foi dado.'},
+  {id:'gilgamesh_caster',nome:'Gilgamesh (Caster)',classe:'Caster',emoji:'📜',art:'gil_caster',mbti:'ENTJ',
+   vetor:{ideal:3,altru:2,ordem:4,razao:4,vinculo:1,preserv:3,franq:5,esper:3,autov:5},
+   essencia:'O Rei Sábio em seus anos de governo, que desceu do trono para guiar a humanidade com pragmatismo e visão. A mesma autoridade absoluta do jovem rei, agora temperada por responsabilidade — comanda para construir, não apenas para reinar.',
+   frase:'Um bom rei conhece seu povo. Venha, deixe-me mostrar como se governa de verdade.'},
+  {id:'yu',nome:'Consort Yu (Yu Mei-Ren)',classe:'Assassin',emoji:'🌹',art:'yu',mbti:'ISTP',
+   vetor:{ideal:1,altru:2,ordem:3,razao:2,vinculo:4,preserv:1,franq:-3,esper:1,autov:2},
+   essencia:'Eficiente, controlada e implacável em seu trabalho, esconde uma lealdade e uma ternura profundas sob a fachada profissional. Age com precisão fria, mas tudo o que faz é movido por um afeto que ela raramente deixa transparecer.',
+   frase:'Sentimentos atrapalham o trabalho. Guardo os meus para quem realmente importa.'},
+  {id:'edmond',nome:'Edmond Dantès',classe:'Avenger',emoji:'🗝️',art:'edmond',mbti:'INTJ',
+   vetor:{ideal:-2,altru:-1,ordem:2,razao:5,vinculo:-2,preserv:-3,franq:1,esper:-1,autov:5},
+   essencia:'O Conde da Vingança, que transformou uma traição absoluta numa obra-prima de retribuição calculada. Frio, senhor de si e assustadoramente paciente — sua fúria não é impulso, é um plano executado com perfeição gélida ao longo de anos.',
+   frase:'Eu esperei anos por este momento. A vingança não tem pressa — só destino.'},
+  {id:'francesca',nome:'Francesca Prelati',classe:'Caster',emoji:'🃏',art:'francesca',mbti:'ENTP',
+   vetor:{ideal:-2,altru:-2,ordem:-4,razao:1,vinculo:-1,preserv:-3,franq:4,esper:2,autov:4},
+   essencia:'Uma maga travessa e caótica que trata o mundo como um grande brinquedo e a destruição como entretenimento. Imprevisível e provocadora, faz o que dá vontade pelo puro prazer do espetáculo — sem culpa, sem freio, só diversão.',
+   frase:'Ah, que tédio a ordem! Vamos bagunçar tudo e ver que gracinhas acontecem?'},
+  {id:'iskandar',nome:'Iskandar',classe:'Rider',emoji:'🐂',art:'iskandar',mbti:'ESFP',
+   vetor:{ideal:3,altru:2,ordem:1,razao:1,vinculo:4,preserv:2,franq:5,esper:5,autov:5},
+   essencia:'O Rei dos Conquistadores, de presença colossal e apetite pela vida à altura de sua lenda. Lidera pela paixão e pelo exemplo, ama seus companheiros como iguais, e sonha grande demais para caber em qualquer trono — o mundo inteiro era pequeno para ele.',
+   frase:'Venham comigo! O fim do mundo nos espera, e que festa magnífica será a jornada!'},
+  {id:'astolfo',nome:'Astolfo',classe:'Saber',emoji:'🎀',art:'astolfo',mbti:'ENFP',
+   vetor:{ideal:2,altru:3,ordem:-3,razao:-2,vinculo:3,preserv:1,franq:5,esper:5,autov:4},
+   essencia:'Um cavaleiro alegre e impulsivo que vive cada instante com entusiasmo transbordante e coração aberto. Sem malícia nem cálculo, segue o próprio senso de certo com uma lealdade radiante — livre, espontâneo e incapaz de fingir ser quem não é.',
+   frase:'Não sei o que vem depois, mas sei que vai ser divertido! Confia em mim!'},
+  {id:'medusa',nome:'Medusa',classe:'Rider',emoji:'🐍',art:'medusa',mbti:'INFJ',
+   vetor:{ideal:1,altru:2,ordem:1,razao:1,vinculo:4,preserv:2,franq:-2,esper:0,autov:0},
+   essencia:'Uma alma gentil amaldiçoada a ser vista como monstro, que carrega a solidão com dignidade silenciosa. Reservada e melancólica, protege ferozmente os poucos que a enxergam de verdade — e sob a serenidade fria arde uma devoção inabalável.',
+   frase:'Já fui temida, odiada, chamada de monstro. Mas por você... eu voltaria a ser humana.'},
+];
+// 16 perguntas. Cada opção soma pesos aos eixos (peso ~1-3). O Protocolo pede a
+// VERSÃO HUMANA e normalizada do traço — nada de "você se sacrificaria?", e sim
+// dilemas cotidianos que discriminam de verdade. Vários itens separam como a
+// pessoa trata os OUTROS de como trata a SI (heteroaplicação vs. autoaplicação).
+const RESSONANCIA_PERGUNTAS=[
+  {q:'Um colega leva o crédito por uma ideia que era sua, na frente do chefe. Você...',
+   opcoes:[
+     {t:'Corrijo na hora, calmamente: "na verdade essa parte foi minha".',e:{franq:3,autov:2,ordem:1}},
+     {t:'Deixo passar dessa vez, mas registro pra mim que não é confiável.',e:{franq:-2,razao:2,esper:-1}},
+     {t:'Falo com ele em particular depois — exposição pública não resolve.',e:{ordem:2,razao:1,preserv:1}},
+     {t:'Engulo. Brigar por crédito me parece mais desgastante que vale.',e:{autov:-3,ideal:-2,esper:-1}},
+   ]},
+  {q:'É sexta à noite e o grupo não decide o restaurante há 40 minutos. Você...',
+   opcoes:[
+     {t:'Assumo: "vamos no lugar X, quem discorda fala agora". E resolve.',e:{ordem:2,autov:3,franq:2}},
+     {t:'Sugiro uma votação rápida pra ser justo com todo mundo.',e:{ordem:3,altru:1,razao:1}},
+     {t:'Tanto faz, vou no que a maioria quiser — só quero comer.',e:{altru:2,razao:-1,autov:-1}},
+     {t:'Já perdi a fome de tanta enrolação. Sugiro cada um por si.',e:{franq:2,vinculo:-2,altru:-2,preserv:-1}},
+   ]},
+  {q:'Você prometeu ajudar um amigo na mudança, mas acordou exausto e sem vontade. Você...',
+   opcoes:[
+     {t:'Vou assim mesmo. Prometi, e minha palavra vale.',e:{ideal:3,ordem:2,vinculo:1}},
+     {t:'Vou, mas aviso que preciso sair mais cedo.',e:{ordem:1,franq:2,altru:1}},
+     {t:'Ligo, sou honesto sobre o cansaço e remarco se der.',e:{franq:3,razao:1,vinculo:1}},
+     {t:'Invento uma desculpa — ninguém precisa saber que só não quis ir.',e:{franq:-3,ideal:-3,altru:-1}},
+   ]},
+  {q:'No trabalho em grupo da faculdade, um integrante sumiu e não fez a parte dele. Na apresentação você...',
+   opcoes:[
+     {t:'Conto a verdade ao professor. Não vou levar culpa pelo que não fiz.',e:{franq:3,ordem:2,autov:1}},
+     {t:'Cubro a parte dele calado pra não prejudicar o grupo.',e:{altru:3,preserv:2,autov:-1}},
+     {t:'Falo com ele antes e dou uma última chance de aparecer.',e:{vinculo:2,esper:2,preserv:1}},
+     {t:'Deixo o buraco aparecer. O problema é dele, que ele lide.',e:{razao:2,altru:-3,preserv:-2}},
+   ]},
+  {q:'Você recebe uma crítica dura sobre um trabalho no qual se esforçou muito. Sua primeira reação interna é...',
+   opcoes:[
+     {t:'Analiso friamente o que tem de verdade ali.',e:{razao:3,autov:1}},
+     {t:'Fico abalado e questiono se sou bom o bastante mesmo.',e:{autov:-3,esper:-1}},
+     {t:'Fico na defensiva — a pessoa não entendeu meu esforço.',e:{franq:1,razao:-2,ideal:-2,autov:2}},
+     {t:'Agradeço de verdade. Crítica honesta é rara e útil.',e:{razao:2,esper:2,autov:1}},
+   ]},
+  {q:'Um conhecido passa por uma fase ruim e desabafa com você por mensagem, tarde da noite. Você...',
+   opcoes:[
+     {t:'Largo o que estava fazendo e respondo com calma, no tempo que precisar.',e:{altru:3,vinculo:2,preserv:1}},
+     {t:'Respondo com carinho mas ponho um limite: "amanhã a gente conversa direito".',e:{altru:1,ordem:2,franq:2}},
+     {t:'Ouço, mas tento já oferecer soluções práticas pro problema.',e:{razao:3,preserv:1}},
+     {t:'Fico sem saber o que dizer — esse tipo de conversa me trava.',e:{franq:-2,vinculo:-1,razao:1}},
+   ]},
+  {q:'Você percebe que errou feio em algo, mas ninguém notou ainda. Você...',
+   opcoes:[
+     {t:'Assumo na hora, antes que vire um problema maior.',e:{franq:3,ordem:2,ideal:1}},
+     {t:'Conserto sozinho, no silêncio, e ninguém precisa saber.',e:{preserv:2,franq:-2,autov:1}},
+     {t:'Fico remoendo a culpa mesmo depois de resolver.',e:{autov:-3,razao:-1}},
+     {t:'Se ninguém viu, não aconteceu. Sigo em frente.',e:{razao:2,franq:-2,esper:1,autov:1}},
+   ]},
+  {q:'Está tudo dando errado num projeto pessoal importante. No fundo, você acha que...',
+   opcoes:[
+     {t:'Vai dar certo se eu insistir. Sempre dá, no fim.',e:{esper:3,ideal:2}},
+     {t:'Talvez não dê — mas prefiro tentar até o fim do que desistir.',e:{esper:1,preserv:2,ideal:1}},
+     {t:'Já esperava. As coisas costumam desandar mesmo.',e:{esper:-3,razao:1}},
+     {t:'Reavalio friamente se ainda vale a pena continuar.',e:{razao:3,esper:-1}},
+   ]},
+  {q:'Alguém te trata mal sem motivo num dia qualquer (atendente, motorista, estranho). Você...',
+   opcoes:[
+     {t:'Respondo à altura. Não sou saco de pancada de ninguém.',e:{franq:3,autov:2,preserv:-3,ideal:-1}},
+     {t:'Ignoro. A pessoa deve estar tendo um dia ruim.',e:{altru:2,esper:2,preserv:1}},
+     {t:'Fico remoendo a cena por horas depois.',e:{autov:-2,razao:-1,vinculo:1}},
+     {t:'Mantenho a educação, mas encerro o contato na hora.',e:{ordem:2,razao:2,franq:1}},
+   ]},
+  {q:'Você tem uma tarde livre, sem nenhum compromisso. O que soa melhor?',
+   opcoes:[
+     {t:'Chamar gente pra fazer algo juntos.',e:{vinculo:3,franq:1}},
+     {t:'Curtir sozinho, no meu ritmo, sem ninguém.',e:{vinculo:-3,razao:1}},
+     {t:'Adiantar algo produtivo que estava pendente.',e:{ordem:2,razao:2,ideal:1}},
+     {t:'Depende do dia — às vezes gente, às vezes solidão.',e:{vinculo:0,razao:1,esper:1}},
+   ]},
+  {q:'Um amigo próximo te decepciona de um jeito que dói. Com o tempo, você...',
+   opcoes:[
+     {t:'Converso, tento entender, e sigo com a amizade.',e:{esper:3,vinculo:2,preserv:1}},
+     {t:'Perdoo, mas nunca mais confio do mesmo jeito.',e:{esper:-1,franq:-1,razao:1}},
+     {t:'Me afasto em silêncio, sem confronto.',e:{franq:-3,vinculo:-1,preserv:1}},
+     {t:'Falo tudo que senti, doa em quem doer, e aí decido.',e:{franq:3,ideal:1,autov:1}},
+   ]},
+  {q:'No seu grupo de amigos, o papel que mais combina com você é o de...',
+   opcoes:[
+     {t:'Quem organiza, marca as coisas e mantém todo mundo junto.',e:{ordem:3,vinculo:2,autov:2}},
+     {t:'Quem escuta, acolhe e cuida de quem está mal.',e:{altru:3,vinculo:2}},
+     {t:'Quem traz o caos divertido, a ideia maluca, a energia.',e:{ordem:-2,franq:2,esper:2}},
+     {t:'Quem está junto, mas mais na dele, observando.',e:{vinculo:-1,razao:2,franq:-1}},
+   ]},
+  {q:'Você discorda fortemente de uma decisão do grupo, mas já foi votada. Você...',
+   opcoes:[
+     {t:'Aceito e apoio. A decisão foi coletiva, ponto.',e:{ordem:3,altru:1,autov:-1}},
+     {t:'Aceito, mas deixo claro que discordo e por quê.',e:{franq:3,ordem:1,autov:2}},
+     {t:'Sigo do meu jeito por fora, sem brigar com ninguém.',e:{ordem:-3,ideal:-2,franq:-1}},
+     {t:'Continuo argumentando até tentar reverter.',e:{ideal:2,franq:2,autov:2}},
+   ]},
+  {q:'Elogiam você publicamente por algo que fez bem. Por dentro, você...',
+   opcoes:[
+     {t:'Sinto orgulho e recebo bem. Mereço isso.',e:{autov:3,franq:1}},
+     {t:'Fico sem graça e minimizo: "não foi nada demais".',e:{autov:-3,altru:1}},
+     {t:'Divido o mérito com quem ajudou.',e:{altru:2,vinculo:2,razao:1}},
+     {t:'Gosto, mas já penso no próximo desafio.',e:{ideal:1,razao:2,autov:2}},
+   ]},
+  {q:'Você vê alguém sendo tratado injustamente numa situação do dia a dia. Você...',
+   opcoes:[
+     {t:'Intervenho na hora, mesmo que dê confusão.',e:{ideal:3,franq:2,preserv:1}},
+     {t:'Ofereço ajuda discreta à pessoa depois, sem alarde.',e:{altru:3,preserv:2,franq:-1}},
+     {t:'Avalio se é minha briga antes de me meter.',e:{razao:3,altru:-2}},
+     {t:'Fico incomodado, mas dificilmente me intrometo.',e:{franq:-2,ideal:-2,preserv:-1}},
+   ]},
+  {q:'No fim das contas, você gostaria de ser lembrado como alguém que...',
+   opcoes:[
+     {t:'Fez o que era certo, mesmo quando foi difícil ou solitário.',e:{ideal:3,autov:2,vinculo:-1}},
+     {t:'Esteve presente e cuidou de quem precisou.',e:{altru:3,vinculo:2}},
+     {t:'Viveu intensamente, do seu jeito, sem se explicar.',e:{franq:2,ordem:-2,preserv:-2,autov:2}},
+     {t:'Deixou tudo um pouco melhor e mais organizado do que achou.',e:{ordem:3,preserv:2,razao:1}},
+   ]},
+  {q:'Você recebe um dinheiro extra inesperado. O impulso mais sincero é...',
+   opcoes:[
+     {t:'Guardar — segurança futura antes de qualquer coisa.',e:{ordem:3,razao:2,preserv:2}},
+     {t:'Gastar com algo que me dê prazer agora, mereço.',e:{razao:-2,autov:2,preserv:-2}},
+     {t:'Usar pra fazer algo bom por alguém que amo.',e:{altru:3,vinculo:2}},
+     {t:'Investir num sonho ou projeto que venho adiando.',e:{ideal:2,esper:3,autov:1}},
+   ]},
+  {q:'É tarde da noite e você não consegue dormir. O que costuma ocupar sua cabeça?',
+   opcoes:[
+     {t:'Coisas que eu disse ou fiz e me arrependo.',e:{autov:-3,razao:-1}},
+     {t:'Planos, listas, o que preciso resolver amanhã.',e:{ordem:3,razao:2}},
+     {t:'Devaneios, ideias, mundos que invento na cabeça.',e:{razao:-2,esper:2,franq:-1}},
+     {t:'Nada demais — apago rápido, sinceramente.',e:{esper:2,autov:2,preserv:1}},
+   ]},
+  {q:'Sobre pedir ajuda quando você está com dificuldade, a verdade é que você...',
+   opcoes:[
+     {t:'Peço sem problema, faz parte.',e:{franq:3,vinculo:2,autov:1}},
+     {t:'Só peço em último caso, depois de tentar tudo sozinho.',e:{autov:-1,razao:2,franq:-2}},
+     {t:'Quase nunca peço — odeio dar trabalho aos outros.',e:{franq:-3,autov:-3,altru:1}},
+     {t:'Resolvo sozinho por princípio, não por vergonha.',e:{vinculo:-2,autov:3,razao:1}},
+   ]},
+  {q:'Pensando na sua rotina, o que mais se parece com você?',
+   opcoes:[
+     {t:'Horários e hábitos firmes — gosto da previsibilidade.',e:{ordem:3,razao:1}},
+     {t:'Um caos que só eu entendo, mas que funciona pra mim.',e:{ordem:-3,franq:1,esper:1}},
+     {t:'Depende muito do meu humor e da energia do dia.',e:{razao:-2,preserv:-1,vinculo:1}},
+     {t:'Tento ter rotina, mas vivo furando ela mesmo.',e:{ordem:-1,esper:1,autov:-1}},
+   ]},
+  {q:'Uma amizade antiga foi se apagando sem briga nenhuma. Você...',
+   opcoes:[
+     {t:'Mando mensagem, tento reacender — vínculos importam.',e:{vinculo:3,esper:2,franq:2}},
+     {t:'Deixo ir. As pessoas seguem caminhos, tudo bem.',e:{vinculo:-2,razao:2,esper:1}},
+     {t:'Sinto falta, mas tenho vergonha de dar o primeiro passo.',e:{franq:-2,autov:-2,vinculo:1}},
+     {t:'Nem percebo direito até alguém comentar.',e:{vinculo:-3,razao:1,franq:-1}},
+   ]},
+  {q:'Quando você conquista algo que queria muito, logo depois costuma...',
+   opcoes:[
+     {t:'Comemorar de verdade e me orgulhar.',e:{autov:3,esper:2,franq:1}},
+     {t:'Já pensar no próximo objetivo, sem parar muito.',e:{ideal:2,ordem:2,razao:1}},
+     {t:'Sentir um vazio estranho, como se faltasse algo.',e:{autov:-2,esper:-2,razao:-1}},
+     {t:'Querer dividir a alegria com quem esteve comigo.',e:{altru:2,vinculo:3}},
+   ]},
+  {q:'Existe uma versão sua que você esconde da maioria das pessoas?',
+   opcoes:[
+     {t:'Sim, mostro pouco de mim — poucos me conhecem de verdade.',e:{franq:-3,vinculo:-1,razao:1}},
+     {t:'Não muito — sou bem o que aparento ser.',e:{franq:3,autov:2}},
+     {t:'Só uma parte mais sensível que evito expor.',e:{franq:-2,autov:-1,vinculo:1}},
+     {t:'Escondo minhas inseguranças atrás de bom humor.',e:{esper:1,autov:-2,franq:-1}},
+   ]},
+  {q:'Diante de uma regra que ninguém está fiscalizando, você...',
+   opcoes:[
+     {t:'Sigo do mesmo jeito — quem eu sou não muda com plateia.',e:{ideal:3,ordem:3,autov:2}},
+     {t:'Uso o bom senso: se não faz mal a ninguém, relevo.',e:{razao:3,ordem:-1}},
+     {t:'Confesso que aproveito a brecha, sim.',e:{ordem:-3,franq:2,ideal:-2}},
+     {t:'Depende do risco de ser pego, sendo honesto.',e:{razao:2,ideal:-1,esper:-1}},
+   ]},
+];
+
+// ── Perguntas MBTI dedicadas (3 por dicotomia) ──
+// Cada opção soma +1 a uma das letras da dicotomia. Cenários realistas, seguindo
+// as mesmas regras: nada de "qual você prefere?", e sim como a pessoa AGE.
+const RESSONANCIA_MBTI_PERGUNTAS=[
+  // ─── E / I (Extroversão ↔ Introversão) ───
+  {dic:'EI',q:'Você chega numa festa onde conhece pouca gente. Ao longo da noite, você...',
+   opcoes:[
+     {t:'Circula, puxa conversa e sai conhecendo um monte de gente nova.',letra:'E'},
+     {t:'Encosta com as duas ou três pessoas que já conhece e fica por ali.',letra:'I'},
+   ]},
+  {dic:'EI',q:'Depois de uma semana intensa, o que de fato te recarrega é...',
+   opcoes:[
+     {t:'Sair, ver gente, movimento — ficar em casa sozinho me deixa pra baixo.',letra:'E'},
+     {t:'Um tempo sozinho, quieto, sem ninguém cobrando nada de mim.',letra:'I'},
+   ]},
+  {dic:'EI',q:'Quando algo bom te acontece, seu impulso é...',
+   opcoes:[
+     {t:'Contar pra alguém na hora — dividir faz parte da alegria.',letra:'E'},
+     {t:'Saborear sozinho primeiro, e só depois talvez comentar.',letra:'I'},
+   ]},
+  // ─── S / N (Sensação ↔ Intuição) ───
+  {dic:'SN',q:'Ao começar algo novo (um projeto, um hobby), você presta mais atenção...',
+   opcoes:[
+     {t:'Nos passos concretos: o que fazer, com o quê, na ordem certa.',letra:'S'},
+     {t:'No quadro geral: onde isso pode chegar, o que poderia virar.',letra:'N'},
+   ]},
+  {dic:'SN',q:'Numa conversa, você se pega mais interessado em...',
+   opcoes:[
+     {t:'Fatos, histórias reais, o que aconteceu de verdade.',letra:'S'},
+     {t:'Ideias, teorias, "e se fosse assim?" e possibilidades.',letra:'N'},
+   ]},
+  {dic:'SN',q:'Quando lembra de uma viagem, o que vem mais forte é...',
+   opcoes:[
+     {t:'Os detalhes: o cheiro, o sabor, o lugar exato, o que você viu.',letra:'S'},
+     {t:'A sensação geral e as ideias que aquilo despertou em você.',letra:'N'},
+   ]},
+  // ─── T / F (Pensamento ↔ Sentimento) ───
+  {dic:'TF',q:'Um amigo te pede opinião sobre uma decisão que você acha errada. Você...',
+   opcoes:[
+     {t:'Falo a verdade com clareza, mesmo que soe dura.',letra:'T'},
+     {t:'Considero como ele vai se sentir e escolho as palavras com cuidado.',letra:'F'},
+   ]},
+  {dic:'TF',q:'Ao resolver um conflito entre duas pessoas, você pesa mais...',
+   opcoes:[
+     {t:'O que é justo e lógico, olhando os fatos com imparcialidade.',letra:'T'},
+     {t:'Como cada um está se sentindo e o que preserva a relação.',letra:'F'},
+   ]},
+  {dic:'TF',q:'O que te faz admirar alguém mais rápido?',
+   opcoes:[
+     {t:'Competência e coerência — a pessoa sabe o que faz.',letra:'T'},
+     {t:'Bondade e empatia — a pessoa se importa de verdade.',letra:'F'},
+   ]},
+  // ─── J / P (Julgamento ↔ Percepção) ───
+  {dic:'JP',q:'Sobre planos de fim de semana, você prefere...',
+   opcoes:[
+     {t:'Ter tudo mais ou menos combinado com antecedência.',letra:'J'},
+     {t:'Deixar em aberto e decidir na hora, conforme rolar.',letra:'P'},
+   ]},
+  {dic:'JP',q:'Sua mesa, seu quarto, seus arquivos costumam estar...',
+   opcoes:[
+     {t:'Organizados — sei onde está cada coisa, e gosto assim.',letra:'J'},
+     {t:'Numa bagunça funcional que só eu entendo (e tá tudo bem).',letra:'P'},
+   ]},
+  {dic:'JP',q:'Diante de um prazo, você tende a...',
+   opcoes:[
+     {t:'Começar cedo e ir adiantando pra não deixar pro fim.',letra:'J'},
+     {t:'Render melhor sob pressão, perto do prazo mesmo.',letra:'P'},
+   ]},
+  {dic:'EI',q:'Num dia difícil, o que te faz sentir melhor mais rápido é...',
+   opcoes:[
+     {t:'Estar perto de gente, mesmo sem falar do problema.',letra:'E'},
+     {t:'Um tempo só meu, longe de todo mundo.',letra:'I'},
+   ]},
+  {dic:'SN',q:'Quando você compra algo importante, você decide mais...',
+   opcoes:[
+     {t:'Comparando specs, preços e avaliações concretas.',letra:'S'},
+     {t:'Pela sensação e pelo que aquilo representa pra mim.',letra:'N'},
+   ]},
+  {dic:'TF',q:'Alguém que você ama toma uma decisão que você acha errada. Pesa mais...',
+   opcoes:[
+     {t:'Apontar com franqueza onde está o erro, por bem.',letra:'T'},
+     {t:'Apoiar do lado, mesmo discordando, pra não magoar.',letra:'F'},
+   ]},
+  {dic:'JP',q:'Suas ideias e vontades sobre o futuro costumam ser...',
+   opcoes:[
+     {t:'Metas definidas, com passos e prazos na cabeça.',letra:'J'},
+     {t:'Possibilidades em aberto que gosto de manter fluidas.',letra:'P'},
+   ]},
+];
+
+// Constrói o vetor do jogador a partir das respostas (array de índices).
+// Viés esperado por eixo: valor médio que um jogador acumularia escolhendo ao
+// acaso. As opções "maduras" (ordem, razão, franqueza) aparecem mais, então sem
+// corrigir isso todo mundo cairia nos mesmos 2-3 Servos "positivos". Subtraímos
+// o viés para centralizar o vetor no DESVIO REAL da pessoa, e reescalamos.
+const RESSONANCIA_BIAS=(()=>{
+  const b={};RESSONANCIA_EIXOS.forEach(x=>b[x.id]=0);
+  RESSONANCIA_PERGUNTAS.forEach(p=>{
+    const soma={};RESSONANCIA_EIXOS.forEach(x=>soma[x.id]=0);
+    p.opcoes.forEach(o=>{for(const k in o.e)soma[k]+=o.e[k];});
+    RESSONANCIA_EIXOS.forEach(x=>b[x.id]+=soma[x.id]/p.opcoes.length);
+  });
+  return b;
+})();
+// Amplitude típica de desvio por eixo (metade do alcance possível ao redor do
+// viés), usada para reescalar cada eixo de volta para −5..+5 de forma justa.
+const RESSONANCIA_SPREAD=(()=>{
+  const sp={};RESSONANCIA_EIXOS.forEach(x=>sp[x.id]=0);
+  RESSONANCIA_PERGUNTAS.forEach(p=>{
+    const mn={},mx={};RESSONANCIA_EIXOS.forEach(x=>{mn[x.id]=0;mx[x.id]=0;});
+    p.opcoes.forEach(o=>{RESSONANCIA_EIXOS.forEach(x=>{const val=o.e[x.id]||0;if(val<mn[x.id])mn[x.id]=val;if(val>mx[x.id])mx[x.id]=val;});});
+    RESSONANCIA_EIXOS.forEach(x=>sp[x.id]+=(mx[x.id]-mn[x.id])/2);
+  });
+  RESSONANCIA_EIXOS.forEach(x=>{if(sp[x.id]<1)sp[x.id]=1;});
+  return sp;
+})();
+function calcVetorJogador(respostas){
+  const v={};RESSONANCIA_EIXOS.forEach(x=>v[x.id]=0);
+  respostas.forEach((idx,i)=>{
+    const p=RESSONANCIA_PERGUNTAS[i];if(!p)return;
+    const op=p.opcoes[idx];if(!op)return;
+    for(const k in op.e)v[k]=(v[k]||0)+op.e[k];
+  });
+  // Centraliza (remove o viés das perguntas) e reescala para −5..+5 por eixo.
+  RESSONANCIA_EIXOS.forEach(x=>{
+    const centrado=v[x.id]-RESSONANCIA_BIAS[x.id];
+    v[x.id]=clamp(Math.round((centrado/RESSONANCIA_SPREAD[x.id])*5),-5,5);
+  });
+  return v;
+}
+// Distância euclidiana entre o vetor do jogador e o de um Servo.
+function distanciaVetor(a,b){
+  let soma=0;RESSONANCIA_EIXOS.forEach(x=>{const d=(a[x.id]||0)-(b[x.id]||0);soma+=d*d;});
+  return Math.sqrt(soma);
+}
+// Ranqueia os Servos por proximidade; retorna [{servo,dist,afinidade%}] ordenado.
+function ranquearServos(vetorJogador){
+  const maxDist=Math.sqrt(RESSONANCIA_EIXOS.length*100); // pior caso teórico
+  return RESSONANCIA_SERVOS.map(sv=>{
+    const dist=distanciaVetor(vetorJogador,sv.vetor);
+    const afinidade=Math.round(clamp(1-dist/maxDist,0,1)*100);
+    return{servo:sv,dist,afinidade};
+  }).sort((a,b)=>a.dist-b.dist);
+}
+
+// Calcula as 4 letras MBTI a partir das respostas dedicadas (array de índices).
+// Empate numa dicotomia resolve para a letra "introvertida/intuitiva/etc." por
+// convenção estável (I, N, F, P), evitando resultado aleatório.
+function calcMBTI(respostas){
+  const cont={E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+  respostas.forEach((idx,i)=>{
+    const p=RESSONANCIA_MBTI_PERGUNTAS[i];if(!p)return;
+    const op=p.opcoes[idx];if(!op)return;cont[op.letra]++;
+  });
+  const par=(a,b,fallback)=>cont[a]===cont[b]?fallback:(cont[a]>cont[b]?a:b);
+  const tipo=par('E','I','I')+par('S','N','N')+par('T','F','F')+par('J','P','P');
+  // Percentuais de cada dicotomia (para a UI mostrar a força de cada eixo).
+  const pct=dic=>{const[a,b]=dic.split('');const tot=cont[a]+cont[b]||1;
+    return{a,b,pa:Math.round(cont[a]/tot*100),pb:Math.round(cont[b]/tot*100)};};
+  return{tipo,cont,dicotomias:[pct('EI'),pct('SN'),pct('TF'),pct('JP')]};
+}
+
+// Distância entre dois tipos MBTI = nº de letras diferentes (0 a 4).
+function distMBTI(a,b){
+  if(!a||!b)return 4;let d=0;for(let i=0;i<4;i++)if(a[i]!==b[i])d++;return d;
+}
+
+// Match combinado: MBTI é o filtro grosso (cada letra em comum aproxima), o vetor
+// de 9 eixos é o desempate fino. Retorna a lista rankeada com afinidade combinada.
+function ranquearComMBTI(vetorJogador,tipoJogador){
+  const maxDist=Math.sqrt(RESSONANCIA_EIXOS.length*100);
+  return RESSONANCIA_SERVOS.map(sv=>{
+    const dVet=distanciaVetor(vetorJogador,sv.vetor);
+    const afVet=clamp(1-dVet/maxDist,0,1);          // 0..1 pelos eixos
+    const afMbti=1-(distMBTI(tipoJogador,sv.mbti)/4); // 0..1 pelas letras
+    // Peso: 55% eixos (nuance) + 45% MBTI (identidade da comunidade).
+    const afinidade=Math.round((afVet*0.55+afMbti*0.45)*100);
+    const letrasComuns=4-distMBTI(tipoJogador,sv.mbti);
+    return{servo:sv,afinidade,afVet:Math.round(afVet*100),letrasComuns};
+  }).sort((a,b)=>b.afinidade-a.afinidade);
+}
+
 const IBARAKI={
   id:'ibaraki_douji',name:'Ibaraki Douji',className:'Berserker',
   getAtk:lvl=>Math.round(linear(lvl,1606,9636)),
@@ -3321,7 +3903,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.02</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.11</p>
       </div>
     </div>
   );
@@ -4324,6 +4906,252 @@ function AchievementsScreen({onNavigate,profile}){
 // ══════════════════════════════════════════════════════
 // PERFIL
 // ══════════════════════════════════════════════════════
+// Retrato de Servo da Ressonância: tenta o PNG em assets/ressonancia/<art>.png,
+// cai para o emoji grande se não existir (vários não são jogáveis, sem sprite).
+function RessonanciaRetrato({art,emoji,size=120}){
+  const[ok,setOk]=useState(true);
+  if(!art||!ok)return <div style={{width:size,height:size,borderRadius:8,
+    display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.5,
+    background:'radial-gradient(circle at 50% 40%,rgba(201,162,39,.18),rgba(20,10,26,.6))',
+    border:'1px solid var(--gold-dim)'}}>{emoji}</div>;
+  return <img src={`assets/ressonancia/${art}.png`} alt="" onError={()=>setOk(false)}
+    style={{width:size,height:size,objectFit:'cover',borderRadius:8,border:'1px solid var(--gold-dim)'}}/>;
+}
+
+// Barra de um eixo do vetor de alma (−5..+5), com o marcador do jogador.
+function EixoBar({eixo,valor}){
+  const pct=((valor+5)/10)*100;
+  return(
+    <div style={{marginBottom:9}}>
+      <div style={{display:'flex',justifyContent:'space-between',fontSize:'.6rem',
+        color:'var(--parchment-dark)',letterSpacing:1,marginBottom:2}}>
+        <span>{eixo.neg}</span><span>{eixo.pos}</span>
+      </div>
+      <div style={{position:'relative',height:6,borderRadius:3,
+        background:'linear-gradient(90deg,rgba(224,90,74,.35),rgba(60,40,70,.3),rgba(201,162,39,.35))'}}>
+        <div style={{position:'absolute',top:'50%',left:`${pct}%`,transform:'translate(-50%,-50%)',
+          width:11,height:11,borderRadius:'50%',background:'var(--gold)',
+          boxShadow:'0 0 8px rgba(201,162,39,.8)',border:'1px solid rgba(0,0,0,.5)'}}/>
+      </div>
+    </div>
+  );
+}
+
+function RessonanciaScreen({onNavigate,profile,setProfile}){
+  // fase: 'intro' | 'quiz' | 'resultado'. O quiz percorre primeiro as perguntas de
+  // EIXOS (16) e depois as de MBTI (12), num índice contínuo. As respostas ficam
+  // em dois arrays separados conforme o bloco atual.
+  const salvo=profile.ressonancia||null;
+  const N_EIXO=RESSONANCIA_PERGUNTAS.length;
+  const N_MBTI=RESSONANCIA_MBTI_PERGUNTAS.length;
+  const TOTAL=N_EIXO+N_MBTI;
+  const[fase,setFase]=useState(salvo?'resultado':'intro');
+  const[idx,setIdx]=useState(0);
+  const[respEixo,setRespEixo]=useState([]);
+  const[respMbti,setRespMbti]=useState([]);
+  const[resultado,setResultado]=useState(salvo);
+
+  function finalizar(eixos,mbtis){
+    const vetor=calcVetorJogador(eixos);
+    const mbti=calcMBTI(mbtis);
+    const rank=ranquearComMBTI(vetor,mbti.tipo);
+    const res={
+      vetor,
+      mbti:mbti.tipo,
+      dicotomias:mbti.dicotomias,
+      principal:{id:rank[0].servo.id,afinidade:rank[0].afinidade,letras:rank[0].letrasComuns},
+      afinidades:[{id:rank[1].servo.id,afinidade:rank[1].afinidade,letras:rank[1].letrasComuns},
+                  {id:rank[2].servo.id,afinidade:rank[2].afinidade,letras:rank[2].letrasComuns}],
+      data:Date.now(),
+    };
+    setResultado(res);
+    const fresh=loadProfile();const pago={...fresh,ressonancia:res};
+    saveProfile(pago);setProfile(pago);
+    setFase('resultado');
+  }
+
+  function responder(opIdx){
+    const noBlocoEixo=idx<N_EIXO;
+    let ne=respEixo, nm=respMbti;
+    if(noBlocoEixo){ne=[...respEixo,opIdx];setRespEixo(ne);}
+    else{nm=[...respMbti,opIdx];setRespMbti(nm);}
+    if(idx+1>=TOTAL){finalizar(ne,nm);}
+    else setIdx(idx+1);
+  }
+  function voltarPergunta(){
+    if(idx===0){onNavigate('profile');return;}
+    const anterior=idx-1;
+    if(anterior<N_EIXO)setRespEixo(respEixo.slice(0,-1));
+    else setRespMbti(respMbti.slice(0,-1));
+    setIdx(anterior);
+  }
+  function refazer(){setFase('quiz');setIdx(0);setRespEixo([]);setRespMbti([]);}
+
+  // ─── INTRO ───
+  if(fase==='intro'){
+    return(
+      <div className="screen">
+        <div className="panel" style={{maxWidth:560,textAlign:'center'}}>
+          <div style={{fontSize:'2.6rem',marginBottom:6}}>🜃</div>
+          <h2 className="cinzel" style={{color:'var(--crimson-soft)',letterSpacing:3,marginBottom:12}}>RESSONÂNCIA DO TRONO</h2>
+          <p style={{color:'var(--parchment)',fontSize:'.82rem',lineHeight:1.75,marginBottom:14}}>
+            O Trono dos Heróis não responde ao acaso. Ele escuta o Mestre — seus ideais, seus medos,
+            o que você faria quando ninguém estivesse olhando — e envia aquele cuja alma ressoa com a sua.
+          </p>
+          <p style={{color:'var(--parchment-dark)',fontSize:'.74rem',lineHeight:1.7,marginBottom:20,fontStyle:'italic'}}>
+            São 28 perguntas em duas partes: primeiro o seu <i>espírito</i> (o que você faria),
+            depois o seu <i>temperamento</i>. Não há respostas certas — apenas as suas. Responda pelo instinto.
+          </p>
+          <button className="btn btn-full" onClick={()=>{setFase('quiz');setIdx(0);setRespEixo([]);setRespMbti([]);}}>
+            ✦ &nbsp; Iniciar o Ritual
+          </button>
+          <button className="btn btn-full" style={{marginTop:8}} onClick={()=>onNavigate('profile')}>← Voltar</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── QUIZ ───
+  if(fase==='quiz'){
+    const noBlocoEixo=idx<N_EIXO;
+    const perg=noBlocoEixo?RESSONANCIA_PERGUNTAS[idx]:RESSONANCIA_MBTI_PERGUNTAS[idx-N_EIXO];
+    const prog=Math.round((idx/TOTAL)*100);
+    const rotulo=noBlocoEixo?'ESPÍRITO':'TEMPERAMENTO';
+    return(
+      <div className="screen">
+        <div className="panel" style={{maxWidth:560}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+            <span style={{fontFamily:'Cinzel,serif',color:'var(--gold)',fontSize:'.72rem',letterSpacing:2}}>
+              {rotulo} · {idx+1}/{TOTAL}
+            </span>
+            <span style={{color:'var(--parchment-dark)',fontSize:'.66rem'}}>{prog}%</span>
+          </div>
+          <div style={{height:5,borderRadius:3,background:'rgba(0,0,0,.35)',marginBottom:20,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${prog}%`,background:'linear-gradient(90deg,var(--crimson-soft),var(--gold))',
+              transition:'width .3s'}}/>
+          </div>
+          <p style={{color:'var(--parchment)',fontSize:'.92rem',lineHeight:1.6,marginBottom:22,minHeight:56}}>
+            {perg.q}
+          </p>
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            {perg.opcoes.map((op,i)=>(
+              <button key={i} className="btn" style={{textAlign:'left',padding:'13px 15px',
+                fontSize:'.8rem',lineHeight:1.5,whiteSpace:'normal',height:'auto'}}
+                onClick={()=>responder(i)}>
+                {op.t}
+              </button>
+            ))}
+          </div>
+          <button className="btn btn-full" style={{marginTop:18,opacity:.7}} onClick={voltarPergunta}>
+            ← {idx>0?'Pergunta anterior':'Sair'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── RESULTADO ───
+  const svById=id=>RESSONANCIA_SERVOS.find(s=>s.id===id);
+  const principal=svById(resultado.principal.id);
+  return(
+    <div className="screen">
+      <div className="panel" style={{maxWidth:580}}>
+        <div style={{textAlign:'center',marginBottom:6}}>
+          <span style={{fontFamily:'Cinzel,serif',color:'var(--parchment-dark)',fontSize:'.66rem',letterSpacing:3}}>
+            O TRONO RESPONDE
+          </span>
+        </div>
+        <div style={{display:'flex',gap:18,alignItems:'center',
+          border:'1px solid var(--gold)',borderRadius:8,padding:16,marginBottom:16,
+          background:'radial-gradient(circle at 20% 20%,rgba(201,162,39,.1),rgba(20,10,26,.4))'}}>
+          <RessonanciaRetrato art={principal.art} emoji={principal.emoji} size={116}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{color:'var(--parchment-dark)',fontSize:'.62rem',letterSpacing:2}}>{principal.classe.toUpperCase()} · {principal.mbti}</div>
+            <div className="cinzel" style={{color:'var(--gold)',fontSize:'1.3rem',letterSpacing:1,lineHeight:1.1}}>{principal.nome}</div>
+            <div style={{display:'flex',alignItems:'center',gap:6,margin:'8px 0'}}>
+              <div style={{flex:1,height:7,borderRadius:4,background:'rgba(0,0,0,.4)',overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${resultado.principal.afinidade}%`,
+                  background:'linear-gradient(90deg,var(--crimson-soft),var(--gold))'}}/>
+              </div>
+              <span style={{color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'.82rem'}}>{resultado.principal.afinidade}%</span>
+            </div>
+          </div>
+        </div>
+
+        <p style={{color:'var(--parchment)',fontSize:'.8rem',lineHeight:1.7,marginBottom:6}}>{principal.essencia}</p>
+        <p style={{color:'var(--crimson-soft)',fontSize:'.82rem',fontStyle:'italic',lineHeight:1.6,
+          borderLeft:'2px solid var(--gold-dim)',paddingLeft:12,margin:'12px 0 18px'}}>
+          "{principal.frase}"
+        </p>
+
+        {resultado.mbti&&MBTI_TIPOS[resultado.mbti]&&(()=>{
+          const dicLetras=[['E','I'],['S','N'],['T','F'],['J','P']];
+          return(
+            <>
+              <div className="divider"><span className="divider-text">SEU TEMPERAMENTO</span></div>
+              <div style={{textAlign:'center',margin:'14px 0 6px'}}>
+                <div className="cinzel" style={{color:'var(--gold)',fontSize:'2rem',letterSpacing:8}}>{resultado.mbti}</div>
+                <div style={{color:'var(--crimson-soft)',fontSize:'.9rem',fontFamily:'Cinzel,serif',letterSpacing:1}}>
+                  {MBTI_TIPOS[resultado.mbti].nome}
+                </div>
+                <p style={{color:'var(--parchment)',fontSize:'.76rem',lineHeight:1.65,margin:'8px auto 0',maxWidth:440}}>
+                  {MBTI_TIPOS[resultado.mbti].desc}
+                </p>
+              </div>
+              {resultado.dicotomias&&(
+                <div style={{margin:'14px 0 18px'}}>
+                  {resultado.dicotomias.map((d,i)=>{
+                    const[la,lb]=dicLetras[i];const dominA=d.pa>=d.pb;
+                    return(
+                      <div key={i} style={{marginBottom:9}}>
+                        <div style={{display:'flex',justifyContent:'space-between',fontSize:'.64rem',
+                          color:'var(--parchment-dark)',letterSpacing:1,marginBottom:2}}>
+                          <span style={{color:dominA?'var(--gold)':'var(--parchment-dark)',fontWeight:dominA?700:400}}>{la} · {d.pa}%</span>
+                          <span style={{color:!dominA?'var(--gold)':'var(--parchment-dark)',fontWeight:!dominA?700:400}}>{d.pb}% · {lb}</span>
+                        </div>
+                        <div style={{position:'relative',height:6,borderRadius:3,background:'rgba(0,0,0,.35)',overflow:'hidden'}}>
+                          <div style={{position:'absolute',left:0,top:0,height:'100%',width:`${d.pa}%`,
+                            background:'linear-gradient(90deg,var(--crimson-soft),var(--gold))'}}/>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          );
+        })()}
+
+        <div className="divider"><span className="divider-text">SEU VETOR DE ALMA</span></div>
+        <div style={{margin:'14px 0 18px'}}>
+          {RESSONANCIA_EIXOS.map(eixo=>(
+            <EixoBar key={eixo.id} eixo={eixo} valor={resultado.vetor[eixo.id]||0}/>
+          ))}
+        </div>
+
+        <div className="divider"><span className="divider-text">TAMBÉM RESSOAM COM VOCÊ</span></div>
+        <div style={{display:'flex',gap:10,margin:'14px 0 18px'}}>
+          {resultado.afinidades.map(af=>{
+            const sv=svById(af.id);if(!sv)return null;
+            return(
+              <div key={af.id} style={{flex:1,textAlign:'center',padding:'12px 8px',
+                border:'1px solid var(--gold-dim)',borderRadius:6,background:'rgba(0,0,0,.25)'}}>
+                <RessonanciaRetrato art={sv.art} emoji={sv.emoji} size={62}/>
+                <div className="cinzel" style={{color:'var(--parchment)',fontSize:'.72rem',marginTop:6,lineHeight:1.2}}>{sv.nome}</div>
+                <div style={{color:'var(--parchment-dark)',fontSize:'.6rem',letterSpacing:1,marginTop:2}}>{sv.mbti}</div>
+                <div style={{color:'var(--gold)',fontSize:'.7rem',fontFamily:'Cinzel,serif',marginTop:2}}>{af.afinidade}%</div>
+              </div>
+            );
+          })}
+        </div>
+
+        <button className="btn btn-full" onClick={refazer}>🔄 Refazer o Ritual</button>
+        <button className="btn btn-full" style={{marginTop:8}} onClick={()=>onNavigate('profile')}>← Voltar</button>
+      </div>
+    </div>
+  );
+}
+
 function ProfileScreen({onNavigate,profile,setProfile}){
   const[nick,setNick]=useState(profile.nickname);
   const[notif,setNotif]=useState('');
@@ -4451,25 +5279,37 @@ function ProfileScreen({onNavigate,profile,setProfile}){
         </div>
 
         <div className="divider"><span className="divider-text">✦ RESSONÂNCIA DO TRONO ✦</span></div>
-        <div className="ressonancia-card">
-          <div className="ressonancia-selo">🜃</div>
-          <div style={{flex:1,minWidth:0}}>
-            <div className="cinzel" style={{color:'var(--crimson-soft)',fontSize:'.92rem',letterSpacing:2}}>
-              QUAL SERVO VOCÊ INVOCARIA?
+        {(()=>{
+          const res=profile.ressonancia;
+          const sv=res&&RESSONANCIA_SERVOS.find(x=>x.id===res.principal.id);
+          return(
+            <div className="ressonancia-card" style={{cursor:'pointer'}} onClick={()=>onNavigate('ressonancia')}>
+              <div className="ressonancia-selo">{sv?sv.emoji:'🜃'}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div className="cinzel" style={{color:'var(--crimson-soft)',fontSize:'.92rem',letterSpacing:2}}>
+                  {sv?'SUA ALMA RESSOA COM':'QUAL SERVO VOCÊ INVOCARIA?'}
+                </div>
+                {sv?(
+                  <p style={{fontSize:'.8rem',color:'var(--parchment)',lineHeight:1.6,margin:'6px 0 0'}}>
+                    <strong style={{color:'var(--gold)'}}>{sv.nome}</strong>
+                    <span style={{color:'var(--parchment-dark)'}}> · {sv.classe}{res.mbti?` · ${res.mbti}`:''} · {res.principal.afinidade}%</span>
+                  </p>
+                ):(
+                  <p style={{fontSize:'.75rem',color:'var(--parchment-dark)',lineHeight:1.65,margin:'6px 0 0'}}>
+                    O Trono dos Heróis não responde ao acaso. Ele escuta o Mestre — seus ideais, seus medos,
+                    o que você faria quando ninguém estivesse olhando — e envia aquele cuja alma ressoa com a sua.
+                  </p>
+                )}
+                <div className="ressonancia-status">
+                  <span className="ressonancia-badge">{sv?'VER RESULTADO →':'INICIAR RITUAL →'}</span>
+                  <span style={{fontSize:'.66rem',color:'var(--parchment-dark)',letterSpacing:1}}>
+                    {sv?'toque para rever ou refazer':'16 perguntas · toque para começar'}
+                  </span>
+                </div>
+              </div>
             </div>
-            <p style={{fontSize:'.75rem',color:'var(--parchment-dark)',lineHeight:1.65,margin:'6px 0 0'}}>
-              O Trono dos Heróis não responde ao acaso. Ele escuta o Mestre — seus ideais, seus medos,
-              o que você faria quando ninguém estivesse olhando — e envia aquele cuja alma ressoa com a sua.
-              Um exame profundo do seu espírito determinará qual Espírito Heroico atenderia ao <i>seu</i> chamado.
-            </p>
-            <div className="ressonancia-status">
-              <span className="ressonancia-badge">EM BREVE</span>
-              <span style={{fontSize:'.66rem',color:'var(--parchment-dark)',letterSpacing:1}}>
-                Ritual em preparação
-              </span>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
 
         <div className="divider"><span className="divider-text">SKILLS DO MESTRE</span></div>
 
@@ -5016,6 +5856,13 @@ function ServoSelectScreen({onNavigate,onStartCampaign,profile}){
   const npLvl=bondToNP(bond.level);
   const done=(profile&&profile.achievements)||{};
   const[selMap,setSelMap]=useState('bosque');
+  // Ascensão só é liberada após vencer o Mapa 11 e só se aplica começando do início.
+  const ascData=loadAscensao();
+  const ascDisponivel=!!done['clear_pensamentos'];
+  const ascMax=Math.min(ASCENSAO_MAX,(ascData.maxLimpo||0)+1); // pode tentar 1 acima do já vencido
+  const[ascSel,setAscSel]=useState(0);
+  const ascAtivo=ascDisponivel&&selMap==='bosque'?ascSel:0;
+  const selosAtivos=ASCENSAO_SELOS.filter(sel=>sel.nivel<=ascAtivo);
   const selInfo=CAMPAIGN_CHECKPOINTS.find(c=>c.mapId===selMap)||CAMPAIGN_CHECKPOINTS[0];
   return(
     <div className="screen">
@@ -5066,7 +5913,44 @@ function ServoSelectScreen({onNavigate,onStartCampaign,profile}){
           })}
         </div>
 
-        <button className="btn btn-full" onClick={()=>onStartCampaign(IBARAKI,selMap)}>⚔️ &nbsp; Invocar e Partir</button>
+        {ascDisponivel&&selMap==='bosque'&&(
+          <div style={{marginBottom:16}}>
+            <div className="divider"><span className="divider-text">✦ ASCENSÃO DO TRONO</span></div>
+            <p style={{color:'var(--parchment-dark)',fontSize:'.68rem',fontStyle:'italic',marginBottom:10,lineHeight:1.6}}>
+              O Trono impõe provações a cada degrau. Quanto mais alto, mais impiedosa a jornada — e maior a glória de vencê-la.
+            </p>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,justifyContent:'center'}}>
+              <button className="btn" style={{padding:'4px 12px',fontSize:'1rem'}}
+                disabled={ascSel<=0} onClick={()=>setAscSel(v=>Math.max(0,v-1))}>−</button>
+              <div style={{textAlign:'center',minWidth:130}}>
+                <div style={{fontFamily:'Cinzel,serif',color:'var(--gold)',fontSize:'1.1rem',letterSpacing:2}}>
+                  {ascAtivo===0?'NENHUMA':`ASCENSÃO ${ascAtivo}`}
+                </div>
+                <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>
+                  {ascData.maxLimpo>0?`recorde: ${ascData.maxLimpo}`:'nenhuma vencida'}
+                </div>
+              </div>
+              <button className="btn" style={{padding:'4px 12px',fontSize:'1rem'}}
+                disabled={ascSel>=ascMax} onClick={()=>setAscSel(v=>Math.min(ascMax,v+1))}>+</button>
+            </div>
+            {selosAtivos.length>0&&(
+              <div style={{display:'flex',flexDirection:'column',gap:5,
+                background:'rgba(0,0,0,.28)',border:'1px solid rgba(201,162,39,.25)',borderRadius:4,padding:'9px 11px'}}>
+                {selosAtivos.map(sel=>(
+                  <div key={sel.nivel} style={{display:'flex',gap:8,alignItems:'flex-start'}}>
+                    <span style={{fontSize:'.9rem',flexShrink:0}}>{sel.icone}</span>
+                    <div style={{minWidth:0}}>
+                      <span style={{color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'.7rem'}}>{sel.nome}</span>
+                      <span style={{color:'var(--parchment-dark)',fontSize:'.66rem'}}> — {sel.desc}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <button className="btn btn-full" onClick={()=>onStartCampaign(IBARAKI,selMap,ascAtivo)}>⚔️ &nbsp; Invocar e Partir{ascAtivo>0?` · Ascensão ${ascAtivo}`:''}</button>
         <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar</button>
       </div>
     </div>
@@ -5918,9 +6802,9 @@ const AFIXOS=[
 ];
 // Sorteia um afixo para o encontro. A chance sobe com a ameaça; abaixo de 0.30
 // nunca acontece, para não punir quem está começando.
-function rollAfixo(idx,seed){
-  if(idx<0.30)return null;
-  const chance=clamp(0.18+(idx-0.30)*1.15,0,0.72); // ~18% no começo, até 72% no auge
+function rollAfixo(idx,seed,boost=0){
+  if(idx<0.30&&boost<=0)return null;
+  const chance=clamp(0.18+(idx-0.30)*1.15+boost,0,0.95); // +boost da Ascensão
   const r=(seed==null?Math.random():seedRand(seed));
   if(r>chance)return null;
   const pool=AFIXOS.filter(a=>idx>=a.min);
@@ -5943,7 +6827,7 @@ function escalarHabilidades(base,idx){
   if(idx>=0.94&&!e.evasive)e.evasive=15;                             // difíceis de acertar
   return e;
 }
-function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1,grupoExtra=0,idxAmeaca=0){
+function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1,grupoExtra=0,idxAmeaca=0,afixoBoost=0){
   const map=MAPS[mapId]||MAPS.bosque;
   const table=map.enemies;
   const ids=Object.keys(table);
@@ -5954,7 +6838,7 @@ function genEncounterForMap(mapId,phase,hpMult=1,atkMult=1,grupoExtra=0,idxAmeac
   // Nível de Ameaça alto: grupos maiores (pressão sem depender de one-shot).
   if(grupoExtra>0&&Math.random()<0.6)size=Math.min(size+grupoExtra,6);
   // Afixo do encontro: marca o grupo INTEIRO e muda a tática exigida.
-  const afixo=rollAfixo(idxAmeaca);
+  const afixo=rollAfixo(idxAmeaca,null,afixoBoost);
   return Array.from({length:size},(_,i)=>{
     const id=ids[Math.floor(Math.random()*ids.length)];
     let base=escalarHabilidades(table[id],idxAmeaca);
@@ -8241,6 +9125,67 @@ function GracaSidebar({camp}){
 // prática — o que muda é que a vantagem deixa de ser esmagadora.
 // Pesos da medição de poder. O que conta é o que REALMENTE entra em combate.
 const AMEACA_PESOS={servo:0.34,magus:0.18,perk:0.18,np:0.10,laplace:0.20};
+// ══════════════════════════════════════════════════════
+// ASCENSÃO DO TRONO — dificuldade crescente pós-campanha
+// ══════════════════════════════════════════════════════
+// Depois de vencer o Mapa 11, cada nível de Ascensão soma um SELO permanente
+// que endurece a run inteira, em troca de recompensa melhor. É o motor de
+// rejogo de longo prazo: sempre há um degrau a mais para provar.
+// Cada selo é cumulativo: no nível N, valem os selos de 1 até N.
+const ASCENSAO_SELOS=[
+  {nivel:1,nome:'Presságio de Ferro',icone:'🗡️',
+   desc:'Inimigos causam +15% de dano.',ef:{atkMult:0.15}},
+  {nivel:2,nome:'Carne Teimosa',icone:'🛡️',
+   desc:'Inimigos têm +20% de HP.',ef:{hpMult:0.20}},
+  {nivel:3,nome:'Hordas Maiores',icone:'👥',
+   desc:'Encontros trazem mais inimigos.',ef:{grupoExtra:1}},
+  {nivel:4,nome:'Trono Avarento',icone:'🎴',
+   desc:'Graças aparecem com menos frequência.',ef:{gracaRaro:true}},
+  {nivel:5,nome:'Presságios Constantes',icone:'🌑',
+   desc:'Afixos de encontro são muito mais comuns.',ef:{afixoBoost:0.25}},
+  {nivel:6,nome:'Fúria Redobrada',icone:'⚔️',
+   desc:'Inimigos causam mais +20% de dano.',ef:{atkMult:0.20}},
+  {nivel:7,nome:'Bolsos Vazios',icone:'💸',
+   desc:'Custos da Casa de Chá dobram.',ef:{lojaCara:true}},
+  {nivel:8,nome:'Bosses Imortais',icone:'👑',
+   desc:'Bosses têm +30% de HP e dano.',ef:{bossMult:0.30}},
+  {nivel:9,nome:'Maldição do Vagante',icone:'💀',
+   desc:'Servos começam cada combate com −10% de HP máximo.',ef:{hpPenalty:0.10}},
+  {nivel:10,nome:'O Trono Observa',icone:'✦',
+   desc:'Todos os selos anteriores intensificados. O auge do desafio.',ef:{apex:true}},
+];
+const ASCENSAO_MAX=ASCENSAO_SELOS.length;
+// Nível de Ascensão desbloqueado (o mais alto já vencido + 1 disponível).
+function loadAscensao(){
+  try{const r=localStorage.getItem('oni_tactics_ascensao');const v=r?JSON.parse(r):{maxLimpo:0};
+    return{maxLimpo:v.maxLimpo||0};}catch{return{maxLimpo:0};}
+}
+function saveAscensao(a){try{localStorage.setItem('oni_tactics_ascensao',JSON.stringify(a));}catch{}}
+// Registra a conclusão de um nível de Ascensão (destrava o próximo).
+function registrarAscensao(nivel){
+  const a=loadAscensao();
+  if(nivel>a.maxLimpo){a.maxLimpo=nivel;saveAscensao(a);}
+  return a;
+}
+// Agrega os efeitos dos selos ativos até um nível (com o Ápice reforçando tudo).
+function ascensaoEfeitos(nivel){
+  const out={atkMult:0,hpMult:0,bossMult:0,grupoExtra:0,hpPenalty:0,afixoBoost:0,
+    gracaRaro:false,lojaCara:false};
+  if(!nivel||nivel<1)return out;
+  const selos=ASCENSAO_SELOS.filter(sel=>sel.nivel<=nivel);
+  for(const sel of selos){
+    const e=sel.ef;
+    out.atkMult+=e.atkMult||0; out.hpMult+=e.hpMult||0; out.bossMult+=e.bossMult||0;
+    out.grupoExtra+=e.grupoExtra||0; out.hpPenalty+=e.hpPenalty||0; out.afixoBoost+=e.afixoBoost||0;
+    if(e.gracaRaro)out.gracaRaro=true; if(e.lojaCara)out.lojaCara=true;
+    if(e.apex){ // Ápice: +50% sobre o que já foi somado
+      out.atkMult*=1.5; out.hpMult*=1.5; out.bossMult=(out.bossMult||0)*1.5+0.3;
+      out.afixoBoost+=0.15;
+    }
+  }
+  return out;
+}
+
 function calcAmeaca(profile,party,npLevel){
   const p=profile||{};
   // 1) Nível médio dos Servos em campo (1..25)
@@ -8307,13 +9252,17 @@ function ameacaAtual(camp,profile){
   const idxRun=nGolden*0.6+nGraca*0.4;
   // 60% progressão permanente + 40% poder acumulado na run
   const idx=clamp((base.idx||0)*0.6+idxRun*0.4,0,1);
+  // Selos de Ascensão: multiplicadores permanentes por cima da ameaça normal.
+  const asc=ascensaoEfeitos(camp.ascensao||0);
+  const hpM=1+asc.hpMult, atkM=1+asc.atkMult, bossM=1+(asc.bossMult||0);
   return{
     idx,idxBase:base.idx||0,idxRun,
-    hp:1+3.2*idx,      // teto ×4.2
-    atk:1+1.80*idx,    // teto ×2.8 (era ×2.1 — dano não acompanhava o HP)
-    bossHp:1+2.4*idx,  // teto ×3.4
-    bossAtk:1+0.90*idx,// teto ×1.9 (era ×1.5)
-    grupoExtra:idx>=0.5?1:0,
+    ascensao:camp.ascensao||0,ascEf:asc,
+    hp:(1+3.2*idx)*hpM,
+    atk:(1+1.80*idx)*atkM,
+    bossHp:(1+2.4*idx)*hpM*bossM,
+    bossAtk:(1+0.90*idx)*atkM*bossM,
+    grupoExtra:(idx>=0.5?1:0)+(asc.grupoExtra||0),
   };
 }
 
@@ -8355,7 +9304,9 @@ function rollSalas(camp){
   const fase=camp.phase||1;
   const pool=[];
   const push=(t,n)=>{for(let i=0;i<n;i++)pool.push(t);};
-  push('combat',10);push('event',5);push('treasure',3);push('shrine',2);
+  // Selo de Ascensão 4 (Trono Avarento): santuários (Graças) ficam mais raros.
+  const asc=ascensaoEfeitos(camp.ascensao||0);
+  push('combat',10);push('event',5);push('treasure',3);push('shrine',asc.gracaRaro?1:2);
   if(fase>=4)push('elite',2); // Elite só depois das primeiras fases
   const out=[];
   for(let i=0;i<3;i++){
@@ -8822,7 +9773,7 @@ function PartyManageScreen({camp,setCamp,onVoltar}){
   );
 }
 
-function TeaHouseModal({party,profile,onBuy,notif,onClose}){
+function TeaHouseModal({party,profile,onBuy,notif,onClose,precoMult=1}){
   // Para itens de curar/reviver, o jogador precisa escolher qual servo. Guardamos
   // o item pendente e mostramos os servos elegíveis como alvos.
   const[pending,setPending]=useState(null);
@@ -8881,7 +9832,8 @@ function TeaHouseModal({party,profile,onBuy,notif,onClose}){
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
               {TEA_HOUSE_ITEMS.map(item=>{
                 const bal=item.cur==='sq'?balSQ:balQP;
-                const afford=bal>=item.cost;
+                const custo=Math.round(item.cost*precoMult);
+                const afford=bal>=custo;
                 return(
                   <div key={item.id} style={{display:'flex',alignItems:'center',gap:10,
                     background:'rgba(0,0,0,.25)',border:'1px solid rgba(201,162,39,.25)',borderRadius:5,padding:'8px 10px'}}>
@@ -8892,7 +9844,7 @@ function TeaHouseModal({party,profile,onBuy,notif,onClose}){
                     </div>
                     <button className="btn" style={{padding:'6px 12px',fontSize:'.7rem',flexShrink:0,opacity:afford?1:.45}}
                       disabled={!afford} onClick={()=>handleClick(item)}>
-                      {item.cost.toLocaleString()} {item.cur.toUpperCase()}
+                      {custo.toLocaleString()} {item.cur.toUpperCase()}
                     </button>
                   </div>
                 );
@@ -8929,8 +9881,10 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
   const party=camp.party||[camp.servo];
   function buyTeaItem(item,targetIdx){
     const fresh=loadProfile();
+    const precoMult=(ascensaoEfeitos(camp.ascensao||0).lojaCara)?2:1; // Selo 7: Bolsos Vazios
+    const custo=Math.round(item.cost*precoMult);
     const bal=item.cur==='sq'?(fresh.sq||0):(fresh.qp||0);
-    if(bal<item.cost){setTeaNotif(`${item.cur.toUpperCase()} insuficiente!`);return;}
+    if(bal<custo){setTeaNotif(`${item.cur.toUpperCase()} insuficiente!`);return;}
 
     // Ações que precisam de um alvo (curar/reviver) validam o alvo antes de cobrar.
     if(item.kind==='heal'){
@@ -8944,7 +9898,7 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
     }
 
     // Cobra a moeda (saldo real do profile)
-    const paid=item.cur==='sq'?{...fresh,sq:fresh.sq-item.cost}:{...fresh,qp:fresh.qp-item.cost};
+    const paid=item.cur==='sq'?{...fresh,sq:fresh.sq-custo}:{...fresh,qp:fresh.qp-custo};
     saveProfile(paid);setProfile(paid);
     setCamp(c=>({...c,teaBuys:(c.teaBuys||0)+1})); // desafios "Freguês da Casa de Chá" / "Jejum"
 
@@ -8984,6 +9938,7 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
       <GracaSidebar camp={camp}/>
       {teaOpen&&(
         <TeaHouseModal party={party} profile={profile} onBuy={buyTeaItem} notif={teaNotif}
+          precoMult={ascensaoEfeitos(camp.ascensao||0).lojaCara?2:1}
           onClose={()=>{setTeaOpen(false);setTeaNotif('');}}/>
       )}
       <div className="panel" style={{maxWidth:600}}>
@@ -8993,6 +9948,16 @@ function MapScreen({camp,onChoosePath,onNavigate,onGiveUp,profile,setProfile,set
           </h2>
           <span style={{color:'var(--parchment-dark)',fontSize:'.75rem'}}>Fase {phase}/{maxPhases}</span>
         </div>
+        {(camp.ascensao||0)>0&&(
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginBottom:6,
+            background:'rgba(180,40,40,0.12)',border:'1px solid rgba(224,90,74,.4)',borderRadius:4,padding:'3px 8px'}}>
+            <span style={{fontSize:'.7rem'}}>✦</span>
+            <span style={{fontFamily:'Cinzel,serif',color:'var(--red-bright)',fontSize:'.66rem',letterSpacing:1}}>
+              ASCENSÃO {camp.ascensao} DO TRONO
+            </span>
+            <span style={{fontSize:'.7rem'}}>✦</span>
+          </div>
+        )}
         <Bar label="HP" current={servo.hp} max={servo.hpMax} type="hp"/>
         <Bar label="NP" current={servo.npBar} max={100} type="np"/>
         {/* Carteira do Mestre — saldo REAL gastável (profile), para gerenciar a Casa de Chá */}
@@ -9388,7 +10353,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const hpGraca=1+(getGracaEffects(camp).maxHpUpPct||0)/100;
     // Evento Altar Abandonado (profanar): penalidade de HP máximo por toda a jornada
     const penHp=1-Math.min(80,(camp.chaBuffs&&camp.chaBuffs.hpMaxPenaltyPct)||0)/100;
-    const grHpMax=Math.max(1,Math.round(baseHpMax*grMult*hpGraca*penHp));
+    // Selo de Ascensão 9 (Maldição do Vagante): −10% de HP máximo.
+    const penAsc=1-(ascensaoEfeitos(camp.ascensao||0).hpPenalty||0);
+    const grHpMax=Math.max(1,Math.round(baseHpMax*grMult*hpGraca*penHp*penAsc));
     // Preserva o DANO já sofrido: reescala o HP atual na mesma proporção do novo máximo,
     // em vez de multiplicá-lo de novo (o que também acumulava).
     const prevMax=m.hpMax||grHpMax;
@@ -9461,7 +10428,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           (camp.towerHpMult||1)*(camp.eliteFight?1.8:1)*AM.hp,
           (camp.towerAtkMult||1)*AM.atk
           *(camp.eliteFight?(1+0.45*(1-(perkEffects.eliteMit||0)/100)):1), // Perk Espólios mitiga o extra
-          AM.grupoExtra,AM.idx);})();
+          AM.grupoExtra,AM.idx,(AM.ascEf&&AM.ascEf.afixoBoost)||0);})();
     // Casa de Chá — efeitos de INÍCIO de combate (consumidos ao entrar na luta):
     const cb=camp.chaBuffs||{};
     if(cb.enemyStartDmgPct||cb.enemyStunTurns){
@@ -11981,6 +12948,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   const[campResult,setCampResult]=useState(null);
   // Oferta de Graça pendente: {offer:[{id,lvl}], camp} — mostrada após vencer um encontro
   const[gracaOffer,setGracaOffer]=useState(null);
+  const[ascClear,setAscClear]=useState(null); // aviso de Ascensão vencida
   // Conquistas de Graça recém-obtidas: {camp, won:[def]} — celebradas antes de avançar
   const[gracaWon,setGracaWon]=useState(null);
   // Oferta de Invocação (modo À La Carte): {ofertas:[servo], camp}
@@ -12005,7 +12973,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     };
   }
 
-  function buildCampForMap(servo,mapId,carry=null,tower=false,partyServos=null){
+  function buildCampForMap(servo,mapId,carry=null,tower=false,partyServos=null,ascensao=0){
     const map=tower?TOWER_MAPS[mapId]:MAPS[mapId];
     const xpState=loadServoXP(servo.id);
     const bond=loadBond(servo.id);
@@ -12047,11 +13015,12 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
       eventosVistos:carry&&carry.eventosVistos?carry.eventosVistos:[],
       // Nível de Ameaça: calculado no início da jornada a partir do poder permanente
       // do Mestre. Fica fixo durante a run para não mudar no meio da luta.
+      ascensao:ascensao||0, // nível de Ascensão do Trono (0 = normal)
       ameaca:calcAmeaca(profile,party,npLvl),
     };
   }
 
-  function startCampaign(servo,mapId='bosque'){
+  function startCampaign(servo,mapId='bosque',ascensao=0){
     setProfile(incRuns()); // conta cada nova run iniciada
     const cp=CAMPAIGN_CHECKPOINTS.find(c=>c.mapId===mapId);
     // Mapas com party de 2 (Kurikara e cidade): já entram com Ibaraki + Sith.
@@ -12070,7 +13039,8 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
       setStage('map');
       return;
     }
-    setCamp(buildCampForMap(servo,mapId));
+    // Ascensão só vale começando do Mapa 1 (jornada completa).
+    setCamp(buildCampForMap(servo,mapId,null,false,null,mapId==='bosque'?ascensao:0));
     // Só o bosque tem a intro-história; os demais entram direto no mapa.
     setStage(mapId==='bosque'?'story':'map');
   }
@@ -12395,6 +13365,18 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     if(!updatedCamp.towerMode&&updatedCamp.mapId==='pensamentos_restantes'){
       const res=grantAchievement('clear_pensamentos');
       if(res.granted)setProfile(res.profile);
+      // ASCENSÃO DO TRONO: registra o nível vencido e concede recompensa extra
+      // proporcional. Quanto mais alto o degrau superado, maior a bênção do Trono.
+      const ascVenc=updatedCamp.ascensao||0;
+      if(ascVenc>0){
+        registrarAscensao(ascVenc);
+        const bonusSQ=15*ascVenc, bonusQP=8000*ascVenc;
+        const fresh=loadProfile();
+        const pago={...fresh,sq:(fresh.sq||0)+bonusSQ,qp:(fresh.qp||0)+bonusQP};
+        saveProfile(pago);setProfile(pago);
+        setAscClear({nivel:ascVenc,sq:bonusSQ,qp:bonusQP,
+          proximo:ascVenc<ASCENSAO_MAX?ascVenc+1:null});
+      }
     }
     // ── Conquistas de DESAFIO por concluir a jornada (só Campanha) ──
     if(!updatedCamp.towerMode){
@@ -13155,8 +14137,29 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
           {campResult?.type==='win'?IBARAKI.dialogue.mapDone:IBARAKI.dialogue.lose}
         </p>
 
-        <button className="btn btn-full" onClick={restart}>🔄 Nova Campanha</button>
-        <button className="btn btn-full" style={{marginTop:8}} onClick={()=>onNavigate('menu')}>← Menu Principal</button>
+        {ascClear&&(
+          <div style={{margin:'14px 0',padding:'12px 14px',borderRadius:5,
+            border:'1px solid var(--gold)',background:'rgba(201,162,39,0.12)',textAlign:'center'}}>
+            <div style={{fontFamily:'Cinzel,serif',color:'var(--gold)',letterSpacing:2,fontSize:'.95rem',marginBottom:4}}>
+              ✦ ASCENSÃO {ascClear.nivel} SUPERADA ✦
+            </div>
+            <div style={{fontSize:'.72rem',color:'var(--parchment)'}}>
+              Recompensa do Trono: <strong style={{color:'var(--gold)'}}>+{ascClear.sq} SQ</strong> e <strong style={{color:'#4fc3f7'}}>+{ascClear.qp.toLocaleString()} QP</strong>
+            </div>
+            {ascClear.proximo?(
+              <div style={{fontSize:'.68rem',color:'var(--parchment-dark)',marginTop:5,fontStyle:'italic'}}>
+                A Ascensão {ascClear.proximo} foi liberada. O Trono observa.
+              </div>
+            ):(
+              <div style={{fontSize:'.68rem',color:'var(--red-bright)',marginTop:5,fontStyle:'italic'}}>
+                Você superou o auge da Ascensão. Nada mais o Trono pode lhe impor.
+              </div>
+            )}
+          </div>
+        )}
+
+        <button className="btn btn-full" onClick={()=>{setAscClear(null);restart();}}>🔄 Nova Campanha</button>
+        <button className="btn btn-full" style={{marginTop:8}} onClick={()=>{setAscClear(null);onNavigate('menu');}}>← Menu Principal</button>
       </div>
     </div>
   );
@@ -13171,6 +14174,7 @@ function App(){
   function navigate(s){setScreen(s);}
   if(screen==='menu')return <MenuScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='profile')return <ProfileScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
+  if(screen==='ressonancia')return <RessonanciaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='shop')return <ShopScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='gacha')return <GachaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='comics')return <ComicAlbumScreen onNavigate={navigate}/>;
