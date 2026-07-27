@@ -1062,6 +1062,30 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:1,altru:2,ordem:1,razao:1,vinculo:4,preserv:2,franq:-2,esper:0,autov:0},
    essencia:'Uma alma gentil amaldiçoada a ser vista como monstro, que carrega a solidão com dignidade silenciosa. Reservada e melancólica, protege ferozmente os poucos que a enxergam de verdade — e sob a serenidade fria arde uma devoção inabalável.',
    frase:'Já fui temida, odiada, chamada de monstro. Mas por você... eu voltaria a ser humana.'},
+  {id:'morgan',nome:'Morgan',classe:'Berserker',emoji:'👑',art:'morgan',mbti:'INTJ',
+   vetor:{ideal:2,altru:-1,ordem:5,razao:5,vinculo:0,preserv:1,franq:1,esper:-1,autov:5},
+   essencia:'Uma rainha inflexível que carrega séculos de rancor e amor transformados em ferro. Governa com uma vontade implacável e uma visão de longo prazo impiedosa — tudo o que faz, por mais cruel que pareça, serve a um plano que só ela enxerga por inteiro.',
+   frase:'Eu suportei o que ninguém suportaria. Por meu reino, farei o que for preciso.'},
+  {id:'okada',nome:'Okada Izou',classe:'Assassin',emoji:'🗡️',art:'okada',mbti:'ESTP',
+   vetor:{ideal:-1,altru:-1,ordem:-2,razao:-1,vinculo:1,preserv:-2,franq:3,esper:0,autov:1},
+   essencia:'Um assassino instintivo, simples e sem grandes ideais, que apenas corta o que lhe mandam cortar. Vive o momento sem filosofar demais, movido por sobrevivência e lealdade bruta — uma lâmina afiada que não pretende ser mais do que é.',
+   frase:'Eu só sei matar. Não me peça pra pensar sobre o certo e o errado.'},
+  {id:'diarmuid',nome:'Diarmuid Ua Duibhne',classe:'Lancer',emoji:'🍃',art:'diarmuid',mbti:'ISFJ',
+   vetor:{ideal:4,altru:3,ordem:4,razao:1,vinculo:3,preserv:3,franq:2,esper:2,autov:1},
+   essencia:'Um cavaleiro de lealdade absoluta e honra impecável, que serve seu senhor com devoção inabalável. Cortês e disciplinado, coloca o dever acima do próprio desejo — e sua maior dor é sempre o conflito entre a fidelidade e o próprio coração.',
+   frase:'Minha lança serve ao meu senhor. Meu coração, esse eu mantenho em silêncio.'},
+  {id:'kiara',nome:'Kiara Sessyoin',classe:'Moon Cancer',emoji:'🪷',art:'kiara',mbti:'INFJ',
+   vetor:{ideal:-2,altru:-2,ordem:0,razao:3,vinculo:-2,preserv:-3,franq:2,esper:1,autov:5},
+   essencia:'Uma manipuladora serena e absoluta, que enxerga o desejo humano como quem lê um livro aberto. Sob a doçura maternal e a calma perturbadora esconde-se uma ambição divina — ela quer salvar a humanidade devorando-a, e acredita nisso com convicção plena.',
+   frase:'Deixe-me acolher todos os seus desejos, criança. Eu os compreendo melhor que você.'},
+  {id:'mordred',nome:'Mordred',classe:'Saber',emoji:'⚔️',art:'mordred',mbti:'ESTP',
+   vetor:{ideal:-1,altru:-1,ordem:-2,razao:-1,vinculo:4,preserv:-3,franq:5,esper:-1,autov:2},
+   essencia:'Um cavaleiro rebelde e impetuoso, movido por um desejo desesperado de reconhecimento sob a bravata. Age antes de pensar, fala o que sente sem rodeios, e por trás da fúria arde a mágoa de um filho que só queria ser aceito pelo pai que admirava.',
+   frase:'Eu não queria o trono! Eu só queria que você me olhasse... pai!'},
+  {id:'ereshkigal',nome:'Ereshkigal',classe:'Lancer',emoji:'💀',art:'ereshkigal',mbti:'ISFJ',
+   vetor:{ideal:3,altru:3,ordem:4,razao:1,vinculo:3,preserv:4,franq:-2,esper:1,autov:-2},
+   essencia:'A deusa solitária do submundo, dedicada e trabalhadora, que cumpre seu dever de guardiã dos mortos sem jamais receber gratidão. Tímida e insegura sob a fachada altiva, anseia em segredo por afeto — e ama de um jeito desajeitado e profundamente sincero.',
+   frase:'N-não pense que faço isso por você! Eu só... só estou cumprindo meu dever, e-entendeu?'},
 ];
 // 16 perguntas. Cada opção soma pesos aos eixos (peso ~1-3). O Protocolo pede a
 // VERSÃO HUMANA e normalizada do traço — nada de "você se sacrificaria?", e sim
@@ -1075,12 +1099,12 @@ const RESSONANCIA_PERGUNTAS=[
      {t:'Falo com ele em particular depois — exposição pública não resolve.',e:{ordem:2,razao:1,preserv:1}},
      {t:'Engulo. Brigar por crédito me parece mais desgastante que vale.',e:{autov:-3,ideal:-2,esper:-1}},
    ]},
-  {q:'É sexta à noite e o grupo não decide o restaurante há 40 minutos. Você...',
+  {q:'Alguém cruza um limite seu de um jeito que te incomoda de verdade. Você...',
    opcoes:[
-     {t:'Assumo: "vamos no lugar X, quem discorda fala agora". E resolve.',e:{ordem:2,autov:3,franq:2}},
-     {t:'Sugiro uma votação rápida pra ser justo com todo mundo.',e:{ordem:3,altru:1,razao:1}},
-     {t:'Tanto faz, vou no que a maioria quiser — só quero comer.',e:{altru:2,razao:-1,autov:-1}},
-     {t:'Já perdi a fome de tanta enrolação. Sugiro cada um por si.',e:{franq:2,vinculo:-2,altru:-2,preserv:-1}},
+     {t:'Falo na hora, olho no olho — deixo claro que não tá certo.',e:{franq:4,autov:3,ideal:1}},
+     {t:'Espero baixar a poeira e converso em particular depois.',e:{ordem:2,razao:2,preserv:1}},
+     {t:'Não digo nada, mas me afasto e a relação esfria.',e:{franq:-3,vinculo:-1,preserv:1}},
+     {t:'Engulo pra evitar treta — confronto me desgasta demais.',e:{franq:-2,autov:-2,altru:1}},
    ]},
   {q:'Você prometeu ajudar um amigo na mudança, mas acordou exausto e sem vontade. Você...',
    opcoes:[
@@ -1206,7 +1230,7 @@ const RESSONANCIA_PERGUNTAS=[
      {t:'Horários e hábitos firmes — gosto da previsibilidade.',e:{ordem:3,razao:1}},
      {t:'Um caos que só eu entendo, mas que funciona pra mim.',e:{ordem:-3,franq:1,esper:1}},
      {t:'Depende muito do meu humor e da energia do dia.',e:{razao:-2,preserv:-1,vinculo:1}},
-     {t:'Tento ter rotina, mas vivo furando ela mesmo.',e:{ordem:-1,esper:1,autov:-1}},
+     {t:'Flexível de propósito — travo se tudo for engessado demais.',e:{ordem:-2,franq:2,esper:2}},
    ]},
   {q:'Uma amizade antiga foi se apagando sem briga nenhuma. Você...',
    opcoes:[
@@ -1235,6 +1259,62 @@ const RESSONANCIA_PERGUNTAS=[
      {t:'Uso o bom senso: se não faz mal a ninguém, relevo.',e:{razao:3,ordem:-1}},
      {t:'Confesso que aproveito a brecha, sim.',e:{ordem:-3,franq:2,ideal:-2}},
      {t:'Depende do risco de ser pego, sendo honesto.',e:{razao:2,ideal:-1,esper:-1}},
+   ]},
+  {q:'Colocam você no comando de um grupo pra realizar algo importante. Você...',
+   opcoes:[
+     {t:'Assumo com firmeza — sei aonde quero chegar e conduzo.',e:{ordem:3,autov:3,ideal:1}},
+     {t:'Divido as decisões, lidero ouvindo cada um.',e:{altru:2,vinculo:2,ordem:1}},
+     {t:'Faço o que precisa ser feito, mas sem gostar dos holofotes.',e:{autov:-1,razao:1,altru:1}},
+     {t:'Prefiro não liderar — rendo melhor executando do que mandando.',e:{ordem:1,autov:-2,vinculo:1}},
+   ]},
+  {q:'Alguém que você considera inferior no que faz te supera de repente. Você...',
+   opcoes:[
+     {t:'Reconheço o mérito e até aprendo com a pessoa.',e:{razao:2,esper:2,autov:1}},
+     {t:'Uso como combustível — vou treinar até retomar a frente.',e:{ideal:2,autov:3,ordem:1}},
+     {t:'Fico incomodado e questiono meu próprio valor.',e:{autov:-3,esper:-1}},
+     {t:'Finjo que não ligo, mas por dentro remoo bastante.',e:{franq:-2,autov:-1,razao:-1}},
+   ]},
+  {q:'Você poderia conseguir algo que quer muito passando por cima de alguém que não vai perceber. Você...',
+   opcoes:[
+     {t:'Não faço. Eu saberia, e isso já basta.',e:{ideal:4,ordem:2,autov:1}},
+     {t:'Não faço, mas confesso que a tentação existe.',e:{ideal:2,franq:2}},
+     {t:'Peso os prós e contras friamente antes de decidir.',e:{razao:3,ideal:-1,preserv:-1}},
+     {t:'Se ninguém sai perdendo de verdade, eu faria.',e:{ideal:-3,razao:1,autov:2}},
+   ]},
+  {q:'Se você descobrisse que tem pouco tempo de vida, o impulso seria...',
+   opcoes:[
+     {t:'Deixar tudo resolvido e em ordem pra quem fica.',e:{ordem:3,preserv:2,altru:2}},
+     {t:'Viver o máximo possível, sem me segurar em nada.',e:{franq:2,ordem:-2,preserv:-2,autov:1}},
+     {t:'Ficar perto de quem eu amo, só isso importa.',e:{vinculo:4,altru:2}},
+     {t:'Fazer algo que deixe uma marca, que me sobreviva.',e:{ideal:3,autov:2,esper:1}},
+   ]},
+  {q:'Sobre suas raízes — cidade, casa, origem — você se sente...',
+   opcoes:[
+     {t:'Ligado a elas, é parte de quem eu sou.',e:{vinculo:3,preserv:2,ordem:1}},
+     {t:'Livre delas — meu lugar é onde eu decidir que é.',e:{vinculo:-3,ideal:1,autov:2}},
+     {t:'Grato, mas sempre olhando pra frente, pro novo.',e:{esper:2,razao:1,preserv:-1}},
+     {t:'Com sentimentos misturados que evito remexer.',e:{franq:-2,razao:-1,vinculo:1}},
+   ]},
+  {q:'O que costuma te tirar da cama nos dias em que está difícil?',
+   opcoes:[
+     {t:'As pessoas que contam comigo — não posso falhar com elas.',e:{altru:3,vinculo:3}},
+     {t:'A meta que tracei. Desistir não está no plano.',e:{ideal:2,ordem:2,autov:2}},
+     {t:'A curiosidade do que o dia ainda pode trazer.',e:{esper:3,franq:1}},
+     {t:'Puro senso de responsabilidade, mesmo sem vontade.',e:{ordem:3,razao:1,autov:-1}},
+   ]},
+  {q:'Você trata um estranho que nunca mais vai ver da mesma forma que trata quem te é útil?',
+   opcoes:[
+     {t:'Sim, exatamente igual — caráter não tem plateia.',e:{ideal:4,altru:2}},
+     {t:'Na maioria das vezes, embora eu seja humano e falhe.',e:{altru:2,franq:2,esper:1}},
+     {t:'Sendo sincero, dou mais atenção a quem importa pra mim.',e:{razao:2,vinculo:1,altru:-2}},
+     {t:'Trato bem quem trata bem — é mão dupla pra mim.',e:{razao:1,franq:2,ideal:-1}},
+   ]},
+  {q:'Diante de uma grande mudança na vida (mudar de cidade, de carreira, recomeçar), você...',
+   opcoes:[
+     {t:'Abraço — novidade me anima mais do que assusta.',e:{esper:3,ideal:1,preserv:-1}},
+     {t:'Planejo cada detalhe antes de dar o passo.',e:{ordem:3,razao:2}},
+     {t:'Hesito bastante — segurança pesa muito pra mim.',e:{preserv:2,esper:-2,razao:1}},
+     {t:'Só topo se as pessoas certas vierem comigo.',e:{vinculo:3,altru:1}},
    ]},
 ];
 
@@ -1325,6 +1405,26 @@ const RESSONANCIA_MBTI_PERGUNTAS=[
    opcoes:[
      {t:'Metas definidas, com passos e prazos na cabeça.',letra:'J'},
      {t:'Possibilidades em aberto que gosto de manter fluidas.',letra:'P'},
+   ]},
+  {dic:'EI',q:'Trabalhando num problema difícil, você pensa melhor...',
+   opcoes:[
+     {t:'Conversando em voz alta, trocando ideia com alguém.',letra:'E'},
+     {t:'Sozinho, remoendo tudo na minha cabeça primeiro.',letra:'I'},
+   ]},
+  {dic:'SN',q:'O que te atrai mais numa história (filme, livro, jogo)?',
+   opcoes:[
+     {t:'Personagens reais e uma trama que eu consiga sentir de perto.',letra:'S'},
+     {t:'Mundos, conceitos e reviravoltas que expandem a imaginação.',letra:'N'},
+   ]},
+  {dic:'TF',q:'Ao dar um conselho, você tende a priorizar...',
+   opcoes:[
+     {t:'A solução mais eficaz, mesmo que não seja o que querem ouvir.',letra:'T'},
+     {t:'O acolhimento primeiro, a pessoa precisa se sentir compreendida.',letra:'F'},
+   ]},
+  {dic:'JP',q:'Quando você viaja, prefere...',
+   opcoes:[
+     {t:'Roteiro montado, com o que fazer em cada dia.',letra:'J'},
+     {t:'Chegar e ir descobrindo, sem muito planejado.',letra:'P'},
    ]},
 ];
 
@@ -3903,7 +4003,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.11</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.13</p>
       </div>
     </div>
   );
