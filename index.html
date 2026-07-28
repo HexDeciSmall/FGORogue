@@ -5279,7 +5279,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.49</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.50</p>
       </div>
     </div>
   );
@@ -6286,22 +6286,25 @@ function AchievementsScreen({onNavigate,profile}){
 // que muitos Servos jogáveis já têm), depois o PNG em assets/ressonancia/<art>.png, e
 // por fim cai para o emoji grande se nada existir (vários não são jogáveis, sem sprite).
 function RessonanciaRetrato({art,patronoArt,emoji,size=120}){
-  // monta a cadeia de candidatos, usando a MESMA estratégia do PatronoIcon (que funciona):
-  // ambas as pastas de patrono e ambas as extensões .png/.PNG, depois a arte da ressonância.
+  // Reaproveita a MESMA função patronoCandidates() usada pelo PatronoIcon (que funciona),
+  // passando um objeto {art} com o nome do arquivo do patrono. Depois tenta a arte própria
+  // da ressonância. Se nada carregar, cai no emoji.
   const cands=[];
-  if(patronoArt){
-    for(const d of (typeof PATRONO_ART_DIRS!=='undefined'?PATRONO_ART_DIRS:['assets/patronos/','assets/patrono/']))
-      for(const ext of ['.png','.PNG']) cands.push(d+patronoArt+ext);
+  if(patronoArt && typeof patronoCandidates==='function'){
+    cands.push(...patronoCandidates({art:patronoArt}));
+  } else if(patronoArt){
+    cands.push('assets/patronos/'+patronoArt+'.png','assets/patrono/'+patronoArt+'.png');
   }
-  if(art){for(const ext of ['.png','.PNG']) cands.push('assets/ressonancia/'+art+ext);}
+  if(art){cands.push('assets/ressonancia/'+art+'.png','assets/ressonancia/'+art+'.PNG');}
   const[i,setI]=useState(0);
   useEffect(()=>{setI(0);},[art,patronoArt]);
-  if(!cands.length||i>=cands.length)return <div style={{width:size,height:size,borderRadius:8,
+  if(!cands.length||i>=cands.length)return <div style={{width:size,height:size,borderRadius:8,flexShrink:0,
     display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.5,
     background:'radial-gradient(circle at 50% 40%,rgba(201,162,39,.18),rgba(20,10,26,.6))',
     border:'1px solid var(--gold-dim)'}}>{emoji}</div>;
-  return <img src={cands[i]} alt="" width={size} height={size} onError={()=>setI(n=>n+1)}
-    style={{width:size,height:size,objectFit:'cover',objectPosition:'center 20%',borderRadius:8,border:'1px solid var(--gold-dim)'}}/>;
+  return <img key={cands[i]} src={cands[i]} alt="" width={size} height={size} onError={()=>setI(n=>n+1)}
+    style={{width:size,height:size,objectFit:'cover',objectPosition:'center 18%',borderRadius:8,
+      flexShrink:0,border:'1px solid var(--gold-dim)'}}/>;
 }
 
 // Barra de um eixo do vetor de alma (−5..+5), com o marcador do jogador.
