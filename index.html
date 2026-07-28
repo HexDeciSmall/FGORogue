@@ -20,7 +20,7 @@
   --hp-green:#2d6a2d;--np-blue:#1a3a6e;--np-light:#4a7ecf;
   --shadow:rgba(0,0,0,0.7);
   /* Base carmesim/preto — acento vermelho substitui o dourado ornamentado */
-  --crimson:#c0392b;--crimson-deep:#8b1a1a;--crimson-dim:#5a1418;--crimson-soft:#e05a4a;
+  --crimson:#c0392b;--crimson-deep:#8b1a1a;--crimson-dim:#5a1418;--crimson-soft:#e05a4a;--crimson-light:#e0607a;
   --panel-a:rgba(14,10,11,0.94);--panel-b:rgba(7,6,7,0.97);
   --edge:rgba(192,57,43,0.28);--edge-soft:rgba(192,57,43,0.14);
 }
@@ -898,11 +898,11 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:5,altru:3,ordem:5,razao:5,vinculo:-2,preserv:3,franq:1,esper:0,autov:2,tradic:4,leveza:-3,ambic:3,instin:-4,empat:0,refin:4,coragem:4,abert:-3},
    essencia:'Abriu mão da própria humanidade pelo ideal de um rei perfeito. Carrega o peso de um reino sem se permitir um só arrependimento — ainda que sonhe com a vida que não viveu.',
    frase:'Se algo é maligno, devo corrigir seu caminho por mim mesmo.'},
-  {id:'gilgamesh',nome:'Gilgamesh',classe:'Archer',emoji:'⚜️',art:'gil',mbti:'ENTJ',
+  {id:'gilgamesh',patronoArt:'gil',nome:'Gilgamesh',classe:'Archer',emoji:'⚜️',art:'gil',mbti:'ENTJ',
    vetor:{ideal:1,altru:-4,ordem:2,razao:0,vinculo:-3,preserv:-1,franq:4,esper:2,autov:5,tradic:2,leveza:2,ambic:5,instin:1,empat:-4,refin:4,coragem:2,abert:0},
    essencia:'O Rei dos Heróis, que julga tudo e todos a partir de si mesmo. Não é crueldade — é a certeza absoluta de quem nunca precisou duvidar do próprio valor.',
    frase:'Não há nada neste mundo que já não seja meu.'},
-  {id:'jeanne',nome:'Jeanne d\'Arc',classe:'Ruler',emoji:'⚜️',art:'jeanne',mbti:'INFJ',
+  {id:'jeanne',patronoArt:'jeanne',nome:'Jeanne d\'Arc',classe:'Ruler',emoji:'⚜️',art:'jeanne',mbti:'INFJ',
    vetor:{ideal:5,altru:5,ordem:3,razao:-1,vinculo:2,preserv:4,franq:3,esper:5,autov:2,tradic:3,leveza:3,ambic:3,instin:1,empat:4,refin:0,coragem:1,abert:0},
    essencia:'Fé inabalável mesmo diante da fogueira. Não guarda rancor de quem a condenou — sua esperança pelos outros nunca vacila, mesmo quando nada resta para si.',
    frase:'Mesmo que ninguém acredite, eu seguirei acreditando.'},
@@ -910,11 +910,11 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:-1,altru:-3,ordem:1,razao:-2,vinculo:-3,preserv:-2,franq:-3,esper:-4,autov:-1,tradic:1,leveza:-4,ambic:0,instin:0,empat:-3,refin:4,coragem:-2,abert:-1},
    essencia:'Traída por todos a quem se entregou, aprendeu a confiar apenas na própria astúcia. A Bruxa da Traição não é má — é alguém que decidiu ferir antes de ser ferida de novo.',
    frase:'Amor? Já paguei caro demais por essa palavra.'},
-  {id:'cu',nome:'Cú Chulainn',classe:'Lancer',emoji:'🔱',art:'cu',mbti:'ESTP',
+  {id:'cu',patronoArt:'cu',nome:'Cú Chulainn',classe:'Lancer',emoji:'🔱',art:'cu',mbti:'ESTP',
    vetor:{ideal:3,altru:2,ordem:0,razao:-1,vinculo:3,preserv:1,franq:5,esper:3,autov:3,tradic:0,leveza:3,ambic:2,instin:3,empat:1,refin:-1,coragem:5,abert:1},
    essencia:'Um guerreiro que encara a própria morte de frente, sem drama. Vive pela emoção da batalha e pela lealdade simples, mas não é tolo — sabe exatamente quando está sendo enviado para morrer.',
    frase:'Se é pra morrer, que seja lutando. O resto é conversa.'},
-  {id:'nero',nome:'Nero Claudius',classe:'Saber',emoji:'🌹',art:'nero',mbti:'ESFP',
+  {id:'nero',patronoArt:'nero',nome:'Nero Claudius',classe:'Saber',emoji:'🌹',art:'nero',mbti:'ESFP',
    vetor:{ideal:3,altru:1,ordem:0,razao:-2,vinculo:2,preserv:1,franq:5,esper:3,autov:5,tradic:0,leveza:4,ambic:3,instin:2,empat:2,refin:4,coragem:3,abert:1},
    essencia:'Uma imperatriz-artista que ama o mundo tão intensamente quanto quer ser amada por ele. Sua autoconfiança é genuína, não vaidade oca — ela realmente acredita que o belo redime tudo.',
    frase:'Admire-me! Pois toda a minha vida foi uma obra de arte!'},
@@ -922,7 +922,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:-3,altru:-2,ordem:-4,razao:-1,vinculo:-1,preserv:-5,franq:4,esper:-4,autov:3,tradic:-4,leveza:-3,ambic:1,instin:1,empat:0,refin:-1,coragem:2,abert:2},
    essencia:'Nascida do ódio e do desejo de vingança, rejeita o papel de santa que lhe impuseram. Cuspe fogo em quem espera pureza dela — mas há uma honestidade brutal em recusar ser o que não é.',
    frase:'Santa? Eu? Não me faça rir. Eu queimo — é só o que sei fazer, e faço bem.'},
-  {id:'enkidu',nome:'Enkidu',classe:'Lancer',emoji:'🌿',art:'enkidu',mbti:'INTJ',
+  {id:'enkidu',patronoArt:'enkidu',nome:'Enkidu',classe:'Lancer',emoji:'🌿',art:'enkidu',mbti:'INTJ',
    vetor:{ideal:3,altru:2,ordem:1,razao:4,vinculo:4,preserv:2,franq:2,esper:1,autov:2,tradic:2,leveza:-1,ambic:-2,instin:-2,empat:1,refin:2,coragem:-1,abert:0},
    essencia:'Uma arma dos deuses que escolheu a amizade acima do próprio propósito. Sereno e observador, mede tudo pela lógica — exceto quando se trata do único vínculo que decidiu proteger.',
    frase:'Eu nasci uma ferramenta. Mas foi a amizade que me tornou alguém.'},
@@ -970,7 +970,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:1,altru:0,ordem:-1,razao:-3,vinculo:2,preserv:-2,franq:-3,esper:-2,autov:-5,tradic:-1,leveza:-3,ambic:-2,instin:1,empat:2,refin:-1,coragem:-1,abert:2},
    essencia:'Eternamente à sombra de uma irmã genial, carrega a dor de nunca ser bom o bastante. Sensível e ressentido, sonha em ser reconhecido — e sua fragileza é, ao mesmo tempo, sua ferida e sua humanidade.',
    frase:'Eu só queria... que uma vez, alguém olhasse para mim e não para ela.'},
-  {id:'karna',nome:'Karna',classe:'Lancer',emoji:'☀️',art:'karna',mbti:'ISTP',
+  {id:'karna',patronoArt:'karna',nome:'Karna',classe:'Lancer',emoji:'☀️',art:'karna',mbti:'ISTP',
    vetor:{ideal:4,altru:3,ordem:1,razao:3,vinculo:0,preserv:1,franq:2,esper:2,autov:3,tradic:3,leveza:1,ambic:-2,instin:-1,empat:0,refin:1,coragem:4,abert:-2},
    essencia:'O filho do sol, generoso ao ponto de dar tudo o que tem sem esperar nada. Frio na aparência e desapegado, mas movido por um senso de justiça e caridade inabalável — julga pouco e concede muito.',
    frase:'Peça o que quiser. Se está em minhas mãos dar, será dado.'},
@@ -990,7 +990,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:0,altru:-2,ordem:-2,razao:-1,vinculo:2,preserv:-3,franq:3,esper:-2,autov:3,tradic:-2,leveza:0,ambic:1,instin:1,empat:1,refin:-1,coragem:-2,abert:1},
    essencia:'Orgulhosa e cortante, esconde uma vulnerabilidade profunda atrás do desdém e da crueldade. Difícil de agradar e mais difícil de conquistar — mas quem atravessa suas espinhas encontra uma lealdade ferozmente sincera.',
    frase:'Não pense que sou gentil. E não ouse pensar que eu me importo... muito.'},
-  {id:'ozymandias',nome:'Ozymandias',classe:'Rider',emoji:'☀️',art:'ozy',mbti:'ESTJ',
+  {id:'ozymandias',patronoArt:'ozy',nome:'Ozymandias',classe:'Rider',emoji:'☀️',art:'ozy',mbti:'ESTJ',
    vetor:{ideal:3,altru:1,ordem:4,razao:2,vinculo:1,preserv:2,franq:5,esper:3,autov:5,tradic:3,leveza:3,ambic:5,instin:0,empat:0,refin:4,coragem:2,abert:0},
    essencia:'O Rei dos Reis, o Faraó Sol, cuja autoridade é tão absoluta quanto justa. Exige grandeza de si e dos outros, reconhece o mérito onde ele existe, e governa com uma confiança que jamais precisou de permissão.',
    frase:'Eu sou o Sol encarnado. Aja com grandeza diante de mim, e serás reconhecido.'},
@@ -1006,7 +1006,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:3,altru:5,ordem:2,razao:0,vinculo:5,preserv:4,franq:2,esper:4,autov:1,tradic:3,leveza:3,ambic:-2,instin:0,empat:4,refin:0,coragem:-1,abert:0},
    essencia:'A deusa da devoção, gentil e amorosa ao ponto de colocar a felicidade alheia sempre acima da própria. Tímida no amor mas inabalável no cuidado, enxerga o melhor nas pessoas e nutre cada vínculo com ternura sincera.',
    frase:'A felicidade de quem eu amo é a minha própria. Deixe-me cuidar de você.'},
-  {id:'raikou',nome:'Minamoto no Raikou',classe:'Berserker',emoji:'🌸',art:'raikou',mbti:'ESFJ',
+  {id:'raikou',patronoArt:'raikou',nome:'Minamoto no Raikou',classe:'Berserker',emoji:'🌸',art:'raikou',mbti:'ESFJ',
    vetor:{ideal:1,altru:3,ordem:3,razao:-4,vinculo:5,preserv:0,franq:-1,esper:2,autov:3,tradic:2,leveza:2,ambic:-1,instin:4,empat:4,refin:-1,coragem:4,abert:-1},
    essencia:'Um amor maternal tão avassalador que beira a obsessão. Devotada a proteger e cuidar dos seus, transborda afeto — mas seu zelo pode se tornar sufocante, pois nada a detém quando acredita agir pelo bem de quem ama.',
    frase:'Deixe a mamãe cuidar de tudo. Eu jamais permitirei que nada lhe aconteça... jamais.'},
@@ -1038,7 +1038,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:2,altru:5,ordem:3,razao:0,vinculo:5,preserv:5,franq:2,esper:3,autov:1,tradic:3,leveza:2,ambic:-3,instin:0,empat:4,refin:1,coragem:-1,abert:-4},
    essencia:'A deusa-mãe da colheita, cujo amor nutridor abraça a todos como filhos. Paciente e provedora, encontra propósito em cuidar e fazer florescer — e sua dor mais profunda é a de uma mãe separada de quem ama.',
    frase:'Venha, coma, descanse. Enquanto eu estiver aqui, ninguém passará fome.'},
-  {id:'arjuna',nome:'Arjuna',classe:'Archer',emoji:'🏹',art:'arjuna',mbti:'INTJ',
+  {id:'arjuna',patronoArt:'arjuna',nome:'Arjuna',classe:'Archer',emoji:'🏹',art:'arjuna',mbti:'INTJ',
    vetor:{ideal:4,altru:1,ordem:4,razao:4,vinculo:0,preserv:2,franq:-2,esper:0,autov:-2,tradic:4,leveza:-4,ambic:1,instin:-3,empat:-1,refin:3,coragem:-2,abert:-3},
    essencia:'Um herói perfeito por fora e atormentado por dentro, que persegue a virtude com disciplina implacável. Reprime as próprias emoções em nome do dever e carrega, em silêncio, o peso de nunca se sentir bom o suficiente diante dos deuses.',
    frase:'Eu devo ser perfeito. É a única forma de justificar o que me foi dado.'},
@@ -1066,7 +1066,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:2,altru:3,ordem:-3,razao:-2,vinculo:3,preserv:1,franq:4,esper:4,autov:3,tradic:-3,leveza:5,ambic:2,instin:2,empat:4,refin:-2,coragem:-1,abert:2},
    essencia:'Um cavaleiro alegre e impulsivo que vive cada instante com entusiasmo transbordante e coração aberto. Sem malícia nem cálculo, segue o próprio senso de certo com uma lealdade radiante — livre, espontâneo e incapaz de fingir ser quem não é.',
    frase:'Não sei o que vem depois, mas sei que vai ser divertido! Confia em mim!'},
-  {id:'medusa',nome:'Medusa',classe:'Rider',emoji:'🐍',art:'medusa',mbti:'INFJ',
+  {id:'medusa',patronoArt:'medusa',nome:'Medusa',classe:'Rider',emoji:'🐍',art:'medusa',mbti:'INFJ',
    vetor:{ideal:1,altru:2,ordem:1,razao:1,vinculo:4,preserv:2,franq:-2,esper:0,autov:0,tradic:2,leveza:0,ambic:-2,instin:-1,empat:3,refin:1,coragem:-1,abert:-2},
    essencia:'Uma alma gentil amaldiçoada a ser vista como monstro, que carrega a solidão com dignidade silenciosa. Reservada e melancólica, protege ferozmente os poucos que a enxergam de verdade — e sob a serenidade fria arde uma devoção inabalável.',
    frase:'Já fui temida, odiada, chamada de monstro. Mas por você... eu voltaria a ser humana.'},
@@ -1086,7 +1086,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:-2,altru:-2,ordem:0,razao:3,vinculo:-2,preserv:-3,franq:2,esper:1,autov:5,tradic:-3,leveza:1,ambic:4,instin:-1,empat:-3,refin:4,coragem:1,abert:1},
    essencia:'Uma manipuladora serena e absoluta, que enxerga o desejo humano como quem lê um livro aberto. Sob a doçura maternal e a calma perturbadora esconde-se uma ambição divina — ela quer salvar a humanidade devorando-a, e acredita nisso com convicção plena.',
    frase:'Deixe-me acolher todos os seus desejos, criança. Eu os compreendo melhor que você.'},
-  {id:'mordred',nome:'Mordred',classe:'Saber',emoji:'⚔️',art:'mordred',mbti:'ESTP',
+  {id:'mordred',patronoArt:'mordred',nome:'Mordred',classe:'Saber',emoji:'⚔️',art:'mordred',mbti:'ESTP',
    vetor:{ideal:-1,altru:-1,ordem:-2,razao:-1,vinculo:4,preserv:-3,franq:5,esper:-1,autov:2,tradic:-3,leveza:-2,ambic:1,instin:4,empat:0,refin:-1,coragem:5,abert:2},
    essencia:'Um cavaleiro rebelde e impetuoso, movido por um desejo desesperado de reconhecimento sob a bravata. Age antes de pensar, fala o que sente sem rodeios, e por trás da fúria arde a mágoa de um filho que só queria ser aceito pelo pai que admirava.',
    frase:'Eu não queria o trono! Eu só queria que você me olhasse... pai!'},
@@ -1098,7 +1098,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:4,altru:3,ordem:-1,razao:-1,vinculo:2,preserv:2,franq:3,esper:5,autov:2,tradic:0,leveza:3,ambic:4,instin:1,empat:3,refin:-1,coragem:1,abert:1},
    essencia:'Um homem de carisma solar que acredita nos sonhos das pessoas mais do que elas mesmas. Grandioso e caloroso, encara qualquer impossível com um sorriso confiante — a lenda que virou esperança, sempre pronto a acertar o alvo que ninguém mais alcança.',
    frase:'Um homem que já foi um sonho não pode fazer outra coisa senão realizá-los!'},
-  {id:'ushiwaka',nome:'Ushiwakamaru',classe:'Rider',emoji:'🌸',art:'ushiwaka',mbti:'ISFP',
+  {id:'ushiwaka',patronoArt:'ushiwa',nome:'Ushiwakamaru',classe:'Rider',emoji:'🌸',art:'ushiwaka',mbti:'ISFP',
    vetor:{ideal:3,altru:2,ordem:0,razao:-1,vinculo:3,preserv:0,franq:3,esper:3,autov:3,tradic:2,leveza:2,ambic:-3,instin:1,empat:3,refin:-2,coragem:2,abert:0},
    essencia:'Uma guerreira devota e graciosa, movida por uma fé sincera e uma alegria genuína na batalha. Segue seu senhor de coração aberto, mistura a delicadeza da dança com a letalidade da espada, e enxerta beleza até no campo de guerra.',
    frase:'Onde meu senhor for, eu o seguirei — dançando entre as lâminas, se preciso.'},
@@ -1122,7 +1122,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:2,altru:2,ordem:0,razao:-3,vinculo:4,preserv:1,franq:-4,esper:1,autov:-2,tradic:0,leveza:-2,ambic:-2,instin:1,empat:3,refin:-3,coragem:-1,abert:0},
    essencia:'Uma criatura de coração puro e palavras raras, que só deseja ser aceita e amada por aquilo que é. Incapaz de expressar em voz o que sente, comunica sua ternura e sua dor em gestos simples — busca apenas um lugar no mundo onde não seja temida.',
    frase:'...Au. (Só queria... não estar sozinha.)'},
-  {id:'merlin',nome:'Merlin',classe:'Caster',emoji:'🌸',art:'merlin',mbti:'ENTP',
+  {id:'merlin',patronoArt:'merlin',nome:'Merlin',classe:'Caster',emoji:'🌸',art:'merlin',mbti:'ENTP',
    vetor:{ideal:0,altru:-1,ordem:-2,razao:5,vinculo:-1,preserv:0,franq:3,esper:3,autov:4,tradic:-2,leveza:3,ambic:2,instin:-3,empat:-2,refin:4,coragem:0,abert:3},
    essencia:'Um mago genial e incorrigível, que observa a humanidade com fascínio de quem nunca a teve por completo. Brincalhão e manipulador na mesma medida, move as peças nos bastidores com um sorriso — mas seu interesse pelos sonhos alheios é, à sua maneira estranha, sincero.',
    frase:'Ora, ora, não me olhe assim. Eu só quero ver que história magnífica você vai escrever.'},
@@ -1182,7 +1182,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:4,altru:2,ordem:0,razao:0,vinculo:2,preserv:1,franq:-1,esper:2,autov:-1,tradic:0,leveza:1,ambic:-2,instin:0,empat:4,refin:0,coragem:-1,abert:0},
    essencia:'Um homúnculo que nasceu sem nome e sem propósito, e escolheu por conta própria lutar pela liberdade de todos como ele. Quieto e introspectivo, aprende aos poucos o que significa ter um coração — movido por uma convicção gentil de que todos merecem escolher o próprio destino.',
    frase:'Eu nasci sem nome. Mas o que eu faço com minha vida... isso eu escolho.'},
-  {id:'scathach',nome:'Scáthach',classe:'Lancer',emoji:'🗡️',art:'scathach',mbti:'ISTP',
+  {id:'scathach',patronoArt:'scath',nome:'Scáthach',classe:'Lancer',emoji:'🗡️',art:'scathach',mbti:'ISTP',
    vetor:{ideal:2,altru:0,ordem:1,razao:3,vinculo:0,preserv:0,franq:2,esper:0,autov:4,tradic:0,leveza:-3,ambic:-2,instin:-1,empat:-1,refin:1,coragem:1,abert:0},
    essencia:'A rainha guerreira das sombras, mestra da lança que já viu e ensinou tudo o que há para saber sobre a morte. Serena, austera e desapegada, encara a eternidade com uma calma quase entediada — busca apenas um oponente digno que possa, enfim, lhe conceder o fim que ela não alcança.',
    frase:'Já vivi tempo demais. O que busco não é a vitória — é alguém que me faça sentir de novo.'},
@@ -1290,7 +1290,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:3,altru:2,ordem:-3,razao:-3,vinculo:2,preserv:-2,franq:5,esper:4,autov:3,tradic:-4,leveza:0,ambic:2,instin:4,empat:2,refin:-4,coragem:5,abert:3},
    essencia:'O gladiador que se ergueu contra a opressão, movido por uma sede insaciável de esmagar qualquer tirania. Simplório mas de convicção ardente, enxerga opressores em toda parte e se atira contra eles sem hesitar — a revolta encarnada, que sofre com alegria em nome dos oprimidos.',
    frase:'Vejo opressão diante de mim! E onde há opressão... SPARTACUS AVANÇA!'},
-  {id:'nightingale',nome:'Florence Nightingale',classe:'Berserker',emoji:'💉',art:'nightingale',mbti:'ISTJ',
+  {id:'nightingale',patronoArt:'nightin',nome:'Florence Nightingale',classe:'Berserker',emoji:'💉',art:'nightingale',mbti:'ISTJ',
    vetor:{ideal:5,altru:4,ordem:3,razao:2,vinculo:1,preserv:1,franq:4,esper:3,autov:3,tradic:0,leveza:-2,ambic:3,instin:-2,empat:4,refin:2,coragem:1,abert:1},
    essencia:'Uma curandeira de devoção absoluta e assustadora, que salvará vidas custe o que custar — inclusive por cima de qualquer objeção. Inflexível em sua missão de curar, sacrifica delicadeza e até a vontade dos outros em nome da vida: para ela, salvar não é escolha, é imperativo inegociável.',
    frase:'Vou salvá-lo. Não me importa se você quer ou não — a morte não é uma opção aceitável.'},
@@ -1410,7 +1410,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:1,altru:3,ordem:-1,razao:-2,vinculo:3,preserv:2,franq:2,esper:3,autov:0,tradic:1,leveza:3,ambic:-3,instin:1,empat:5,refin:-2,coragem:-1,abert:0},
    essencia:'A personificação de todos os contos infantis, uma menina-livro que deseja apenas ser lida e compartilhar histórias com quem a segura. Sonhadora e afetuosa, existe para trazer o conforto e a maravilha das fábulas — sua maior alegria é ser o conto que embala e a companhia que não deixa ninguém sozinho.',
    frase:'Era uma vez... você quer que eu conte? Histórias são melhores quando divididas com alguém.'},
-  {id:'shuten',nome:'Shuten Douji',classe:'Assassin',emoji:'🍶',art:'shuten',mbti:'ESFP',
+  {id:'shuten',patronoArt:'shuten',nome:'Shuten Douji',classe:'Assassin',emoji:'🍶',art:'shuten',mbti:'ESFP',
    vetor:{ideal:-2,altru:-1,ordem:-3,razao:1,vinculo:2,preserv:-1,franq:4,esper:2,autov:4,tradic:-1,leveza:5,ambic:1,instin:4,empat:1,refin:-1,coragem:3,abert:1},
    essencia:'Uma oni hedonista e caprichosa que vive para o próprio prazer, seja o saquê, a diversão ou os caprichos do momento. Sedutora e imprevisível, faz o que bem entende com um sorriso indolente — mas oferece uma lealdade genuína e possessiva a quem consegue, de fato, cativar seu interesse volúvel.',
    frase:'Venha beber comigo~ A vida é curta demais pra não aproveitar cada gota de prazer, não é?'},
@@ -1422,7 +1422,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:2,altru:2,ordem:2,razao:5,vinculo:0,preserv:2,franq:3,esper:-1,autov:3,tradic:0,leveza:-2,ambic:3,instin:-4,empat:-3,refin:4,coragem:0,abert:0},
    essencia:'O deus da medicina, um curandeiro pragmático e teimoso que trata a morte como um problema a ser resolvido, não aceito. Racional e mordaz, despreza sentimentalismos e superstições — sua dedicação à cura não vem de bondade sentimental, mas de uma convicção fria de que a vida deve ser preservada pela ciência.',
    frase:'A morte não é sagrada. É apenas uma doença que eu ainda não terminei de curar.'},
-  {id:'kintoki',nome:'Sakata Kintoki',classe:'Berserker',emoji:'⚡',art:'kintoki',mbti:'ESFP',
+  {id:'kintoki',patronoArt:'sakata',nome:'Sakata Kintoki',classe:'Berserker',emoji:'⚡',art:'kintoki',mbti:'ESFP',
    vetor:{ideal:3,altru:4,ordem:0,razao:-4,vinculo:4,preserv:2,franq:5,esper:5,autov:2,tradic:0,leveza:4,ambic:1,instin:4,empat:4,refin:-4,coragem:4,abert:1},
    essencia:'Um herói dourado de coração enorme e entusiasmo explosivo, direto e leal como poucos. Vive tudo com intensidade máxima e uma sinceridade desarmante — sem malícia nem cálculo, só a vontade genuína de proteger os amigos e enfrentar o mal de frente, sempre com um sorriso reluzente.',
    frase:'Golden! Se tem gente pra proteger, eu vou com tudo — sem freio e sem medo, mano!'},
@@ -1478,7 +1478,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:1,altru:1,ordem:-2,razao:0,vinculo:2,preserv:0,franq:4,esper:3,autov:3,tradic:-2,leveza:3,ambic:-1,instin:1,empat:2,refin:-2,coragem:2,abert:4},
    essencia:'Uma pistoleira durona e desbocada do velho oeste, de espírito livre e coração mais mole do que admite. Independente e brincalhona, mascara a vulnerabilidade com bravata e tiros certeiros — vive à sua própria maneira, sem se curvar a convenções, mas guarda uma lealdade calorosa aos poucos em quem confia.',
    frase:'Ha! Sou rápida no gatilho e na língua. Mas não se engane — sei cuidar dos meus.'},
-  {id:'osakabe',nome:'Osakabehime',classe:'Assassin',emoji:'🎮',art:'osakabe',mbti:'INFP',
+  {id:'osakabe',patronoArt:'osakabe',nome:'Osakabehime',classe:'Assassin',emoji:'🎮',art:'osakabe',mbti:'INFP',
    vetor:{ideal:0,altru:0,ordem:-1,razao:0,vinculo:1,preserv:0,franq:-2,esper:1,autov:-2,tradic:0,leveza:2,ambic:-4,instin:0,empat:1,refin:0,coragem:-1,abert:0},
    essencia:'Uma princesa-youkai reclusa e otaku, que prefere a segurança confortável de seu quarto e seus hobbies ao mundo exterior assustador. Tímida e preguiçosa, evita esforço e contato social sempre que pode — mas por trás da casca de eremita mora uma ternura tímida e um desejo secreto de conexão.',
    frase:'A-ah, sair de casa? Não, obrigada... aqui com meus mangás e joguinhos tá perfeito. Me deixa em paz~'},
@@ -1546,7 +1546,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:1,altru:0,ordem:-2,razao:1,vinculo:1,preserv:0,franq:3,esper:2,autov:3,tradic:-2,leveza:2,ambic:-1,instin:0,empat:-1,refin:-2,coragem:1,abert:3},
    essencia:'Um pistoleiro jovem e descontraído do velho oeste, de gatilho rápido e temperamento surpreendentemente afável. Relaxado e habilidoso, encara duelos e a vida com uma calma casual e um sorriso fácil — sob a fama de fora-da-lei, esconde-se um rapaz de bom coração que só queria viver livre à sua maneira.',
    frase:'Sou o cara mais rápido do oeste, mas relaxa — só saco o revólver se você pedir por isso.'},
-  {id:'ibuki',nome:'Ibuki Douji',classe:'Saber',emoji:'🐉',art:'ibuki',mbti:'ESFP',
+  {id:'ibuki',patronoArt:'ibuki',nome:'Ibuki Douji',classe:'Saber',emoji:'🐉',art:'ibuki',mbti:'ESFP',
    vetor:{ideal:-1,altru:-2,ordem:0,razao:1,vinculo:1,preserv:-2,franq:3,esper:2,autov:5,tradic:1,leveza:1,ambic:3,instin:3,empat:1,refin:0,coragem:2,abert:2},
    essencia:'A divindade-dragão que originou os oni, um ser de poder avassalador e presença majestosa, caprichosa e imperiosa. Age conforme sua vontade divina com languidez soberana, mas guarda uma curiosidade genuína e um afeto possessivo por quem desperta seu interesse — a grandeza de uma deusa que se entedia com facilidade.',
    frase:'Eu sou a origem de todos os oni. Divirta-me, humano... ou desapareça da minha vista.'},
@@ -1694,7 +1694,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:2,altru:-1,ordem:-2,razao:3,vinculo:1,preserv:2,franq:5,esper:3,autov:5,tradic:0,leveza:3,ambic:4,instin:1,empat:-1,refin:3,coragem:-2,abert:3},
    essencia:'Uma médium excêntrica e falante, fundadora de doutrinas ocultas, que mistura sabedoria esotérica genuína com um temperamento teatral e imprevisível. Vaidosa e tagarela, adora ser o centro das atenções e defende suas teorias místicas com entusiasmo dramático — uma visionária espirituosa que borra a linha entre gênio e charlatanice.',
    frase:'Os mistérios do cosmos falam através de mim! ...E sim, eu também gosto de um pouco de holofote.'},
-  {id:'tamamo',nome:'Tamamo no Mae',classe:'Caster',emoji:'🦊',art:'tamamo',mbti:'ESFJ',
+  {id:'tamamo',patronoArt:'tamamo',nome:'Tamamo no Mae',classe:'Caster',emoji:'🦊',art:'tamamo',mbti:'ESFJ',
    vetor:{ideal:2,altru:3,ordem:1,razao:-1,vinculo:5,preserv:2,franq:4,esper:4,autov:3,tradic:1,leveza:3,ambic:1,instin:3,empat:4,refin:4,coragem:2,abert:-4},
    essencia:'Uma raposa divina devotada e amorosa ao extremo, que só deseja construir um lar feliz e ser amada por aquele que escolheu. Carinhosa e ciumenta, transborda afeto e dedicação doméstica — mas sua necessidade avassaladora de amor esconde a carência de quem foi rejeitada, e ama com uma intensidade que beira a possessividade.',
    frase:'Marido~! Deixa eu cuidar de você! Só quero fazer você feliz... e que você só tenha olhos pra mim!'},
@@ -1798,7 +1798,7 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:-2,altru:-1,ordem:1,razao:3,vinculo:-2,preserv:-2,franq:1,esper:-3,autov:3,tradic:0,leveza:-4,ambic:1,instin:0,empat:-2,refin:1,coragem:1,abert:0},
    essencia:'A versão corrompida do arqueiro de justiça, que abandonou os ideais e abraçou a eficiência brutal e o cinismo absoluto. Onde antes havia um conflito atormentado entre sonho e realidade, resta apenas uma frieza resignada e implacável — o herói que desistiu de salvar a todos e agora apenas executa, sem ilusões nem esperança.',
    frase:'Ideais? Já tentei isso. Não funcionou. Agora eu só faço o que precisa ser feito — e pronto.'},
-  {id:'cleopatra',nome:'Cleópatra',classe:'Assassin',emoji:'👁️',art:'cleopatra',mbti:'ENFJ',
+  {id:'cleopatra',patronoArt:'cleo',nome:'Cleópatra',classe:'Assassin',emoji:'👁️',art:'cleopatra',mbti:'ENFJ',
    vetor:{ideal:2,altru:2,ordem:2,razao:2,vinculo:3,preserv:1,franq:4,esper:3,autov:5,tradic:1,leveza:2,ambic:4,instin:2,empat:3,refin:4,coragem:2,abert:1},
    essencia:'A última rainha do Egito, uma soberana de charme magnético e inteligência política afiada, que combina orgulho régio com uma carência afetiva genuína. Carismática e ambiciosa, sabe encantar e liderar com graça imperial — mas por trás da confiança de deusa viva há uma mulher que anseia por amor verdadeiro tanto quanto por poder.',
    frase:'Sou a encarnação de Ísis e a rainha do Nilo. Curve-se... mas saiba que meu coração também anseia ser amado.'},
@@ -2138,6 +2138,26 @@ const RESSONANCIA_SERVOS=[
    vetor:{ideal:1,altru:-1,ordem:3,razao:2,vinculo:0,preserv:-2,franq:4,esper:0,autov:4,tradic:1,leveza:-1,ambic:3,instin:2,empat:-3,refin:2,coragem:4,abert:-1},
    essencia:'A faraó transformada numa vingadora sombria e imponente, que abraçou a autoridade absoluta e a punição implacável, despida da insegurança que outrora a definia. Severa e majestosa, exerce seu poder com uma frieza régia e um senso de justiça impiedoso — a soberana que trocou a timidez pela tirania, julgando e condenando com a autoridade inquestionável dos mortos.',
    frase:'Não sou mais a faraó hesitante de outrora. Agora sou juíza e carrasca — e minha sentença é absoluta e irrevogável.'},
+  {id:'typhon',nome:'Typhon',classe:'Pretender',emoji:'🌀',art:'typhon',mbti:'ISFP',
+   vetor:{ideal:0,altru:-1,ordem:-2,razao:-1,vinculo:1,preserv:-3,franq:1,esper:0,autov:3,tradic:-1,leveza:-1,ambic:1,instin:4,empat:-1,refin:-2,coragem:4,abert:0},
+   essencia:'O pai dos monstros e a mais titânica das criaturas primordiais, uma força de destruição colossal e instintiva que encarna o caos anterior à ordem do mundo. Selvagem e imenso, age por impulsos primordiais mais do que por qualquer razão — mas sob a fúria monstruosa há uma natureza estranhamente ingênua, uma criatura vasta demais para as pequenas maldades humanas.',
+   frase:'Sou o mais antigo dos monstros, o caos que precede toda ordem. Vasto, primordial... e talvez mais simples do que temem.'},
+  {id:'saika',nome:'Saika Magoichi',classe:'Archer',emoji:'🔫',art:'saika',mbti:'ISTJ',
+   vetor:{ideal:0,altru:0,ordem:3,razao:4,vinculo:1,preserv:1,franq:1,esper:0,autov:4,tradic:1,leveza:-1,ambic:2,instin:1,empat:0,refin:1,coragem:4,abert:-1},
+   essencia:'Um líder mercenário pragmático e competente, mestre das armas de fogo que encara o combate como um ofício a ser executado com eficiência profissional e frieza calculada. Prático e confiável, cumpre seus contratos com uma dedicação metódica e um senso de responsabilidade sólido — o especialista veterano cuja lealdade se compra, mas cuja competência e palavra jamais falham uma vez dada.',
+   frase:'Um trabalho é um trabalho, e eu sempre cumpro o que prometo. Contrate a Saika, e a missão será feita com precisão.'},
+  {id:'illya',nome:'Illyasviel von Einzbern',classe:'Caster',emoji:'✨',art:'illya',mbti:'ENFJ',
+   vetor:{ideal:3,altru:3,ordem:0,razao:0,vinculo:4,preserv:2,franq:4,esper:4,autov:3,tradic:0,leveza:4,ambic:0,instin:2,empat:4,refin:1,coragem:3,abert:1},
+   essencia:'Uma garota mágica de coração caloroso e alegre, que apesar de um passado pesado abraça a vida com uma energia radiante e um amor generoso por seus amigos e família. Espontânea e afetuosa, encara suas aventuras com entusiasmo e coragem, colocando aqueles que ama sempre em primeiro lugar — a heroína cuja doçura e otimismo iluminam tudo ao seu redor.',
+   frase:'Vou proteger todo mundo que eu amo, com um sorriso no rosto! A magia mais forte de todas é a do coração, sabia?'},
+  {id:'chloe',nome:'Chloe von Einzbern',classe:'Archer',emoji:'🏹',art:'chloe',mbti:'ENTP',
+   vetor:{ideal:1,altru:1,ordem:-2,razao:2,vinculo:2,preserv:0,franq:5,esper:3,autov:4,tradic:-2,leveza:4,ambic:1,instin:3,empat:2,refin:1,coragem:4,abert:2},
+   essencia:'A gêmea desinibida e provocante nascida de Illya, que compartilha sua bondade essencial mas a expressa com uma ousadia atrevida, um humor malicioso e uma confiança descarada. Espirituosa e sedutora nas brincadeiras, adora provocar e chocar com um charme travesso — mas sob a atitude debochada há a mesma lealdade calorosa e o mesmo coração generoso de sua origem.',
+   frase:'Ara ara~ Que tal um beijinho? Hehe, relaxa, tô só brincando... ou não! A vida é curta demais pra levar tudo a sério~'},
+  {id:'miyu',nome:'Miyu Edelfelt',classe:'Caster',emoji:'🌙',art:'miyu',mbti:'ISTJ',
+   vetor:{ideal:3,altru:3,ordem:3,razao:2,vinculo:3,preserv:2,franq:-1,esper:1,autov:1,tradic:2,leveza:-2,ambic:0,instin:0,empat:3,refin:2,coragem:3,abert:-2},
+   essencia:'Uma garota séria e reservada de maturidade precoce, marcada por um passado de solidão e sacrifício, que expressa seu profundo afeto através de atos de cuidado silencioso em vez de palavras. Introvertida e devotada, dedica-se com uma seriedade grave àqueles que a acolheram — a menina que aprendeu cedo demais o peso do mundo, mas que encontrou, enfim, pessoas por quem vale a pena viver e lutar.',
+   frase:'Eu... não sou boa com palavras. Mas por aqueles que me aceitaram como sou, eu faria absolutamente qualquer coisa.'},
 ];
 // 16 perguntas. Cada opção soma pesos aos eixos (peso ~1-3). O Protocolo pede a
 // VERSÃO HUMANA e normalizada do traço — nada de "você se sacrificaria?", e sim
@@ -5195,7 +5215,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.44</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.47</p>
       </div>
     </div>
   );
@@ -6198,16 +6218,22 @@ function AchievementsScreen({onNavigate,profile}){
 // ══════════════════════════════════════════════════════
 // PERFIL
 // ══════════════════════════════════════════════════════
-// Retrato de Servo da Ressonância: tenta o PNG em assets/ressonancia/<art>.png,
-// cai para o emoji grande se não existir (vários não são jogáveis, sem sprite).
-function RessonanciaRetrato({art,emoji,size=120}){
-  const[ok,setOk]=useState(true);
-  if(!art||!ok)return <div style={{width:size,height:size,borderRadius:8,
+// Retrato de Servo da Ressonância: tenta em ordem a arte de Patrono (assets/patronos/,
+// que muitos Servos jogáveis já têm), depois o PNG em assets/ressonancia/<art>.png, e
+// por fim cai para o emoji grande se nada existir (vários não são jogáveis, sem sprite).
+function RessonanciaRetrato({art,patronoArt,emoji,size=120}){
+  // monta a cadeia de candidatos de imagem a tentar, na ordem de preferência
+  const cands=[];
+  if(patronoArt){cands.push(`assets/patronos/${patronoArt}.png`,`assets/patrono/${patronoArt}.png`);}
+  if(art){cands.push(`assets/ressonancia/${art}.png`);}
+  const[i,setI]=useState(0);
+  useEffect(()=>{setI(0);},[art,patronoArt]);
+  if(!cands.length||i>=cands.length)return <div style={{width:size,height:size,borderRadius:8,
     display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.5,
     background:'radial-gradient(circle at 50% 40%,rgba(201,162,39,.18),rgba(20,10,26,.6))',
     border:'1px solid var(--gold-dim)'}}>{emoji}</div>;
-  return <img src={`assets/ressonancia/${art}.png`} alt="" onError={()=>setOk(false)}
-    style={{width:size,height:size,objectFit:'cover',borderRadius:8,border:'1px solid var(--gold-dim)'}}/>;
+  return <img src={cands[i]} alt="" onError={()=>setI(n=>n+1)}
+    style={{width:size,height:size,objectFit:'cover',objectPosition:'center 20%',borderRadius:8,border:'1px solid var(--gold-dim)'}}/>;
 }
 
 // Barra de um eixo do vetor de alma (−5..+5), com o marcador do jogador.
@@ -6229,6 +6255,30 @@ function EixoBar({eixo,valor}){
   );
 }
 
+// Barra de eixo comparando o jogador (losango dourado) com um Servo (círculo carmim).
+function EixoBarComparar({eixo,valorVoce,valorServo}){
+  const pV=((valorVoce+5)/10)*100, pS=((valorServo+5)/10)*100;
+  return(
+    <div style={{marginBottom:9}}>
+      <div style={{display:'flex',justifyContent:'space-between',fontSize:'.6rem',
+        color:'var(--parchment-dark)',letterSpacing:1,marginBottom:2}}>
+        <span>{eixo.neg}</span><span>{eixo.pos}</span>
+      </div>
+      <div style={{position:'relative',height:6,borderRadius:3,
+        background:'linear-gradient(90deg,rgba(224,90,74,.35),rgba(60,40,70,.3),rgba(201,162,39,.35))'}}>
+        {/* marcador do Servo (círculo carmim) */}
+        <div style={{position:'absolute',top:'50%',left:`${pS}%`,transform:'translate(-50%,-50%)',
+          width:11,height:11,borderRadius:'50%',background:'var(--crimson-light,#e0607a)',
+          boxShadow:'0 0 7px rgba(224,90,74,.8)',border:'1px solid rgba(0,0,0,.5)'}}/>
+        {/* marcador do jogador (losango dourado) por cima */}
+        <div style={{position:'absolute',top:'50%',left:`${pV}%`,transform:'translate(-50%,-50%) rotate(45deg)',
+          width:10,height:10,background:'var(--gold)',
+          boxShadow:'0 0 8px rgba(201,162,39,.9)',border:'1px solid rgba(0,0,0,.5)'}}/>
+      </div>
+    </div>
+  );
+}
+
 function RessonanciaScreen({onNavigate,profile,setProfile}){
   // fase: 'intro' | 'quiz' | 'resultado'. O quiz percorre primeiro as perguntas de
   // EIXOS (16) e depois as de MBTI (12), num índice contínuo. As respostas ficam
@@ -6242,6 +6292,8 @@ function RessonanciaScreen({onNavigate,profile,setProfile}){
   const[respEixo,setRespEixo]=useState([]);
   const[respMbti,setRespMbti]=useState([]);
   const[resultado,setResultado]=useState(salvo);
+  const[verTodos,setVerTodos]=useState(false);   // tela com o ranking completo
+  const[detalhe,setDetalhe]=useState(null);       // id do Servo aberto no painel de dados
 
   function finalizar(eixos,mbtis){
     const vetor=calcVetorJogador(eixos);
@@ -6254,6 +6306,9 @@ function RessonanciaScreen({onNavigate,profile,setProfile}){
       principal:{id:rank[0].servo.id,afinidade:rank[0].afinidade,letras:rank[0].letrasComuns},
       afinidades:[{id:rank[1].servo.id,afinidade:rank[1].afinidade,letras:rank[1].letrasComuns},
                   {id:rank[2].servo.id,afinidade:rank[2].afinidade,letras:rank[2].letrasComuns}],
+      // Ranking completo (todos os Servos), para a tela "Ver todos". Guardamos leve:
+      // só id, afinidade e afinidade-por-vetor; os dados ricos vêm de svById na hora.
+      ranking:rank.map(r=>({id:r.servo.id,afinidade:r.afinidade,afVet:r.afVet,letras:r.letrasComuns})),
       data:Date.now(),
     };
     setResultado(res);
@@ -6345,6 +6400,117 @@ function RessonanciaScreen({onNavigate,profile,setProfile}){
   // ─── RESULTADO ───
   const svById=id=>RESSONANCIA_SERVOS.find(s=>s.id===id);
   const principal=svById(resultado.principal.id);
+
+  // Ranking completo: usa o salvo; se um resultado antigo não tiver, recalcula na hora.
+  const rankingCompleto=resultado.ranking
+    ? resultado.ranking
+    : ranquearComMBTI(resultado.vetor,resultado.mbti).map(r=>({
+        id:r.servo.id,afinidade:r.afinidade,afVet:r.afVet,letras:r.letrasComuns}));
+
+  // Cor da porcentagem conforme a força da afinidade.
+  const corAfin=a=>a>=80?'var(--gold)':a>=65?'var(--parchment)':'var(--parchment-dark)';
+
+  // ─── PAINEL DE DADOS DE UM SERVO (clicado na lista) ───
+  if(detalhe){
+    const sv=svById(detalhe);
+    const info=rankingCompleto.find(r=>r.id===detalhe);
+    if(sv){
+      return(
+        <div className="screen">
+          <div className="panel" style={{maxWidth:580}}>
+            <button className="btn" style={{marginBottom:14}} onClick={()=>setDetalhe(null)}>← Voltar à lista</button>
+            <div style={{display:'flex',gap:16,alignItems:'flex-start',marginBottom:8}}>
+              <RessonanciaRetrato art={sv.art} patronoArt={sv.patronoArt} emoji={sv.emoji} size={96}/>
+              <div style={{flex:1}}>
+                <div className="cinzel" style={{color:'var(--gold)',fontSize:'1.25rem',lineHeight:1.15}}>{sv.nome}</div>
+                <div style={{color:'var(--parchment-dark)',fontSize:'.72rem',letterSpacing:1,marginTop:3}}>
+                  {sv.classe} · <span style={{color:'var(--parchment)'}}>{sv.mbti}</span>
+                  {MBTI_TIPOS[sv.mbti]?' · '+MBTI_TIPOS[sv.mbti].nome:''}
+                </div>
+                {info&&(
+                  <div style={{marginTop:8}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                      <div style={{flex:1,height:8,background:'rgba(0,0,0,.4)',borderRadius:4,overflow:'hidden',border:'1px solid var(--gold-dim)'}}>
+                        <div style={{height:'100%',width:`${info.afinidade}%`,background:'linear-gradient(90deg,var(--crimson),var(--gold))'}}/>
+                      </div>
+                      <span style={{color:corAfin(info.afinidade),fontFamily:'Cinzel,serif',fontSize:'.85rem'}}>{info.afinidade}%</span>
+                    </div>
+                    <div style={{color:'var(--parchment-dark)',fontSize:'.6rem',letterSpacing:1,marginTop:3}}>
+                      afinidade de vetor {info.afVet}% · {info.letras}/4 letras MBTI em comum
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div style={{fontStyle:'italic',color:'var(--gold)',fontSize:'.78rem',lineHeight:1.5,
+              padding:'10px 14px',borderLeft:'2px solid var(--gold-dim)',margin:'6px 0 14px',background:'rgba(0,0,0,.2)'}}>
+              "{sv.frase}"
+            </div>
+            <div style={{color:'var(--parchment)',fontSize:'.8rem',lineHeight:1.6,marginBottom:16}}>{sv.essencia}</div>
+            <div className="divider"><span className="divider-text">VETOR DE ALMA — VOCÊ vs {sv.nome.toUpperCase()}</span></div>
+            <div style={{margin:'14px 0 4px'}}>
+              {RESSONANCIA_EIXOS.map(eixo=>(
+                <EixoBarComparar key={eixo.id} eixo={eixo}
+                  valorVoce={resultado.vetor[eixo.id]||0} valorServo={sv.vetor[eixo.id]||0}/>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:14,justifyContent:'center',fontSize:'.6rem',
+              color:'var(--parchment-dark)',letterSpacing:1,margin:'4px 0 8px'}}>
+              <span>◆ <span style={{color:'var(--gold)'}}>você</span></span>
+              <span>● <span style={{color:'var(--crimson-light,#e0607a)'}}>{sv.nome}</span></span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  // ─── LISTA COMPLETA RANQUEADA ───
+  if(verTodos){
+    return(
+      <div className="screen">
+        <div className="panel" style={{maxWidth:580}}>
+          <button className="btn" style={{marginBottom:12}} onClick={()=>setVerTodos(false)}>← Voltar ao resultado</button>
+          <div style={{textAlign:'center',marginBottom:4}}>
+            <div className="cinzel" style={{color:'var(--gold)',fontSize:'1.1rem'}}>Todos os Servos</div>
+            <div style={{color:'var(--parchment-dark)',fontSize:'.66rem',letterSpacing:2,marginTop:2}}>
+              ORDENADOS PELA SUA RESSONÂNCIA · toque para ver os dados
+            </div>
+          </div>
+          <div style={{margin:'12px 0'}}>
+            {rankingCompleto.map((r,i)=>{
+              const sv=svById(r.id);if(!sv)return null;
+              return(
+                <button key={r.id} onClick={()=>setDetalhe(r.id)}
+                  style={{display:'flex',alignItems:'center',gap:10,width:'100%',textAlign:'left',
+                    padding:'7px 10px',marginBottom:5,cursor:'pointer',
+                    background:i<3?'rgba(201,162,39,.08)':'rgba(0,0,0,.22)',
+                    border:'1px solid '+(i<3?'var(--gold-dim)':'rgba(201,162,39,.18)'),borderRadius:6}}>
+                  <span style={{color:'var(--parchment-dark)',fontFamily:'Cinzel,serif',fontSize:'.7rem',
+                    minWidth:26,textAlign:'right'}}>{i+1}</span>
+                  <RessonanciaRetrato art={sv.art} patronoArt={sv.patronoArt} emoji={sv.emoji} size={38}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="cinzel" style={{color:'var(--parchment)',fontSize:'.78rem',lineHeight:1.15,
+                      whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{sv.nome}</div>
+                    <div style={{color:'var(--parchment-dark)',fontSize:'.58rem',letterSpacing:1}}>{sv.classe} · {sv.mbti}</div>
+                  </div>
+                  <div style={{minWidth:64,textAlign:'right'}}>
+                    <div style={{height:6,width:56,background:'rgba(0,0,0,.4)',borderRadius:3,overflow:'hidden',
+                      border:'1px solid var(--gold-dim)',marginLeft:'auto',marginBottom:2}}>
+                      <div style={{height:'100%',width:`${r.afinidade}%`,background:'linear-gradient(90deg,var(--crimson),var(--gold))'}}/>
+                    </div>
+                    <span style={{color:corAfin(r.afinidade),fontFamily:'Cinzel,serif',fontSize:'.72rem'}}>{r.afinidade}%</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <button className="btn btn-full" onClick={()=>setVerTodos(false)}>← Voltar ao resultado</button>
+        </div>
+      </div>
+    );
+  }
+
   return(
     <div className="screen">
       <div className="panel" style={{maxWidth:580}}>
@@ -6356,7 +6522,7 @@ function RessonanciaScreen({onNavigate,profile,setProfile}){
         <div style={{display:'flex',gap:18,alignItems:'center',
           border:'1px solid var(--gold)',borderRadius:8,padding:16,marginBottom:16,
           background:'radial-gradient(circle at 20% 20%,rgba(201,162,39,.1),rgba(20,10,26,.4))'}}>
-          <RessonanciaRetrato art={principal.art} emoji={principal.emoji} size={116}/>
+          <RessonanciaRetrato art={principal.art} patronoArt={principal.patronoArt} emoji={principal.emoji} size={116}/>
           <div style={{flex:1,minWidth:0}}>
             <div style={{color:'var(--parchment-dark)',fontSize:'.62rem',letterSpacing:2}}>{principal.classe.toUpperCase()} · {principal.mbti}</div>
             <div className="cinzel" style={{color:'var(--gold)',fontSize:'1.3rem',letterSpacing:1,lineHeight:1.1}}>{principal.nome}</div>
@@ -6428,7 +6594,7 @@ function RessonanciaScreen({onNavigate,profile,setProfile}){
             return(
               <div key={af.id} style={{flex:1,textAlign:'center',padding:'12px 8px',
                 border:'1px solid var(--gold-dim)',borderRadius:6,background:'rgba(0,0,0,.25)'}}>
-                <RessonanciaRetrato art={sv.art} emoji={sv.emoji} size={62}/>
+                <RessonanciaRetrato art={sv.art} patronoArt={sv.patronoArt} emoji={sv.emoji} size={62}/>
                 <div className="cinzel" style={{color:'var(--parchment)',fontSize:'.72rem',marginTop:6,lineHeight:1.2}}>{sv.nome}</div>
                 <div style={{color:'var(--parchment-dark)',fontSize:'.6rem',letterSpacing:1,marginTop:2}}>{sv.mbti}</div>
                 <div style={{color:'var(--gold)',fontSize:'.7rem',fontFamily:'Cinzel,serif',marginTop:2}}>{af.afinidade}%</div>
@@ -6437,7 +6603,10 @@ function RessonanciaScreen({onNavigate,profile,setProfile}){
           })}
         </div>
 
-        <button className="btn btn-full" onClick={refazer}>🔄 Refazer o Ritual</button>
+        <button className="btn btn-full" onClick={()=>{setVerTodos(true);setDetalhe(null);}}>
+          📜 Ver todos os {resultado.ranking?resultado.ranking.length:RESSONANCIA_SERVOS.length} Servos
+        </button>
+        <button className="btn btn-full" style={{marginTop:8}} onClick={refazer}>🔄 Refazer o Ritual</button>
         <button className="btn btn-full" style={{marginTop:8}} onClick={()=>onNavigate('profile')}>← Voltar</button>
       </div>
     </div>
