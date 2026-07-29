@@ -6685,7 +6685,7 @@ function ChatScreen({onNavigate,profile}){
 // Barra de reações + comentários de um post do Álbum, COMPARTILHADOS via Firestore:
 // todos veem as mesmas reações e comentários, sincronizados em tempo real. Os
 // comentários usam o nome (nickname) do perfil do jogador.
-function ComicSocial({postId,profile}){
+function ComicSocial({postId,profile,onReactCount}){
   const[reacts,setReacts]=useState({});
   const[minha,setMinha]=useState(null);
   const[coms,setComs]=useState([]);
@@ -6698,7 +6698,10 @@ function ComicSocial({postId,profile}){
 
   // Assina as atualizações em tempo real (reações e comentários) enquanto montado.
   useEffect(()=>{
-    const unR=albumWatchReacts(postId,({reacts,minha})=>{setReacts(reacts||{});setMinha(minha||null);});
+    const unR=albumWatchReacts(postId,({reacts,minha})=>{
+      setReacts(reacts||{});setMinha(minha||null);
+      if(onReactCount){const tot=Object.values(reacts||{}).reduce((a,b)=>a+(b||0),0);onReactCount(tot);}
+    });
     const unC=albumWatchComments(postId,list=>setComs(list||[]));
     return ()=>{unR&&unR();unC&&unC();};
   },[postId]);
@@ -6817,6 +6820,7 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
   const[temCofre,setTemCofre]=useState(()=>existeTokenCofre()); // já existe token guardado?
   const[testeMsg,setTesteMsg]=useState('');    // resultado do teste de conexão
   const[testando,setTestando]=useState(false);
+  const[previa,setPrevia]=useState(false);     // mostrar prévia do post?
   const[nomeAutor,setNomeAutor]=useState('');
   const[handle,setHandle]=useState('');
   const[tagAutor,setTagAutor]=useState('');
@@ -6974,7 +6978,27 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
 
         <label style={ENV_LBL}>IMAGENS DO COMIC (na ordem das paginas)</label>
         <input type="file" accept="image/*" multiple onChange={escolherArquivos} style={{...ENV_INP,marginBottom:6,padding:'6px',width:'100%'}}/>
-        {arquivos.length>0&&(<div style={{fontSize:'.66rem',color:'var(--gold)',marginBottom:14}}>{arquivos.length} imagem(ns) selecionada(s)</div>)}
+        {arquivos.length>0&&(
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:'.62rem',color:'var(--gold)',marginBottom:6}}>{arquivos.length} página(s) — arraste com as setas para ordenar:</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(72px,1fr))',gap:8}}>
+              {arquivos.map((f,i)=>(
+                <div key={i} style={{position:'relative',borderRadius:6,overflow:'hidden',border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+                  <img src={URL.createObjectURL(f)} alt={'p'+(i+1)} style={{width:'100%',height:80,objectFit:'cover',display:'block'}}/>
+                  <span style={{position:'absolute',top:2,left:2,fontSize:'.56rem',background:'rgba(0,0,0,0.75)',color:'var(--gold)',padding:'1px 5px',borderRadius:8}}>{i+1}</span>
+                  <button type="button" onClick={()=>setArquivos(arquivos.filter((_,j)=>j!==i))} title="Remover"
+                    style={{position:'absolute',top:2,right:2,fontSize:'.6rem',background:'rgba(139,26,26,0.85)',color:'#fff',border:'none',borderRadius:'50%',width:16,height:16,cursor:'pointer',padding:0,lineHeight:1}}>×</button>
+                  <div style={{display:'flex'}}>
+                    <button type="button" disabled={i===0} onClick={()=>{const a=[...arquivos];[a[i-1],a[i]]=[a[i],a[i-1]];setArquivos(a);}}
+                      style={{flex:1,fontSize:'.7rem',background:'rgba(0,0,0,0.5)',color:i===0?'var(--gold-dim)':'var(--gold)',border:'none',borderTop:'1px solid var(--gold-dim)',cursor:i===0?'default':'pointer',padding:'2px 0'}}>←</button>
+                    <button type="button" disabled={i===arquivos.length-1} onClick={()=>{const a=[...arquivos];[a[i+1],a[i]]=[a[i],a[i+1]];setArquivos(a);}}
+                      style={{flex:1,fontSize:'.7rem',background:'rgba(0,0,0,0.5)',color:i===arquivos.length-1?'var(--gold-dim)':'var(--gold)',border:'none',borderTop:'1px solid var(--gold-dim)',borderLeft:'1px solid var(--gold-dim)',cursor:i===arquivos.length-1?'default':'pointer',padding:'2px 0'}}>→</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <label style={ENV_LBL}>PREFIXO DOS ARQUIVOS (só o nome-base, sem número nem .jpg)</label>
         <input value={prefixo} onChange={e=>setPrefixo(e.target.value)} placeholder="ex: xufu"
@@ -7053,6 +7077,36 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
         <button className="btn btn-full btn-sm" onClick={testar} disabled={testando} style={{marginBottom:8,opacity:testando?0.6:1}}>
           {testando?'Testando...':'🔌 Testar conexão com o GitHub'}
         </button>
+
+        {/* Prévia de como o post ficará */}
+        <button className="btn btn-full btn-sm" onClick={()=>setPrevia(v=>!v)} style={{marginBottom:8}}>
+          {previa?'Ocultar prévia':'👁️ Ver prévia do post'}
+        </button>
+        {previa&&(() => {
+          const primeiroServo=personagens.length>0?RESSONANCIA_SERVOS.find(s=>s.nome===personagens[0]):null;
+          return(
+            <div style={{marginBottom:12,borderRadius:8,overflow:'hidden',border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px'}}>
+                <div style={{width:44,height:44,borderRadius:'50%',overflow:'hidden',border:'2px solid var(--gold-dim)',flexShrink:0,background:'rgba(0,0,0,0.3)'}}>
+                  {primeiroServo?<RessonanciaRetrato art={primeiroServo.art} patronoArt={primeiroServo.patronoArt} emoji={primeiroServo.emoji} size={44}/>
+                    :<span style={{fontSize:'1.2rem',display:'flex',width:'100%',height:'100%',alignItems:'center',justifyContent:'center',color:'var(--gold-dim)'}}>👤</span>}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:'.85rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{nomeAutor.trim()||'(sem nome)'}</div>
+                  <div style={{fontSize:'.66rem',color:'var(--parchment-dark)'}}>{handle.trim()}{tagAutor.trim()?` · ${tagAutor.trim()}`:''}</div>
+                </div>
+                {arquivos.length>1&&<span style={{fontSize:'.6rem',color:'var(--parchment-dark)',background:'rgba(0,0,0,0.3)',padding:'2px 7px',borderRadius:10}}>📄 {arquivos.length} págs</span>}
+              </div>
+              {arquivos.length>0&&<img src={URL.createObjectURL(arquivos[0])} alt="prévia" style={{width:'100%',maxHeight:200,objectFit:'contain',background:'rgba(0,0,0,0.4)'}}/>}
+              {personagens.length>0&&(
+                <div style={{display:'flex',flexWrap:'wrap',gap:5,padding:'8px 12px'}}>
+                  {personagens.map(c=>(<span key={c} style={{fontSize:'.6rem',padding:'2px 8px',borderRadius:10,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.25)',color:'var(--gold)'}}>{c}</span>))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {progresso&&<div style={{fontSize:'.72rem',color:'var(--gold)',marginBottom:10}}>{progresso}</div>}
 
         <button className="btn btn-full" onClick={enviar} disabled={enviando} style={{opacity:enviando?0.6:1}}>{enviando?'Enviando...':'Enviar para o GitHub e publicar'}</button>
@@ -7174,6 +7228,14 @@ function ComicAlbumScreen({onNavigate,profile}){
   const[postsFS,setPostsFS]=useState([]); // posts vindos do Firestore
   const[enviar,setEnviar]=useState(false); // modal de envio aberto?
   const[editando,setEditando]=useState(null); // post sendo editado
+  const[ordem,setOrdem]=useState('recentes'); // recentes | reacoes | favoritos
+  const[favoritos,setFavoritos]=useState(()=>{try{return JSON.parse(localStorage.getItem('fate_album_favs')||'[]');}catch{return [];}});
+  const[reactCounts,setReactCounts]=useState({}); // {postId: totalReacoes} para ordenar
+  function toggleFav(id){
+    const novo=favoritos.includes(id)?favoritos.filter(f=>f!==id):[...favoritos,id];
+    setFavoritos(novo);
+    try{localStorage.setItem('fate_album_favs',JSON.stringify(novo));}catch{}
+  }
   const meuDev=(typeof getOrCreateDeviceId==='function')?getOrCreateDeviceId():null;
 
   // assina os posts do Firestore
@@ -7203,7 +7265,7 @@ function ComicAlbumScreen({onNavigate,profile}){
   })();
 
   // Filtra os posts pela busca de texto e pela tag ativa
-  const posts=todosPosts.filter(p=>{
+  const postsFiltrados=todosPosts.filter(p=>{
     const prof=p.profileInline||COMIC_PROFILES[p.profile]||{};
     if(activeTag){
       if(activeTag.tipo==='autor'&&p.tags?.autor!==activeTag.valor)return false;
@@ -7216,6 +7278,14 @@ function ComicAlbumScreen({onNavigate,profile}){
     }
     return true;
   });
+  // Ordenação do feed
+  const posts=(() => {
+    let arr=[...postsFiltrados];
+    if(ordem==='favoritos')arr=arr.filter(p=>favoritos.includes(p.id));
+    else if(ordem==='reacoes')arr.sort((a,b)=>(reactCounts[b.id]||0)-(reactCounts[a.id]||0));
+    // 'recentes': os do Firestore já vêm mais novos primeiro (topo), fixos depois — mantém
+    return arr;
+  })();
 
   // Visualizador de página em tela cheia (qualidade total, sem redução)
   if(viewer){
@@ -7254,7 +7324,18 @@ function ComicAlbumScreen({onNavigate,profile}){
           <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:10}}>
             Traduções de comics da franquia. Role o feed ou busque por autor ou personagem.
           </p>
-          <button className="btn btn-sm" style={{marginBottom:10}} onClick={()=>setEnviar(true)}>📤 Enviar tradução</button>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,flexWrap:'wrap'}}>
+            <button className="btn btn-sm" onClick={()=>setEnviar(true)}>📤 Enviar tradução</button>
+            <span style={{fontSize:'.66rem',color:'var(--parchment-dark)'}}>{posts.length} tradução{posts.length!==1?'ões':''}</span>
+            <div style={{display:'flex',gap:4,marginLeft:'auto'}}>
+              {[['recentes','🕐'],['reacoes','🔥'],['favoritos','⭐']].map(([o,ic])=>(
+                <button key={o} onClick={()=>setOrdem(o)} title={o==='recentes'?'Mais recentes':o==='reacoes'?'Mais reações':'Favoritos'}
+                  style={{fontSize:'.7rem',padding:'3px 9px',borderRadius:8,cursor:'pointer',
+                    border:`1px solid ${ordem===o?'var(--gold)':'var(--gold-dim)'}`,
+                    background:ordem===o?'rgba(201,162,39,0.22)':'rgba(0,0,0,0.25)',color:'var(--gold)'}}>{ic}</button>
+              ))}
+            </div>
+          </div>
           {/* Busca */}
           <input value={search} onChange={e=>setSearch(e.target.value)}
             placeholder="🔍 Buscar por autor, personagem ou texto..."
@@ -7333,7 +7414,7 @@ function ComicAlbumScreen({onNavigate,profile}){
         {/* Feed de posts */}
         {posts.length===0?(
           <div className="panel" style={{textAlign:'center',padding:30,color:'var(--parchment-dark)',fontSize:'.8rem'}}>
-            Nenhuma tradução encontrada.
+            {ordem==='favoritos'?'Você ainda não favoritou nenhuma tradução. Toque na ⭐ de um post para salvá-lo aqui.':'Nenhuma tradução encontrada.'}
           </div>
         ):posts.map(post=>{
           const prof=post.profileInline||COMIC_PROFILES[post.profile]||{name:'???',handle:'',avatar:null};
@@ -7363,6 +7444,9 @@ function ComicAlbumScreen({onNavigate,profile}){
                   </div>
                 )}
                 {multi&&<span style={{fontSize:'.6rem',color:'var(--parchment-dark)',background:'rgba(0,0,0,0.3)',padding:'2px 7px',borderRadius:10}}>📄 {post.pages.length} págs</span>}
+                <button onClick={()=>toggleFav(post.id)} title={favoritos.includes(post.id)?'Desfavoritar':'Favoritar'}
+                  style={{background:'none',border:'none',cursor:'pointer',fontSize:'1rem',padding:'2px',flexShrink:0,
+                    filter:favoritos.includes(post.id)?'none':'grayscale(1) opacity(0.5)'}}>⭐</button>
               </div>
 
               {/* Páginas: primeira grande + miniaturas se houver mais */}
@@ -7393,7 +7477,8 @@ function ComicAlbumScreen({onNavigate,profile}){
               </div>
 
               {/* Reações + comentários (salvos em localStorage) */}
-              <ComicSocial postId={post.id} profile={profile}/>
+              <ComicSocial postId={post.id} profile={profile}
+                onReactCount={n=>setReactCounts(c=>c[post.id]===n?c:{...c,[post.id]:n})}/>
             </div>
           );
         })}
@@ -7666,7 +7751,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.71</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.72</p>
       </div>
     </div>
   );
