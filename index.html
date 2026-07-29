@@ -832,6 +832,196 @@ function chatWatch(canalId,cb,limite=200){
 }
 
 // ══════════════════════════════════════════════════════
+// BLACKJACK (21) PvP — duelo 1x1 apostando QP ou SQ, via Firestore
+// Uma partida vive em blackjack_mesas/<mesaId> com o estado completo:
+//   { status, moeda, aposta, criador:{dev,nome,avatar}, oponente:{...},
+//     baralho:[...], maosP1:[], maosP2:[], vez, standP1, standP2, resultado, ts }
+// O "servidor" é o próprio Firestore + transações para manter tudo consistente.
+
+// Cria e embaralha um baralho de 52 cartas. Carta = {r:'A'..'K', s:'♠♥♦♣'}
+function bjNovoBaralho(){
+  const naipes=['♠','♥','♦','♣'];
+  const ranks=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  const d=[];
+  for(const s of naipes)for(const r of ranks)d.push({r,s});
+  // embaralha (Fisher-Yates)
+  for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}
+  return d;
+}
+// Valor de uma mão no 21 (Ás vale 11 ou 1, o que for melhor sem estourar).
+function bjValor(mao){
+  let total=0,ases=0;
+  for(const c of mao){
+    if(c.r==='A'){ases++;total+=11;}
+    else if(['K','Q','J','10'].includes(c.r))total+=10;
+    else total+=parseInt(c.r);
+  }
+  while(total>21&&ases>0){total-=10;ases--;}
+  return total;
+}
+function bjEhBlackjack(mao){return mao.length===2&&bjValor(mao)===21;}
+
+// Gera um id curto de mesa (código para o amigo entrar)
+function bjNovoId(){return Math.random().toString(36).slice(2,7).toUpperCase();}
+
+// Cria uma mesa: o criador aposta X de uma moeda e espera um oponente.
+// Debita a aposta do criador na hora (fica "em jogo" até o resultado).
+async function bjCriarMesa(moeda,aposta,jogador){
+  if(!fbDb)return {ok:false,erro:'Firebase indisponível'};
+  const fresh=loadProfile();
+  if((fresh[moeda]||0)<aposta)return {ok:false,erro:'Saldo insuficiente'};
+  // debita a aposta do criador
+  const upd={...fresh,[moeda]:fresh[moeda]-aposta};saveProfile(upd);
+  const id=bjNovoId();
+  try{
+    await fbDb.collection('blackjack_mesas').doc(id).set({
+      status:'aguardando', // aguardando | jogando | terminado
+      moeda,aposta,
+      criador:{dev:jogador.dev,nome:jogador.nome,avatar:jogador.avatar||null},
+      oponente:null,
+      baralho:[],maosP1:[],maosP2:[],
+      vez:null,standP1:false,standP2:false,
+      resultado:null, // {vencedor:'p1'|'p2'|'empate', motivo}
+      pagoP1:true, // criador já pagou a aposta
+      pagoP2:false,
+      criadoEm:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return {ok:true,id,profile:upd};
+  }catch(e){
+    // reverte débito se falhar
+    depositQP(0);const rev={...loadProfile()};rev[moeda]=(rev[moeda]||0)+aposta;saveProfile(rev);
+    return {ok:false,erro:'Erro ao criar mesa'};
+  }
+}
+
+// Entra numa mesa existente pelo código. Debita a aposta do oponente, monta o
+// baralho, distribui 2 cartas pra cada e começa o jogo — tudo numa transação.
+async function bjEntrarMesa(id,jogador){
+  if(!fbDb)return {ok:false,erro:'Firebase indisponível'};
+  const ref=fbDb.collection('blackjack_mesas').doc(id.toUpperCase());
+  const fresh=loadProfile();
+  try{
+    let apostaCobrada=0,moedaCobrada=null;
+    await fbDb.runTransaction(async tx=>{
+      const snap=await tx.get(ref);
+      if(!snap.exists)throw new Error('Mesa não encontrada');
+      const m=snap.data();
+      if(m.status!=='aguardando')throw new Error('Mesa cheia ou já iniciada');
+      if(m.criador.dev===jogador.dev)throw new Error('Você já está nesta mesa');
+      if((fresh[m.moeda]||0)<m.aposta)throw new Error('Saldo insuficiente');
+      apostaCobrada=m.aposta;moedaCobrada=m.moeda;
+      // monta baralho e distribui
+      const baralho=bjNovoBaralho();
+      const maosP1=[baralho.pop(),baralho.pop()];
+      const maosP2=[baralho.pop(),baralho.pop()];
+      tx.update(ref,{
+        status:'jogando',
+        oponente:{dev:jogador.dev,nome:jogador.nome,avatar:jogador.avatar||null},
+        baralho,maosP1,maosP2,
+        vez:'p1',standP1:false,standP2:false,pagoP2:true,
+      });
+    });
+    // debita a aposta do oponente localmente
+    if(apostaCobrada>0&&moedaCobrada){const upd={...loadProfile()};upd[moedaCobrada]=(upd[moedaCobrada]||0)-apostaCobrada;saveProfile(upd);}
+    return {ok:true,id:id.toUpperCase()};
+  }catch(e){return {ok:false,erro:e.message};}
+}
+
+// Observa uma mesa em tempo real.
+function bjWatchMesa(id,cb){
+  if(!fbDb){cb(null);return ()=>{};}
+  return fbDb.collection('blackjack_mesas').doc(id).onSnapshot(snap=>{
+    cb(snap.exists?{id:snap.id,...snap.data()}:null);
+  },e=>console.error('watch mesa',e));
+}
+
+// Lista mesas abertas (aguardando oponente) para entrar rápido.
+function bjWatchAbertas(cb){
+  if(!fbDb){cb([]);return ()=>{};}
+  return fbDb.collection('blackjack_mesas').where('status','==','aguardando')
+    .onSnapshot(snap=>{cb(snap.docs.map(d=>({id:d.id,...d.data()})));},
+    e=>console.error('watch abertas',e));
+}
+
+// Ação COMPRAR (hit): puxa uma carta pra mão do jogador da vez.
+async function bjComprar(id,eu){ // eu = 'p1' | 'p2'
+  if(!fbDb)return;
+  const ref=fbDb.collection('blackjack_mesas').doc(id);
+  try{
+    await fbDb.runTransaction(async tx=>{
+      const snap=await tx.get(ref);if(!snap.exists)return;
+      const m=snap.data();
+      if(m.status!=='jogando'||m.vez!==eu)return;
+      const baralho=[...m.baralho];
+      const carta=baralho.pop();
+      const chaveMao=eu==='p1'?'maosP1':'maosP2';
+      const mao=[...m[chaveMao],carta];
+      const val=bjValor(mao);
+      const upd={baralho,[chaveMao]:mao};
+      if(val>21){
+        // estourou → o outro vence na hora, jogo encerra
+        upd[eu==='p1'?'standP1':'standP2']=true;
+        Object.assign(upd,bjResolver({...m,...upd}));
+      }else if(val===21){
+        // 21 exato → para automaticamente (não faz sentido comprar mais)
+        upd[eu==='p1'?'standP1':'standP2']=true;
+        if(eu==='p1'){upd.vez='p2';if(m.standP2)Object.assign(upd,bjResolver({...m,...upd}));}
+        else{Object.assign(upd,bjResolver({...m,...upd}));}
+      }
+      tx.update(ref,upd);
+    });
+  }catch(e){console.error('comprar',e);}
+}
+
+// Ação PARAR (stand): jogador encerra a mão; passa a vez ou resolve.
+async function bjParar(id,eu){
+  if(!fbDb)return;
+  const ref=fbDb.collection('blackjack_mesas').doc(id);
+  try{
+    await fbDb.runTransaction(async tx=>{
+      const snap=await tx.get(ref);if(!snap.exists)return;
+      const m=snap.data();
+      if(m.status!=='jogando'||m.vez!==eu)return;
+      const upd={[eu==='p1'?'standP1':'standP2']:true};
+      if(eu==='p1'){upd.vez='p2';}
+      else{Object.assign(upd,bjResolver({...m,standP2:true}));}
+      tx.update(ref,upd);
+    });
+  }catch(e){console.error('parar',e);}
+}
+
+// Resolve o vencedor e marca o status. NÃO paga aqui (o pagamento é feito no
+// cliente vencedor ao ver o resultado, para creditar no localStorage correto).
+function bjResolver(m){
+  const v1=bjValor(m.maosP1),v2=bjValor(m.maosP2);
+  const b1=v1>21,b2=v2>21;
+  let vencedor,motivo;
+  if(b1&&b2){vencedor='empate';motivo='Ambos estouraram';}
+  else if(b1){vencedor='p2';motivo='P1 estourou';}
+  else if(b2){vencedor='p1';motivo='P2 estourou';}
+  else if(v1>v2){vencedor='p1';motivo=`${v1} contra ${v2}`;}
+  else if(v2>v1){vencedor='p2';motivo=`${v2} contra ${v1}`;}
+  else{vencedor='empate';motivo=`Ambos com ${v1}`;}
+  return {status:'terminado',resultado:{vencedor,motivo,v1,v2}};
+}
+
+// Cancela uma mesa que ainda está aguardando (devolve a aposta do criador).
+async function bjCancelarMesa(id,moeda,aposta){
+  if(!fbDb)return;
+  try{
+    const ref=fbDb.collection('blackjack_mesas').doc(id);
+    const snap=await ref.get();
+    if(snap.exists&&snap.data().status==='aguardando'){
+      await ref.delete();
+      // devolve a aposta
+      const upd={...loadProfile()};upd[moeda]=(upd[moeda]||0)+aposta;saveProfile(upd);
+      return true;
+    }
+  }catch(e){console.error('cancelar',e);}
+  return false;
+}
+
+// ══════════════════════════════════════════════════════
 // DADOS E FÓRMULAS
 // ══════════════════════════════════════════════════════
 
@@ -5043,6 +5233,290 @@ function XPBar({xpState}){
 // ══════════════════════════════════════════════════════
 // ÁLBUM DE TRADUÇÃO — tela do feed (rede social)
 // ══════════════════════════════════════════════════════
+// Renderiza uma carta de baralho. oculta=true mostra o verso.
+function BJCarta({carta,oculta,size=1}){
+  const w=54*size,h=76*size;
+  if(oculta||!carta){
+    return <div style={{width:w,height:h,borderRadius:6,border:'1px solid var(--gold-dim)',
+      background:'repeating-linear-gradient(45deg,#3a1520,#3a1520 4px,#5a1418 4px,#5a1418 8px)',
+      display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+      <span style={{color:'var(--gold-dim)',fontSize:18*size}}>✦</span></div>;
+  }
+  const vermelho=carta.s==='♥'||carta.s==='♦';
+  return <div style={{width:w,height:h,borderRadius:6,border:'1px solid var(--gold-dim)',
+    background:'#f4ecd8',display:'flex',flexDirection:'column',justifyContent:'space-between',
+    padding:4*size,flexShrink:0,boxShadow:'0 2px 6px rgba(0,0,0,0.4)'}}>
+    <span style={{color:vermelho?'#c0392b':'#1a1512',fontSize:15*size,fontWeight:700,lineHeight:1}}>{carta.r}</span>
+    <span style={{color:vermelho?'#c0392b':'#1a1512',fontSize:20*size,textAlign:'center'}}>{carta.s}</span>
+    <span style={{color:vermelho?'#c0392b':'#1a1512',fontSize:15*size,fontWeight:700,lineHeight:1,alignSelf:'flex-end',transform:'rotate(180deg)'}}>{carta.r}</span>
+  </div>;
+}
+
+// Blackjack 21 PvP — duelo apostando QP ou SQ contra outro jogador online.
+function BlackjackScreen({onNavigate,profile,setProfile}){
+  const[view,setView]=useState('lobby'); // lobby | mesa
+  const[mesaId,setMesaId]=useState(null);
+  const[mesa,setMesa]=useState(null);
+  const[abertas,setAbertas]=useState([]);
+  const[moeda,setMoeda]=useState('qp');
+  const[aposta,setAposta]=useState(100);
+  const[codigo,setCodigo]=useState('');
+  const[notif,setNotif]=useState('');
+  const[pago,setPago]=useState(false); // já creditei o resultado desta mesa?
+  const meuDev=(typeof getOrCreateDeviceId==='function')?getOrCreateDeviceId():null;
+  const meuNome=(profile&&profile.nickname)?profile.nickname:'';
+  const meuAvatar=(profile&&profile.avatar)?profile.avatar:null;
+  const jogador={dev:meuDev,nome:meuNome,avatar:meuAvatar};
+
+  // assina mesas abertas no lobby
+  useEffect(()=>{
+    if(view!=='lobby')return;
+    const un=bjWatchAbertas(list=>setAbertas(list.filter(m=>m.criador.dev!==meuDev)));
+    return ()=>{un&&un();};
+  },[view,meuDev]);
+
+  // assina a mesa ativa
+  useEffect(()=>{
+    if(!mesaId){setMesa(null);return;}
+    const un=bjWatchMesa(mesaId,m=>setMesa(m));
+    return ()=>{un&&un();};
+  },[mesaId]);
+
+  // sou o p1 (criador) ou p2 (oponente)?
+  const souP1=mesa&&mesa.criador&&mesa.criador.dev===meuDev;
+  const eu=souP1?'p1':'p2';
+
+  // credita o resultado quando a mesa termina (apenas uma vez, no cliente certo)
+  useEffect(()=>{
+    if(!mesa||mesa.status!=='terminado'||pago)return;
+    const r=mesa.resultado;if(!r)return;
+    const pote=mesa.aposta*2;
+    let ganho=0,txt='';
+    if(r.vencedor==='empate'){ganho=mesa.aposta;txt='Empate — aposta devolvida.';}
+    else if((r.vencedor==='p1'&&souP1)||(r.vencedor==='p2'&&!souP1)){ganho=pote;txt=`Você venceu! +${pote} ${mesa.moeda.toUpperCase()}`;}
+    else{ganho=0;txt='Você perdeu a aposta.';}
+    if(ganho>0){
+      const upd={...loadProfile()};upd[mesa.moeda]=(upd[mesa.moeda]||0)+ganho;saveProfile(upd);setProfile(upd);
+    }
+    setPago(true);setNotif(txt);
+  },[mesa,pago,souP1]);
+
+  async function criar(){
+    if(!meuNome){setNotif('Defina seu nome no Perfil primeiro.');return;}
+    if(aposta<1){setNotif('Aposta inválida.');return;}
+    if((profile[moeda]||0)<aposta){setNotif('Saldo insuficiente.');return;}
+    const r=await bjCriarMesa(moeda,aposta,jogador);
+    if(r.ok){setProfile(r.profile);setMesaId(r.id);setPago(false);setView('mesa');}
+    else setNotif(r.erro||'Erro ao criar mesa.');
+  }
+  async function entrar(id){
+    if(!meuNome){setNotif('Defina seu nome no Perfil primeiro.');return;}
+    const r=await bjEntrarMesa(id,jogador);
+    if(r.ok){setProfile(loadProfile());setMesaId(r.id);setPago(false);setView('mesa');}
+    else setNotif(r.erro||'Não foi possível entrar.');
+  }
+  async function sairMesa(){
+    // se estava aguardando e sou o criador, cancela e devolve
+    if(mesa&&mesa.status==='aguardando'&&souP1){
+      await bjCancelarMesa(mesa.id,mesa.moeda,mesa.aposta);
+      setProfile(loadProfile());
+    }
+    setMesaId(null);setMesa(null);setPago(false);setView('lobby');
+  }
+
+  // ─── LOBBY ───
+  if(view==='lobby'){
+    return(
+      <div className="screen" style={{padding:'16px 10px',alignItems:'flex-start'}}>
+        {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
+        <div style={{maxWidth:520,width:'100%',margin:'0 auto'}}>
+          <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
+            <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:4}}>🃏 BLACKJACK 21</h2>
+            <p style={{fontSize:'.72rem',color:'var(--parchment-dark)'}}>
+              Duelo 1x1 apostando moedas. Chegue mais perto de 21 que o oponente, sem estourar!
+            </p>
+            <div style={{display:'flex',gap:14,marginTop:8,fontSize:'.7rem'}}>
+              <span style={{color:'var(--gold)'}}>💎 {(profile.sq||0).toLocaleString()} SQ</span>
+              <span style={{color:'#4fc3f7'}}>🪙 {(profile.qp||0).toLocaleString()} QP</span>
+            </div>
+          </div>
+
+          {/* Criar mesa */}
+          <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
+            <div className="cinzel" style={{color:'var(--gold)',fontSize:'.82rem',letterSpacing:1,marginBottom:10}}>Criar mesa</div>
+            <div style={{display:'flex',gap:8,marginBottom:8}}>
+              <button onClick={()=>setMoeda('qp')} className="btn btn-sm"
+                style={{flex:1,opacity:moeda==='qp'?1:0.5,border:moeda==='qp'?'1px solid #4fc3f7':undefined,color:moeda==='qp'?'#4fc3f7':undefined}}>🪙 QP</button>
+              <button onClick={()=>setMoeda('sq')} className="btn btn-sm"
+                style={{flex:1,opacity:moeda==='sq'?1:0.5,border:moeda==='sq'?'1px solid var(--gold)':undefined,color:moeda==='sq'?'var(--gold)':undefined}}>💎 SQ</button>
+            </div>
+            <label style={{fontSize:'.66rem',color:'var(--parchment-dark)',letterSpacing:1}}>APOSTA</label>
+            <div style={{display:'flex',gap:6,marginTop:4,marginBottom:6}}>
+              {[50,100,500,1000].map(v=>(
+                <button key={v} onClick={()=>setAposta(v)} className="btn btn-sm"
+                  style={{flex:1,fontSize:'.68rem',opacity:aposta===v?1:0.55}}>{v}</button>
+              ))}
+            </div>
+            <input type="number" value={aposta} min={1} onChange={e=>setAposta(Math.max(1,parseInt(e.target.value)||0))}
+              style={{width:'100%',padding:'8px 10px',borderRadius:4,border:'1px solid var(--gold-dim)',
+                background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.8rem',marginBottom:10}}/>
+            <button className="btn btn-full" onClick={criar}>Criar mesa e aguardar oponente</button>
+          </div>
+
+          {/* Entrar por código */}
+          <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
+            <div className="cinzel" style={{color:'var(--gold)',fontSize:'.82rem',letterSpacing:1,marginBottom:8}}>Entrar com código</div>
+            <div style={{display:'flex',gap:8}}>
+              <input value={codigo} onChange={e=>setCodigo(e.target.value.toUpperCase())}
+                placeholder="Ex: A1B2C" maxLength={5}
+                style={{flex:1,padding:'8px 10px',borderRadius:4,border:'1px solid var(--gold-dim)',
+                  background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.85rem',letterSpacing:2,textTransform:'uppercase'}}/>
+              <button className="btn btn-sm" onClick={()=>codigo.trim()&&entrar(codigo.trim())} disabled={!codigo.trim()}>Entrar</button>
+            </div>
+          </div>
+
+          {/* Mesas abertas */}
+          <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
+            <div className="cinzel" style={{color:'var(--gold)',fontSize:'.82rem',letterSpacing:1,marginBottom:8}}>Mesas abertas</div>
+            {abertas.length===0?(
+              <div style={{fontSize:'.72rem',color:'var(--parchment-dark)',textAlign:'center',padding:'8px 0'}}>
+                Nenhuma mesa aberta. Crie uma e chame alguém!
+              </div>
+            ):abertas.map(m=>{
+              const av=m.criador.avatar?RESSONANCIA_SERVOS.find(s=>s.art===m.criador.avatar):null;
+              return(
+                <div key={m.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 10px',
+                  marginBottom:6,borderRadius:6,background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)'}}>
+                  <div style={{width:32,height:32,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)'}}>
+                    {av?<RessonanciaRetrato art={av.art} patronoArt={av.patronoArt} emoji={av.emoji} size={32}/>:<span style={{fontSize:'.9rem',display:'flex',width:'100%',height:'100%',alignItems:'center',justifyContent:'center'}}>👤</span>}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:'.78rem',color:'var(--parchment)',fontFamily:'Cinzel,serif'}}>{m.criador.nome}</div>
+                    <div style={{fontSize:'.64rem',color:m.moeda==='sq'?'var(--gold)':'#4fc3f7'}}>
+                      {m.moeda==='sq'?'💎':'🪙'} {m.aposta} {m.moeda.toUpperCase()} · código {m.id}
+                    </div>
+                  </div>
+                  <button className="btn btn-sm" onClick={()=>entrar(m.id)}>Jogar</button>
+                </div>
+              );
+            })}
+          </div>
+
+          <button className="btn btn-full" style={{marginBottom:20}} onClick={()=>onNavigate('menu')}>← Voltar ao Menu</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── MESA DE JOGO ───
+  if(!mesa){
+    return(<div className="screen"><div className="panel" style={{textAlign:'center',padding:30}}>
+      <div style={{color:'var(--parchment-dark)'}}>Carregando mesa...</div>
+      <button className="btn btn-sm" style={{marginTop:14}} onClick={sairMesa}>← Sair</button>
+    </div></div>);
+  }
+
+  const minhaMao=souP1?mesa.maosP1:mesa.maosP2;
+  const maoOponente=souP1?mesa.maosP2:mesa.maosP1;
+  const meuValor=bjValor(minhaMao||[]);
+  const valorOponente=bjValor(maoOponente||[]);
+  const minhaVez=mesa.status==='jogando'&&mesa.vez===eu;
+  const euParei=souP1?mesa.standP1:mesa.standP2;
+  const oponenteObj=souP1?mesa.oponente:mesa.criador;
+  const terminado=mesa.status==='terminado';
+  // durante o jogo, esconde as cartas do oponente (menos a primeira); no fim, revela
+  const revelarOponente=terminado;
+
+  return(
+    <div className="screen" style={{padding:'12px 10px',alignItems:'flex-start'}}>
+      {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
+      <div style={{maxWidth:520,width:'100%',margin:'0 auto'}}>
+        <div className="panel" style={{padding:'14px 16px'}}>
+          {/* topo: aposta e código */}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+            <span className="cinzel" style={{color:'var(--gold)',fontSize:'.9rem'}}>🃏 Blackjack</span>
+            <span style={{fontSize:'.7rem',color:mesa.moeda==='sq'?'var(--gold)':'#4fc3f7'}}>
+              {mesa.moeda==='sq'?'💎':'🪙'} {mesa.aposta} {mesa.moeda.toUpperCase()} · Pote {mesa.aposta*2}
+            </span>
+          </div>
+
+          {mesa.status==='aguardando'?(
+            <div style={{textAlign:'center',padding:'24px 10px'}}>
+              <div style={{fontSize:'.85rem',color:'var(--parchment)',marginBottom:8}}>Aguardando oponente...</div>
+              <div style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:6}}>Compartilhe o código:</div>
+              <div className="cinzel" style={{fontSize:'2rem',color:'var(--gold)',letterSpacing:6,marginBottom:16}}>{mesa.id}</div>
+              <button className="btn btn-sm" onClick={sairMesa}>Cancelar mesa (devolve aposta)</button>
+            </div>
+          ):(
+            <>
+              {/* Mão do oponente */}
+              <div style={{marginBottom:14}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                  {(() => {const av=oponenteObj&&oponenteObj.avatar?RESSONANCIA_SERVOS.find(s=>s.art===oponenteObj.avatar):null;
+                    return <div style={{width:28,height:28,borderRadius:'50%',overflow:'hidden',border:'1px solid var(--gold-dim)',flexShrink:0}}>
+                      {av?<RessonanciaRetrato art={av.art} patronoArt={av.patronoArt} emoji={av.emoji} size={28}/>:<span style={{fontSize:'.8rem',display:'flex',width:'100%',height:'100%',alignItems:'center',justifyContent:'center'}}>👤</span>}
+                    </div>;})()}
+                  <span style={{fontSize:'.76rem',color:'var(--parchment)',fontFamily:'Cinzel,serif',flex:1}}>{oponenteObj?oponenteObj.nome:'Oponente'}</span>
+                  {revelarOponente&&<span style={{fontSize:'.8rem',color:valorOponente>21?'var(--crimson-soft)':'var(--gold)',fontFamily:'Cinzel,serif'}}>{valorOponente}{valorOponente>21?' 💥':''}</span>}
+                </div>
+                <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+                  {(maoOponente||[]).map((c,i)=>(
+                    <BJCarta key={i} carta={c} oculta={!revelarOponente&&i>0}/>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{height:1,background:'var(--gold-dim)',margin:'12px 0'}}/>
+
+              {/* Minha mão */}
+              <div style={{marginBottom:14}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                  <span style={{fontSize:'.76rem',color:'var(--gold)',fontFamily:'Cinzel,serif',flex:1}}>Você{euParei?' (parou)':''}</span>
+                  <span style={{fontSize:'.95rem',color:meuValor>21?'var(--crimson-soft)':'var(--gold)',fontFamily:'Cinzel,serif'}}>{meuValor}{meuValor>21?' 💥':''}{bjEhBlackjack(minhaMao||[])?' ✦BJ':''}</span>
+                </div>
+                <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+                  {(minhaMao||[]).map((c,i)=>(<BJCarta key={i} carta={c}/>))}
+                </div>
+              </div>
+
+              {/* Ações ou resultado */}
+              {terminado?(
+                <div style={{textAlign:'center',padding:'10px 0'}}>
+                  {(() => {
+                    const r=mesa.resultado;
+                    const venci=(r.vencedor==='p1'&&souP1)||(r.vencedor==='p2'&&!souP1);
+                    const empate=r.vencedor==='empate';
+                    return(
+                      <div style={{fontSize:'1.1rem',fontFamily:'Cinzel,serif',marginBottom:4,
+                        color:empate?'var(--parchment)':venci?'var(--gold)':'var(--crimson-soft)'}}>
+                        {empate?'🤝 Empate!':venci?'🏆 Você venceu!':'💀 Você perdeu'}
+                      </div>
+                    );
+                  })()}
+                  <div style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginBottom:14}}>{mesa.resultado.motivo}</div>
+                  <button className="btn btn-full" onClick={sairMesa}>← Voltar ao lobby</button>
+                </div>
+              ):minhaVez?(
+                <div style={{display:'flex',gap:8}}>
+                  <button className="btn" style={{flex:1}} onClick={()=>bjComprar(mesa.id,eu)}>🎴 Comprar</button>
+                  <button className="btn btn-red" style={{flex:1}} onClick={()=>bjParar(mesa.id,eu)}>✋ Parar</button>
+                </div>
+              ):(
+                <div style={{textAlign:'center',fontSize:'.78rem',color:'var(--parchment-dark)',padding:'8px 0'}}>
+                  {euParei?'Você parou. ':''}Aguardando o oponente jogar...
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        {mesa.status==='jogando'&&(
+          <button className="btn btn-sm" style={{marginTop:10,opacity:0.7}} onClick={sairMesa}>Desistir (perde a aposta)</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Tela de Bate-Papo: lista de canais por tema; entrar num canal abre a sala de chat
 // em tempo real (Firestore), usando nome e foto do perfil do jogador.
 function ChatScreen({onNavigate,profile}){
@@ -5632,6 +6106,7 @@ function MenuScreen({onNavigate,profile}){
     ['gacha','⛩️','Invocação',''],
     ['comics','📖','Álbum de Tradução',''],
     ['chat','💬','Bate-Papo',''],
+    ['blackjack','🃏','Blackjack 21',''],
     ['profile','📜','Perfil',''],
     ['shop','🏪','Loja de Perks',''],
     ['achievements','🏆','Conquistas',''],
@@ -5689,7 +6164,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.56</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.57</p>
       </div>
     </div>
   );
@@ -16202,6 +16677,7 @@ function App(){
   if(screen==='gacha')return <GachaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='comics')return <ComicAlbumScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='chat')return <ChatScreen onNavigate={navigate} profile={profile}/>;
+  if(screen==='blackjack')return <BlackjackScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='achievements')return <AchievementsScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='ranking')return <RankingScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='codex')return <CodexScreen onNavigate={navigate} profile={profile}/>;
