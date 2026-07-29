@@ -956,6 +956,15 @@ async function comicPostApagar(id){
   catch(e){console.error('apagar post',e);return false;}
 }
 
+// Atualiza os metadados de um post (nome, autor, tags, avatar) sem mexer nas imagens.
+async function comicPostAtualizar(id,dados){
+  if(!fbDb)return {ok:false,erro:'Firebase indisponível'};
+  try{
+    await fbDb.collection('album_posts').doc(id).update(dados);
+    return {ok:true};
+  }catch(e){return {ok:false,erro:e.message};}
+}
+
 // ══════════════════════════════════════════════════════
 // BATE-PAPO (Firestore) — salas de chat por tema, em tempo real
 // Estrutura: chat/<canalId>/msgs/<autoId> → { nome, txt, avatar, dev, ts }
@@ -7052,6 +7061,111 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
   );
 }
 
+// Modal de EDIÇÃO de post: ajusta nome, autor, personagens e avatar (sem reenviar imagens).
+function EditarPostModal({post,onFechar,onSalvo}){
+  const p0=post.profileInline||{};
+  const[nome,setNome]=useState(p0.name||'');
+  const[handle,setHandle]=useState(p0.handle||'');
+  const[tagAutor,setTagAutor]=useState(post.tags?.autor||'');
+  const[personagens,setPersonagens]=useState(post.tags?.personagens||[]);
+  const[avatarArt,setAvatarArt]=useState(p0.avatarArt||null); // art escolhido pro avatar
+  const[buscaPers,setBuscaPers]=useState('');
+  const[salvando,setSalvando]=useState(false);
+  const[erro,setErro]=useState('');
+
+  async function salvar(){
+    setErro('');setSalvando(true);
+    const dados={
+      'profileInline.name':nome.trim()||'Traducao',
+      'profileInline.handle':handle.trim(),
+      'profileInline.avatarArt':avatarArt||null,
+      'profileInline.avatar':avatarArt?null:(p0.avatar||null),
+      'tags.autor':tagAutor.trim(),
+      'tags.personagens':personagens,
+    };
+    const r=await comicPostAtualizar(post.id,dados);
+    setSalvando(false);
+    if(r.ok)onSalvo&&onSalvo();
+    else setErro('Falha: '+(r.erro||'erro ao salvar'));
+  }
+
+  return(
+    <div onClick={()=>!salvando&&onFechar()}
+      style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:120,
+        display:'flex',alignItems:'center',justifyContent:'center',padding:14}}>
+      <div onClick={e=>e.stopPropagation()} className="panel"
+        style={{maxWidth:500,width:'100%',maxHeight:'88vh',overflowY:'auto',padding:16}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+          <h3 className="cinzel" style={{color:'var(--gold)',fontSize:'1.05rem',flex:1}}>Editar publicação</h3>
+          <button className="btn btn-sm" onClick={()=>!salvando&&onFechar()}>X</button>
+        </div>
+
+        {/* avatar atual (preview) */}
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
+          <div style={{width:56,height:56,borderRadius:'50%',overflow:'hidden',border:'2px solid var(--gold)',flexShrink:0,background:'rgba(0,0,0,0.3)'}}>
+            {avatarArt?(()=>{const sv=RESSONANCIA_SERVOS.find(s=>s.art===avatarArt);
+              return <RessonanciaRetrato art={avatarArt} patronoArt={sv?sv.patronoArt:null} emoji={sv?sv.emoji:'??'} size={56}/>;})()
+              :<span style={{fontSize:'1.6rem',display:'flex',width:'100%',height:'100%',alignItems:'center',justifyContent:'center',color:'var(--gold-dim)'}}>?</span>}
+          </div>
+          <div style={{fontSize:'.66rem',color:'var(--parchment-dark)'}}>
+            A foto da publicação usa a arte do personagem escolhido abaixo como avatar.
+          </div>
+        </div>
+
+        <label style={ENV_LBL}>NOME EXIBIDO NO POST</label>
+        <input value={nome} onChange={e=>setNome(e.target.value)} placeholder="ex: Xu Fu" style={{...ENV_INP,marginBottom:10,width:'100%'}}/>
+        <label style={ENV_LBL}>HANDLE (opcional)</label>
+        <input value={handle} onChange={e=>setHandle(e.target.value)} placeholder="ex: @tradutor" style={{...ENV_INP,marginBottom:10,width:'100%'}}/>
+        <label style={ENV_LBL}>TAG DE AUTOR (para o filtro)</label>
+        <input value={tagAutor} onChange={e=>setTagAutor(e.target.value)} placeholder="ex: @shikimakusa" style={{...ENV_INP,marginBottom:14,width:'100%'}}/>
+
+        <label style={ENV_LBL}>PERSONAGENS (clique para adicionar) — o 1º vira o avatar</label>
+        {personagens.length>0&&(
+          <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:8}}>
+            {personagens.map((nomeP,idx)=>{
+              const sv=RESSONANCIA_SERVOS.find(s=>s.nome===nomeP);
+              const ehAvatar=sv&&sv.art===avatarArt;
+              return(
+                <span key={nomeP} style={{display:'inline-flex',alignItems:'center',gap:5,
+                    fontSize:'.66rem',padding:'3px 8px 3px 4px',borderRadius:14,
+                    background:ehAvatar?'rgba(201,162,39,0.3)':'rgba(201,162,39,0.15)',
+                    border:'1px solid '+(ehAvatar?'var(--gold)':'var(--gold-dim)'),color:'var(--gold)'}}>
+                  {sv&&<span onClick={()=>setAvatarArt(sv.art)} title="Usar como avatar" style={{width:18,height:18,borderRadius:'50%',overflow:'hidden',display:'inline-block',flexShrink:0,cursor:'pointer'}}>
+                    <RessonanciaRetrato art={sv.art} patronoArt={sv.patronoArt} emoji={sv.emoji} size={18}/>
+                  </span>}
+                  <span onClick={()=>sv&&setAvatarArt(sv.art)} style={{cursor:'pointer'}}>{nomeP}</span>
+                  <span onClick={()=>{const novo=personagens.filter(n=>n!==nomeP);setPersonagens(novo);if(ehAvatar)setAvatarArt(novo.length?(RESSONANCIA_SERVOS.find(s=>s.nome===novo[0])||{}).art||null:null);}} style={{cursor:'pointer'}}>X</span>
+                </span>
+              );
+            })}
+          </div>
+        )}
+        <input value={buscaPers} onChange={e=>setBuscaPers(e.target.value)} placeholder="Buscar personagem..." style={{...ENV_INP,marginBottom:8,width:'100%'}}/>
+        <div style={{maxHeight:180,overflowY:'auto',display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(64px,1fr))',gap:6,marginBottom:14,padding:'8px',borderRadius:8,background:'rgba(0,0,0,0.22)',border:'1px solid var(--gold-dim)'}}>
+          {RESSONANCIA_SERVOS
+            .filter(s=>{const q=buscaPers.trim().toLowerCase();return !q||s.nome.toLowerCase().includes(q)||s.classe.toLowerCase().includes(q);})
+            .slice(0,buscaPers.trim()?200:60)
+            .map(s=>{const sel=personagens.includes(s.nome);
+              return(
+                <button key={s.id} type="button" title={s.nome}
+                  onClick={()=>{if(sel){const novo=personagens.filter(n=>n!==s.nome);setPersonagens(novo);if(avatarArt===s.art)setAvatarArt(novo.length?(RESSONANCIA_SERVOS.find(x=>x.nome===novo[0])||{}).art||null:null);}else{const novo=[...personagens,s.nome];setPersonagens(novo);if(!avatarArt)setAvatarArt(s.art);}}}
+                  style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2,cursor:'pointer',
+                    background:sel?'rgba(201,162,39,0.22)':'rgba(0,0,0,0.25)',
+                    border:'1px solid '+(sel?'var(--gold)':'var(--gold-dim)'),borderRadius:6,padding:'4px 2px'}}>
+                  <RessonanciaRetrato art={s.art} patronoArt={s.patronoArt} emoji={s.emoji} size={44}/>
+                  <span style={{fontSize:'.5rem',color:sel?'var(--gold)':'var(--parchment-dark)',lineHeight:1,textAlign:'center',maxWidth:58,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.nome.split(' ')[0]}</span>
+                </button>
+              );
+            })}
+        </div>
+
+        {erro&&<div style={{fontSize:'.7rem',color:'#ff9090',marginBottom:10}}>{erro}</div>}
+        <button className="btn btn-full" onClick={salvar} disabled={salvando} style={{opacity:salvando?0.6:1}}>{salvando?'Salvando...':'Salvar alterações'}</button>
+      </div>
+    </div>
+  );
+}
+
 function ComicAlbumScreen({onNavigate,profile}){
   const[search,setSearch]=useState('');
   const[activeTag,setActiveTag]=useState(null); // {tipo:'personagem'|'autor', valor}
@@ -7059,6 +7173,7 @@ function ComicAlbumScreen({onNavigate,profile}){
   const[viewer,setViewer]=useState(null); // {post, pageIdx} quando abre uma página em tela cheia
   const[postsFS,setPostsFS]=useState([]); // posts vindos do Firestore
   const[enviar,setEnviar]=useState(false); // modal de envio aberto?
+  const[editando,setEditando]=useState(null); // post sendo editado
   const meuDev=(typeof getOrCreateDeviceId==='function')?getOrCreateDeviceId():null;
 
   // assina os posts do Firestore
@@ -7130,6 +7245,8 @@ function ComicAlbumScreen({onNavigate,profile}){
     <div className="screen" style={{padding:'16px 10px',alignItems:'flex-start'}}>
       {enviar&&<EnviarTraducaoModal profile={profile} onFechar={()=>setEnviar(false)}
         onPronto={()=>{setEnviar(false);}}/>}
+      {editando&&<EditarPostModal post={editando} onFechar={()=>setEditando(null)}
+        onSalvo={()=>setEditando(null)}/>}
       <div style={{maxWidth:560,width:'100%',margin:'0 auto'}}>
         {/* Cabeçalho */}
         <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
@@ -7237,6 +7354,14 @@ function ComicAlbumScreen({onNavigate,profile}){
                   <div style={{fontSize:'.85rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{prof.name}</div>
                   <div style={{fontSize:'.66rem',color:'var(--parchment-dark)'}}>{prof.handle}{post.date?` · ${post.date}`:''}</div>
                 </div>
+                {post.firestore&&post.dev===meuDev&&(
+                  <div style={{display:'flex',gap:4,flexShrink:0}}>
+                    <button onClick={()=>setEditando(post)} title="Editar publicação"
+                      style={{background:'rgba(0,0,0,0.3)',border:'1px solid var(--gold-dim)',color:'var(--gold)',cursor:'pointer',fontSize:'.7rem',padding:'3px 7px',borderRadius:6}}>✏️</button>
+                    <button onClick={()=>{if(confirm('Apagar esta publicação? As imagens no GitHub não são removidas.'))comicPostApagar(post.id);}} title="Apagar publicação"
+                      style={{background:'rgba(139,26,26,0.3)',border:'1px solid var(--crimson-dim)',color:'#ff9090',cursor:'pointer',fontSize:'.7rem',padding:'3px 7px',borderRadius:6}}>🗑️</button>
+                  </div>
+                )}
                 {multi&&<span style={{fontSize:'.6rem',color:'var(--parchment-dark)',background:'rgba(0,0,0,0.3)',padding:'2px 7px',borderRadius:10}}>📄 {post.pages.length} págs</span>}
               </div>
 
@@ -7518,7 +7643,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.68</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.69</p>
       </div>
     </div>
   );
