@@ -822,6 +822,80 @@ function albumWatchComments(postId,cb){
 }
 
 // ══════════════════════════════════════════════════════
+// ENVIO DE TRADUÇÕES — imagens vão pro GitHub, metadados pro Firestore
+// O token do GitHub é digitado na hora do envio e NUNCA é salvo (segurança).
+// Config do repositório fica em localStorage (dono/repo/pasta), sem o token.
+
+const GH_CFG_KEY='fate_github_cfg_v1';
+function loadGithubCfg(){
+  try{const r=localStorage.getItem(GH_CFG_KEY);return r?JSON.parse(r):{dono:'',repo:'',pasta:'comics',branch:'main'};}
+  catch{return {dono:'',repo:'',pasta:'comics',branch:'main'};}
+}
+function saveGithubCfg(c){try{localStorage.setItem(GH_CFG_KEY,JSON.stringify(c));}catch{}}
+
+// Converte um File de imagem em base64 puro (sem o prefixo data:...).
+function fileParaBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>{const s=r.result;const i=s.indexOf(',');res(i>=0?s.slice(i+1):s);};
+    r.onerror=()=>rej(new Error('Falha ao ler o arquivo'));
+    r.readAsDataURL(file);
+  });
+}
+
+// Envia um arquivo pro GitHub via API Contents. Retorna a URL "raw" pública.
+async function githubUpload(cfg,token,caminho,base64,mensagem){
+  const url=`https://api.github.com/repos/${cfg.dono}/${cfg.repo}/contents/${caminho}`;
+  // verifica se já existe (pra pegar o sha e sobrescrever, evitando erro 422)
+  let sha=null;
+  try{
+    const chk=await fetch(url+`?ref=${cfg.branch}`,{headers:{Authorization:`token ${token}`,Accept:'application/vnd.github+json'}});
+    if(chk.ok){const j=await chk.json();sha=j.sha;}
+  }catch{}
+  const body={message:mensagem||`Adiciona ${caminho}`,content:base64,branch:cfg.branch};
+  if(sha)body.sha=sha;
+  const resp=await fetch(url,{
+    method:'PUT',
+    headers:{Authorization:`token ${token}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},
+    body:JSON.stringify(body),
+  });
+  if(!resp.ok){
+    let msg='Erro '+resp.status;
+    try{const j=await resp.json();msg=j.message||msg;}catch{}
+    throw new Error(msg);
+  }
+  // URL raw pública (funciona mesmo antes do Pages atualizar)
+  return `https://raw.githubusercontent.com/${cfg.dono}/${cfg.repo}/${cfg.branch}/${caminho}`;
+}
+
+// Salva um post de comic no Firestore (aparece no feed pra todos).
+async function comicPostSalvar(post){
+  if(!fbDb)return {ok:false,erro:'Firebase indisponível'};
+  try{
+    const ref=await fbDb.collection('album_posts').add({
+      ...post,
+      ts:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return {ok:true,id:ref.id};
+  }catch(e){return {ok:false,erro:e.message};}
+}
+
+// Observa os posts de comic do Firestore (mais novos primeiro).
+function comicPostsWatch(cb){
+  if(!fbDb){cb([]);return ()=>{};}
+  return fbDb.collection('album_posts').orderBy('ts','desc').onSnapshot(snap=>{
+    cb(snap.docs.map(d=>({id:d.id,firestore:true,...d.data()})));
+  },e=>console.error('watch posts',e));
+}
+
+// Apaga um post do Firestore (só o autor do envio, via deviceId).
+async function comicPostApagar(id){
+  if(!fbDb)return false;
+  try{await fbDb.collection('album_posts').doc(id).delete();return true;}
+  catch(e){console.error('apagar post',e);return false;}
+}
+
+// ══════════════════════════════════════════════════════
 // BATE-PAPO (Firestore) — salas de chat por tema, em tempo real
 // Estrutura: chat/<canalId>/msgs/<autoId> → { nome, txt, avatar, dev, ts }
 // Canais fixos por tema (adicione/edite à vontade):
@@ -6660,15 +6734,164 @@ function ComicSocial({postId,profile}){
   );
 }
 
+// estilos compartilhados do modal de envio
+const ENV_INP={flex:1,minWidth:0,padding:'8px 10px',borderRadius:4,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.76rem'};
+const ENV_LBL={display:'block',fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:1,marginBottom:4,fontFamily:'Cinzel,serif'};
+
+// Modal de envio de tradução: sobe imagens pro GitHub e cria o post no Firestore.
+function EnviarTraducaoModal({profile,onFechar,onPronto}){
+  const[cfg,setCfg]=useState(()=>loadGithubCfg());
+  const[token,setToken]=useState('');
+  const[nomeAutor,setNomeAutor]=useState('');
+  const[handle,setHandle]=useState('');
+  const[tagAutor,setTagAutor]=useState('');
+  const[personagens,setPersonagens]=useState('');
+  const[arquivos,setArquivos]=useState([]);
+  const[prefixo,setPrefixo]=useState('');
+  const[progresso,setProgresso]=useState('');
+  const[enviando,setEnviando]=useState(false);
+  const[erro,setErro]=useState('');
+  const meuDev=(typeof getOrCreateDeviceId==='function')?getOrCreateDeviceId():null;
+
+  function escolherArquivos(e){
+    const fs=[...e.target.files].filter(f=>f.type.startsWith('image/'));
+    setArquivos(fs);
+  }
+
+  async function enviar(){
+    setErro('');
+    if(!cfg.dono||!cfg.repo){setErro('Preencha o dono e o nome do repositório.');return;}
+    if(!token.trim()){setErro('Cole seu token do GitHub.');return;}
+    if(arquivos.length===0){setErro('Selecione ao menos uma imagem.');return;}
+    if(!prefixo.trim()){setErro('Defina um prefixo para os arquivos.');return;}
+    const pref=prefixo.trim().replace(/[^a-zA-Z0-9_-]/g,'');
+    if(!pref){setErro('Prefixo invalido - use letras, numeros, _ ou -.');return;}
+
+    setEnviando(true);
+    saveGithubCfg(cfg);
+    const pasta=(cfg.pasta||'comics').replace(/\/+$/,'');
+    const pages=[];
+    try{
+      for(let i=0;i<arquivos.length;i++){
+        const f=arquivos[i];
+        const ext=(f.name.split('.').pop()||'jpg').toLowerCase();
+        const caminho=pasta+'/'+pref+(i+1)+'.'+ext;
+        setProgresso('Enviando '+(i+1)+'/'+arquivos.length+'...');
+        const b64=await fileParaBase64(f);
+        const url=await githubUpload(cfg,token.trim(),caminho,b64,'Adiciona traducao '+pref+(i+1));
+        pages.push(url);
+      }
+      setProgresso('Publicando no feed...');
+      const pers=personagens.split(',').map(s=>s.trim()).filter(Boolean);
+      const post={
+        dev:meuDev,
+        profileInline:{name:nomeAutor.trim()||'Traducao',handle:handle.trim(),avatar:pages[0]||null},
+        pages,
+        tags:{autor:tagAutor.trim(),personagens:pers},
+      };
+      const r=await comicPostSalvar(post);
+      if(!r.ok)throw new Error(r.erro||'Erro ao salvar o post.');
+      setProgresso('');setEnviando(false);
+      onPronto&&onPronto();
+    }catch(e){
+      setEnviando(false);setProgresso('');
+      setErro('Falha: '+e.message);
+    }
+  }
+
+  return(
+    <div onClick={()=>!enviando&&onFechar()}
+      style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:120,
+        display:'flex',alignItems:'center',justifyContent:'center',padding:14}}>
+      <div onClick={e=>e.stopPropagation()} className="panel"
+        style={{maxWidth:500,width:'100%',maxHeight:'88vh',overflowY:'auto',padding:16}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+          <h3 className="cinzel" style={{color:'var(--gold)',fontSize:'1.05rem',flex:1}}>Enviar traducao</h3>
+          <button className="btn btn-sm" onClick={()=>!enviando&&onFechar()}>X</button>
+        </div>
+        <p style={{fontSize:'.66rem',color:'var(--parchment-dark)',marginBottom:14}}>
+          As imagens vao pro seu repositorio no GitHub e o post aparece no feed pra todos.
+          Seu token e usado so neste envio e nunca e salvo.
+        </p>
+
+        <div style={{marginBottom:14,padding:'10px 12px',borderRadius:8,background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)'}}>
+          <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:1,marginBottom:8,fontFamily:'Cinzel,serif'}}>REPOSITORIO GITHUB</div>
+          <div style={{display:'flex',gap:8,marginBottom:8}}>
+            <input value={cfg.dono} onChange={e=>setCfg({...cfg,dono:e.target.value})} placeholder="dono (usuario)" style={ENV_INP}/>
+            <input value={cfg.repo} onChange={e=>setCfg({...cfg,repo:e.target.value})} placeholder="repositorio" style={ENV_INP}/>
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <input value={cfg.pasta} onChange={e=>setCfg({...cfg,pasta:e.target.value})} placeholder="pasta (comics)" style={ENV_INP}/>
+            <input value={cfg.branch} onChange={e=>setCfg({...cfg,branch:e.target.value})} placeholder="branch (main)" style={ENV_INP}/>
+          </div>
+        </div>
+
+        <label style={ENV_LBL}>TOKEN DO GITHUB (nao fica salvo)</label>
+        <input type="password" value={token} onChange={e=>setToken(e.target.value)} placeholder="ghp_..." style={{...ENV_INP,marginBottom:14,width:'100%'}}/>
+
+        <label style={ENV_LBL}>IMAGENS DO COMIC (na ordem das paginas)</label>
+        <input type="file" accept="image/*" multiple onChange={escolherArquivos} style={{...ENV_INP,marginBottom:6,padding:'6px',width:'100%'}}/>
+        {arquivos.length>0&&(<div style={{fontSize:'.66rem',color:'var(--gold)',marginBottom:14}}>{arquivos.length} imagem(ns) selecionada(s)</div>)}
+
+        <label style={ENV_LBL}>PREFIXO DOS ARQUIVOS (ex: sith → sith1.jpg...)</label>
+        <input value={prefixo} onChange={e=>setPrefixo(e.target.value)} placeholder="ex: minha_traducao" style={{...ENV_INP,marginBottom:14,width:'100%'}}/>
+
+        <label style={ENV_LBL}>NOME EXIBIDO NO POST</label>
+        <input value={nomeAutor} onChange={e=>setNomeAutor(e.target.value)} placeholder="ex: Baobhan Sith" style={{...ENV_INP,marginBottom:10,width:'100%'}}/>
+        <label style={ENV_LBL}>HANDLE (opcional)</label>
+        <input value={handle} onChange={e=>setHandle(e.target.value)} placeholder="ex: @tradutor" style={{...ENV_INP,marginBottom:10,width:'100%'}}/>
+        <label style={ENV_LBL}>TAG DE AUTOR (para o filtro)</label>
+        <input value={tagAutor} onChange={e=>setTagAutor(e.target.value)} placeholder="ex: @IZit_unk" style={{...ENV_INP,marginBottom:10,width:'100%'}}/>
+        <label style={ENV_LBL}>PERSONAGENS (separados por virgula)</label>
+        <input value={personagens} onChange={e=>setPersonagens(e.target.value)} placeholder="ex: Morgan, Oberon, Castoria" style={{...ENV_INP,marginBottom:14,width:'100%'}}/>
+
+        {erro&&<div style={{fontSize:'.7rem',color:'#ff9090',marginBottom:10}}>{erro}</div>}
+        {progresso&&<div style={{fontSize:'.72rem',color:'var(--gold)',marginBottom:10}}>{progresso}</div>}
+
+        <button className="btn btn-full" onClick={enviar} disabled={enviando} style={{opacity:enviando?0.6:1}}>{enviando?'Enviando...':'Enviar para o GitHub e publicar'}</button>
+      </div>
+    </div>
+  );
+}
+
 function ComicAlbumScreen({onNavigate,profile}){
   const[search,setSearch]=useState('');
   const[activeTag,setActiveTag]=useState(null); // {tipo:'personagem'|'autor', valor}
+  const[filtrosAbertos,setFiltrosAbertos]=useState(false); // seção de filtros expandida?
   const[viewer,setViewer]=useState(null); // {post, pageIdx} quando abre uma página em tela cheia
-  const tags=allComicTags();
+  const[postsFS,setPostsFS]=useState([]); // posts vindos do Firestore
+  const[enviar,setEnviar]=useState(false); // modal de envio aberto?
+  const meuDev=(typeof getOrCreateDeviceId==='function')?getOrCreateDeviceId():null;
+
+  // assina os posts do Firestore
+  useEffect(()=>{
+    const un=comicPostsWatch(list=>setPostsFS(list||[]));
+    return ()=>{un&&un();};
+  },[]);
+
+  // Combina posts fixos (código) + posts do Firestore. Os do Firestore usam a mesma
+  // "forma": {id, profile?, pages, tags, autorNome?, dev?}. Os do Firestore vêm primeiro.
+  const todosPosts=[
+    ...postsFS.map(p=>({
+      id:p.id, firestore:true, dev:p.dev,
+      profileInline:p.profileInline||null, // {name,handle,avatar} embutido
+      pages:p.pages||[],
+      tags:p.tags||{autor:'',personagens:[]},
+    })),
+    ...COMIC_POSTS,
+  ];
+  const tags=(() => {
+    const autores=new Set(),personagens=new Set();
+    todosPosts.forEach(p=>{
+      if(p.tags?.autor)autores.add(p.tags.autor);
+      (p.tags?.personagens||[]).forEach(c=>personagens.add(c));
+    });
+    return {autores:[...autores].sort(),personagens:[...personagens].sort()};
+  })();
 
   // Filtra os posts pela busca de texto e pela tag ativa
-  const posts=COMIC_POSTS.filter(p=>{
-    const prof=COMIC_PROFILES[p.profile]||{};
+  const posts=todosPosts.filter(p=>{
+    const prof=p.profileInline||COMIC_PROFILES[p.profile]||{};
     if(activeTag){
       if(activeTag.tipo==='autor'&&p.tags?.autor!==activeTag.valor)return false;
       if(activeTag.tipo==='personagem'&&!(p.tags?.personagens||[]).includes(activeTag.valor))return false;
@@ -6707,6 +6930,8 @@ function ComicAlbumScreen({onNavigate,profile}){
 
   return(
     <div className="screen" style={{padding:'16px 10px',alignItems:'flex-start'}}>
+      {enviar&&<EnviarTraducaoModal profile={profile} onFechar={()=>setEnviar(false)}
+        onPronto={()=>{setEnviar(false);}}/>}
       <div style={{maxWidth:560,width:'100%',margin:'0 auto'}}>
         {/* Cabeçalho */}
         <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
@@ -6714,30 +6939,78 @@ function ComicAlbumScreen({onNavigate,profile}){
           <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:10}}>
             Traduções de comics da franquia. Role o feed ou busque por autor ou personagem.
           </p>
+          <button className="btn btn-sm" style={{marginBottom:10}} onClick={()=>setEnviar(true)}>📤 Enviar tradução</button>
           {/* Busca */}
           <input value={search} onChange={e=>setSearch(e.target.value)}
             placeholder="🔍 Buscar por autor, personagem ou texto..."
             style={{width:'100%',padding:'8px 10px',borderRadius:4,border:'1px solid var(--gold-dim)',
-              background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.78rem',marginBottom:8}}/>
-          {/* Filtros por tag */}
+              background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.78rem',marginBottom:10}}/>
+          {/* Filtros por tag — organizados em seções */}
           {(tags.personagens.length>0||tags.autores.length>0)&&(
-            <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-              {activeTag&&(
-                <button onClick={()=>setActiveTag(null)}
-                  style={{fontSize:'.66rem',padding:'3px 8px',borderRadius:12,border:'1px solid var(--red)',background:'rgba(139,26,26,0.3)',color:'#ff9090',cursor:'pointer'}}>✕ Limpar filtro</button>
+            <div>
+              {/* barra de controle: filtro ativo + expandir/recolher */}
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:filtrosAbertos?10:0}}>
+                <button onClick={()=>setFiltrosAbertos(v=>!v)}
+                  style={{fontSize:'.68rem',padding:'4px 11px',borderRadius:8,cursor:'pointer',display:'flex',alignItems:'center',gap:5,
+                    border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)'}}>
+                  <span>⚙️ Filtros</span>
+                  <span style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>{filtrosAbertos?'▲':'▼'}</span>
+                </button>
+                {activeTag&&(
+                  <div style={{display:'flex',alignItems:'center',gap:6,flex:1,minWidth:0}}>
+                    <span style={{fontSize:'.66rem',color:'var(--parchment-dark)',whiteSpace:'nowrap'}}>Filtrando:</span>
+                    <span style={{fontSize:'.68rem',padding:'3px 10px',borderRadius:12,background:'rgba(201,162,39,0.25)',
+                      border:'1px solid var(--gold)',color:'var(--gold)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                      {activeTag.tipo==='autor'?'✍️':'👤'} {activeTag.valor}
+                    </span>
+                    <button onClick={()=>setActiveTag(null)} title="Limpar filtro"
+                      style={{fontSize:'.7rem',width:22,height:22,borderRadius:'50%',flexShrink:0,cursor:'pointer',
+                        border:'1px solid var(--crimson-dim)',background:'rgba(139,26,26,0.3)',color:'#ff9090',padding:0}}>✕</button>
+                  </div>
+                )}
+              </div>
+
+              {/* seções de tags (colapsáveis) */}
+              {filtrosAbertos&&(
+                <div style={{background:'rgba(0,0,0,0.22)',borderRadius:8,padding:'10px 12px',border:'1px solid var(--gold-dim)'}}>
+                  {tags.personagens.length>0&&(
+                    <div style={{marginBottom:tags.autores.length>0?12:0}}>
+                      <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:2,marginBottom:6,fontFamily:'Cinzel,serif'}}>
+                        👤 PERSONAGENS <span style={{color:'var(--gold-dim)'}}>({tags.personagens.length})</span>
+                      </div>
+                      <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                        {tags.personagens.map(c=>{
+                          const at=activeTag?.tipo==='personagem'&&activeTag.valor===c;
+                          return(
+                            <button key={'c'+c} onClick={()=>setActiveTag(at?null:{tipo:'personagem',valor:c})}
+                              style={{fontSize:'.66rem',padding:'3px 10px',borderRadius:12,cursor:'pointer',
+                                border:`1px solid ${at?'var(--gold)':'var(--gold-dim)'}`,
+                                background:at?'rgba(201,162,39,0.25)':'rgba(0,0,0,0.3)',color:'var(--gold)'}}>{c}</button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {tags.autores.length>0&&(
+                    <div>
+                      <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:2,marginBottom:6,fontFamily:'Cinzel,serif'}}>
+                        ✍️ AUTORES <span style={{color:'var(--gold-dim)'}}>({tags.autores.length})</span>
+                      </div>
+                      <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                        {tags.autores.map(a=>{
+                          const at=activeTag?.tipo==='autor'&&activeTag.valor===a;
+                          return(
+                            <button key={'a'+a} onClick={()=>setActiveTag(at?null:{tipo:'autor',valor:a})}
+                              style={{fontSize:'.66rem',padding:'3px 10px',borderRadius:12,cursor:'pointer',
+                                border:`1px solid ${at?'var(--gold)':'var(--gold-dim)'}`,
+                                background:at?'rgba(201,162,39,0.25)':'rgba(0,0,0,0.3)',color:'var(--parchment)'}}>{a}</button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
-              {tags.personagens.map(c=>(
-                <button key={'c'+c} onClick={()=>setActiveTag({tipo:'personagem',valor:c})}
-                  style={{fontSize:'.66rem',padding:'3px 8px',borderRadius:12,cursor:'pointer',
-                    border:`1px solid ${activeTag?.valor===c?'var(--gold)':'var(--gold-dim)'}`,
-                    background:activeTag?.valor===c?'rgba(201,162,39,0.25)':'rgba(0,0,0,0.25)',color:'var(--gold)'}}>👤 {c}</button>
-              ))}
-              {tags.autores.map(a=>(
-                <button key={'a'+a} onClick={()=>setActiveTag({tipo:'autor',valor:a})}
-                  style={{fontSize:'.66rem',padding:'3px 8px',borderRadius:12,cursor:'pointer',
-                    border:`1px solid ${activeTag?.valor===a?'var(--gold)':'var(--gold-dim)'}`,
-                    background:activeTag?.valor===a?'rgba(201,162,39,0.25)':'rgba(0,0,0,0.25)',color:'var(--parchment)'}}>✍️ {a}</button>
-              ))}
             </div>
           )}
         </div>
@@ -6748,7 +7021,7 @@ function ComicAlbumScreen({onNavigate,profile}){
             Nenhuma tradução encontrada.
           </div>
         ):posts.map(post=>{
-          const prof=COMIC_PROFILES[post.profile]||{name:'???',handle:'',avatar:null};
+          const prof=post.profileInline||COMIC_PROFILES[post.profile]||{name:'???',handle:'',avatar:null};
           const multi=post.pages.length>1;
           return(
             <div key={post.id} className="panel" style={{marginBottom:14,padding:0,overflow:'hidden'}}>
@@ -7042,7 +7315,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.62</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.64</p>
       </div>
     </div>
   );
