@@ -7588,10 +7588,8 @@ function MenuScreen({onNavigate,profile}){
     ['comics','📖','Álbum de Tradução',''],
     ['chat','💬','Bate-Papo',''],
     ['jogos','🎰','Jogos & Apostas',''],
-    ['profile','📜','Perfil',''],
     ['ranking','🌐','Ranking Online',''],
     ['codex','📖','Informações',''],
-    ['config','⚙️','Configurações',''],
   ];
   // Brasas subindo (geradas uma vez, posições/tempos/tamanhos aleatórios).
   // Mais brasas nas laterais/base, tamanhos e velocidades variados = fogo mais vivo.
@@ -7604,6 +7602,16 @@ function MenuScreen({onNavigate,profile}){
   }))).current;
   return(
     <div className="screen menu-screen">
+      {/* Engrenagem de configurações no canto */}
+      <button onClick={()=>onNavigate('config')} title="Configurações"
+        style={{position:'absolute',top:14,right:14,zIndex:20,width:42,height:42,borderRadius:'50%',
+          display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'1.2rem',
+          background:'rgba(20,10,26,0.7)',border:'1px solid var(--gold-dim)',color:'var(--gold)',
+          backdropFilter:'blur(4px)',transition:'transform .2s,border-color .15s'}}
+        onMouseEnter={e=>{e.currentTarget.style.transform='rotate(45deg)';e.currentTarget.style.borderColor='var(--gold)';}}
+        onMouseLeave={e=>{e.currentTarget.style.transform='rotate(0deg)';e.currentTarget.style.borderColor='var(--gold-dim)';}}>
+        ⚙️
+      </button>
       <div className="menu-moon"/>
       <div className="menu-flames"/>
       <div className="menu-embers">
@@ -7621,7 +7629,12 @@ function MenuScreen({onNavigate,profile}){
         <p className="menu-subtitle">Hyakki Yagyō</p>
         <p className="menu-kanji">百 鬼 夜 行</p>
         {profile.nickname&&(
-          <div className="menu-master" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,flexWrap:'wrap'}}>
+          <div className="menu-master" onClick={()=>onNavigate('profile')} title="Abrir perfil"
+            style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,flexWrap:'wrap',
+              cursor:'pointer',borderRadius:10,padding:'10px 14px',transition:'background .15s,border-color .15s',
+              border:'1px solid transparent'}}
+            onMouseEnter={e=>{e.currentTarget.style.background='rgba(201,162,39,0.08)';e.currentTarget.style.borderColor='var(--gold-dim)';}}
+            onMouseLeave={e=>{e.currentTarget.style.background='none';e.currentTarget.style.borderColor='transparent';}}>
             {profile.avatar&&(()=>{
               const av=RESSONANCIA_SERVOS.find(s=>s.art===profile.avatar);
               return av?(
@@ -7634,6 +7647,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mm-stat" style={{color:'#e6c34c'}}>👑 Nv.{(profile.magus||{level:1}).level}</span>
             <span className="mm-stat">💎 {(profile.sq||0).toLocaleString()} SQ</span>
             <span className="mm-stat" style={{color:'#4fc3f7'}}>🪙 {(profile.qp||0).toLocaleString()} QP</span>
+            <span style={{fontSize:'.6rem',color:'var(--gold-dim)',width:'100%',textAlign:'center',marginTop:-2}}>toque para abrir o perfil ›</span>
           </div>
         )}
         {items.map(([nav,icon,label,variant])=>(
@@ -7643,7 +7657,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.69</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.70</p>
       </div>
     </div>
   );
