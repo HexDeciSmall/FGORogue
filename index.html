@@ -702,6 +702,87 @@ async function fetchRanking(cat,max=10){
 }
 
 // ══════════════════════════════════════════════════════
+// ÁLBUM SOCIAL COMPARTILHADO (Firestore) — reações e comentários que TODOS veem
+// Estrutura no Firestore:
+//   album_reacts/<postId>            → { '❤️':3, '🔥':5, ... }  (contadores agregados)
+//   album_reacts/<postId>_users/<deviceId> → { emoji }  (voto de cada um, p/ alternar)
+//   album_comentarios/<postId>_msgs/<autoId> → { nome, txt, dev, ts }
+// Cada post tem seu próprio conjunto, sincronizado em tempo real via onSnapshot.
+
+// Alterna a reação do usuário num post (uma reação por pessoa; clicar de novo remove).
+// Usa transação pra manter o contador agregado correto entre todos.
+async function albumToggleReact(postId,emoji){
+  if(!fbDb)return false;
+  try{
+    const dev=getOrCreateDeviceId();
+    const contDoc=fbDb.collection('album_reacts').doc(postId);
+    const voteDoc=fbDb.collection('album_reacts').doc(postId).collection('users').doc(dev);
+    await fbDb.runTransaction(async tx=>{
+      const voteSnap=await tx.get(voteDoc);
+      const anterior=voteSnap.exists?voteSnap.data().emoji:null;
+      const inc=firebase.firestore.FieldValue.increment(1);
+      const dec=firebase.firestore.FieldValue.increment(-1);
+      if(anterior){tx.set(contDoc,{[anterior]:dec},{merge:true});}
+      if(anterior===emoji){
+        tx.delete(voteDoc); // clicou na mesma → remove voto
+      }else{
+        tx.set(contDoc,{[emoji]:inc},{merge:true});
+        tx.set(voteDoc,{emoji});
+      }
+    });
+    return true;
+  }catch(e){console.error('Erro ao reagir:',e);return false;}
+}
+
+// Observa (tempo real) os contadores de reação e o voto do próprio usuário de um post.
+function albumWatchReacts(postId,cb){
+  if(!fbDb){cb({reacts:{},minha:null});return ()=>{};}
+  const dev=getOrCreateDeviceId();
+  let reacts={},minha=null;
+  const un1=fbDb.collection('album_reacts').doc(postId).onSnapshot(snap=>{
+    reacts=snap.exists?snap.data():{};cb({reacts,minha});
+  },e=>console.error('watch reacts',e));
+  const un2=fbDb.collection('album_reacts').doc(postId).collection('users').doc(dev).onSnapshot(snap=>{
+    minha=snap.exists?snap.data().emoji:null;cb({reacts,minha});
+  },e=>console.error('watch meu voto',e));
+  return ()=>{un1();un2();};
+}
+
+// Publica um comentário (com o nome do perfil do jogador).
+async function albumAddComment(postId,nome,txt){
+  if(!fbDb)return false;
+  try{
+    const dev=getOrCreateDeviceId();
+    await fbDb.collection('album_comentarios').doc(postId).collection('msgs').add({
+      nome:(nome||'Anônimo').trim().slice(0,28)||'Anônimo',
+      txt:txt.trim().slice(0,500),
+      dev,
+      ts:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return true;
+  }catch(e){console.error('Erro ao comentar:',e);return false;}
+}
+
+// Apaga um comentário (só o Firestore rules deve permitir ao próprio autor;
+// aqui filtramos por dev por conveniência de UI).
+async function albumDeleteComment(postId,msgId){
+  if(!fbDb)return false;
+  try{
+    await fbDb.collection('album_comentarios').doc(postId).collection('msgs').doc(msgId).delete();
+    return true;
+  }catch(e){console.error('Erro ao apagar comentário:',e);return false;}
+}
+
+// Observa (tempo real) os comentários de um post, do mais antigo pro mais novo.
+function albumWatchComments(postId,cb){
+  if(!fbDb){cb([]);return ()=>{};}
+  return fbDb.collection('album_comentarios').doc(postId).collection('msgs')
+    .orderBy('ts','asc').onSnapshot(snap=>{
+      cb(snap.docs.map(d=>({id:d.id,...d.data()})));
+    },e=>console.error('watch comentarios',e));
+}
+
+// ══════════════════════════════════════════════════════
 // DADOS E FÓRMULAS
 // ══════════════════════════════════════════════════════
 
@@ -4405,6 +4486,11 @@ function loadProfile(){
 }
 function saveProfile(p){try{localStorage.setItem(SAVE_KEY,JSON.stringify(p));}catch{}}
 
+// ─── ÁLBUM: REAÇÕES DISPONÍVEIS ──────────────────────
+// As reações e comentários do Álbum são COMPARTILHADOS via Firestore (todos veem
+// os mesmos), implementados mais abaixo em albumWatchReacts/albumAddComment etc.
+const ALBUM_REACTS_DISP=['❤️','🔥','😂','😮','😭','👏']; // reações disponíveis
+
 // ─── EXP MAGUS (Nível de Mestre) ──────────────────────
 // Progressão do JOGADOR, separada do XP de cada Servo. Ganha-se em Campanha e
 // Torre: um pouco a cada combate vencido, e um bônus maior ao finalizar a run
@@ -4908,7 +4994,120 @@ function XPBar({xpState}){
 // ══════════════════════════════════════════════════════
 // ÁLBUM DE TRADUÇÃO — tela do feed (rede social)
 // ══════════════════════════════════════════════════════
-function ComicAlbumScreen({onNavigate}){
+// Barra de reações + comentários de um post do Álbum, COMPARTILHADOS via Firestore:
+// todos veem as mesmas reações e comentários, sincronizados em tempo real. Os
+// comentários usam o nome (nickname) do perfil do jogador.
+function ComicSocial({postId,profile}){
+  const[reacts,setReacts]=useState({});
+  const[minha,setMinha]=useState(null);
+  const[coms,setComs]=useState([]);
+  const[texto,setTexto]=useState('');
+  const[aberto,setAberto]=useState(false);
+  const[enviando,setEnviando]=useState(false);
+  const meuDev=(typeof getOrCreateDeviceId==='function')?getOrCreateDeviceId():null;
+  const meuNome=(profile&&profile.nickname)?profile.nickname:'';
+
+  // Assina as atualizações em tempo real (reações e comentários) enquanto montado.
+  useEffect(()=>{
+    const unR=albumWatchReacts(postId,({reacts,minha})=>{setReacts(reacts||{});setMinha(minha||null);});
+    const unC=albumWatchComments(postId,list=>setComs(list||[]));
+    return ()=>{unR&&unR();unC&&unC();};
+  },[postId]);
+
+  async function reagir(emoji){await albumToggleReact(postId,emoji);}
+
+  async function comentar(){
+    const t=texto.trim();if(!t||enviando)return;
+    if(!meuNome){setAberto(true);return;} // sem nickname, não envia
+    setEnviando(true);
+    const ok=await albumAddComment(postId,meuNome,t);
+    setEnviando(false);
+    if(ok)setTexto('');
+  }
+
+  async function apagar(msgId){await albumDeleteComment(postId,msgId);}
+
+  const nComs=coms.length;
+  function quando(ts){
+    if(!ts||!ts.seconds)return 'agora';
+    const d=Math.floor(Date.now()/1000-ts.seconds);
+    if(d<60)return 'agora';
+    if(d<3600)return Math.floor(d/60)+'min';
+    if(d<86400)return Math.floor(d/3600)+'h';
+    return Math.floor(d/86400)+'d';
+  }
+
+  return(
+    <div style={{borderTop:'1px solid var(--gold-dim)',padding:'8px 12px 10px'}}>
+      {/* Barra de reações */}
+      <div style={{display:'flex',flexWrap:'wrap',gap:5,alignItems:'center'}}>
+        {ALBUM_REACTS_DISP.map(e=>{
+          const n=reacts[e]||0;
+          const eu=minha===e;
+          return(
+            <button key={e} onClick={()=>reagir(e)}
+              style={{fontSize:'.8rem',padding:'3px 8px',borderRadius:12,cursor:'pointer',
+                border:`1px solid ${eu?'var(--gold)':'var(--gold-dim)'}`,
+                background:eu?'rgba(201,162,39,0.25)':'rgba(0,0,0,0.25)',
+                color:'var(--parchment)',display:'flex',alignItems:'center',gap:3}}>
+              <span>{e}</span>{n>0&&<span style={{fontSize:'.66rem',color:eu?'var(--gold)':'var(--parchment-dark)'}}>{n}</span>}
+            </button>
+          );
+        })}
+        <button onClick={()=>setAberto(v=>!v)}
+          style={{marginLeft:'auto',fontSize:'.68rem',padding:'3px 10px',borderRadius:12,cursor:'pointer',
+            border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.25)',color:'var(--parchment-dark)'}}>
+          💬 {nComs>0?nComs:''} Comentário{nComs!==1?'s':''}
+        </button>
+      </div>
+
+      {/* Seção de comentários (abre ao clicar) */}
+      {aberto&&(
+        <div style={{marginTop:10}}>
+          {!meuNome&&(
+            <div style={{fontSize:'.68rem',color:'#ff9090',marginBottom:6}}>
+              Defina seu nome de Mestre no perfil para poder comentar.
+            </div>
+          )}
+          <div style={{display:'flex',gap:6}}>
+            <input value={texto} onChange={e=>setTexto(e.target.value)}
+              onKeyDown={e=>{if(e.key==='Enter')comentar();}}
+              placeholder={meuNome?`Comentar como ${meuNome}...`:'Defina um nome no perfil primeiro'}
+              maxLength={500} disabled={!meuNome}
+              style={{flex:1,padding:'7px 10px',borderRadius:4,border:'1px solid var(--gold-dim)',
+                background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.76rem',opacity:meuNome?1:0.5}}/>
+            <button className="btn btn-sm" onClick={comentar} disabled={!texto.trim()||enviando||!meuNome}
+              style={{opacity:(texto.trim()&&!enviando&&meuNome)?1:0.4}}>{enviando?'...':'Enviar'}</button>
+          </div>
+          <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:6}}>
+            {coms.length===0?(
+              <div style={{fontSize:'.7rem',color:'var(--parchment-dark)',textAlign:'center',padding:'6px 0'}}>
+                Nenhum comentário ainda. Seja o primeiro!
+              </div>
+            ):coms.map(c=>(
+              <div key={c.id} style={{background:'rgba(0,0,0,0.25)',borderRadius:6,padding:'6px 10px',
+                display:'flex',gap:8,alignItems:'flex-start'}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:'.7rem',color:'var(--gold)',fontFamily:'Cinzel,serif',marginBottom:1}}>
+                    {c.nome||'Anônimo'} <span style={{color:'var(--parchment-dark)',fontFamily:'inherit',fontSize:'.6rem'}}>· {quando(c.ts)}</span>
+                  </div>
+                  <div style={{fontSize:'.78rem',color:'var(--parchment)',wordBreak:'break-word',whiteSpace:'pre-wrap'}}>{c.txt}</div>
+                </div>
+                {c.dev===meuDev&&(
+                  <button onClick={()=>apagar(c.id)} title="Apagar meu comentário"
+                    style={{background:'none',border:'none',color:'var(--parchment-dark)',cursor:'pointer',
+                      fontSize:'.7rem',padding:'2px 4px',flexShrink:0}}>✕</button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ComicAlbumScreen({onNavigate,profile}){
   const[search,setSearch]=useState('');
   const[activeTag,setActiveTag]=useState(null); // {tipo:'personagem'|'autor', valor}
   const[viewer,setViewer]=useState(null); // {post, pageIdx} quando abre uma página em tela cheia
@@ -5038,6 +5237,9 @@ function ComicAlbumScreen({onNavigate}){
                     style={{fontSize:'.64rem',padding:'2px 8px',borderRadius:10,cursor:'pointer',border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.25)',color:'var(--gold)'}}>👤 {c}</button>
                 ))}
               </div>
+
+              {/* Reações + comentários (salvos em localStorage) */}
+              <ComicSocial postId={post.id} profile={profile}/>
             </div>
           );
         })}
@@ -5279,7 +5481,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.52</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.54</p>
       </div>
     </div>
   );
@@ -15714,7 +15916,7 @@ function App(){
   if(screen==='ressonancia')return <RessonanciaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='shop')return <ShopScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='gacha')return <GachaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
-  if(screen==='comics')return <ComicAlbumScreen onNavigate={navigate}/>;
+  if(screen==='comics')return <ComicAlbumScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='achievements')return <AchievementsScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='ranking')return <RankingScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='codex')return <CodexScreen onNavigate={navigate} profile={profile}/>;
