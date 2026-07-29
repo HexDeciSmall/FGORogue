@@ -637,6 +637,44 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
   background:radial-gradient(ellipse at 50% 60%,rgba(140,40,200,.28),rgba(80,10,140,.18) 50%,transparent 78%);
   mix-blend-mode:screen;animation:poisonPulse 2.4s ease-in-out infinite}
 @keyframes poisonPulse{0%,100%{opacity:.5}50%{opacity:.95}}
+/* ═══ CARTÃO DE MESTRE (perfil estético) ═══ */
+@keyframes mestreGlow{0%,100%{opacity:.5}50%{opacity:.85}}
+@keyframes mestreShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.mestre-card{position:relative;border-radius:16px;overflow:hidden;margin-bottom:20px;
+  background:
+    radial-gradient(circle at 78% 8%,rgba(201,162,39,.20),transparent 42%),
+    radial-gradient(circle at 12% 96%,rgba(192,57,43,.16),transparent 46%),
+    linear-gradient(160deg,#241120 0%,#150a1a 55%,#0d0710 100%);
+  border:1px solid transparent;
+  background-clip:padding-box;
+  box-shadow:0 10px 40px rgba(0,0,0,.55),inset 0 1px 0 rgba(201,162,39,.15);}
+.mestre-card::before{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;
+  background:linear-gradient(140deg,rgba(201,162,39,.7),rgba(201,162,39,.05) 30%,rgba(192,57,43,.4) 70%,rgba(201,162,39,.6));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
+.mestre-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,240,190,.6),transparent);
+  animation:mestreGlow 4s ease-in-out infinite;}
+.mestre-avatar{position:relative;width:104px;height:104px;flex-shrink:0;cursor:pointer;
+  border-radius:50%;padding:0;border:none;background:none;}
+.mestre-avatar .ring{position:absolute;inset:-5px;border-radius:50%;
+  background:conic-gradient(from 0deg,#c9a227,#fff3b0,#8b6914,#c9a227,#e05a4a,#c9a227);
+  animation:mestreGlow 5s ease-in-out infinite;}
+.mestre-avatar .inner{position:absolute;inset:0;border-radius:50%;overflow:hidden;
+  border:3px solid #150a1a;background:rgba(0,0,0,.5);}
+.mestre-avatar .cam{position:absolute;bottom:-2px;right:-2px;width:30px;height:30px;border-radius:50%;
+  background:#150a1a;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:.8rem;}
+.mestre-orn{display:flex;align-items:center;gap:10px;margin:2px 0 14px;color:var(--gold-dim);}
+.mestre-orn .line{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent);}
+.mestre-pill{font-size:.72rem;font-family:'Cinzel',serif;border-radius:20px;padding:4px 13px;
+  display:inline-flex;align-items:center;gap:5px;letter-spacing:.5px;}
+.mestre-shortcut{flex:1;display:flex;align-items:center;gap:11px;padding:14px 15px;cursor:pointer;
+  border-radius:12px;transition:transform .15s,box-shadow .15s,border-color .15s;
+  background:linear-gradient(150deg,rgba(201,162,39,.09),rgba(20,10,26,.4));
+  border:1px solid var(--gold-dim);}
+.mestre-shortcut:hover{transform:translateY(-2px);border-color:var(--gold);
+  box-shadow:0 6px 20px rgba(201,162,39,.18);}
+.mestre-shortcut .ico{font-size:1.7rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));}
 </style>
 </head>
 <body>
@@ -6950,8 +6988,6 @@ function MenuScreen({onNavigate,profile}){
     ['chat','💬','Bate-Papo',''],
     ['jogos','🎰','Jogos & Apostas',''],
     ['profile','📜','Perfil',''],
-    ['shop','🏪','Loja de Perks',''],
-    ['achievements','🏆','Conquistas',''],
     ['ranking','🌐','Ranking Online',''],
     ['codex','📖','Informações',''],
     ['config','⚙️','Configurações',''],
@@ -7006,7 +7042,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.60</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.62</p>
       </div>
     </div>
   );
@@ -8000,7 +8036,7 @@ function AchievementsScreen({onNavigate,profile}){
         </p>
         {challenges.map(renderAch)}
 
-        <button className="btn btn-full" style={{marginTop:16}} onClick={()=>onNavigate('menu')}>← Voltar</button>
+        <button className="btn btn-full" style={{marginTop:16}} onClick={()=>onNavigate('profile')}>← Voltar ao Perfil</button>
       </div>
     </div>
   );
@@ -8480,35 +8516,89 @@ function ProfileScreen({onNavigate,profile,setProfile}){
     <div className="screen" style={{padding:'20px 12px'}}>
       {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
       <div className="panel" style={{maxWidth:720}}>
-        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:16}}>✦ PERFIL ✦</h2>
 
-        {/* Foto de perfil + nome, lado a lado */}
-        <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:20}}>
-          <button onClick={()=>setPicker(true)} title="Trocar foto de perfil"
-            style={{position:'relative',width:76,height:76,borderRadius:'50%',flexShrink:0,cursor:'pointer',
-              overflow:'hidden',border:'2px solid var(--gold)',background:'rgba(0,0,0,0.35)',padding:0}}>
-            {avatarServo?(
-              <RessonanciaRetrato art={avatarServo.art} patronoArt={avatarServo.patronoArt} emoji={avatarServo.emoji} size={76}/>
-            ):(
-              <span style={{fontSize:'2rem',color:'var(--gold-dim)',display:'flex',width:'100%',height:'100%',alignItems:'center',justifyContent:'center'}}>👤</span>
-            )}
-            <span style={{position:'absolute',bottom:0,right:0,left:0,fontSize:'.5rem',letterSpacing:1,
-              background:'rgba(0,0,0,0.7)',color:'var(--gold)',padding:'2px 0',textAlign:'center'}}>TROCAR</span>
-          </button>
-          <div style={{flex:1,minWidth:0}}>
-            <label style={{fontSize:'.75rem',color:'var(--parchment-dark)',letterSpacing:2}}>NICKNAME DO MESTRE</label>
-            <div style={{display:'flex',gap:8,marginTop:6}}>
+        {/* ═══ CARTÃO DE MESTRE ═══ */}
+        <div className="mestre-card">
+          <div style={{position:'relative',padding:'24px 20px 20px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:18}}>
+              {/* foto com anel giratório */}
+              <button className="mestre-avatar" onClick={()=>setPicker(true)} title="Trocar foto de perfil">
+                <span className="ring"/>
+                <span className="inner">
+                  {avatarServo?(
+                    <RessonanciaRetrato art={avatarServo.art} patronoArt={avatarServo.patronoArt} emoji={avatarServo.emoji} size={104}/>
+                  ):(
+                    <span style={{fontSize:'2.6rem',color:'var(--gold-dim)',display:'flex',width:'100%',height:'100%',alignItems:'center',justifyContent:'center'}}>👤</span>
+                  )}
+                </span>
+                <span className="cam">📷</span>
+              </button>
+              {/* nome + nível */}
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:'.56rem',color:'var(--gold-dim)',letterSpacing:4,marginBottom:4,fontFamily:'Cinzel,serif'}}>◈ MESTRE DO CALDEIRÃO ◈</div>
+                <div className="cinzel" style={{color:'var(--parchment)',fontSize:'1.6rem',lineHeight:1.05,
+                  textShadow:'0 2px 12px rgba(201,162,39,0.3)',wordBreak:'break-word',
+                  background:'linear-gradient(90deg,#fff3b0,#c9a227)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                  {profile.nickname||'Sem nome'}
+                </div>
+                {(() => {
+                  const magus=profile.magus||{level:1,xp:0};
+                  const max=magus.level>=MAGUS_MAX_LEVEL;
+                  const req=magusXpToNext(magus.level);
+                  const pct=max?100:clamp((magus.xp/req)*100,0,100);
+                  return(
+                    <div style={{marginTop:9}}>
+                      <div style={{display:'flex',justifyContent:'space-between',fontSize:'.6rem',color:'#e6c34c',marginBottom:3,fontFamily:'Cinzel,serif',letterSpacing:.5}}>
+                        <span>👑 MESTRE Nv.{magus.level}{max?' · MAX':''}</span>
+                        {!max&&<span style={{color:'var(--parchment-dark)'}}>{magus.xp} / {req}</span>}
+                      </div>
+                      <div style={{height:7,borderRadius:4,background:'rgba(0,0,0,0.5)',overflow:'hidden',border:'1px solid rgba(230,195,76,0.25)'}}>
+                        <div style={{height:'100%',width:`${pct}%`,borderRadius:4,background:'linear-gradient(90deg,#8a6d00,#e6c34c,#fff3b0)',boxShadow:'0 0 8px rgba(230,195,76,0.5)'}}/>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* divisória ornamental */}
+            <div className="mestre-orn"><span className="line"/><span style={{fontSize:'.7rem'}}>❖</span><span className="line"/></div>
+
+            {/* moedas em pílulas */}
+            <div style={{display:'flex',gap:9,justifyContent:'center',flexWrap:'wrap',marginBottom:14}}>
+              <span className="mestre-pill" style={{color:'var(--gold)',background:'rgba(201,162,39,0.13)',border:'1px solid var(--gold-dim)'}}>💎 {(profile.sq||0).toLocaleString()} SQ</span>
+              <span className="mestre-pill" style={{color:'#4fc3f7',background:'rgba(79,195,247,0.1)',border:'1px solid rgba(79,195,247,0.35)'}}>🪙 {(profile.qp||0).toLocaleString()} QP</span>
+              {(() => {const gs=profile.gameStats||{};const v=(gs.blackjack?.v||0)+(gs.xadrez?.v||0);return v>0?(
+                <span className="mestre-pill" style={{color:'var(--parchment)',background:'rgba(255,255,255,0.05)',border:'1px solid var(--gold-dim)'}}>🏆 {v} vitória{v!==1?'s':''}</span>
+              ):null;})()}
+            </div>
+
+            {/* editar nome */}
+            <div style={{display:'flex',gap:8}}>
               <input value={nick} onChange={e=>setNick(e.target.value)}
-                style={{flex:1,minWidth:0,background:'rgba(0,0,0,0.4)',border:'1px solid var(--gold-dim)',color:'var(--white)',padding:'8px 12px',borderRadius:2,fontFamily:'Crimson Text,serif',fontSize:'1rem'}}
-                placeholder="Digite seu nome..." maxLength={24}/>
+                style={{flex:1,minWidth:0,background:'rgba(0,0,0,0.45)',border:'1px solid var(--gold-dim)',color:'var(--parchment)',padding:'9px 13px',borderRadius:8,fontFamily:'Crimson Text,serif',fontSize:'.95rem'}}
+                placeholder="Digite seu nome de Mestre..." maxLength={24}/>
               <button className="btn btn-sm" onClick={save}>Salvar</button>
             </div>
-            {avatarServo&&(
-              <div style={{fontSize:'.62rem',color:'var(--parchment-dark)',marginTop:5}}>
-                Foto: {avatarServo.nome}
-              </div>
-            )}
           </div>
+        </div>
+
+        {/* Atalhos: Loja e Conquistas */}
+        <div style={{display:'flex',gap:12,marginBottom:20}}>
+          <button className="mestre-shortcut" onClick={()=>onNavigate('shop')}>
+            <span className="ico">🏪</span>
+            <div style={{textAlign:'left',flex:1}}>
+              <div className="cinzel" style={{color:'var(--gold)',fontSize:'.88rem'}}>Loja de Perks</div>
+              <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>Melhorias permanentes</div>
+            </div>
+          </button>
+          <button className="mestre-shortcut" onClick={()=>onNavigate('achievements')}>
+            <span className="ico">🏆</span>
+            <div style={{textAlign:'left',flex:1}}>
+              <div className="cinzel" style={{color:'var(--gold)',fontSize:'.88rem'}}>Conquistas</div>
+              <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>Seus feitos e troféus</div>
+            </div>
+          </button>
         </div>
 
         {/* Seletor de foto de perfil (modal) */}
@@ -8558,31 +8648,7 @@ function ProfileScreen({onNavigate,profile,setProfile}){
           </div>
         )}
 
-        {/* Nível de Mestre — EXP Magus */}
-        <div style={{background:'rgba(230,195,76,0.08)',border:'1px solid #e6c34c',borderRadius:3,padding:14,marginBottom:16}}>
-          <div className="cinzel" style={{color:'#e6c34c',fontSize:'.8rem',letterSpacing:2,marginBottom:8}}>👑 NÍVEL DE MESTRE</div>
-          {(() => {
-            const magus=profile.magus||{level:1,xp:0};
-            if(magus.level>=MAGUS_MAX_LEVEL)return(
-              <div style={{fontSize:'.8rem',color:'#e6c34c',fontFamily:'Cinzel,serif',letterSpacing:1}}>Mestre Nv.{MAGUS_MAX_LEVEL} — MAX</div>
-            );
-            const req=magusXpToNext(magus.level);
-            const pct=clamp((magus.xp/req)*100,0,100);
-            return(
-              <div>
-                <div className="bar-label"><span>Mestre Nv.{magus.level}</span><span>{magus.xp}/{req} EXP Magus</span></div>
-                <div className="bar-track" style={{height:8}}>
-                  <div className="bar-fill" style={{width:`${pct}%`,background:'linear-gradient(90deg,#8a6d00,#e6c34c,#fff3b0)'}}/>
-                </div>
-              </div>
-            );
-          })()}
-          <div style={{fontSize:'.62rem',color:'var(--parchment-dark)',marginTop:6}}>
-            Ganho em Campanha e Torre: +{MAGUS_XP_COMBAT} EXP por combate · +{MAGUS_XP_BOSS} EXP por boss · +{MAGUS_XP_RUN_COMPLETE} EXP ao finalizar a run
-          </div>
-        </div>
-
-        {/* Banco de Moedas */}
+        {/* Banco de Moedas (detalhado) */}
         <div style={{background:'rgba(201,162,39,0.08)',border:'1px solid var(--gold-dim)',borderRadius:3,padding:14,marginBottom:16}}>
           <div className="cinzel" style={{color:'var(--gold)',fontSize:'.8rem',letterSpacing:2,marginBottom:8}}>🏦 BANCO DO MESTRE</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
@@ -8598,6 +8664,7 @@ function ProfileScreen({onNavigate,profile,setProfile}){
             </div>
           </div>
         </div>
+
 
         {/* Estatísticas da jornada */}
         <div style={{background:'rgba(120,40,40,0.08)',border:'1px solid var(--red)',borderRadius:3,padding:14,marginBottom:16}}>
@@ -9200,7 +9267,7 @@ function ShopScreen({onNavigate,profile,setProfile}){
           <div>🏆 Run Completa: <strong style={{color:'#4fc3f7'}}>+500 QP</strong></div>
         </div>
 
-        <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar ao Menu</button>
+        <button className="btn btn-full" onClick={()=>onNavigate('profile')}>← Voltar ao Perfil</button>
       </div>
     </div>
   );
