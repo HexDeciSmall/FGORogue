@@ -1402,6 +1402,52 @@ async function xdCancelarMesa(id,moeda,aposta){
 function chInimigo2(c){return c==='w'?'b':'w';}
 
 // ══════════════════════════════════════════════════════
+// PLACAR DE JOGOS — vitórias/derrotas/empates nos mini-games
+// Local (profile.gameStats) para exibição rápida no perfil; e global no Firestore
+// (coleção jogos_placar/<deviceId>) para o ranking de quem mais venceu.
+// Estrutura local: profile.gameStats = { blackjack:{v,d,e}, xadrez:{v,d,e} }
+
+// Registra o resultado de uma partida no profile e sincroniza o total no Firestore.
+// resultado: 'v' (vitória) | 'd' (derrota) | 'e' (empate)
+async function registrarResultadoJogo(jogo,resultado){
+  // 1) atualiza local (atômico via loadProfile)
+  const p=loadProfile();
+  const gs=p.gameStats||{};
+  const atual=gs[jogo]||{v:0,d:0,e:0};
+  atual[resultado]=(atual[resultado]||0)+1;
+  const novo={...p,gameStats:{...gs,[jogo]:atual}};
+  saveProfile(novo);
+  // 2) sincroniza total no Firestore (para o ranking global)
+  if(fbDb){
+    try{
+      const id=getOrCreateDeviceId();
+      const ns=novo.gameStats;
+      const totalV=(ns.blackjack?.v||0)+(ns.xadrez?.v||0);
+      const totalPartidas=Object.values(ns).reduce((s,x)=>s+(x.v||0)+(x.d||0)+(x.e||0),0);
+      await fbDb.collection('jogos_placar').doc(id).set({
+        nome:(novo.nickname||'Anônimo').trim().slice(0,28)||'Anônimo',
+        avatar:novo.avatar||null,
+        blackjackV:ns.blackjack?.v||0, blackjackD:ns.blackjack?.d||0,
+        xadrezV:ns.xadrez?.v||0, xadrezD:ns.xadrez?.d||0,
+        totalV, totalPartidas,
+        ts:firebase.firestore.FieldValue.serverTimestamp(),
+      },{merge:true});
+    }catch(e){console.error('placar jogos',e);}
+  }
+  return novo;
+}
+
+// Busca o ranking global de vitórias. tipo: 'total'|'blackjack'|'xadrez'
+async function fetchPlacarJogos(tipo='total',max=20){
+  if(!fbDb)return [];
+  const campo=tipo==='blackjack'?'blackjackV':tipo==='xadrez'?'xadrezV':'totalV';
+  try{
+    const snap=await fbDb.collection('jogos_placar').orderBy(campo,'desc').limit(max).get();
+    return snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>(x[campo]||0)>0);
+  }catch(e){console.error('fetch placar',e);return [];}
+}
+
+// ══════════════════════════════════════════════════════
 // DADOS E FÓRMULAS
 // ══════════════════════════════════════════════════════
 
@@ -5074,7 +5120,7 @@ const SAVE_KEY='oni_tactics_profile';
 const BOND_KEY=id=>`oni_tactics_bond_${id}`;
 
 function loadProfile(){
-  const def={nickname:'',avatar:null,sq:0,qp:0,qinDefeats:0,advSkillsUnlocked:false,deviceId:null,
+  const def={nickname:'',avatar:null,gameStats:{},sq:0,qp:0,qinDefeats:0,advSkillsUnlocked:false,deviceId:null,
     stats:{runs:0,enemiesDefeated:0,highestDamage:0},
     magus:{level:1,xp:0}, // EXP Magus — nível do Mestre (jogador), separado do XP dos Servos
     achievements:{}, // id da conquista → true quando concedida (recompensa já paga)
@@ -5613,12 +5659,29 @@ function XPBar({xpState}){
 // ══════════════════════════════════════════════════════
 // ÁLBUM DE TRADUÇÃO — tela do feed (rede social)
 // ══════════════════════════════════════════════════════
-// Portal de Jogos & Apostas — reúne os mini-games num só lugar.
+// Portal de Jogos & Apostas — reúne os mini-games e o ranking de vitórias.
 function JogosScreen({onNavigate,profile}){
+  const[aba,setAba]=useState('jogar'); // jogar | ranking
+  const[tipoRank,setTipoRank]=useState('total'); // total | blackjack | xadrez
+  const[placar,setPlacar]=useState(null);
+  const[carregando,setCarregando]=useState(false);
+  const meuDev=(typeof getOrCreateDeviceId==='function')?getOrCreateDeviceId():null;
+
   const jogos=[
     {nav:'blackjack',icon:'🃏',nome:'Blackjack 21',desc:'Duelo 1x1 de cartas. Chegue a 21 sem estourar e leve o pote.'},
     {nav:'xadrez',   icon:'♟️',nome:'Xadrez',       desc:'Partida completa 1x1, com todas as regras. Xeque-mate vence a aposta.'},
   ];
+
+  // carrega o ranking quando entra na aba ou muda o tipo
+  useEffect(()=>{
+    if(aba!=='ranking')return;
+    setCarregando(true);
+    fetchPlacarJogos(tipoRank,30).then(r=>{setPlacar(r);setCarregando(false);});
+  },[aba,tipoRank]);
+
+  const gs=profile.gameStats||{};
+  const totalV=(gs.blackjack?.v||0)+(gs.xadrez?.v||0);
+
   return(
     <div className="screen" style={{padding:'16px 10px',alignItems:'flex-start'}}>
       <div style={{maxWidth:520,width:'100%',margin:'0 auto'}}>
@@ -5630,21 +5693,79 @@ function JogosScreen({onNavigate,profile}){
           <div style={{display:'flex',gap:14,marginTop:8,fontSize:'.7rem'}}>
             <span style={{color:'var(--gold)'}}>💎 {(profile.sq||0).toLocaleString()} SQ</span>
             <span style={{color:'#4fc3f7'}}>🪙 {(profile.qp||0).toLocaleString()} QP</span>
+            <span style={{color:'var(--parchment)'}}>🏆 {totalV} vitória{totalV!==1?'s':''}</span>
           </div>
         </div>
-        {jogos.map(j=>(
-          <button key={j.nav} onClick={()=>onNavigate(j.nav)}
-            style={{display:'flex',alignItems:'center',gap:14,width:'100%',textAlign:'left',
-              padding:'16px 16px',marginBottom:10,cursor:'pointer',borderRadius:10,
-              background:'rgba(201,162,39,0.06)',border:'1px solid var(--gold-dim)'}}>
-            <span style={{fontSize:'2.2rem',flexShrink:0}}>{j.icon}</span>
-            <div style={{flex:1,minWidth:0}}>
-              <div className="cinzel" style={{color:'var(--gold)',fontSize:'1.05rem'}}>{j.nome}</div>
-              <div style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:2}}>{j.desc}</div>
+
+        {/* Abas */}
+        <div style={{display:'flex',gap:8,marginBottom:12}}>
+          <button className="btn btn-sm" style={{flex:1,opacity:aba==='jogar'?1:0.5,border:aba==='jogar'?'1px solid var(--gold)':undefined}} onClick={()=>setAba('jogar')}>🎮 Jogar</button>
+          <button className="btn btn-sm" style={{flex:1,opacity:aba==='ranking'?1:0.5,border:aba==='ranking'?'1px solid var(--gold)':undefined}} onClick={()=>setAba('ranking')}>🏆 Ranking</button>
+        </div>
+
+        {aba==='jogar'?(
+          <>
+            {jogos.map(j=>{
+              const s=gs[j.nav]||{v:0,d:0,e:0};
+              return(
+                <button key={j.nav} onClick={()=>onNavigate(j.nav)}
+                  style={{display:'flex',alignItems:'center',gap:14,width:'100%',textAlign:'left',
+                    padding:'16px 16px',marginBottom:10,cursor:'pointer',borderRadius:10,
+                    background:'rgba(201,162,39,0.06)',border:'1px solid var(--gold-dim)'}}>
+                  <span style={{fontSize:'2.2rem',flexShrink:0}}>{j.icon}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="cinzel" style={{color:'var(--gold)',fontSize:'1.05rem'}}>{j.nome}</div>
+                    <div style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:2}}>{j.desc}</div>
+                    <div style={{fontSize:'.64rem',color:'var(--parchment)',marginTop:4}}>
+                      🏆 {s.v||0}V · {s.d||0}D · {s.e||0}E
+                    </div>
+                  </div>
+                  <span style={{color:'var(--gold-dim)',fontSize:'1.4rem'}}>›</span>
+                </button>
+              );
+            })}
+          </>
+        ):(
+          <div className="panel" style={{padding:'14px 16px',marginBottom:12}}>
+            {/* filtro de tipo */}
+            <div style={{display:'flex',gap:6,marginBottom:12}}>
+              {[['total','🏆 Geral'],['blackjack','🃏 Blackjack'],['xadrez','♟️ Xadrez']].map(([t,l])=>(
+                <button key={t} className="btn btn-sm" style={{flex:1,fontSize:'.66rem',opacity:tipoRank===t?1:0.5}} onClick={()=>setTipoRank(t)}>{l}</button>
+              ))}
             </div>
-            <span style={{color:'var(--gold-dim)',fontSize:'1.4rem'}}>›</span>
-          </button>
-        ))}
+            {carregando?(
+              <div style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px 0',fontSize:'.8rem'}}>Carregando ranking...</div>
+            ):!placar||placar.length===0?(
+              <div style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px 0',fontSize:'.8rem'}}>
+                Ninguém venceu ainda neste modo.<br/>Seja o primeiro campeão!
+              </div>
+            ):(
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {placar.map((e,i)=>{
+                  const av=e.avatar?RESSONANCIA_SERVOS.find(s=>s.art===e.avatar):null;
+                  const vitorias=tipoRank==='blackjack'?e.blackjackV:tipoRank==='xadrez'?e.xadrezV:e.totalV;
+                  const souEu=e.id===meuDev;
+                  const medalha=i===0?'🥇':i===1?'🥈':i===2?'🥉':null;
+                  return(
+                    <div key={e.id} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 10px',borderRadius:6,
+                      background:souEu?'rgba(201,162,39,0.15)':'rgba(0,0,0,0.22)',
+                      border:'1px solid '+(souEu?'var(--gold)':i<3?'var(--gold-dim)':'rgba(201,162,39,0.15)')}}>
+                      <span style={{minWidth:28,textAlign:'center',fontFamily:'Cinzel,serif',fontSize:medalha?'1.1rem':'.8rem',color:'var(--parchment-dark)'}}>{medalha||i+1}</span>
+                      <div style={{width:32,height:32,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)'}}>
+                        {av?<RessonanciaRetrato art={av.art} patronoArt={av.patronoArt} emoji={av.emoji} size={32}/>:<span style={{fontSize:'.9rem',display:'flex',width:'100%',height:'100%',alignItems:'center',justifyContent:'center'}}>👤</span>}
+                      </div>
+                      <span style={{flex:1,minWidth:0,fontSize:'.8rem',color:souEu?'var(--gold)':'var(--parchment)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                        {e.nome}{souEu?' (você)':''}
+                      </span>
+                      <span style={{fontFamily:'Cinzel,serif',color:'var(--gold)',fontSize:'.85rem'}}>{vitorias}<span style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}> vit</span></span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         <button className="btn btn-full" style={{marginTop:6,marginBottom:20}} onClick={()=>onNavigate('menu')}>← Voltar ao Menu</button>
       </div>
     </div>
@@ -5701,6 +5822,9 @@ function XadrezScreen({onNavigate,profile,setProfile}){
     else if(r.vencedor===minhaCor){ganho=pote;txt=`Você venceu! +${pote} ${mesa.moeda.toUpperCase()}`;}
     else{ganho=0;txt='Você perdeu a aposta.';}
     if(ganho>0){const upd={...loadProfile()};upd[mesa.moeda]=(upd[mesa.moeda]||0)+ganho;saveProfile(upd);setProfile(upd);}
+    // registra no placar (v/d/e)
+    const res=r.vencedor==='empate'?'e':r.vencedor===minhaCor?'v':'d';
+    registrarResultadoJogo('xadrez',res).then(np=>setProfile(np));
     setPago(true);setNotif(txt);
   },[mesa,pago,minhaCor]);
 
@@ -6012,6 +6136,10 @@ function BlackjackScreen({onNavigate,profile,setProfile}){
     if(ganho>0){
       const upd={...loadProfile()};upd[mesa.moeda]=(upd[mesa.moeda]||0)+ganho;saveProfile(upd);setProfile(upd);
     }
+    // registra no placar (v/d/e)
+    const venci=(r.vencedor==='p1'&&souP1)||(r.vencedor==='p2'&&!souP1);
+    const res=r.vencedor==='empate'?'e':venci?'v':'d';
+    registrarResultadoJogo('blackjack',res).then(np=>setProfile(np));
     setPago(true);setNotif(txt);
   },[mesa,pago,souP1]);
 
@@ -6878,7 +7006,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.59</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.60</p>
       </div>
     </div>
   );
@@ -8489,6 +8617,52 @@ function ProfileScreen({onNavigate,profile,setProfile}){
             </div>
           </div>
         </div>
+
+        {/* Placar de Jogos & Apostas */}
+        {(() => {
+          const gs=profile.gameStats||{};
+          const bj=gs.blackjack||{v:0,d:0,e:0}, xd=gs.xadrez||{v:0,d:0,e:0};
+          const totalV=(bj.v||0)+(xd.v||0), totalD=(bj.d||0)+(xd.d||0);
+          const totalJogos=(bj.v||0)+(bj.d||0)+(bj.e||0)+(xd.v||0)+(xd.d||0)+(xd.e||0);
+          const taxa=totalV+totalD>0?Math.round(totalV/(totalV+totalD)*100):0;
+          return(
+            <div style={{background:'rgba(201,162,39,0.08)',border:'1px solid var(--gold-dim)',borderRadius:3,padding:14,marginBottom:16}}>
+              <div className="cinzel" style={{color:'var(--gold)',fontSize:'.8rem',letterSpacing:2,marginBottom:10}}>🎰 JOGOS & APOSTAS</div>
+              {totalJogos===0?(
+                <div style={{fontSize:'.72rem',color:'var(--parchment-dark)',textAlign:'center',padding:'4px 0'}}>
+                  Você ainda não jogou nenhuma partida. Vá ao menu Jogos & Apostas!
+                </div>
+              ):(
+                <>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,textAlign:'center',marginBottom:12}}>
+                    <div>
+                      <div style={{fontSize:'1.5rem',fontFamily:'Cinzel,serif',color:'var(--gold)',letterSpacing:1}}>{totalV}</div>
+                      <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:1,marginTop:2}}>VITÓRIAS</div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:'1.5rem',fontFamily:'Cinzel,serif',color:'var(--parchment)',letterSpacing:1}}>{totalD}</div>
+                      <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:1,marginTop:2}}>DERROTAS</div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:'1.5rem',fontFamily:'Cinzel,serif',color:'var(--parchment)',letterSpacing:1}}>{taxa}%</div>
+                      <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:1,marginTop:2}}>APROVEITAMENTO</div>
+                    </div>
+                  </div>
+                  <div style={{display:'flex',gap:8,fontSize:'.66rem'}}>
+                    <div style={{flex:1,textAlign:'center',padding:'6px 4px',borderRadius:4,background:'rgba(0,0,0,0.2)'}}>
+                      <div style={{color:'var(--parchment)'}}>🃏 Blackjack</div>
+                      <div style={{color:'var(--parchment-dark)',marginTop:2}}>{bj.v||0}V · {bj.d||0}D · {bj.e||0}E</div>
+                    </div>
+                    <div style={{flex:1,textAlign:'center',padding:'6px 4px',borderRadius:4,background:'rgba(0,0,0,0.2)'}}>
+                      <div style={{color:'var(--parchment)'}}>♟️ Xadrez</div>
+                      <div style={{color:'var(--parchment-dark)',marginTop:2}}>{xd.v||0}V · {xd.d||0}D · {xd.e||0}E</div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         <div className="divider"><span className="divider-text">✦ RESSONÂNCIA DO TRONO ✦</span></div>
         {(()=>{
