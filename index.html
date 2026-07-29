@@ -7261,6 +7261,22 @@ function ComicAlbumScreen({onNavigate,profile}){
   const[enviar,setEnviar]=useState(false); // modal de envio aberto?
   const[editando,setEditando]=useState(null); // post sendo editado
   const[menuAberto,setMenuAberto]=useState(null); // id do post com menu ⋯ aberto
+  const[mostrarTopo,setMostrarTopo]=useState(false); // botão "subir ao topo" visível?
+
+  // Mostra o botão de subir quando rola bastante para baixo
+  useEffect(()=>{
+    const onScroll=()=>{
+      const y=window.scrollY||document.documentElement.scrollTop||0;
+      setMostrarTopo(y>400);
+    };
+    window.addEventListener('scroll',onScroll,{passive:true});
+    onScroll();
+    return ()=>window.removeEventListener('scroll',onScroll);
+  },[]);
+  function subirTopo(){
+    window.scrollTo({top:0,behavior:'smooth'});
+    document.documentElement.scrollTo({top:0,behavior:'smooth'});
+  }
   const[ordem,setOrdem]=useState('recentes'); // recentes | reacoes | favoritos
   const[favoritos,setFavoritos]=useState(()=>{try{return JSON.parse(localStorage.getItem('fate_album_favs')||'[]');}catch{return [];}});
   const[reactCounts,setReactCounts]=useState({}); // {postId: totalReacoes} para ordenar
@@ -7345,11 +7361,28 @@ function ComicAlbumScreen({onNavigate,profile}){
   }
 
   return(
-    <div className="screen" style={{padding:'16px 10px',alignItems:'flex-start'}}>
+    <div className="screen" style={{padding:'16px 10px',alignItems:'flex-start',justifyContent:'flex-start'}}>
       {enviar&&<EnviarTraducaoModal profile={profile} onFechar={()=>setEnviar(false)}
         onPronto={()=>{setEnviar(false);}}/>}
       {editando&&<EditarPostModal post={editando} onFechar={()=>setEditando(null)}
         onSalvo={()=>setEditando(null)}/>}
+      {/* Botão de voltar fixo no topo */}
+      <button onClick={()=>onNavigate('menu')} title="Voltar ao menu"
+        style={{position:'sticky',top:8,alignSelf:'flex-start',zIndex:40,marginBottom:8,
+          display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:20,cursor:'pointer',
+          background:'rgba(20,10,26,0.85)',border:'1px solid var(--gold-dim)',color:'var(--gold)',
+          fontFamily:'Cinzel,serif',fontSize:'.72rem',backdropFilter:'blur(6px)'}}>
+        ← Voltar
+      </button>
+      {/* Botão flutuante: subir ao topo */}
+      {mostrarTopo&&(
+        <button onClick={subirTopo} title="Subir ao topo"
+          style={{position:'fixed',bottom:20,right:20,zIndex:50,width:46,height:46,borderRadius:'50%',
+            display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'1.3rem',
+            background:'var(--gold)',border:'none',color:'#1a1008',boxShadow:'0 4px 16px rgba(0,0,0,0.5)'}}>
+          ↑
+        </button>
+      )}
       <div style={{maxWidth:560,width:'100%',margin:'0 auto'}}>
         {/* Cabeçalho */}
         <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
@@ -7785,7 +7818,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.73</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.74</p>
       </div>
     </div>
   );
