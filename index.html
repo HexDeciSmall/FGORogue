@@ -7628,6 +7628,15 @@ function MenuScreen({onNavigate,profile}){
         <h1 className="menu-title">FGO ROGUE</h1>
         <p className="menu-subtitle">Hyakki Yagyō</p>
         <p className="menu-kanji">百 鬼 夜 行</p>
+        {!profile.nickname&&(
+          <button onClick={()=>onNavigate('profile')}
+            style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,margin:'0 auto 4px',
+              cursor:'pointer',borderRadius:10,padding:'10px 18px',
+              background:'rgba(201,162,39,0.1)',border:'1px solid var(--gold)',color:'var(--gold)',
+              fontFamily:'Cinzel,serif',fontSize:'.82rem',letterSpacing:1}}>
+            👤 Criar perfil de Mestre
+          </button>
+        )}
         {profile.nickname&&(
           <div className="menu-master" onClick={()=>onNavigate('profile')} title="Abrir perfil"
             style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,flexWrap:'wrap',
@@ -7657,7 +7666,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.70</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.71</p>
       </div>
     </div>
   );
