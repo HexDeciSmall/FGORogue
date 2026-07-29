@@ -5279,7 +5279,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.50</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.51</p>
       </div>
     </div>
   );
@@ -6287,15 +6287,20 @@ function AchievementsScreen({onNavigate,profile}){
 // por fim cai para o emoji grande se nada existir (vários não são jogáveis, sem sprite).
 function RessonanciaRetrato({art,patronoArt,emoji,size=120}){
   // Reaproveita a MESMA função patronoCandidates() usada pelo PatronoIcon (que funciona),
-  // passando um objeto {art} com o nome do arquivo do patrono. Depois tenta a arte própria
-  // da ressonância. Se nada carregar, cai no emoji.
+  // passando um objeto {art} com o nome do arquivo do patrono. Depois procura a arte própria
+  // do Servo tanto em assets/patronos/ (onde as artes novas foram colocadas) quanto em
+  // assets/ressonancia/. Se nada carregar, cai no emoji.
   const cands=[];
   if(patronoArt && typeof patronoCandidates==='function'){
     cands.push(...patronoCandidates({art:patronoArt}));
   } else if(patronoArt){
     cands.push('assets/patronos/'+patronoArt+'.png','assets/patrono/'+patronoArt+'.png');
   }
-  if(art){cands.push('assets/ressonancia/'+art+'.png','assets/ressonancia/'+art+'.PNG');}
+  if(art){
+    // tenta o nome do art em ambas as pastas e ambas as extensões
+    for(const dir of ['assets/patronos/','assets/patrono/','assets/ressonancia/'])
+      for(const ext of ['.png','.PNG']) cands.push(dir+art+ext);
+  }
   const[i,setI]=useState(0);
   useEffect(()=>{setI(0);},[art,patronoArt]);
   if(!cands.length||i>=cands.length)return <div style={{width:size,height:size,borderRadius:8,flexShrink:0,
