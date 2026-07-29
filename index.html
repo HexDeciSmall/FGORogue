@@ -784,6 +784,54 @@ function albumWatchComments(postId,cb){
 }
 
 // ══════════════════════════════════════════════════════
+// BATE-PAPO (Firestore) — salas de chat por tema, em tempo real
+// Estrutura: chat/<canalId>/msgs/<autoId> → { nome, txt, avatar, dev, ts }
+// Canais fixos por tema (adicione/edite à vontade):
+const CHAT_CANAIS=[
+  {id:'geral',    nome:'Geral',        icon:'💬', desc:'Conversa livre sobre tudo'},
+  {id:'fgo',      nome:'FGO & Lore',   icon:'⚜️', desc:'TYPE-MOON, história e teorias'},
+  {id:'traducao', nome:'Traduções',    icon:'📖', desc:'Comics, pedidos e novidades'},
+  {id:'gameplay', nome:'Gameplay',     icon:'⚔️', desc:'Builds, gacha, dicas e desafios'},
+  {id:'offtopic', nome:'Off-topic',    icon:'🎲', desc:'Anime, jogos e o resto da vida'},
+];
+
+// Envia uma mensagem num canal (com nome e foto do perfil do jogador).
+async function chatSend(canalId,nome,txt,avatar){
+  if(!fbDb)return false;
+  try{
+    const dev=getOrCreateDeviceId();
+    await fbDb.collection('chat').doc(canalId).collection('msgs').add({
+      nome:(nome||'Anônimo').trim().slice(0,28)||'Anônimo',
+      txt:txt.trim().slice(0,1000),
+      avatar:avatar||null,
+      dev,
+      ts:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return true;
+  }catch(e){console.error('Erro ao enviar mensagem:',e);return false;}
+}
+
+// Apaga uma mensagem (a UI só oferece isso para o próprio autor).
+async function chatDelete(canalId,msgId){
+  if(!fbDb)return false;
+  try{
+    await fbDb.collection('chat').doc(canalId).collection('msgs').doc(msgId).delete();
+    return true;
+  }catch(e){console.error('Erro ao apagar mensagem:',e);return false;}
+}
+
+// Observa (tempo real) as últimas mensagens de um canal, em ordem cronológica.
+function chatWatch(canalId,cb,limite=200){
+  if(!fbDb){cb([]);return ()=>{};}
+  return fbDb.collection('chat').doc(canalId).collection('msgs')
+    .orderBy('ts','desc').limit(limite).onSnapshot(snap=>{
+      // vem do mais novo pro mais antigo; invertemos pra exibir cronológico
+      const msgs=snap.docs.map(d=>({id:d.id,...d.data()})).reverse();
+      cb(msgs);
+    },e=>console.error('watch chat',e));
+}
+
+// ══════════════════════════════════════════════════════
 // DADOS E FÓRMULAS
 // ══════════════════════════════════════════════════════
 
@@ -4995,6 +5043,147 @@ function XPBar({xpState}){
 // ══════════════════════════════════════════════════════
 // ÁLBUM DE TRADUÇÃO — tela do feed (rede social)
 // ══════════════════════════════════════════════════════
+// Tela de Bate-Papo: lista de canais por tema; entrar num canal abre a sala de chat
+// em tempo real (Firestore), usando nome e foto do perfil do jogador.
+function ChatScreen({onNavigate,profile}){
+  const[canal,setCanal]=useState(null); // canal aberto (objeto) ou null = lista
+  const[msgs,setMsgs]=useState([]);
+  const[texto,setTexto]=useState('');
+  const[enviando,setEnviando]=useState(false);
+  const fimRef=useRef(null);
+  const meuDev=(typeof getOrCreateDeviceId==='function')?getOrCreateDeviceId():null;
+  const meuNome=(profile&&profile.nickname)?profile.nickname:'';
+  const meuAvatar=(profile&&profile.avatar)?profile.avatar:null;
+
+  // Assina o canal aberto
+  useEffect(()=>{
+    if(!canal){setMsgs([]);return;}
+    const un=chatWatch(canal.id,list=>setMsgs(list||[]));
+    return ()=>{un&&un();};
+  },[canal]);
+
+  // Rola pro fim quando chegam mensagens novas
+  useEffect(()=>{if(fimRef.current)fimRef.current.scrollIntoView({behavior:'smooth'});},[msgs]);
+
+  async function enviar(){
+    const t=texto.trim();if(!t||enviando||!meuNome)return;
+    setEnviando(true);
+    const ok=await chatSend(canal.id,meuNome,t,meuAvatar);
+    setEnviando(false);
+    if(ok)setTexto('');
+  }
+  async function apagar(id){await chatDelete(canal.id,id);}
+
+  function quando(ts){
+    if(!ts||!ts.seconds)return '';
+    const d=new Date(ts.seconds*1000);
+    return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  }
+
+  // ─── LISTA DE CANAIS ───
+  if(!canal){
+    return(
+      <div className="screen" style={{padding:'16px 10px',alignItems:'flex-start'}}>
+        <div style={{maxWidth:560,width:'100%',margin:'0 auto'}}>
+          <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
+            <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:4}}>💬 BATE-PAPO</h2>
+            <p style={{fontSize:'.72rem',color:'var(--parchment-dark)'}}>
+              Escolha um canal e converse com outros Mestres em tempo real.
+            </p>
+            {!meuNome&&(
+              <p style={{fontSize:'.68rem',color:'#ff9090',marginTop:6}}>
+                Defina seu nome de Mestre no Perfil para poder enviar mensagens.
+              </p>
+            )}
+          </div>
+          {CHAT_CANAIS.map(c=>(
+            <button key={c.id} onClick={()=>setCanal(c)}
+              style={{display:'flex',alignItems:'center',gap:12,width:'100%',textAlign:'left',
+                padding:'12px 14px',marginBottom:8,cursor:'pointer',borderRadius:8,
+                background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)'}}>
+              <span style={{fontSize:'1.6rem',flexShrink:0}}>{c.icon}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div className="cinzel" style={{color:'var(--gold)',fontSize:'.95rem'}}>{c.nome}</div>
+                <div style={{fontSize:'.68rem',color:'var(--parchment-dark)'}}>{c.desc}</div>
+              </div>
+              <span style={{color:'var(--gold-dim)',fontSize:'1.2rem'}}>›</span>
+            </button>
+          ))}
+          <button className="btn btn-full" style={{marginTop:6,marginBottom:20}} onClick={()=>onNavigate('menu')}>← Voltar ao Menu</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── SALA DE CHAT ───
+  return(
+    <div className="screen" style={{padding:'10px',alignItems:'flex-start',height:'100vh'}}>
+      <div style={{maxWidth:560,width:'100%',margin:'0 auto',display:'flex',flexDirection:'column',height:'calc(100vh - 20px)'}}>
+        {/* Cabeçalho do canal */}
+        <div className="panel" style={{padding:'10px 14px',marginBottom:8,display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
+          <button className="btn btn-sm" onClick={()=>setCanal(null)}>←</button>
+          <span style={{fontSize:'1.3rem'}}>{canal.icon}</span>
+          <div style={{flex:1,minWidth:0}}>
+            <div className="cinzel" style={{color:'var(--gold)',fontSize:'.95rem'}}>{canal.nome}</div>
+            <div style={{fontSize:'.62rem',color:'var(--parchment-dark)'}}>{canal.desc}</div>
+          </div>
+        </div>
+
+        {/* Mensagens */}
+        <div className="panel" style={{flex:1,overflowY:'auto',padding:'10px 12px',marginBottom:8,
+          display:'flex',flexDirection:'column',gap:8}}>
+          {msgs.length===0?(
+            <div style={{margin:'auto',textAlign:'center',color:'var(--parchment-dark)',fontSize:'.8rem'}}>
+              Nenhuma mensagem ainda.<br/>Seja o primeiro a falar! 👋
+            </div>
+          ):msgs.map(m=>{
+            const meu=m.dev===meuDev;
+            const av=m.avatar?RESSONANCIA_SERVOS.find(s=>s.art===m.avatar):null;
+            return(
+              <div key={m.id} style={{display:'flex',gap:8,flexDirection:meu?'row-reverse':'row',alignItems:'flex-start'}}>
+                <div style={{width:32,height:32,borderRadius:'50%',overflow:'hidden',flexShrink:0,
+                  border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+                  {av?<RessonanciaRetrato art={av.art} patronoArt={av.patronoArt} emoji={av.emoji} size={32}/>
+                     :<span style={{fontSize:'1rem',display:'flex',width:'100%',height:'100%',alignItems:'center',justifyContent:'center'}}>👤</span>}
+                </div>
+                <div style={{maxWidth:'74%',display:'flex',flexDirection:'column',alignItems:meu?'flex-end':'flex-start'}}>
+                  <div style={{fontSize:'.64rem',color:'var(--gold)',fontFamily:'Cinzel,serif',marginBottom:2}}>
+                    {meu?'Você':m.nome} <span style={{color:'var(--parchment-dark)',fontFamily:'inherit'}}>· {quando(m.ts)}</span>
+                  </div>
+                  <div style={{position:'relative',padding:'7px 11px',borderRadius:10,
+                    background:meu?'rgba(201,162,39,0.16)':'rgba(0,0,0,0.3)',
+                    border:`1px solid ${meu?'var(--gold-dim)':'rgba(201,162,39,0.18)'}`,
+                    color:'var(--parchment)',fontSize:'.82rem',lineHeight:1.4,wordBreak:'break-word',whiteSpace:'pre-wrap'}}>
+                    {m.txt}
+                    {meu&&(
+                      <button onClick={()=>apagar(m.id)} title="Apagar"
+                        style={{marginLeft:8,background:'none',border:'none',color:'var(--parchment-dark)',
+                          cursor:'pointer',fontSize:'.64rem',padding:0}}>✕</button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div ref={fimRef}/>
+        </div>
+
+        {/* Caixa de envio */}
+        <div style={{display:'flex',gap:8,flexShrink:0,marginBottom:4}}>
+          <input value={texto} onChange={e=>setTexto(e.target.value)}
+            onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();enviar();}}}
+            placeholder={meuNome?`Mensagem em #${canal.nome}...`:'Defina um nome no Perfil primeiro'}
+            maxLength={1000} disabled={!meuNome}
+            style={{flex:1,padding:'10px 12px',borderRadius:6,border:'1px solid var(--gold-dim)',
+              background:'rgba(0,0,0,0.35)',color:'var(--parchment)',fontSize:'.85rem',opacity:meuNome?1:0.5}}/>
+          <button className="btn" onClick={enviar} disabled={!texto.trim()||enviando||!meuNome}
+            style={{opacity:(texto.trim()&&!enviando&&meuNome)?1:0.4}}>{enviando?'...':'➤'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Barra de reações + comentários de um post do Álbum, COMPARTILHADOS via Firestore:
 // todos veem as mesmas reações e comentários, sincronizados em tempo real. Os
 // comentários usam o nome (nickname) do perfil do jogador.
@@ -5442,6 +5631,7 @@ function MenuScreen({onNavigate,profile}){
     ['tower','🗼','Torre de Desafios','danger'],
     ['gacha','⛩️','Invocação',''],
     ['comics','📖','Álbum de Tradução',''],
+    ['chat','💬','Bate-Papo',''],
     ['profile','📜','Perfil',''],
     ['shop','🏪','Loja de Perks',''],
     ['achievements','🏆','Conquistas',''],
@@ -5499,7 +5689,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.55</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.56</p>
       </div>
     </div>
   );
@@ -16011,6 +16201,7 @@ function App(){
   if(screen==='shop')return <ShopScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='gacha')return <GachaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='comics')return <ComicAlbumScreen onNavigate={navigate} profile={profile}/>;
+  if(screen==='chat')return <ChatScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='achievements')return <AchievementsScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='ranking')return <RankingScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='codex')return <CodexScreen onNavigate={navigate} profile={profile}/>;
