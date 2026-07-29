@@ -895,12 +895,38 @@ async function githubUpload(cfg,token,caminho,base64,mensagem){
     body:JSON.stringify(body),
   });
   if(!resp.ok){
-    let msg='Erro '+resp.status;
-    try{const j=await resp.json();msg=j.message||msg;}catch{}
+    let msg=githubExplicaErro(resp.status,cfg);
+    try{const j=await resp.json();if(j.message&&resp.status!==404)msg+=' — '+j.message;}catch{}
     throw new Error(msg);
   }
   // URL raw pública (funciona mesmo antes do Pages atualizar)
   return `https://raw.githubusercontent.com/${cfg.dono}/${cfg.repo}/${cfg.branch}/${caminho}`;
+}
+
+// Traduz os códigos de erro do GitHub para mensagens claras em português.
+function githubExplicaErro(status,cfg){
+  if(status===404)return `Repositório "${cfg.dono}/${cfg.repo}" não encontrado. Verifique: (1) o dono e o nome do repositório estão exatamente certos; (2) o token tem permissão de acesso a ESTE repositório (em Fine-grained tokens, o repo precisa estar selecionado com Contents: Read and write).`;
+  if(status===401)return 'Token inválido ou expirado. Gere um novo token no GitHub.';
+  if(status===403)return 'Token sem permissão de escrita. O token precisa de Contents: Read and write neste repositório.';
+  if(status===409||status===422)return 'Conflito ao gravar (branch errado ou arquivo em estado inesperado). Confira se o branch está certo.';
+  return 'Erro '+status;
+}
+
+// Testa se o repositório existe e o token tem acesso. Retorna {ok, msg}.
+async function githubTestar(cfg,token){
+  if(!cfg.dono||!cfg.repo)return {ok:false,msg:'Preencha o dono e o repositório.'};
+  if(!token)return {ok:false,msg:'Token vazio.'};
+  try{
+    const resp=await fetch(`https://api.github.com/repos/${cfg.dono}/${cfg.repo}`,
+      {headers:{Authorization:`token ${token}`,Accept:'application/vnd.github+json'}});
+    if(resp.ok){
+      const j=await resp.json();
+      const perm=j.permissions&&j.permissions.push;
+      if(perm===false)return {ok:false,msg:`Repositório encontrado, mas o token não tem permissão de ESCRITA. Ative Contents: Read and write.`};
+      return {ok:true,msg:`✓ Conectado a ${j.full_name}! Branch padrão: ${j.default_branch}.`};
+    }
+    return {ok:false,msg:githubExplicaErro(resp.status,cfg)};
+  }catch(e){return {ok:false,msg:'Falha de conexão: '+e.message};}
 }
 
 // Salva um post de comic no Firestore (aparece no feed pra todos).
@@ -6780,6 +6806,8 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
   const[senha,setSenha]=useState('');           // senha do cofre
   const[salvarNoCofre,setSalvarNoCofre]=useState(true); // guardar token protegido?
   const[temCofre,setTemCofre]=useState(()=>existeTokenCofre()); // já existe token guardado?
+  const[testeMsg,setTesteMsg]=useState('');    // resultado do teste de conexão
+  const[testando,setTestando]=useState(false);
   const[nomeAutor,setNomeAutor]=useState('');
   const[handle,setHandle]=useState('');
   const[tagAutor,setTagAutor]=useState('');
@@ -6797,12 +6825,30 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
     setArquivos(fs);
   }
 
+  // Testa a conexão com o GitHub (repo + token) antes de enviar.
+  async function testar(){
+    setTesteMsg('');setErro('');
+    let tok='';
+    if(temCofre){
+      if(!senha.trim()){setTesteMsg('⚠ Digite sua senha para testar.');return;}
+      tok=await abrirTokenCofre(senha);
+      if(!tok){setTesteMsg('⚠ Senha incorreta.');return;}
+    }else{
+      if(!token.trim()){setTesteMsg('⚠ Cole o token para testar.');return;}
+      tok=token.trim();
+    }
+    setTestando(true);
+    const r=await githubTestar(cfg,tok);
+    setTestando(false);
+    setTesteMsg((r.ok?'':'⚠ ')+r.msg);
+  }
+
   async function enviar(){
     setErro('');
     if(!cfg.dono||!cfg.repo){setErro('Preencha o dono e o nome do repositório.');return;}
     if(arquivos.length===0){setErro('Selecione ao menos uma imagem.');return;}
     if(!prefixo.trim()){setErro('Defina um prefixo para os arquivos.');return;}
-    const pref=prefixo.trim().replace(/[^a-zA-Z0-9_-]/g,'');
+    const pref=prefixo.trim().replace(/\.(jpg|jpeg|png|gif|webp)$/i,'').replace(/\d+$/,'').replace(/[^a-zA-Z0-9_-]/g,'');
     if(!pref){setErro('Prefixo invalido - use letras, numeros, _ ou -.');return;}
 
     // Descobre qual token usar: destrava do cofre (com a senha) OU usa o digitado.
@@ -6917,8 +6963,19 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
         <input type="file" accept="image/*" multiple onChange={escolherArquivos} style={{...ENV_INP,marginBottom:6,padding:'6px',width:'100%'}}/>
         {arquivos.length>0&&(<div style={{fontSize:'.66rem',color:'var(--gold)',marginBottom:14}}>{arquivos.length} imagem(ns) selecionada(s)</div>)}
 
-        <label style={ENV_LBL}>PREFIXO DOS ARQUIVOS (ex: sith → sith1.jpg...)</label>
-        <input value={prefixo} onChange={e=>setPrefixo(e.target.value)} placeholder="ex: minha_traducao" style={{...ENV_INP,marginBottom:14,width:'100%'}}/>
+        <label style={ENV_LBL}>PREFIXO DOS ARQUIVOS (só o nome-base, sem número nem .jpg)</label>
+        <input value={prefixo} onChange={e=>setPrefixo(e.target.value)} placeholder="ex: xufu"
+          style={{...ENV_INP,marginBottom:4,width:'100%'}}/>
+        {(() => {
+          const pref=prefixo.trim().replace(/\.(jpg|jpeg|png|gif|webp)$/i,'').replace(/\d+$/,'').replace(/[^a-zA-Z0-9_-]/g,'');
+          const n=arquivos.length||1;
+          return(
+            <div style={{fontSize:'.58rem',color:pref?'var(--gold)':'var(--parchment-dark)',marginBottom:14}}>
+              {pref?`Os arquivos ficarão: ${pref}1.jpg, ${pref}2.jpg${n>2?`, ... ${pref}${n}.jpg`:n>1?`, ${pref}2.jpg`:''}`
+                :'Digite um nome-base, ex: "xufu" (o número e a extensão são adicionados automaticamente)'}
+            </div>
+          );
+        })()}
 
         <label style={ENV_LBL}>NOME EXIBIDO NO POST</label>
         <input value={nomeAutor} onChange={e=>setNomeAutor(e.target.value)} placeholder="ex: Baobhan Sith" style={{...ENV_INP,marginBottom:10,width:'100%'}}/>
@@ -6978,6 +7035,11 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
         </div>
 
         {erro&&<div style={{fontSize:'.7rem',color:'#ff9090',marginBottom:10}}>{erro}</div>}
+        {testeMsg&&<div style={{fontSize:'.68rem',color:testeMsg.startsWith('✓')?'#7ee08a':'#ffcf6a',marginBottom:10,padding:'8px 10px',borderRadius:6,background:'rgba(0,0,0,0.3)',border:'1px solid var(--gold-dim)'}}>{testeMsg}</div>}
+
+        <button className="btn btn-full btn-sm" onClick={testar} disabled={testando} style={{marginBottom:8,opacity:testando?0.6:1}}>
+          {testando?'Testando...':'🔌 Testar conexão com o GitHub'}
+        </button>
         {progresso&&<div style={{fontSize:'.72rem',color:'var(--gold)',marginBottom:10}}>{progresso}</div>}
 
         <button className="btn btn-full" onClick={enviar} disabled={enviando} style={{opacity:enviando?0.6:1}}>{enviando?'Enviando...':'Enviar para o GitHub e publicar'}</button>
@@ -7447,7 +7509,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.66</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.67</p>
       </div>
     </div>
   );
