@@ -827,6 +827,41 @@ function albumWatchComments(postId,cb){
 // Config do repositório fica em localStorage (dono/repo/pasta), sem o token.
 
 const GH_CFG_KEY='fate_github_cfg_v1';
+const GH_VAULT_KEY='fate_github_vault_v1'; // token criptografado (protegido por senha)
+
+// ─── COFRE DO TOKEN (criptografia real via Web Crypto) ───
+// O token é cifrado com AES-GCM usando uma chave derivada da senha (PBKDF2).
+// Guardamos só o resultado cifrado no localStorage; a senha nunca é salva.
+function _buf2b64(buf){return btoa(String.fromCharCode(...new Uint8Array(buf)));}
+function _b642buf(b64){return Uint8Array.from(atob(b64),c=>c.charCodeAt(0));}
+async function _derivarChave(senha,salt){
+  const enc=new TextEncoder();
+  const base=await crypto.subtle.importKey('raw',enc.encode(senha),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},
+    base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+// Cifra o token com a senha e salva no localStorage.
+async function salvarTokenCofre(token,senha){
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const chave=await _derivarChave(senha,salt);
+  const cifra=await crypto.subtle.encrypt({name:'AES-GCM',iv},chave,new TextEncoder().encode(token));
+  localStorage.setItem(GH_VAULT_KEY,JSON.stringify({salt:_buf2b64(salt),iv:_buf2b64(iv),dado:_buf2b64(cifra)}));
+}
+// Tenta destravar o token com a senha. Retorna o token ou null se a senha estiver errada.
+async function abrirTokenCofre(senha){
+  const raw=localStorage.getItem(GH_VAULT_KEY);if(!raw)return null;
+  try{
+    const {salt,iv,dado}=JSON.parse(raw);
+    const chave=await _derivarChave(senha,_b642buf(salt));
+    const claro=await crypto.subtle.decrypt({name:'AES-GCM',iv:_b642buf(iv)},chave,_b642buf(dado));
+    return new TextDecoder().decode(claro);
+  }catch{return null;} // senha errada → falha na descriptografia
+}
+function existeTokenCofre(){return !!localStorage.getItem(GH_VAULT_KEY);}
+function apagarTokenCofre(){localStorage.removeItem(GH_VAULT_KEY);}
+
 function loadGithubCfg(){
   try{const r=localStorage.getItem(GH_CFG_KEY);return r?JSON.parse(r):{dono:'',repo:'',pasta:'comics',branch:'main'};}
   catch{return {dono:'',repo:'',pasta:'comics',branch:'main'};}
@@ -6742,6 +6777,9 @@ const ENV_LBL={display:'block',fontSize:'.6rem',color:'var(--parchment-dark)',le
 function EnviarTraducaoModal({profile,onFechar,onPronto}){
   const[cfg,setCfg]=useState(()=>loadGithubCfg());
   const[token,setToken]=useState('');
+  const[senha,setSenha]=useState('');           // senha do cofre
+  const[salvarNoCofre,setSalvarNoCofre]=useState(true); // guardar token protegido?
+  const[temCofre,setTemCofre]=useState(()=>existeTokenCofre()); // já existe token guardado?
   const[nomeAutor,setNomeAutor]=useState('');
   const[handle,setHandle]=useState('');
   const[tagAutor,setTagAutor]=useState('');
@@ -6762,11 +6800,22 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
   async function enviar(){
     setErro('');
     if(!cfg.dono||!cfg.repo){setErro('Preencha o dono e o nome do repositório.');return;}
-    if(!token.trim()){setErro('Cole seu token do GitHub.');return;}
     if(arquivos.length===0){setErro('Selecione ao menos uma imagem.');return;}
     if(!prefixo.trim()){setErro('Defina um prefixo para os arquivos.');return;}
     const pref=prefixo.trim().replace(/[^a-zA-Z0-9_-]/g,'');
     if(!pref){setErro('Prefixo invalido - use letras, numeros, _ ou -.');return;}
+
+    // Descobre qual token usar: destrava do cofre (com a senha) OU usa o digitado.
+    let tokenUsar='';
+    if(temCofre){
+      if(!senha.trim()){setErro('Digite sua senha para destravar o token.');return;}
+      tokenUsar=await abrirTokenCofre(senha);
+      if(!tokenUsar){setErro('Senha incorreta. Tente de novo.');return;}
+    }else{
+      if(!token.trim()){setErro('Cole seu token do GitHub.');return;}
+      if(salvarNoCofre&&!senha.trim()){setErro('Crie uma senha para guardar o token (ou desmarque a opção).');return;}
+      tokenUsar=token.trim();
+    }
 
     setEnviando(true);
     saveGithubCfg(cfg);
@@ -6779,8 +6828,12 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
         const caminho=pasta+'/'+pref+(i+1)+'.'+ext;
         setProgresso('Enviando '+(i+1)+'/'+arquivos.length+'...');
         const b64=await fileParaBase64(f);
-        const url=await githubUpload(cfg,token.trim(),caminho,b64,'Adiciona traducao '+pref+(i+1));
+        const url=await githubUpload(cfg,tokenUsar,caminho,b64,'Adiciona traducao '+pref+(i+1));
         pages.push(url);
+      }
+      // upload ok: se pediu para guardar o token e ainda não há cofre, salva agora
+      if(!temCofre&&salvarNoCofre&&senha.trim()){
+        try{await salvarTokenCofre(tokenUsar,senha);setTemCofre(true);}catch{}
       }
       setProgresso('Publicando no feed...');
       const pers=personagens.slice();
@@ -6827,8 +6880,38 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
           </div>
         </div>
 
-        <label style={ENV_LBL}>TOKEN DO GITHUB (nao fica salvo)</label>
-        <input type="password" value={token} onChange={e=>setToken(e.target.value)} placeholder="ghp_..." style={{...ENV_INP,marginBottom:14,width:'100%'}}/>
+        {/* Cofre do token: senha simples se já guardado, ou token+senha na 1ª vez */}
+        {temCofre?(
+          <div style={{marginBottom:14,padding:'10px 12px',borderRadius:8,background:'rgba(46,139,87,0.1)',border:'1px solid #2e8b57'}}>
+            <div style={{fontSize:'.68rem',color:'#7ee08a',marginBottom:8}}>🔒 Token guardado com segurança neste dispositivo.</div>
+            <label style={ENV_LBL}>SUA SENHA</label>
+            <input type="password" value={senha} onChange={e=>setSenha(e.target.value)}
+              placeholder="Digite sua senha para postar" style={{...ENV_INP,marginBottom:8,width:'100%'}}
+              onKeyDown={e=>{if(e.key==='Enter')enviar();}}/>
+            <button type="button" onClick={()=>{if(confirm('Remover o token guardado? Você precisará colá-lo de novo.')){apagarTokenCofre();setTemCofre(false);setSenha('');}}}
+              style={{fontSize:'.62rem',color:'#ff9090',background:'none',border:'none',cursor:'pointer',padding:0,textDecoration:'underline'}}>
+              Esquecer token guardado
+            </button>
+          </div>
+        ):(
+          <div style={{marginBottom:14}}>
+            <label style={ENV_LBL}>TOKEN DO GITHUB</label>
+            <input type="password" value={token} onChange={e=>setToken(e.target.value)} placeholder="github_pat_... ou ghp_..."
+              style={{...ENV_INP,marginBottom:8,width:'100%'}}/>
+            <label style={{display:'flex',alignItems:'center',gap:8,fontSize:'.68rem',color:'var(--parchment)',cursor:'pointer',marginBottom:8}}>
+              <input type="checkbox" checked={salvarNoCofre} onChange={e=>setSalvarNoCofre(e.target.checked)}/>
+              Guardar token protegido por senha (só neste dispositivo)
+            </label>
+            {salvarNoCofre&&(
+              <>
+                <label style={ENV_LBL}>CRIE UMA SENHA (para as próximas vezes)</label>
+                <input type="password" value={senha} onChange={e=>setSenha(e.target.value)}
+                  placeholder="Escolha uma senha fácil de lembrar" style={{...ENV_INP,marginBottom:4,width:'100%'}}/>
+                <div style={{fontSize:'.58rem',color:'var(--parchment-dark)'}}>Da próxima vez, você digita só a senha — sem colar o token de novo.</div>
+              </>
+            )}
+          </div>
+        )}
 
         <label style={ENV_LBL}>IMAGENS DO COMIC (na ordem das paginas)</label>
         <input type="file" accept="image/*" multiple onChange={escolherArquivos} style={{...ENV_INP,marginBottom:6,padding:'6px',width:'100%'}}/>
@@ -7364,7 +7447,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.65</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.66</p>
       </div>
     </div>
   );
