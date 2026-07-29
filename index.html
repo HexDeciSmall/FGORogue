@@ -6883,9 +6883,13 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
       }
       setProgresso('Publicando no feed...');
       const pers=personagens.slice();
+      // avatar do post = arte do 1º personagem selecionado (dos patronos)
+      const primeiroServo=pers.length>0?RESSONANCIA_SERVOS.find(s=>s.nome===pers[0]):null;
       const post={
         dev:meuDev,
-        profileInline:{name:nomeAutor.trim()||'Traducao',handle:handle.trim(),avatar:pages[0]||null},
+        profileInline:{name:nomeAutor.trim()||'Traducao',handle:handle.trim(),
+          avatarArt:primeiroServo?primeiroServo.art:null,
+          avatar:primeiroServo?null:(pages[0]||null)},
         pages,
         tags:{autor:tagAutor.trim(),personagens:pers},
       };
@@ -7222,7 +7226,12 @@ function ComicAlbumScreen({onNavigate,profile}){
               {/* Cabeçalho do post: avatar + nome do personagem em foco */}
               <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px'}}>
                 <div style={{width:44,height:44,borderRadius:'50%',overflow:'hidden',border:'2px solid var(--gold-dim)',flexShrink:0,background:'rgba(0,0,0,0.3)'}}>
-                  {prof.avatar&&<img src={prof.avatar} alt={prof.name} style={{width:'100%',height:'100%',objectFit:'cover'}} onError={e=>{e.target.style.display='none';}}/>}
+                  {prof.avatarArt?(
+                    (() => {const sv=RESSONANCIA_SERVOS.find(s=>s.art===prof.avatarArt);
+                      return <RessonanciaRetrato art={prof.avatarArt} patronoArt={sv?sv.patronoArt:null} emoji={sv?sv.emoji:'👤'} size={44}/>;})()
+                  ):prof.avatar?(
+                    <img src={prof.avatar} alt={prof.name} style={{width:'100%',height:'100%',objectFit:'cover'}} onError={e=>{e.target.style.display='none';}}/>
+                  ):null}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:'.85rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{prof.name}</div>
@@ -7509,7 +7518,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.67</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.68</p>
       </div>
     </div>
   );
