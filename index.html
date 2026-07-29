@@ -5613,6 +5613,44 @@ function XPBar({xpState}){
 // ══════════════════════════════════════════════════════
 // ÁLBUM DE TRADUÇÃO — tela do feed (rede social)
 // ══════════════════════════════════════════════════════
+// Portal de Jogos & Apostas — reúne os mini-games num só lugar.
+function JogosScreen({onNavigate,profile}){
+  const jogos=[
+    {nav:'blackjack',icon:'🃏',nome:'Blackjack 21',desc:'Duelo 1x1 de cartas. Chegue a 21 sem estourar e leve o pote.'},
+    {nav:'xadrez',   icon:'♟️',nome:'Xadrez',       desc:'Partida completa 1x1, com todas as regras. Xeque-mate vence a aposta.'},
+  ];
+  return(
+    <div className="screen" style={{padding:'16px 10px',alignItems:'flex-start'}}>
+      <div style={{maxWidth:520,width:'100%',margin:'0 auto'}}>
+        <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
+          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:4}}>🎰 JOGOS & APOSTAS</h2>
+          <p style={{fontSize:'.72rem',color:'var(--parchment-dark)'}}>
+            Desafie outros Mestres em duelos 1x1 apostando suas moedas.
+          </p>
+          <div style={{display:'flex',gap:14,marginTop:8,fontSize:'.7rem'}}>
+            <span style={{color:'var(--gold)'}}>💎 {(profile.sq||0).toLocaleString()} SQ</span>
+            <span style={{color:'#4fc3f7'}}>🪙 {(profile.qp||0).toLocaleString()} QP</span>
+          </div>
+        </div>
+        {jogos.map(j=>(
+          <button key={j.nav} onClick={()=>onNavigate(j.nav)}
+            style={{display:'flex',alignItems:'center',gap:14,width:'100%',textAlign:'left',
+              padding:'16px 16px',marginBottom:10,cursor:'pointer',borderRadius:10,
+              background:'rgba(201,162,39,0.06)',border:'1px solid var(--gold-dim)'}}>
+            <span style={{fontSize:'2.2rem',flexShrink:0}}>{j.icon}</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div className="cinzel" style={{color:'var(--gold)',fontSize:'1.05rem'}}>{j.nome}</div>
+              <div style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:2}}>{j.desc}</div>
+            </div>
+            <span style={{color:'var(--gold-dim)',fontSize:'1.4rem'}}>›</span>
+          </button>
+        ))}
+        <button className="btn btn-full" style={{marginTop:6,marginBottom:20}} onClick={()=>onNavigate('menu')}>← Voltar ao Menu</button>
+      </div>
+    </div>
+  );
+}
+
 // Símbolos unicode das peças de xadrez
 const XD_SIMBOLOS={
   wk:'♔',wq:'♕',wr:'♖',wb:'♗',wn:'♘',wp:'♙',
@@ -5772,7 +5810,7 @@ function XadrezScreen({onNavigate,profile,setProfile}){
               );
             })}
           </div>
-          <button className="btn btn-full" style={{marginBottom:20}} onClick={()=>onNavigate('menu')}>← Voltar ao Menu</button>
+          <button className="btn btn-full" style={{marginBottom:20}} onClick={()=>onNavigate('jogos')}>← Voltar aos Jogos</button>
         </div>
       </div>
     );
@@ -6078,7 +6116,7 @@ function BlackjackScreen({onNavigate,profile,setProfile}){
             })}
           </div>
 
-          <button className="btn btn-full" style={{marginBottom:20}} onClick={()=>onNavigate('menu')}>← Voltar ao Menu</button>
+          <button className="btn btn-full" style={{marginBottom:20}} onClick={()=>onNavigate('jogos')}>← Voltar aos Jogos</button>
         </div>
       </div>
     );
@@ -6782,8 +6820,7 @@ function MenuScreen({onNavigate,profile}){
     ['gacha','⛩️','Invocação',''],
     ['comics','📖','Álbum de Tradução',''],
     ['chat','💬','Bate-Papo',''],
-    ['blackjack','🃏','Blackjack 21',''],
-    ['xadrez','♟️','Xadrez',''],
+    ['jogos','🎰','Jogos & Apostas',''],
     ['profile','📜','Perfil',''],
     ['shop','🏪','Loja de Perks',''],
     ['achievements','🏆','Conquistas',''],
@@ -6841,7 +6878,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.58</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.59</p>
       </div>
     </div>
   );
@@ -17354,6 +17391,7 @@ function App(){
   if(screen==='gacha')return <GachaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='comics')return <ComicAlbumScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='chat')return <ChatScreen onNavigate={navigate} profile={profile}/>;
+  if(screen==='jogos')return <JogosScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='blackjack')return <BlackjackScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='xadrez')return <XadrezScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='achievements')return <AchievementsScreen onNavigate={navigate} profile={profile}/>;
