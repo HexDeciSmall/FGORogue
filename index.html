@@ -715,6 +715,76 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 const {useState,useEffect,useRef,useCallback}=React;
 
 // ══════════════════════════════════════════════════════
+// MOTOR DE ÁUDIO — efeitos sonoros gerados proceduralmente (Web Audio API).
+// Zero arquivos: cada som é sintetizado na hora. Config (ligado/volume) no localStorage.
+const AUDIO_CFG_KEY='fate_audio_cfg_v1';
+function loadAudioCfg(){
+  try{const r=localStorage.getItem(AUDIO_CFG_KEY);return r?JSON.parse(r):{on:true,vol:0.5};}
+  catch{return {on:true,vol:0.5};}
+}
+function saveAudioCfg(c){try{localStorage.setItem(AUDIO_CFG_KEY,JSON.stringify(c));}catch{}}
+
+const SFX={
+  _ctx:null,_cfg:loadAudioCfg(),
+  _ac(){ // pega/cria o AudioContext (só após interação do usuário)
+    if(!this._ctx){try{this._ctx=new (window.AudioContext||window.webkitAudioContext)();}catch{return null;}}
+    if(this._ctx.state==='suspended')this._ctx.resume();
+    return this._ctx;
+  },
+  setOn(v){this._cfg.on=v;saveAudioCfg(this._cfg);},
+  setVol(v){this._cfg.vol=v;saveAudioCfg(this._cfg);},
+  getCfg(){return {...this._cfg};},
+  // toca um tom com envelope simples. tipo: 'sine'|'square'|'triangle'|'sawtooth'
+  _tom(freq,dur,tipo='sine',vol=1,slideTo=null,delay=0){
+    const ac=this._ac();if(!ac||!this._cfg.on)return;
+    const t0=ac.currentTime+delay;
+    const osc=ac.createOscillator(),g=ac.createGain();
+    osc.type=tipo;osc.frequency.setValueAtTime(freq,t0);
+    if(slideTo)osc.frequency.exponentialRampToValueAtTime(slideTo,t0+dur);
+    const v=vol*this._cfg.vol*0.3;
+    g.gain.setValueAtTime(0,t0);
+    g.gain.linearRampToValueAtTime(v,t0+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    osc.connect(g);g.connect(ac.destination);
+    osc.start(t0);osc.stop(t0+dur+0.02);
+  },
+  // ruído branco curto (para impactos/hits)
+  _ruido(dur,vol=1,delay=0,freq=1000){
+    const ac=this._ac();if(!ac||!this._cfg.on)return;
+    const t0=ac.currentTime+delay;
+    const n=Math.floor(ac.sampleRate*dur);
+    const buf=ac.createBuffer(1,n,ac.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<n;i++)data[i]=(Math.random()*2-1)*(1-i/n);
+    const src=ac.createBufferSource();src.buffer=buf;
+    const g=ac.createGain(),f=ac.createBiquadFilter();
+    f.type='lowpass';f.frequency.value=freq;
+    g.gain.setValueAtTime(vol*this._cfg.vol*0.25,t0);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    src.connect(f);f.connect(g);g.connect(ac.destination);
+    src.start(t0);src.stop(t0+dur+0.02);
+  },
+  // ─── biblioteca de sons ───
+  click(){this._tom(520,0.05,'triangle',0.5);},
+  hover(){this._tom(700,0.03,'sine',0.25);},
+  attack(){this._ruido(0.12,0.8,0,1400);this._tom(180,0.1,'square',0.4,90);},
+  crit(){this._ruido(0.18,1,0,2400);this._tom(300,0.16,'sawtooth',0.5,120);this._tom(600,0.12,'square',0.3,200,0.02);},
+  hit(){this._ruido(0.1,0.6,0,900);},
+  heal(){this._tom(440,0.15,'sine',0.5,660);this._tom(660,0.18,'sine',0.35,880,0.06);},
+  buff(){this._tom(330,0.14,'triangle',0.4,550);this._tom(550,0.14,'triangle',0.3,770,0.05);},
+  debuff(){this._tom(400,0.2,'sawtooth',0.4,150);},
+  coin(){this._tom(880,0.08,'square',0.4,1320);this._tom(1320,0.1,'square',0.3,1760,0.05);},
+  victory(){[523,659,784,1046].forEach((f,i)=>this._tom(f,0.3,'triangle',0.5,null,i*0.11));},
+  defeat(){[440,349,262].forEach((f,i)=>this._tom(f,0.4,'sawtooth',0.4,null,i*0.16));},
+  levelup(){[523,659,784,1046,1318].forEach((f,i)=>this._tom(f,0.25,'sine',0.5,null,i*0.08));},
+  gacha(){[392,494,587,784].forEach((f,i)=>this._tom(f,0.2,'triangle',0.45,null,i*0.09));},
+  error(){this._tom(200,0.15,'square',0.4,140);},
+};
+function sfx(nome){try{if(SFX[nome])SFX[nome]();}catch{}}
+
+
+
+// ══════════════════════════════════════════════════════
 // FIREBASE — Ranking Online (leitura pública, escrita restrita via regras do Firestore)
 // ══════════════════════════════════════════════════════
 const firebaseConfig={
@@ -1659,6 +1729,47 @@ async function fetchPlacarJogos(tipo='total',max=20){
     const snap=await fbDb.collection('jogos_placar').orderBy(campo,'desc').limit(max).get();
     return snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>(x[campo]||0)>0);
   }catch(e){console.error('fetch placar',e);return [];}
+}
+
+// ══════════════════════════════════════════════════════
+// DESAFIO DIÁRIO — todos jogam a MESMA run (seed do dia) e competem no ranking
+function chaveDiaHoje(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function seedDoDia(chave){
+  let h=2166136261;
+  for(let i=0;i<chave.length;i++){h^=chave.charCodeAt(i);h=Math.imul(h,16777619);}
+  return (h>>>0)%1e6+1;
+}
+function desafioJogadoHoje(profile){
+  return (profile.desafioDiario||{}).dia===chaveDiaHoje();
+}
+async function registrarDesafioDiario(profile,setProfile,andarAlcancado){
+  const dia=chaveDiaHoje();
+  const anterior=profile.desafioDiario||{};
+  const melhor=anterior.dia===dia?Math.max(anterior.andar||0,andarAlcancado):andarAlcancado;
+  const np={...loadProfile(),desafioDiario:{dia,andar:melhor}};
+  saveProfile(np);setProfile(np);
+  if(fbDb){
+    try{
+      const dev=getOrCreateDeviceId();
+      await fbDb.collection('desafio_diario').doc(dia).collection('placar').doc(dev).set({
+        nome:(np.nickname||'Anônimo').trim().slice(0,28)||'Anônimo',
+        avatar:np.avatar||null,andar:melhor,
+        ts:firebase.firestore.FieldValue.serverTimestamp(),
+      },{merge:true});
+    }catch(e){console.error('registrar desafio',e);}
+  }
+  return np;
+}
+async function fetchRankingDiario(dia,max=30){
+  if(!fbDb)return [];
+  try{
+    const snap=await fbDb.collection('desafio_diario').doc(dia).collection('placar')
+      .orderBy('andar','desc').limit(max).get();
+    return snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){console.error('fetch ranking diario',e);return [];}
 }
 
 // ══════════════════════════════════════════════════════
@@ -5013,6 +5124,83 @@ GACHA_SERVOS.skadi_summer={
 };
 PLAYABLE_SERVOS.skadi_summer=GACHA_SERVOS.skadi_summer;
 
+// ── MYSTERIOUS ALTER EGO Λ (Meltryllis Summer) ──
+// Alter Ego/Lancer de verão: rainha do palco que rouba os holofotes. Kit fiel ao FGO:
+// evasão, roubo de buffs (charme), e dano crítico devastador. Elegante e cruel.
+GACHA_SERVOS.meltryllis_summer={
+  id:'meltryllis_summer',name:'Mysterious Alter Ego Λ',className:'Alter Ego',
+  rarity:5,banner:'summer',
+  getAtk:lvl=>Math.round(linear(lvl,1786,11562)),
+  getHp:lvl=>Math.round(linear(lvl,1980,13500)),
+  attributes:{
+    strength:{rank:'B',points:rankToPoints('B')},
+    agility:{rank:'A',points:rankToPoints('A')},
+    luck:{rank:'B',points:rankToPoints('B')},
+    endurance:{rank:'C',points:rankToPoints('C')},
+    mana:{rank:'A',points:rankToPoints('A'),gainPercent:manaGain('A')},
+    np:{rank:'A',points:rankToPoints('A')},
+  },
+  // ── PASSIVAS ──
+  passiveSkills:[
+    {id:'magicres',name:'Resistência Mágica B',effect:{type:'debuff_res',value:17}},
+    {id:'altered',name:'Anti-Herói (Verão)',effect:{type:'atk_passive',value:12}},
+    {id:'coreego',name:'Núcleo do Espírito Distorcido',effect:{type:'crit_passive',value:10}},
+  ],
+  // ── SKILLS ATIVAS ── adaptadas das 3 do FGO
+  activeSkills:[
+    // Estética do Bishonen (Verão): auto-evasão + grande crit up
+    {id:'bishonen',name:'Estética do Bishōnen (Verão)',rank:'A',
+      desc:'Concede Evasão por 1 turno e grande aumento de Crítico por 3 turnos',
+      effectType:'evade_critup',
+      getEffect:lvl=>({evadeTurns:1,critUp:linear(lvl,30,50),critDur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Corrida de Verão: buff de ATK + carga de NP (a velocista)
+    {id:'corrida',name:'Corrida Mortal de Verão',rank:'B',
+      desc:'Aumenta o Ataque e carrega a Barra de NP',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,20,30),atkUp:linear(lvl,20,35),critUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Beleza Cativante: charme/rouba o foco — cura leve e reduz o ataque inimigo
+    {id:'cativante',name:'Beleza Radiante e Cruel',rank:'A+',
+      desc:'Recupera HP e reduz o Ataque de todos os inimigos por 3 turnos',
+      effectType:'heal_enemyatkdown',
+      getEffect:lvl=>({healPct:linear(lvl,10,20),enemyAtkDown:linear(lvl,20,30),dur:3}),
+      getCD:lvl=>stdCD(lvl,9,8,7)},
+  ],
+  // ── NP: Æsthetic of the Last Spurt (single-target, dano brutal + auto-buff crit) ──
+  np:{
+    name:'Æsthetic of the Last Spurt',type:'Anti-Unit',isAoE:false,effectType:'dmg_selfbuff_crit',
+    selfBuffDur:3,
+    levels:{
+      1:{dmgPct:900,atkUp:20,critUp:30},2:{dmgPct:1200,atkUp:25,critUp:40},3:{dmgPct:1350,atkUp:28,critUp:45},
+      4:{dmgPct:1425,atkUp:29,critUp:48},5:{dmgPct:1500,atkUp:30,critUp:50},
+    },
+  },
+  dialogue:{
+    summon:'Alter Ego, Meltryllis. Vim aproveitar o verão... e talvez pisar em você um pouquinho. Fufu. Não se sinta honrado demais, Mestre.',
+    battle:'Vão sujar a areia da minha praia? Que audácia.',
+    lose:'Impossível... eu, perdendo... que deselegante...',
+    win:'Viram? Elegância e crueldade caminham juntas. Aprendam.',
+    np:'Sintam o peso do meu desprezo. Corram, corram até não restar nada... Æsthetic of the Last Spurt!',
+    skill:'Observe bem. É assim que se faz.',
+    mapDone:'O palco é meu, do começo ao fim. Vamos, Mestre — o verão nos espera.',
+  },
+  assets:{
+    default:'assets/servos/meltryllis/meltryllis_profile.png',
+    battle:'assets/servos/meltryllis/meltryllis_profile.png',
+    combat:'assets/servos/meltryllis/meltryllis_combat.png',
+    np:'assets/servos/meltryllis/meltryllis_combat.png',
+    full:'assets/servos/meltryllis/meltryllis_full.png',
+  },
+  sprites:{
+    idle:'assets/servos/meltryllis/meltryllis_espera.gif',
+    attack:'assets/servos/meltryllis/meltryllis_ataque.gif',
+    np:'assets/servos/meltryllis/meltryllis_np.gif',
+    flip:true,
+  },
+};
+PLAYABLE_SERVOS.meltryllis_summer=GACHA_SERVOS.meltryllis_summer;
+
 // ── OKITA SOUJI (Saber) — Banner Gudaguda ──
 // Atacante single-target de crítico. Capitã do Shinsengumi, gênio da espada.
 // NP Mumyou Sandanzuki ignora defesa mas pode atordoá-la depois (fiel ao FGO).
@@ -5170,13 +5358,155 @@ GACHA_SERVOS.okita_alter={
 };
 PLAYABLE_SERVOS.okita_alter=GACHA_SERVOS.okita_alter;
 
+// ── ODA NOBUNAGA (Archer / Summer) ──
+// A Rei Demônio do Sexto Céu em traje de verão, trocando o mosquete por uma pistola
+// de brinquedo que dispara balas MUITO reais. Archer de crítico puro e NP AoE anti-Divino.
+GACHA_SERVOS.nobunaga_berserker={
+  id:'nobunaga_berserker',name:'Oda Nobunaga (Berserker)',className:'Berserker',
+  rarity:5,banner:'summer',
+  getAtk:lvl=>Math.round(linear(lvl,1901,12300)),
+  getHp:lvl=>Math.round(linear(lvl,1710,11664)),
+  attributes:{
+    strength:{rank:'B',points:rankToPoints('B')},
+    agility:{rank:'B',points:rankToPoints('B')},
+    luck:{rank:'C',points:rankToPoints('C')},
+    endurance:{rank:'C',points:rankToPoints('C')},
+    mana:{rank:'B',points:rankToPoints('B'),gainPercent:manaGain('B')},
+    np:{rank:'B',points:rankToPoints('B')},
+  },
+  passiveSkills:[
+    {id:'madness',name:'Aprimoramento da Loucura E',effect:{type:'atk_passive',value:8}},
+    {id:'tenka',name:'Tenka Fubu (Verão)',effect:{type:'atk_passive',value:15}},
+    {id:'crit',name:'Rei Demônio Escaldante',effect:{type:'crit_passive',value:12}},
+  ],
+  activeSkills:[
+    {id:'ashigaru',name:'Convocação de Ashigaru (Verão)',rank:'A',
+      desc:'Carrega a Barra de NP e aumenta o Crítico por 3 turnos',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,30,50),critUp:linear(lvl,20,30),atkUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    {id:'tensai',name:'Talento Sobrenatural (Verão)',rank:'A+',
+      desc:'Grande aumento de Ataque e Crítico por 3 turnos',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:0,critUp:linear(lvl,20,40),atkUp:linear(lvl,30,50),dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    {id:'guts',name:'Ambição do Rei Demônio',rank:'A',
+      desc:'Aumenta o Ataque e concede Guts (revive uma vez) por 3 turnos',
+      effectType:'buff_atk_fear_guts',
+      getEffect:lvl=>({atkUp:linear(lvl,20,30),fearAtkDown:0,gutsTurns:3,gutsRevivePct:linear(lvl,30,50),dur:3}),
+      getCD:lvl=>stdCD(lvl,9,8,7)},
+  ],
+  np:{
+    name:'Tenka Fubu — Nobunaga Fest!',type:'Anti-Army',isAoE:true,effectType:'dmg_selfbuff',
+    selfBuffDur:3,
+    levels:{
+      1:{dmgPct:500,atkUp:20},2:{dmgPct:650,atkUp:25},3:{dmgPct:725,atkUp:28},
+      4:{dmgPct:762.5,atkUp:29},5:{dmgPct:800,atkUp:30},
+    },
+  },
+  dialogue:{
+    summon:'Berserker, Oda Nobunaga! No verão, a Rei Demônio vira uma festa ambulante, nanodesu! Preparem os fogos... e as balas! Kukuku!',
+    battle:'VERÃO! FESTIVAL! GUERRA! Tudo junto, nanodesu!',
+    lose:'Aaah... a festa acabou cedo demais... que Honnō-ji chato...',
+    win:'DAISHOURI! A Rei Demônio arrasou no palco, nanodesu! Kukuku!',
+    np:'Que comece o festival do inferno! Cantem, dancem, EXPLODAM! Tenka Fubu — Nobunaga Fest!!!',
+    skill:'Nada segura a Rei Demônio no verão, nanodesu!',
+    mapDone:'Kukuku! O verão inteiro é meu palco. Vamos, Mestre!',
+  },
+  assets:{
+    default:'assets/servos/nobunaga_zerker/nobunaga_zerker_profile.png',
+    battle:'assets/servos/nobunaga_zerker/nobunaga_zerker_profile.png',
+    combat:'assets/servos/nobunaga_zerker/nobunaga_zerker_combat.png',
+    np:'assets/servos/nobunaga_zerker/nobunaga_zerker_combat.png',
+    full:'assets/servos/nobunaga_zerker/nobunaga_zerker_full.png',
+  },
+  sprites:{
+    idle:'assets/servos/nobunaga_zerker/nobunaga_zerker_espera.gif',
+    attack:'assets/servos/nobunaga_zerker/nobunaga_zerker_ataque.gif',
+    np:'assets/servos/nobunaga_zerker/nobunaga_zerker_np.gif',
+    flip:true,
+  },
+};
+PLAYABLE_SERVOS.nobunaga_berserker=GACHA_SERVOS.nobunaga_berserker;
+
+// ── ODA NOBUNAGA (Archer) — a versão normal, do Gudaguda ──
+// A Rei Demônio do Sexto Céu com seu mosquete anti-Divino. Archer de crítico
+// devastador e NP AoE que arrasa fileiras inteiras.
+GACHA_SERVOS.nobunaga_archer={
+  id:'nobunaga_archer',name:'Oda Nobunaga',className:'Archer',
+  rarity:5,banner:'gudaguda',
+  getAtk:lvl=>Math.round(linear(lvl,1745,11298)),
+  getHp:lvl=>Math.round(linear(lvl,1636,11157)),
+  attributes:{
+    strength:{rank:'D',points:rankToPoints('D')},
+    agility:{rank:'B',points:rankToPoints('B')},
+    luck:{rank:'B',points:rankToPoints('B')},
+    endurance:{rank:'D',points:rankToPoints('D')},
+    mana:{rank:'C',points:rankToPoints('C'),gainPercent:manaGain('C')},
+    np:{rank:'B',points:rankToPoints('B')},
+  },
+  passiveSkills:[
+    {id:'magicres',name:'Resistência Mágica D',effect:{type:'debuff_res',value:10}},
+    {id:'indep',name:'Ação Independente A',effect:{type:'crit_passive',value:15}},
+    {id:'tenka',name:'Tenka Fubu',effect:{type:'atk_passive',value:12}},
+  ],
+  activeSkills:[
+    {id:'maou',name:'Rei Demônio do Sexto Céu EX',rank:'EX',
+      desc:'Grande aumento de Crítico e Ataque por 3 turnos',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:0,critUp:linear(lvl,30,50),atkUp:linear(lvl,20,30),dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    {id:'strategy',name:'Estratégia Militar B',rank:'B',
+      desc:'Carrega bastante a Barra de NP e aumenta o dano do NP',
+      effectType:'buff_atk_npdmg',
+      getEffect:lvl=>({atkUp:0,npDmgUp:linear(lvl,20,30),dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    {id:'unify',name:'Unificação Nacional A',rank:'A',
+      desc:'Carrega a Barra de NP e aumenta o Crítico por 3 turnos',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,30,50),critUp:linear(lvl,15,25),atkUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+  ],
+  np:{
+    name:'Three Line Formation',type:'Anti-Army',isAoE:true,effectType:'dmg_defdown',
+    defDownDur:3,
+    levels:{
+      1:{dmgPct:450,defDown:20},2:{dmgPct:600,defDown:20},3:{dmgPct:675,defDown:20},
+      4:{dmgPct:712.5,defDown:20},5:{dmgPct:750,defDown:20},
+    },
+  },
+  dialogue:{
+    summon:'Archer, Oda Nobunaga! A Rei Demônio do Sexto Céu, nanodesu! Meu mosquete perfura qualquer deus ou budista. Kukuku, vamos nos divertir!',
+    battle:'Vão encarar a Rei Demônio? Que corajosos. Vou adorar acertar vocês, nanodesu!',
+    lose:'Impossível... eu, a Rei Demônio, derrotada de novo? Mais um Honnō-ji...!',
+    win:'Kukuku! Tenka Fubu! O mundo inteiro sob a minha mira, nanodesu!',
+    np:'Preparar... mirar... TRÊS FILEIRAS! Fujam se puderem! Three Line Formation!!!',
+    skill:'A Rei Demônio nunca erra o alvo, nanodesu!',
+    mapDone:'Kukuku, mais um território conquistado, nanodesu!',
+  },
+  assets:{
+    default:'assets/servos/nobunaga/nobunaga_profile.png',
+    battle:'assets/servos/nobunaga/nobunaga_profile.png',
+    combat:'assets/servos/nobunaga/nobunaga_combat.png',
+    np:'assets/servos/nobunaga/nobunaga_combat.png',
+    full:'assets/servos/nobunaga/nobunaga_full.png',
+  },
+  sprites:{
+    idle:'assets/servos/nobunaga/nobunaga_espera.gif',
+    attack:'assets/servos/nobunaga/nobunaga_ataque.gif',
+    np:'assets/servos/nobunaga/nobunaga_np.gif',
+    flip:true,
+  },
+};
+PLAYABLE_SERVOS.nobunaga_archer=GACHA_SERVOS.nobunaga_archer;
+
 // Os 4 banners. `pool` = ids de GACHA_SERVOS que aparecem no banner.
 // `rateUp` (opcional) = id com chance aumentada (usado no "Especial").
 const GACHA_BANNERS=[
   {id:'summer',name:'Summer',subtitle:'Servos de Verão',
-   theme:'#3aa0c0',art:'assets/banners/summer.jpg',pool:['kiara_summer','skadi_summer']},
+   theme:'#3aa0c0',art:'assets/banners/summer.jpg',pool:['kiara_summer','skadi_summer','meltryllis_summer','nobunaga_berserker']},
   {id:'gudaguda',name:'Gudaguda',subtitle:'Servos do Evento Gudaguda',
-   theme:'#c0863a',art:'assets/banners/gudaguda.jpg',pool:['okita_saber','okita_alter']},
+   theme:'#c0863a',art:'assets/banners/gudaguda.jpg',pool:['okita_saber','okita_alter','nobunaga_archer']},
   {id:'especial',name:'Especial',subtitle:'Banner rotativo — sempre um Servo em rate up',
    theme:'#c0a03a',art:null,pool:[],rateUp:null},
   {id:'expurgo',name:'Noite de Expurgo',subtitle:'Invocação caótica entre todos os banners',
@@ -5334,7 +5664,7 @@ const SAVE_KEY='oni_tactics_profile';
 const BOND_KEY=id=>`oni_tactics_bond_${id}`;
 
 function loadProfile(){
-  const def={nickname:'',avatar:null,gameStats:{},sq:0,qp:0,qinDefeats:0,advSkillsUnlocked:false,deviceId:null,
+  const def={nickname:'',avatar:null,gameStats:{},desafioDiario:null,sq:0,qp:0,qinDefeats:0,advSkillsUnlocked:false,deviceId:null,
     stats:{runs:0,enemiesDefeated:0,highestDamage:0},
     magus:{level:1,xp:0}, // EXP Magus — nível do Mestre (jogador), separado do XP dos Servos
     achievements:{}, // id da conquista → true quando concedida (recompensa já paga)
@@ -6717,6 +7047,58 @@ function ChatScreen({onNavigate,profile}){
 // Barra de reações + comentários de um post do Álbum, COMPARTILHADOS via Firestore:
 // todos veem as mesmas reações e comentários, sincronizados em tempo real. Os
 // comentários usam o nome (nickname) do perfil do jogador.
+// Ranking do Desafio Diário — quem subiu mais andares na run do dia.
+function DesafioRankScreen({onNavigate,profile}){
+  const[lista,setLista]=useState(null);
+  const[dia]=useState(chaveDiaHoje());
+  const meuDev=(typeof getOrCreateDeviceId==='function')?getOrCreateDeviceId():null;
+  useEffect(()=>{fetchRankingDiario(dia,50).then(setLista);},[dia]);
+  return(
+    <div className="screen" style={{padding:'16px 10px',alignItems:'flex-start',justifyContent:'flex-start'}}>
+      <div style={{maxWidth:520,width:'100%',margin:'0 auto'}}>
+        <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
+          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:4}}>📅 DESAFIO DIÁRIO</h2>
+          <p style={{fontSize:'.72rem',color:'var(--parchment-dark)'}}>Ranking de {dia} — quem escalou mais alto na run de hoje.</p>
+          {(profile.desafioDiario||{}).dia===dia&&(
+            <div style={{fontSize:'.72rem',color:'var(--gold)',marginTop:6}}>Seu recorde de hoje: Andar {(profile.desafioDiario||{}).andar||0}</div>
+          )}
+        </div>
+        <div className="panel" style={{padding:'14px 16px'}}>
+          {lista===null?(
+            <div style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px 0',fontSize:'.8rem'}}>Carregando...</div>
+          ):lista.length===0?(
+            <div style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px 0',fontSize:'.8rem'}}>
+              Ninguém jogou o desafio de hoje ainda.<br/>Seja o primeiro a escalar!
+            </div>
+          ):(
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              {lista.map((e,i)=>{
+                const av=e.avatar?RESSONANCIA_SERVOS.find(s=>s.art===e.avatar):null;
+                const souEu=e.id===meuDev;
+                const medalha=i===0?'🥇':i===1?'🥈':i===2?'🥉':null;
+                return(
+                  <div key={e.id} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 10px',borderRadius:6,
+                    background:souEu?'rgba(201,162,39,0.15)':'rgba(0,0,0,0.22)',
+                    border:'1px solid '+(souEu?'var(--gold)':i<3?'var(--gold-dim)':'rgba(201,162,39,0.15)')}}>
+                    <span style={{minWidth:28,textAlign:'center',fontFamily:'Cinzel,serif',fontSize:medalha?'1.1rem':'.8rem',color:'var(--parchment-dark)'}}>{medalha||i+1}</span>
+                    <div style={{width:32,height:32,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)'}}>
+                      {av?<RessonanciaRetrato art={av.art} patronoArt={av.patronoArt} emoji={av.emoji} size={32}/>:<span style={{fontSize:'.9rem',display:'flex',width:'100%',height:'100%',alignItems:'center',justifyContent:'center'}}>👤</span>}
+                    </div>
+                    <span style={{flex:1,minWidth:0,fontSize:'.8rem',color:souEu?'var(--gold)':'var(--parchment)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{e.nome}{souEu?' (você)':''}</span>
+                    <span style={{fontFamily:'Cinzel,serif',color:'var(--gold)',fontSize:'.85rem'}}>Andar {e.andar}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <button className="btn btn-full" style={{marginTop:12,marginBottom:20}} onClick={()=>onNavigate('tower')}>← Voltar à Torre</button>
+      </div>
+    </div>
+  );
+}
+
+// Barra de reações + comentários de um post do Álbum, COMPARTILHADOS via Firestore:
 function ComicSocial({postId,profile,onReactCount}){
   const[reacts,setReacts]=useState({});
   const[minha,setMinha]=useState(null);
@@ -7576,6 +7958,7 @@ function GachaScreen({onNavigate,profile,setProfile}){
     if(pool.length===0){setNotif('Este banner ainda não tem Servos disponíveis.');return;}
     const fresh=loadProfile();
     if((fresh.sq||0)<GACHA_PULL_COST){setNotif(`Saint Quartz insuficiente! Precisa de ${GACHA_PULL_COST} SQ.`);return;}
+    sfx('gacha');
     // Debita o SQ imediatamente (atômico)
     const afterCost={...fresh,sq:fresh.sq-GACHA_PULL_COST};
     saveProfile(afterCost);setProfile(afterCost);setSq(afterCost.sq);
@@ -7818,7 +8201,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.74</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.79</p>
       </div>
     </div>
   );
@@ -8671,6 +9054,23 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
             }}>
             🎲 &nbsp; Iniciar À La Carte {disponiveis.length?`(${disponiveis.length} Servos no sorteio)`:'(nenhum Servo)'}
           </button>
+        </div>
+
+        {/* ═══ DESAFIO DIÁRIO ═══ */}
+        <div className="divider"><span className="divider-text">✦ DESAFIO DIÁRIO ✦</span></div>
+        <div style={{background:'rgba(201,162,39,.08)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'12px 14px',marginBottom:10}}>
+          <div className="cinzel" style={{color:'var(--gold)',fontSize:'.9rem',letterSpacing:2,marginBottom:4}}>📅 O SELO DO DIA</div>
+          <p style={{fontSize:'.74rem',color:'var(--parchment-dark)',lineHeight:1.6,marginBottom:10}}>
+            Todo dia, uma escalada <b>idêntica para todos os Mestres</b> — mesma sequência de salas,
+            inimigos e recompensas. Suba o máximo que puder e dispute o <b>ranking do dia</b>.
+            {desafioJogadoHoje(profile)&&<span style={{color:'var(--gold)'}}> Você já jogou hoje — seu recorde: Andar {(profile.desafioDiario||{}).andar||0}. Pode tentar de novo para melhorar!</span>}
+          </p>
+          <button className="btn btn-full btn-red" style={{padding:'12px',marginBottom:8}}
+            disabled={partySel.length<1}
+            onClick={()=>partySel.length>=1&&onStart(partySel.map(id=>TOWER_SERVO_OBJ[id]),TOWER_ORDER[0],false,seedDoDia(chaveDiaHoje()),chaveDiaHoje())}>
+            📅 &nbsp; Jogar Desafio de Hoje {partySel.length<1?'(monte a party!)':''}
+          </button>
+          <button className="btn btn-full btn-sm" onClick={()=>onNavigate('desafioRank')}>🏆 Ver ranking do dia</button>
         </div>
 
         <button className="btn btn-full btn-red" style={{marginBottom:8}} onClick={onOpenShop}>🏪 &nbsp; Loja da Torre</button>
@@ -10053,10 +10453,13 @@ function ShopScreen({onNavigate,profile,setProfile}){
 // CONFIGURAÇÕES
 // ══════════════════════════════════════════════════════
 function ConfigScreen({onNavigate}){
+  const[audioCfg,setAudioCfg]=useState(()=>SFX.getCfg());
   function clearSave(){
     if(confirm('Apagar TODOS os dados (Perfil, Bond, XP, SQ)? Irreversível.'))
       {localStorage.clear();window.location.reload();}
   }
+  function toggleAudio(){const on=!audioCfg.on;SFX.setOn(on);setAudioCfg({...audioCfg,on});if(on)sfx('coin');}
+  function mudarVol(v){SFX.setVol(v);setAudioCfg({...audioCfg,vol:v});}
   return(
     <div className="screen">
       <div className="panel" style={{maxWidth:480}}>
@@ -10065,6 +10468,30 @@ function ConfigScreen({onNavigate}){
           Seu progresso — Perfil, Bond, XP do Servo, Saint Quartz e Quantum Piece —
           é salvo automaticamente neste navegador após cada batalha e evento.
         </p>
+        <div className="divider"><span className="divider-text">🔊 SOM</span></div>
+        <div style={{background:'rgba(201,162,39,0.06)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'14px 16px',marginBottom:16}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:audioCfg.on?14:0}}>
+            <span style={{color:'var(--parchment)',fontSize:'.85rem'}}>Efeitos sonoros</span>
+            <button onClick={toggleAudio}
+              style={{width:52,height:28,borderRadius:14,cursor:'pointer',position:'relative',
+                border:'1px solid var(--gold-dim)',background:audioCfg.on?'rgba(201,162,39,0.4)':'rgba(0,0,0,0.4)',transition:'background .2s'}}>
+              <span style={{position:'absolute',top:2,left:audioCfg.on?26:2,width:22,height:22,borderRadius:'50%',
+                background:audioCfg.on?'var(--gold)':'var(--parchment-dark)',transition:'left .2s'}}/>
+            </button>
+          </div>
+          {audioCfg.on&&(
+            <div>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:'.68rem',color:'var(--parchment-dark)',marginBottom:6}}>
+                <span>Volume</span><span>{Math.round(audioCfg.vol*100)}%</span>
+              </div>
+              <input type="range" min="0" max="1" step="0.05" value={audioCfg.vol}
+                onChange={e=>mudarVol(parseFloat(e.target.value))}
+                onMouseUp={()=>sfx('click')}
+                style={{width:'100%',accentColor:'var(--gold)'}}/>
+            </div>
+          )}
+        </div>
+
         <div className="divider"><span className="divider-text">DADOS SALVOS</span></div>
         <p style={{color:'var(--parchment-dark)',fontSize:'.75rem',marginBottom:12,fontStyle:'italic'}}>
           Apagar o save remove todo o progresso de forma permanente. Use com cuidado.
@@ -10921,7 +11348,9 @@ const MAPS={
 // ══════════════════════════════════════════════════════
 const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,archer:SITH_PLAYABLE,
   okuni:OKUNI_PLAYABLE,mochizuki:MOCHIZUKI_PLAYABLE,kiara:GACHA_SERVOS.kiara_summer,
-  skadi:GACHA_SERVOS.skadi_summer,okita:GACHA_SERVOS.okita_saber,okita_alter:GACHA_SERVOS.okita_alter};
+  skadi:GACHA_SERVOS.skadi_summer,okita:GACHA_SERVOS.okita_saber,okita_alter:GACHA_SERVOS.okita_alter,
+  meltryllis:GACHA_SERVOS.meltryllis_summer,nobunaga:GACHA_SERVOS.nobunaga_archer,
+  nobunaga_zerker:GACHA_SERVOS.nobunaga_berserker};
 const TOWER_SERVO_LISTA=[
   {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',unlock:null},
   {id:'qin',name:'Qin Liangyu',classe:'Lancer',unlock:'defeat_qin'},
@@ -10933,6 +11362,9 @@ const TOWER_SERVO_LISTA=[
   {id:'skadi',name:'Scáthach-Skadi',classe:'Ruler',unlock:'gacha',gachaId:'skadi_summer',lockText:'Banner Pull'},
   {id:'okita',name:'Okita Souji',classe:'Saber',unlock:'gacha',gachaId:'okita_saber',lockText:'Banner Pull'},
   {id:'okita_alter',name:'Okita Souji Alter',classe:'Alter Ego',unlock:'gacha',gachaId:'okita_alter',lockText:'Banner Pull'},
+  {id:'meltryllis',name:'Mysterious Alter Ego Λ',classe:'Alter Ego',unlock:'gacha',gachaId:'meltryllis_summer',lockText:'Banner Pull'},
+  {id:'nobunaga',name:'Oda Nobunaga',classe:'Archer',unlock:'gacha',gachaId:'nobunaga_archer',lockText:'Banner Pull'},
+  {id:'nobunaga_zerker',name:'Oda Nobunaga (Berserker)',classe:'Berserker',unlock:'gacha',gachaId:'nobunaga_berserker',lockText:'Banner Pull'},
 ];
 // O jogador tem acesso a este servo?
 function servoLiberado(s,profile){
@@ -15375,6 +15807,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       });
       addLog(`🐍 Presas de Orochi: veneno de ${pDmg}/turno.`,'player');
     }
+    sfx(isCrit?'crit':'attack');
     addLog(`${isCrit?'🔥 CRÍTICO! ':''}${SDEF.name} ataca ${tgt.name}: ${dmg} dano`+(isCrit?' (×1.5)':'')+(doubleHit?' · 🗡️ GOLPE DUPLO!':''),'player');
     setServo(newServo);setEnemies(newEnemies);
     if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
@@ -16666,6 +17099,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   // ─── FIM DE COMBATE ────────────────────────────────
   function endCombat(won,finalServo,finalEnemies){
+    sfx(won?'victory':'defeat');
     setResult(won?'win':'lose');
 
     if(won){
@@ -17275,12 +17709,14 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   }
 
   // Inicia uma run da Torre de Desafios (roguelike puro) com a party (até 3 servos).
-  function startTower(partyServos,mapId,alaCarte){
+  // seedForcado: se informado, todas as runs com esse seed são idênticas (Desafio Diário).
+  function startTower(partyServos,mapId,alaCarte,seedForcado,diario){
     setProfile(incRuns());
     const leader=partyServos[0];
     const c=buildCampForMap(leader,mapId,null,true,partyServos);
     c.towerFloor=1; // começa no Andar 1 (escalada contínua)
     c.alaCarte=!!alaCarte; // modo aleatório: 1 servo sorteado + evento de Invocação
+    if(seedForcado){c.runSeed=seedForcado;c.desafioDiario=diario||null;}
     setCamp(c);
     setStage('map');
   }
@@ -17845,8 +18281,17 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
     setStage('map3Depart');
   }
 
+  // Se a run era um Desafio Diário, registra o andar alcançado no ranking do dia.
+  function talvezRegistrarDiario(finalCamp){
+    if(finalCamp&&finalCamp.desafioDiario&&finalCamp.towerMode){
+      const andar=finalCamp.towerFloor||1;
+      registrarDesafioDiario(profile,setProfile,andar);
+    }
+  }
+
   function onCombatLose(finalCamp){
     setProfile(addMagusXp(MAGUS_XP_RUN_COMPLETE)); // EXP Magus: run finalizada (derrota)
+    talvezRegistrarDiario(finalCamp);
     setCampResult({type:'lose',
       sq:finalCamp.sqEarned||0,qp:finalCamp.qpEarned||0,
       xp:finalCamp.xpEarned||0,bondEarned:finalCamp.bondEarned||0});
@@ -17858,6 +18303,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
   // a run como se fosse uma derrota, sem precisar perder de fato em combate.
   function onGiveUp(){
     setProfile(addMagusXp(MAGUS_XP_RUN_COMPLETE)); // EXP Magus: run finalizada (desistência)
+    talvezRegistrarDiario(camp);
     setCampResult({type:'lose',
       sq:camp.sqEarned||0,qp:camp.qpEarned||0,
       xp:camp.xpEarned||0,bondEarned:camp.bondEarned||0});
@@ -17866,6 +18312,7 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
 
   function onBossLose(finalCamp){
     setProfile(addMagusXp(MAGUS_XP_RUN_COMPLETE)); // EXP Magus: run finalizada (derrota p/ boss)
+    talvezRegistrarDiario(finalCamp);
     setCampResult({type:'lose',
       sq:finalCamp.sqEarned||0,qp:finalCamp.qpEarned||0,
       xp:finalCamp.xpEarned||0,bondEarned:finalCamp.bondEarned||0});
@@ -18400,6 +18847,12 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
 function App(){
   const[screen,setScreen]=useState('menu');
   const[profile,setProfile]=useState(loadProfile());
+  // Som de clique global em qualquer botão (delegação de evento)
+  useEffect(()=>{
+    const onClick=e=>{const b=e.target.closest('button, .btn, .menu-btn');if(b&&!b.disabled)sfx('click');};
+    document.addEventListener('click',onClick,true);
+    return ()=>document.removeEventListener('click',onClick,true);
+  },[]);
   function navigate(s){setScreen(s);}
   if(screen==='menu')return <MenuScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='profile')return <ProfileScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
@@ -18417,6 +18870,7 @@ function App(){
   if(screen==='config')return <ConfigScreen onNavigate={navigate}/>;
   if(screen==='campaign')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate}/>;
   if(screen==='tower')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate} mode="tower"/>;
+  if(screen==='desafioRank')return <DesafioRankScreen onNavigate={navigate} profile={profile}/>;
   return null;
 }
 
