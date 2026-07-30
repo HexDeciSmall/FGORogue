@@ -8201,7 +8201,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.79</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.80</p>
       </div>
     </div>
   );
@@ -8677,6 +8677,45 @@ const CODEX=[
      {label:'Mana',rank:'B'},{label:'Sorte',rank:'C'},{label:'NP',rank:'A'},
    ],
    va:'Yuuki Aoi'},
+  {id:'meltryllis',cat:'servo',name:'Mysterious Alter Ego Λ',classe:'Alter Ego',
+   art:'assets/servos/meltryllis/meltryllis_profile.png',
+   reveal:p=>(p.gachaOwned||[]).includes('meltryllis_summer'),
+   info:'A rainha cruel e elegante do palco, em traje de verão. Uma Alter Ego nascida dos desejos distorcidos, que trata os outros com desdém aristocrático — mas esconde uma vulnerabilidade sob a crueldade. Obtida na Invocação (banner Summer).',
+   details:[
+     {title:'IDENTIDADE',body:'Meltryllis é uma das Alter Egos do Sakura Five, criada a partir do sistema BB no Moon Cell. Originalmente uma personalidade projetada para representar a luxúria, tornou-se uma existência independente, orgulhosa e cruel. Sua forma de verão troca o campo de batalha pela praia, mas mantém intacta a elegância impiedosa. Debaixo do desprezo que demonstra, esconde-se uma alma que anseia por conexão genuína.'},
+     {title:'PERSONALIDADE',body:'Altiva, sarcástica e deliberadamente cruel, Meltryllis despreza a fraqueza e trata a maioria com frieza aristocrática. Gosta de \"pisar\" nos outros — literal e figurativamente. No entanto, sua crueldade é em parte uma armadura: sob a superfície há uma vulnerabilidade profunda e um desejo reprimido de ser amada por quem ela realmente é, não pelo papel que lhe foi imposto.'},
+   ],
+   params:[
+     {label:'Força',rank:'B'},{label:'Resistência',rank:'C'},{label:'Agilidade',rank:'A'},
+     {label:'Mana',rank:'A'},{label:'Sorte',rank:'B'},{label:'NP',rank:'A'},
+   ],
+   va:'Itou Kanae'},
+  {id:'nobunaga',cat:'servo',name:'Oda Nobunaga',classe:'Archer',
+   art:'assets/servos/nobunaga/nobunaga_profile.png',
+   reveal:p=>(p.gachaOwned||[]).includes('nobunaga_archer'),
+   info:'A Rei Demônio do Sexto Céu, o senhor da guerra que quase unificou o Japão. Como Archer, empunha um mosquete anti-Divino e enfrenta deuses e budas com um sorriso. Obtida na Invocação (banner Gudaguda).',
+   details:[
+     {title:'IDENTIDADE',body:'Oda Nobunaga (1534–1582) foi um dos maiores senhores da guerra do período Sengoku, conhecido por seu gênio militar e pela adoção pioneira das armas de fogo. Autoproclamado \"Rei Demônio do Sexto Céu\" (Dairokuten Maou), enfrentou templos e instituições religiosas sem temor. Sua vida terminou traída no Incidente de Honnō-ji. No FGO, manifesta-se como uma jovem enérgica que insiste ser uma Serva, não a Nobunaga histórica.'},
+     {title:'PERSONALIDADE',body:'Enérgica, provocadora e teatral, Nobunaga adora o drama de uma boa batalha e trata a guerra quase como um espetáculo. Fala com o bordão \"nanodesu\" e ri como \"kukuku\". Por trás da bravata, é uma estrategista brilhante e surpreendentemente leal aos que reconhece como aliados. Como Archer, sua Ação Independente reflete a autoconfiança de quem nunca precisou de ninguém para conquistar um país.'},
+   ],
+   params:[
+     {label:'Força',rank:'D'},{label:'Resistência',rank:'D'},{label:'Agilidade',rank:'B'},
+     {label:'Mana',rank:'C'},{label:'Sorte',rank:'B'},{label:'NP',rank:'B'},
+   ],
+   va:'Kubo Yurika'},
+  {id:'nobunaga_zerker',cat:'servo',name:'Oda Nobunaga (Berserker)',classe:'Berserker',
+   art:'assets/servos/nobunaga_zerker/nobunaga_zerker_profile.png',
+   reveal:p=>(p.gachaOwned||[]).includes('nobunaga_berserker'),
+   info:'A Rei Demônio do Sexto Céu em modo festival de verão — Berserker pura, transformando guerra em celebração explosiva. Toda ofensiva, sem freios. Obtida na Invocação (banner Summer).',
+   details:[
+     {title:'IDENTIDADE',body:'Esta é a face de verão de Oda Nobunaga, manifestada como Berserker. A energia teatral e a ambição desmedida do Rei Demônio do Sexto Céu se intensificam num espírito de puro festival — fogos de artifício, música e destruição alegre. A racionalidade estratégica da Archer dá lugar ao ímpeto avassalador da loucura de classe Berserker.'},
+     {title:'PERSONALIDADE',body:'No verão, Nobunaga vira uma festa ambulante. Mantém o \"nanodesu\" e o \"kukuku\", mas com o volume no máximo: tudo é espetáculo, tudo é explosão. Como Berserker, canaliza a Ambição do Rei Demônio em Guts — a recusa teimosa de cair, revivendo para continuar a festa. É Nobunaga levada ao extremo de sua própria lenda como demônio conquistador.'},
+   ],
+   params:[
+     {label:'Força',rank:'B'},{label:'Resistência',rank:'C'},{label:'Agilidade',rank:'B'},
+     {label:'Mana',rank:'B'},{label:'Sorte',rank:'C'},{label:'NP',rank:'B'},
+   ],
+   va:'Kubo Yurika'},
   {id:'oldman',cat:'npc',name:'Homem Idoso',classe:'Viajante',
    art:null,
    reveal:p=>!!(p.achievements&&p.achievements.defeat_archer)||(p.stats&&p.stats.runs||0)>3,
@@ -8955,6 +8994,12 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
      ready:owned.includes('okita_saber'),unlock:'gacha',lockText:'Banner Pull'},
     {id:'okita_alter',name:'Okita Souji Alter',classe:'Alter Ego',art:GACHA_SERVOS.okita_alter.assets.default,
      ready:owned.includes('okita_alter'),unlock:'gacha',lockText:'Banner Pull'},
+    {id:'meltryllis',name:'Mysterious Alter Ego Λ',classe:'Alter Ego',art:GACHA_SERVOS.meltryllis_summer.assets.default,
+     ready:owned.includes('meltryllis_summer'),unlock:'gacha',lockText:'Banner Pull'},
+    {id:'nobunaga',name:'Oda Nobunaga',classe:'Archer',art:GACHA_SERVOS.nobunaga_archer.assets.default,
+     ready:owned.includes('nobunaga_archer'),unlock:'gacha',lockText:'Banner Pull'},
+    {id:'nobunaga_zerker',name:'Oda Nobunaga (Berserker)',classe:'Berserker',art:GACHA_SERVOS.nobunaga_berserker.assets.default,
+     ready:owned.includes('nobunaga_berserker'),unlock:'gacha',lockText:'Banner Pull'},
   ];
 
   // Adiciona/remove um servo da party (máx 3, sem repetir)
