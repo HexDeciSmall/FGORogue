@@ -8201,7 +8201,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.80</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.81</p>
       </div>
     </div>
   );
@@ -8843,6 +8843,51 @@ function PatronosView({profile,sel,setSel}){
   );
 }
 
+// Traduz os efeitos de uma SKILL jogável em texto de build (nível 1 → máximo).
+// Lê os campos que cada effectType realmente usa no motor de combate.
+function descreverSkill(sk){
+  const e1=sk.getEffect(1),e10=sk.getEffect(10);
+  const partes=[];
+  const faixa=(a,b,suf='%')=>a===b?`${a}${suf}`:`${a}${suf}→${b}${suf}`;
+  const et=sk.effectType;
+  // cada bloco espelha exatamente o que o motor aplica para aquele effectType
+  if(e1.atkUp)partes.push(`ATK +${faixa(e1.atkUp,e10.atkUp)}`);
+  if(e1.critUp)partes.push(`Crítico +${faixa(e1.critUp,e10.critUp)}`);
+  if(e1.npGain)partes.push(`Carrega NP +${faixa(e1.npGain,e10.npGain)}`);
+  if(e1.npDmgUp)partes.push(`Dano de NP +${faixa(e1.npDmgUp,e10.npDmgUp)}`);
+  if(e1.healPct)partes.push(`Cura ${faixa(e1.healPct,e10.healPct)} do HP máx`);
+  if(e1.defUp)partes.push(`DEF +${faixa(e1.defUp,e10.defUp)}`);
+  if(e1.evadeTurns)partes.push(`Evasão por ${e1.evadeTurns}t`);
+  if(e1.invulnTurns)partes.push(`Invencibilidade por ${e1.invulnTurns}t`);
+  if(e1.enemyAtkDown)partes.push(`ATK inimigo -${faixa(e1.enemyAtkDown,e10.enemyAtkDown)} (todos)`);
+  if(e1.fearAtkDown)partes.push(`Medo: ATK inimigo -${faixa(e1.fearAtkDown,e10.fearAtkDown)}`);
+  if(e1.gutsTurns)partes.push(`Guts ${e1.gutsTurns}t (revive ${faixa(e1.gutsRevivePct,e10.gutsRevivePct)})`);
+  if(e1.debuffRes)partes.push(`Resist. a debuff +${faixa(e1.debuffRes,e10.debuffRes)}`);
+  if(e1.strDmgPct)partes.push(`Dano extra de investida`);
+  if(e1.poisonDmg)partes.push(`Veneno ${faixa(e1.poisonDmg,e10.poisonDmg,'')}/turno`);
+  if(e1.lifedrainPct)partes.push(`Dreno de vida ${faixa(e1.lifedrainPct,e10.lifedrainPct)}`);
+  if(e1.sealTurns)partes.push(`Sela NP inimigo por ${e1.sealTurns}t`);
+  const dur=e1.dur||e1.critDur;
+  if(dur&&(e1.atkUp||e1.critUp||e1.npDmgUp||e1.defUp||e1.debuffRes||e1.enemyAtkDown))partes.push(`por ${dur}t`);
+  const cd1=sk.getCD(1),cd10=sk.getCD(10);
+  return {efeitos:partes,cd:cd1===cd10?`${cd1}t`:`${cd1}→${cd10}t`};
+}
+// Traduz o NP jogável em texto de build.
+function descreverNP(np){
+  const l1=np.levels[1],l5=np.levels[5];
+  const partes=[];
+  const faixa=(a,b,suf='%')=>a===b?`${a}${suf}`:`${a}${suf}~${b}${suf}`;
+  if(l1.dmgPct)partes.push(`Dano ${faixa(l1.dmgPct,l5.dmgPct)}`);
+  if(l1.defDown)partes.push(`DEF inimigo -${l1.defDown}%${np.defDownDur?` por ${np.defDownDur}t`:''}`);
+  if(l1.npDrain)partes.push(`Drena ${faixa(l1.npDrain,l5.npDrain)} do NP inimigo`);
+  if(l1.atkUp)partes.push(`ATK próprio +${faixa(l1.atkUp,l5.atkUp)}${np.selfBuffDur?` por ${np.selfBuffDur}t`:''}`);
+  if(l1.critUp)partes.push(`Crítico próprio +${faixa(l1.critUp,l5.critUp)}${np.selfBuffDur?` por ${np.selfBuffDur}t`:''}`);
+  if(l1.curse)partes.push(`Maldição ${faixa(l1.curse,l5.curse,'')}/turno`);
+  if(l1.charmChance)partes.push(`Charme ${l1.charmChance}%`);
+  if(l1.stunChance)partes.push(`Autoatordoamento ${l1.stunChance}%`);
+  return partes;
+}
+
 function CodexScreen({onNavigate,profile}){
   const[cat,setCat]=useState('servo');
   const[sel,setSel]=useState(null);
@@ -8930,6 +8975,78 @@ function CodexScreen({onNavigate,profile}){
                   </div>
                 )}
                 {known&&c.va&&<div style={{marginTop:12,fontSize:'.72rem',color:'var(--parchment-dark)',fontStyle:'italic'}}>Voz: {c.va}</div>}
+
+                {/* ═══ KIT DE COMBATE (skills e NP com efeitos reais de jogo) ═══ */}
+                {known&&(() => {
+                  // mapeia o id do codex → id do servo jogável em PLAYABLE_SERVOS
+                  const mapa={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',
+                    okuni:'okuni_caster',mochizuki:'mochizuki_assassin',kiara:'kiara_summer',skadi:'skadi_summer',
+                    okita:'okita_saber',okita_alter:'okita_alter',meltryllis:'meltryllis_summer',
+                    nobunaga:'nobunaga_archer',nobunaga_zerker:'nobunaga_berserker'};
+                  const sv=PLAYABLE_SERVOS[mapa[c.id]];
+                  if(!sv)return null;
+                  return(
+                    <div style={{marginTop:16}}>
+                      <div className="cinzel" style={{color:'var(--gold)',fontSize:'.82rem',letterSpacing:2,marginBottom:8,borderBottom:'1px solid var(--gold)',paddingBottom:4}}>⚔️ KIT DE COMBATE</div>
+                      <div style={{fontSize:'.62rem',color:'var(--parchment-dark)',fontStyle:'italic',marginBottom:10}}>
+                        Efeitos em jogo (Nível 1 → Nível máximo). Use para montar sua build.
+                      </div>
+
+                      {/* Passivas */}
+                      {sv.passiveSkills&&sv.passiveSkills.length>0&&(
+                        <div style={{marginBottom:12}}>
+                          <div style={{fontSize:'.66rem',color:'#9fd0a0',letterSpacing:1,marginBottom:5,fontFamily:'Cinzel,serif'}}>PASSIVAS</div>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                            {sv.passiveSkills.map((ps,i)=>(
+                              <span key={i} style={{fontSize:'.64rem',padding:'2px 8px',borderRadius:10,background:'rgba(120,180,120,0.1)',border:'1px solid rgba(120,180,120,0.35)',color:'#b8e0b8'}}>
+                                {ps.name}{ps.effect&&ps.effect.value?` +${ps.effect.value}${['debuff_res','atk_passive','crit_passive','def_passive','defense_passive'].includes(ps.effect.type)?'%':''}`:''}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Skills ativas */}
+                      {sv.activeSkills&&sv.activeSkills.map((sk,i)=>{
+                        const d=descreverSkill(sk);
+                        return(
+                          <div key={i} style={{marginBottom:8,padding:'9px 11px',borderRadius:8,background:'rgba(201,162,39,0.06)',border:'1px solid var(--gold-dim)'}}>
+                            <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+                              <span style={{fontSize:'.6rem',color:'#1a1005',background:'var(--gold)',borderRadius:6,padding:'1px 6px',fontFamily:'Cinzel,serif'}}>SKILL {i+1}</span>
+                              <span style={{fontSize:'.76rem',color:'var(--gold)',fontFamily:'Cinzel,serif',flex:1}}>{sk.name}</span>
+                              <span style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>⏳ {d.cd}</span>
+                            </div>
+                            <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                              {d.efeitos.map((ef,j)=>(
+                                <span key={j} style={{fontSize:'.64rem',padding:'2px 7px',borderRadius:8,background:'rgba(0,0,0,0.3)',color:'var(--parchment)'}}>{ef}</span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Noble Phantasm */}
+                      {sv.np&&(
+                        <div style={{marginTop:10,padding:'11px 13px',borderRadius:8,
+                          background:'linear-gradient(135deg,rgba(120,80,160,0.15),rgba(201,162,39,0.08))',
+                          border:'1px solid #9575cd'}}>
+                          <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:5}}>
+                            <span style={{fontSize:'.6rem',color:'#fff',background:'#7e57c2',borderRadius:6,padding:'1px 7px',fontFamily:'Cinzel,serif'}}>NP</span>
+                            <span style={{fontSize:'.8rem',color:'#d0b0f0',fontFamily:'Cinzel,serif',flex:1}}>{sv.np.name}</span>
+                            <span style={{fontSize:'.58rem',color:'var(--parchment-dark)'}}>{sv.np.isAoE?'🎯 Área':'🎯 Único'}</span>
+                          </div>
+                          <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',marginBottom:5}}>{sv.np.type}</div>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                            {descreverNP(sv.np).map((ef,j)=>(
+                              <span key={j} style={{fontSize:'.64rem',padding:'2px 7px',borderRadius:8,background:'rgba(0,0,0,0.35)',color:'#e0c8f0'}}>{ef}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <button className="btn btn-full" style={{marginTop:16}} onClick={()=>setSel(null)}>← Voltar à lista</button>
               </div>
             );
