@@ -782,6 +782,21 @@ const SFX={
 };
 function sfx(nome){try{if(SFX[nome])SFX[nome]();}catch{}}
 
+// ══════════════════════════════════════════════════════
+// VELOCIDADE DE COMBATE — multiplicador global para as animações.
+// 1 = normal, 2 = 2x mais rápido, 3 = 3x. Salvo no localStorage.
+const COMBAT_SPEED_KEY='fate_combat_speed_v1';
+function loadCombatSpeed(){
+  try{const v=parseFloat(localStorage.getItem(COMBAT_SPEED_KEY));return (v===2||v===3)?v:1;}
+  catch{return 1;}
+}
+function saveCombatSpeed(v){try{localStorage.setItem(COMBAT_SPEED_KEY,String(v));}catch{}}
+// objeto mutável para o valor atual (lido pelos timers de combate em tempo real)
+const COMBAT_SPEED={mult:loadCombatSpeed()};
+// divide uma duração de animação pela velocidade atual (mínimo 60ms para não sumir)
+function animMs(ms){return Math.max(60,Math.round(ms/(COMBAT_SPEED.mult||1)));}
+
+
 
 
 // ══════════════════════════════════════════════════════
@@ -8201,7 +8216,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.81</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.83</p>
       </div>
     </div>
   );
@@ -9086,6 +9101,7 @@ function CodexScreen({onNavigate,profile}){
 function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
   // Party: até 3 servos distintos (ids curtos). O 1º escolhido é o líder.
   const[partySel,setPartySel]=useState(['ibaraki']);
+  const[verDetalhe,setVerDetalhe]=useState(null); // servo cujo preview de stats está aberto
   const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',okuni:'okuni_caster',mochizuki:'mochizuki_chiyome',kiara:'kiara_summer',skadi:'skadi_summer',okita:'okita_saber',okita_alter:'okita_alter'};
   const done=profile.achievements||{};
   const owned=profile.gachaOwned||[];
@@ -9130,6 +9146,59 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
 
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
+      {/* Modal de preview de stats do servo */}
+      {verDetalhe&&(() => {
+        const sv=verDetalhe;const lvl=90;
+        return(
+          <div onClick={()=>setVerDetalhe(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:120,display:'flex',alignItems:'center',justifyContent:'center',padding:14}}>
+            <div onClick={e=>e.stopPropagation()} className="panel" style={{maxWidth:460,width:'100%',maxHeight:'88vh',overflowY:'auto',padding:16}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+                <h3 className="cinzel" style={{color:'var(--gold)',fontSize:'1.05rem',flex:1}}>{sv.name}</h3>
+                <button className="btn btn-sm" onClick={()=>setVerDetalhe(null)}>✕</button>
+              </div>
+              <div style={{display:'flex',gap:12,marginBottom:12}}>
+                <div style={{width:70,height:70,borderRadius:8,overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+                  <img src={sv.assets&&sv.assets.default} alt="" style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center 20%'}} onError={e=>{e.target.style.display='none';}}/>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:'.72rem',color:'var(--parchment-dark)'}}>{sv.className} · ★{sv.rarity||5}</div>
+                  <div style={{display:'flex',gap:12,marginTop:6}}>
+                    <div><span style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>ATK (Nv90)</span><div style={{fontSize:'.95rem',color:'#ff8a65',fontFamily:'Cinzel,serif'}}>{sv.getAtk?sv.getAtk(lvl).toLocaleString():'?'}</div></div>
+                    <div><span style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>HP (Nv90)</span><div style={{fontSize:'.95rem',color:'#81c784',fontFamily:'Cinzel,serif'}}>{sv.getHp?sv.getHp(lvl).toLocaleString():'?'}</div></div>
+                  </div>
+                </div>
+              </div>
+              {sv.activeSkills&&sv.activeSkills.map((sk,i)=>{
+                const d=descreverSkill(sk);
+                return(
+                  <div key={i} style={{marginBottom:7,padding:'8px 10px',borderRadius:8,background:'rgba(201,162,39,0.06)',border:'1px solid var(--gold-dim)'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+                      <span style={{fontSize:'.58rem',color:'#1a1005',background:'var(--gold)',borderRadius:6,padding:'1px 6px',fontFamily:'Cinzel,serif'}}>S{i+1}</span>
+                      <span style={{fontSize:'.74rem',color:'var(--gold)',fontFamily:'Cinzel,serif',flex:1}}>{sk.name}</span>
+                      <span style={{fontSize:'.58rem',color:'var(--parchment-dark)'}}>⏳{d.cd}</span>
+                    </div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                      {d.efeitos.map((ef,j)=>(<span key={j} style={{fontSize:'.62rem',padding:'2px 6px',borderRadius:7,background:'rgba(0,0,0,0.3)',color:'var(--parchment)'}}>{ef}</span>))}
+                    </div>
+                  </div>
+                );
+              })}
+              {sv.np&&(
+                <div style={{marginTop:8,padding:'9px 11px',borderRadius:8,background:'linear-gradient(135deg,rgba(120,80,160,0.15),rgba(201,162,39,0.08))',border:'1px solid #9575cd'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:5}}>
+                    <span style={{fontSize:'.58rem',color:'#fff',background:'#7e57c2',borderRadius:6,padding:'1px 7px',fontFamily:'Cinzel,serif'}}>NP</span>
+                    <span style={{fontSize:'.78rem',color:'#d0b0f0',fontFamily:'Cinzel,serif',flex:1}}>{sv.np.name}</span>
+                    <span style={{fontSize:'.56rem',color:'var(--parchment-dark)'}}>{sv.np.isAoE?'🎯 Área':'🎯 Único'}</span>
+                  </div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                    {descreverNP(sv.np).map((ef,j)=>(<span key={j} style={{fontSize:'.62rem',padding:'2px 6px',borderRadius:7,background:'rgba(0,0,0,0.35)',color:'#e0c8f0'}}>{ef}</span>))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
       <div className="panel" style={{maxWidth:640}}>
         <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,marginBottom:4}}>🗼 TORRE DE DESAFIOS</h2>
         <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:16}}>
@@ -9156,6 +9225,10 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
                   <div style={{fontSize:'.65rem',color:'var(--parchment-dark)'}}>{unlocked?s.classe:(s.lockText||'Em breve')}</div>
                 </div>
                 {inParty&&<span style={{position:'absolute',top:4,right:6,fontSize:'.7rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{selIdx===0?'★ Líder':`#${selIdx+1}`}</span>}
+                {unlocked&&(
+                  <span onClick={e=>{e.stopPropagation();const mapa={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',okuni:'okuni_caster',mochizuki:'mochizuki_assassin',kiara:'kiara_summer',skadi:'skadi_summer',okita:'okita_saber',okita_alter:'okita_alter',meltryllis:'meltryllis_summer',nobunaga:'nobunaga_archer',nobunaga_zerker:'nobunaga_berserker'};setVerDetalhe(PLAYABLE_SERVOS[mapa[s.id]]||null);}}
+                    title="Ver detalhes" style={{position:'absolute',bottom:4,right:6,fontSize:'.8rem',cursor:'pointer',color:'var(--parchment-dark)',padding:'0 2px'}}>ⓘ</span>
+                )}
               </button>
             );
           })}
@@ -9790,6 +9863,36 @@ function RessonanciaScreen({onNavigate,profile,setProfile}){
   );
 }
 
+// Sprite de servo que cicla entre espera → ataque → NP → espera, dando vida ao card.
+// Usa os GIFs de sprites.{idle,attack,np}; cai no busto estático se não houver.
+function ServoSpriteVivo({def,short,className,style}){
+  const idleGuess=short?`assets/servos/${short}/${short}_espera.gif`:null;
+  const sp=(def&&def.sprites)||{};
+  const idle=sp.idle||idleGuess;
+  const staticFallback=(def&&def.assets&&(def.assets.combat||def.assets.default))||null;
+  // sequência de fases com durações (espera fica mais tempo; ataque/np são "flashes")
+  const fases=[
+    {src:idle,dur:2600},
+    {src:sp.attack||idle,dur:1300},
+    {src:idle,dur:2200},
+    {src:sp.np||sp.attack||idle,dur:1900},
+  ];
+  const[fase,setFase]=useState(0);
+  const[key,setKey]=useState(0); // força o GIF a reiniciar do 1º frame
+  useEffect(()=>{
+    const t=setTimeout(()=>{
+      setFase(f=>(f+1)%fases.length);
+      setKey(k=>k+1);
+    },fases[fase].dur);
+    return ()=>clearTimeout(t);
+  },[fase]);
+  const src=fases[fase].src||staticFallback;
+  return(
+    <img key={key} className={className} src={src} alt={def?def.name:''} style={style}
+      onError={ev=>{ev.target.onerror=null;if(staticFallback)ev.target.src=staticFallback;}}/>
+  );
+}
+
 function ProfileScreen({onNavigate,profile,setProfile}){
   const[nick,setNick]=useState(profile.nickname);
   const[notif,setNotif]=useState('');
@@ -10156,8 +10259,7 @@ function ProfileScreen({onNavigate,profile,setProfile}){
           return(
             <div key={r.id} className="char-card" onClick={()=>setTreinando(r.id)}
               title={`Treinar ${def.name} com SQ`} style={{cursor:'pointer'}}>
-              <img className="char-card-img" src={img} alt={def.name}
-                onError={ev=>{ev.target.onerror=null;ev.target.src=staticFallback;}}/>
+              <ServoSpriteVivo def={def} short={r.short} className="char-card-img"/>
               <div className="char-card-body">
                 <div className="char-card-name">{def.name}</div>
                 <div className="char-card-class">{def.className} · Nv.{sxp.level}</div>
@@ -10265,9 +10367,8 @@ function ServoTrainScreen({servoId,onBack,profile,setProfile}){
         </p>
 
         <div style={{display:'flex',gap:14,alignItems:'center',margin:'16px 0 10px'}}>
-          <img src={(def.sprites&&def.sprites.idle)||def.assets.combat||def.assets.default} alt={def.name}
-            style={{width:86,height:86,objectFit:'cover',borderRadius:8,border:'1px solid var(--gold-dim)'}}
-            onError={ev=>{ev.target.onerror=null;ev.target.src=def.assets.default;}}/>
+          <ServoSpriteVivo def={def} short={servoId}
+            style={{width:86,height:86,objectFit:'cover',borderRadius:8,border:'1px solid var(--gold-dim)'}}/>
           <div style={{flex:1,minWidth:0}}>
             <div className="cinzel" style={{color:'var(--gold)',fontSize:'1rem'}}>{def.name}</div>
             <div style={{fontSize:'.72rem',color:'var(--parchment-dark)'}}>{def.className} · Nv.{sxp.level}{noTeto&&' (máximo)'}</div>
@@ -15276,10 +15377,15 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   const[notif,setNotif]=useState('');
   const[introShown,setIntroShown]=useState(false);
   const[npCutin,setNpCutin]=useState(null); // {src,name,quote} — arte em tela cheia ao usar NP
+  const[velCombate,setVelCombate]=useState(COMBAT_SPEED.mult); // 1x/2x/3x
+  function ciclarVelocidade(){
+    const nova=velCombate===1?2:velCombate===2?3:1;
+    setVelCombate(nova);COMBAT_SPEED.mult=nova;saveCombatSpeed(nova);
+  }
 
   function fireNpCutin(src,name,quote){
     setNpCutin({src,name,quote});
-    setTimeout(()=>setNpCutin(null),1900);
+    setTimeout(()=>setNpCutin(null),animMs(1900));
   }
 
   // ── Efeitos visuais flutuantes (dano/cura/buff/esquiva) ──
@@ -15297,7 +15403,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     setSpriteAnim(prev=>({...prev,[idx]:{kind,key:Date.now()}}));
     animTimers.current[idx]=setTimeout(()=>{
       setSpriteAnim(prev=>{const n={...prev};delete n[idx];return n;});
-    },ms);
+    },animMs(ms));
   }
   useEffect(()=>()=>{Object.values(animTimers.current).forEach(clearTimeout);},[]);
   // ── SPRITES ANIMADOS: estado de animação por INIMIGO/BOSS (mesmo esquema da party) ──
@@ -15309,7 +15415,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     setEnemySpriteAnim(prev=>({...prev,[instanceId]:{kind,key:Date.now()}}));
     enemyAnimTimers.current[instanceId]=setTimeout(()=>{
       setEnemySpriteAnim(prev=>{const n={...prev};delete n[instanceId];return n;});
-    },ms);
+    },animMs(ms));
   }
   useEffect(()=>()=>{Object.values(enemyAnimTimers.current).forEach(clearTimeout);},[]);
   const enemyTurnPtr=useRef(0); // (legado) rotação round-robin
@@ -15436,7 +15542,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         if(first.kind==='servo'){
           setActiveIdx(first.ref);
         } else {
-          setTimeout(()=>runOneEnemyAction(first.ref,party[activeIdx],enemies),900);
+          setTimeout(()=>runOneEnemyAction(first.ref,party[activeIdx],enemies),animMs(900));
         }
       }
       setIntroShown(true);
@@ -16484,7 +16590,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         if(ei<0)continue; // morto: pula
         setOrderPtr(ptr);
         const actPtr=ptr;
-        setTimeout(()=>runOneEnemyAction(entry.ref,curServo,curEnemies,actPtr),650);
+        setTimeout(()=>runOneEnemyAction(entry.ref,curServo,curEnemies,actPtr),animMs(650));
         return;
       }
     }
@@ -17682,6 +17788,15 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
         {/* Ações */}
         <div className="panel combat-actions" style={{padding:12}}>
+          {/* Botão de velocidade de combate */}
+          <div style={{display:'flex',justifyContent:'flex-end',marginBottom:6}}>
+            <button onClick={ciclarVelocidade} title="Velocidade das animações"
+              style={{fontSize:'.68rem',padding:'3px 12px',borderRadius:14,cursor:'pointer',fontFamily:'Cinzel,serif',
+                border:`1px solid ${velCombate>1?'var(--gold)':'var(--gold-dim)'}`,
+                background:velCombate>1?'rgba(201,162,39,0.2)':'rgba(0,0,0,0.3)',color:'var(--gold)'}}>
+              {velCombate===1?'▶ Velocidade 1x':velCombate===2?'▶▶ Velocidade 2x':'▶▶▶ Velocidade 3x'}
+            </button>
+          </div>
           {!isServoTurn&&(
             <div style={{textAlign:'center',fontSize:'.7rem',color:'#ff9090',marginBottom:8,fontStyle:'italic'}}>
               ⏳ Vez do inimigo... (você pode usar skills, que são ações livres)
