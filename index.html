@@ -8315,7 +8315,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.87</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.88</p>
       </div>
     </div>
   );
@@ -9021,9 +9021,78 @@ function descreverMasterSkill(key,ef){
   return {nome:nomes[key]||key,efeitos:fn?fn():[],cd:(ef.cd||0)+'t'};
 }
 
+// ══════════════════════════════════════════════════════
+// DIÁLOGOS DE BOND — lista padrão de falas que todo servo tem (estilo FGO).
+// Cada entrada: {id (usado no nome do arquivo de áudio), label (exibido), bond?}
+// O áudio segue o padrão: assets/audio/<servo>/<servo>_<id>.ogg
+// A transcrição vem de sv.dialogos[id] (se existir); senão mostra "—".
+const DIALOGOS_PADRAO=[
+  {id:'invocacao',label:'Invocação'},
+  {id:'levelup',label:'Level Up'},
+  {id:'ascensao1',label:'Primeira Ascensão'},
+  {id:'ascensao2',label:'Segunda Ascensão'},
+  {id:'ascensao3',label:'Terceira Ascensão'},
+  {id:'batalha_inicio',label:'Início de Batalha'},
+  {id:'skill1',label:'Skill 1'},
+  {id:'skill2',label:'Skill 2'},
+  {id:'skill3',label:'Skill 3'},
+  {id:'sel_ataque',label:'Selecionar Ataque'},
+  {id:'sel_np',label:'Selecionar Fantasma Nobre'},
+  {id:'ataque1',label:'Ataque 1'},
+  {id:'ataque2',label:'Ataque 2'},
+  {id:'ataque3',label:'Ataque 3'},
+  {id:'ataque_extra',label:'Extra Ataque'},
+  {id:'np',label:'Fantasma Nobre'},
+  {id:'dano_np',label:'Dano por um Fantasma Nobre'},
+  {id:'derrota',label:'Derrota'},
+  {id:'batalha_fim',label:'Batalha Finalizada'},
+  {id:'bond1',label:'Bond 1',bond:true},
+  {id:'bond2',label:'Bond 2',bond:true},
+  {id:'bond3',label:'Bond 3',bond:true},
+  {id:'bond4',label:'Bond 4',bond:true},
+  {id:'bond5',label:'Bond 5',bond:true},
+  {id:'dialogo1',label:'Diálogo 1'},
+  {id:'dialogo2',label:'Diálogo 2'},
+  {id:'dialogo3',label:'Diálogo 3'},
+  {id:'dialogo4',label:'Diálogo 4'},
+  {id:'dialogo5',label:'Diálogo 5'},
+  {id:'gosta',label:'Sobre algo que gosta'},
+  {id:'odeia',label:'Sobre algo que odeia'},
+  {id:'graal',label:'Sobre o Santo Graal'},
+  {id:'evento',label:'Durante evento'},
+  {id:'aniversario',label:'Aniversário'},
+];
+
+// Componente de uma linha de diálogo: label, transcrição e player de áudio.
+function LinhaDialogo({servoShort,dlg,texto}){
+  const [erroAudio,setErroAudio]=useState(false);
+  const src=servoShort?`assets/audio/${servoShort}/${servoShort}_${dlg.id}.ogg`:null;
+  return(
+    <div style={{padding:'10px 12px',borderRadius:8,marginBottom:7,
+      background:dlg.bond?'linear-gradient(135deg,rgba(224,90,74,0.12),rgba(201,162,39,0.06))':'rgba(0,0,0,0.22)',
+      border:`1px solid ${dlg.bond?'var(--crimson)':'var(--gold-dim)'}`}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:texto?5:0}}>
+        <span style={{fontSize:'.7rem',color:dlg.bond?'var(--crimson-soft)':'var(--gold)',fontFamily:'Cinzel,serif',
+          letterSpacing:dlg.bond?1:0,flex:1,fontWeight:dlg.bond?700:400}}>
+          {dlg.bond&&'❤️ '}{dlg.label}
+        </span>
+      </div>
+      {texto
+        ?<p style={{fontSize:'.78rem',color:'var(--parchment)',lineHeight:1.6,margin:'0 0 8px',fontStyle:'italic'}}>"{texto}"</p>
+        :<p style={{fontSize:'.7rem',color:'var(--parchment-dark)',margin:'0 0 8px',fontStyle:'italic'}}>— (transcrição em breve)</p>}
+      {src&&!erroAudio
+        ?<audio controls preload="none" style={{width:'100%',height:34}} onError={()=>setErroAudio(true)}>
+           <source src={src} type="audio/ogg"/>
+         </audio>
+        :<div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>🔇 Áudio ainda não disponível</div>}
+    </div>
+  );
+}
+
 function CodexScreen({onNavigate,profile}){
   const[cat,setCat]=useState('servo');
   const[sel,setSel]=useState(null);
+  const[abaDetalhe,setAbaDetalhe]=useState('perfil'); // 'perfil' | 'dialogos'
   const cats=[['servo','Servos'],['mestre','Mestres'],['npc','NPCs'],['patrono','Patronos']];
   const list=cat==='patrono'?[]:CODEX.filter(c=>c.cat===cat);
 
@@ -9062,6 +9131,46 @@ function CodexScreen({onNavigate,profile}){
                     <div style={{fontSize:'.8rem',color:'var(--parchment-dark)',marginTop:2}}>{known?c.classe:'Desconhecido'}</div>
                   </div>
                 </div>
+
+                {/* Abas: Perfil / Diálogos de Bond (só para servos revelados) */}
+                {known&&cat==='servo'&&(
+                  <div style={{display:'flex',gap:8,marginBottom:16}}>
+                    <button onClick={()=>setAbaDetalhe('perfil')}
+                      style={{flex:1,padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.76rem',
+                        border:`1px solid ${abaDetalhe==='perfil'?'var(--gold)':'var(--gold-dim)'}`,
+                        background:abaDetalhe==='perfil'?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>
+                      📜 Perfil
+                    </button>
+                    <button onClick={()=>setAbaDetalhe('dialogos')}
+                      style={{flex:1,padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.76rem',
+                        border:`1px solid ${abaDetalhe==='dialogos'?'var(--crimson)':'var(--gold-dim)'}`,
+                        background:abaDetalhe==='dialogos'?'rgba(224,90,74,0.18)':'transparent',color:abaDetalhe==='dialogos'?'var(--crimson-soft)':'var(--gold)'}}>
+                      🎙️ Diálogos de Bond
+                    </button>
+                  </div>
+                )}
+
+                {/* ─── ABA DIÁLOGOS ─── */}
+                {known&&cat==='servo'&&abaDetalhe==='dialogos'&&(() => {
+                  const mapa={ibaraki:'ibaraki',qin:'qin',deon:'deon',archer:'sith',okuni:'okuni',mochizuki:'mochizuki',
+                    kiara:'kiara',skadi:'skadi',okita:'okita',okita_alter:'okita_alter',meltryllis:'meltryllis',
+                    nobunaga:'nobunaga',nobunaga_zerker:'nobunaga_zerker'};
+                  const short=mapa[c.id]||c.id;
+                  const dialogos=c.dialogos||{};
+                  return(
+                    <div>
+                      <p style={{fontSize:'.66rem',color:'var(--parchment-dark)',fontStyle:'italic',marginBottom:12}}>
+                        Vozes e falas do Servo. Toque no player para ouvir (quando disponível).
+                      </p>
+                      {DIALOGOS_PADRAO.map(dlg=>(
+                        <LinhaDialogo key={dlg.id} servoShort={short} dlg={dlg} texto={dialogos[dlg.id]}/>
+                      ))}
+                    </div>
+                  );
+                })()}
+
+                {/* ─── ABA PERFIL (conteúdo original) ─── */}
+                {(!(known&&cat==='servo')||abaDetalhe==='perfil')&&(<>
                 <p style={{fontSize:'.85rem',color:'var(--parchment)',lineHeight:1.7}}>
                   {known?c.info:'Este personagem ainda não foi revelado. Continue sua jornada para descobrir mais.'}
                 </p>
@@ -9179,6 +9288,7 @@ function CodexScreen({onNavigate,profile}){
                     </div>
                   );
                 })()}
+                </>)}
 
                 <button className="btn btn-full" style={{marginTop:16}} onClick={()=>setSel(null)}>← Voltar à lista</button>
               </div>
@@ -9190,7 +9300,7 @@ function CodexScreen({onNavigate,profile}){
             {list.map(c=>{
               const known=c.reveal(profile);
               return(
-                <button key={c.id} onClick={()=>setSel(c.id)}
+                <button key={c.id} onClick={()=>{setSel(c.id);setAbaDetalhe('perfil');}}
                   style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',
                     background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:3,
                     cursor:'pointer',textAlign:'left',opacity:known?1:0.6}}>
