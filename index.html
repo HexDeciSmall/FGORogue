@@ -8510,7 +8510,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.95</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.96</p>
       </div>
     </div>
   );
@@ -16121,6 +16121,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   const[log,setLog]=useState([]);
   const[turn,setTurn]=useState(1);
   const[result,setResult]=useState(null);
+  // acumuladores para o resumo pós-combate
+  const runStats=useRef({danoCausado:0,inimigosDerrotados:0});
   const[dialogue,setDialogue]=useState({text:'',portrait:null});
   const[notif,setNotif]=useState('');
   const[introShown,setIntroShown]=useState(false);
@@ -16403,6 +16405,9 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     spawnFx(e.instanceId,String(dmg),fxKind);
     // Efeito de impacto: NP mostra anéis; crítico mostra estrela; golpe comum, corte.
     spawnImpact(e.instanceId,fxKind==='np'?'np':fxKind==='crit'?'crit':'hit');
+    // acumula estatísticas para o resumo pós-combate
+    runStats.current.danoCausado+=Math.max(0,Math.min(dmg,e.currentHp));
+    if(e.currentHp>0&&e.currentHp-dmg<=0)runStats.current.inimigosDerrotados+=1;
     let out={...e,currentHp:Math.max(0,e.currentHp-dmg)};
     // Afixo Coroa de Espinhos: parte do dano recebido volta para o Servo ativo.
     if(e.thorns&&dmg>0){
@@ -18311,6 +18316,25 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           <p style={{color:'var(--parchment-dark)',fontStyle:'italic',textAlign:'center',maxWidth:360}}>
             {result==='win'?SDEF.dialogue.win:result==='fled'?'Vivendo para lutar outro dia... Sem recompensas desta vez.':SDEF.dialogue.lose}
           </p>
+          {/* Resumo do combate */}
+          <div style={{display:'flex',gap:10,marginTop:16,flexWrap:'wrap',justifyContent:'center'}}>
+            {(() => {
+              const hpVivos=party.reduce((a,pj)=>a+((!pj.defeated&&pj.hp>0)?1:0),0);
+              const stats=[
+                {icon:'⚔️',label:'Dano causado',val:Math.round(runStats.current.danoCausado).toLocaleString()},
+                {icon:'💀',label:'Derrotados',val:runStats.current.inimigosDerrotados},
+                {icon:'🔄',label:'Turnos',val:turn},
+                {icon:'❤️',label:'Servos vivos',val:`${hpVivos}/${party.length}`},
+              ];
+              return stats.map((s,i)=>(
+                <div key={i} style={{background:'rgba(0,0,0,0.4)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'8px 14px',textAlign:'center',minWidth:78}}>
+                  <div style={{fontSize:'1.1rem'}}>{s.icon}</div>
+                  <div style={{fontSize:'.95rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{s.val}</div>
+                  <div style={{fontSize:'.54rem',color:'var(--parchment-dark)',letterSpacing:.5}}>{s.label}</div>
+                </div>
+              ));
+            })()}
+          </div>
         </div>
       )}
 
@@ -18519,6 +18543,18 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                   <div className="arena-shadow" style={{bottom:26,width:w*0.8,height:11}}/>
                   <div className={`status-card${sel?' active':''}`} style={{marginTop:4,width:'100%'}}>
                     <div className="status-name" style={{fontSize:'.52rem',textAlign:'center'}}>{dead?'✝ ':''}{e.name}</div>
+                    {(() => {
+                      // Vantagem de classe: se o servo ativo tem passiva vs_class contra a
+                      // classe deste inimigo, sinaliza o bônus de dano ao jogador.
+                      if(dead||!e.className)return null;
+                      const bonus=(SDEF.passiveSkills||[]).find(p=>p.effect&&p.effect.type==='vs_class'&&p.effect.cls===e.className);
+                      if(!bonus)return null;
+                      return(
+                        <div style={{fontSize:'.5rem',color:'#7ee08a',textAlign:'center',fontWeight:700,letterSpacing:.5}}>
+                          🔺 +{bonus.effect.value}% vs {e.className}
+                        </div>
+                      );
+                    })()}
                     <div className={`status-bar status-hp${(e.currentHp/e.maxHp)<0.3?' low':''}`}>
                       <div style={{width:`${clamp((e.currentHp/e.maxHp)*100,0,100)}%`}}/>
                     </div>
