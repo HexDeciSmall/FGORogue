@@ -3912,7 +3912,7 @@ function ranquearComMBTI(vetorJogador,tipoJogador){
 
 const IBARAKI={
   id:'ibaraki_douji',name:'Ibaraki Douji',className:'Berserker',
-  getAtk:lvl=>Math.round(linear(lvl,1606,9636)),
+  getAtk:lvl=>Math.round(linear(lvl,1720,10320)),
   getHp:lvl=>Math.round(linear(lvl,1752,10954)),
   attributes:{
     strength:{rank:'B',points:rankToPoints('B')},
@@ -3946,8 +3946,8 @@ const IBARAKI={
   np:{
     name:'Rashōmon Daiengi',type:'Anti-Army',isAoE:false,effectType:'dmg_defdown',
     levels:{
-      1:{dmgPct:600,defDown:20},2:{dmgPct:800,defDown:25},
-      3:{dmgPct:1000,defDown:30},4:{dmgPct:1200,defDown:35},5:{dmgPct:1400,defDown:40},
+      1:{dmgPct:650,defDown:20},2:{dmgPct:850,defDown:25},
+      3:{dmgPct:1050,defDown:30},4:{dmgPct:1275,defDown:35},5:{dmgPct:1500,defDown:40},
     },
     defDownDur:3,
   },
@@ -4951,11 +4951,11 @@ const OKUNI_PLAYABLE={
   np:{
     name:'Okuni Repertoire: Kabuki of the Izumo Wild God',type:'Anti-Army',isAoE:true,effectType:'dmg_defdown',
     levels:{
-      1:{dmgPct:450,defDown:20,defDownTurns:3},
-      2:{dmgPct:600,defDown:20,defDownTurns:3},
-      3:{dmgPct:750,defDown:25,defDownTurns:3},
-      4:{dmgPct:900,defDown:25,defDownTurns:3},
-      5:{dmgPct:1050,defDown:30,defDownTurns:3},
+      1:{dmgPct:400,defDown:20,defDownTurns:3},
+      2:{dmgPct:525,defDown:20,defDownTurns:3},
+      3:{dmgPct:650,defDown:25,defDownTurns:3},
+      4:{dmgPct:750,defDown:25,defDownTurns:3},
+      5:{dmgPct:850,defDown:30,defDownTurns:3},
     },
   },
   dialogue:{
@@ -8510,7 +8510,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.96</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.97</p>
       </div>
     </div>
   );
