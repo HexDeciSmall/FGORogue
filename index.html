@@ -8376,9 +8376,10 @@ function PatchNotesModal({onFechar}){
       display:'flex',alignItems:'center',justifyContent:'center',padding:14}}>
       <div onClick={e=>e.stopPropagation()} className="panel"
         style={{maxWidth:520,width:'100%',maxHeight:'86vh',overflowY:'auto',padding:0,
-          border:'1px solid var(--gold)',borderRadius:14,overflow:'hidden'}}>
+          border:'1px solid var(--gold)',borderRadius:14}}>
         {/* Cabeçalho */}
         <div style={{padding:'18px 20px 14px',textAlign:'center',position:'relative',
+          borderRadius:'14px 14px 0 0',
           background:'radial-gradient(circle at 50% 0%,rgba(201,162,39,0.2),transparent 70%),linear-gradient(160deg,#241120,#150a1a)'}}>
           <div style={{fontSize:'.6rem',color:'var(--gold-dim)',letterSpacing:3,fontFamily:'Cinzel,serif',marginBottom:4}}>◈ ATUALIZAÇÃO ◈</div>
           <h2 className="cinzel" style={{color:'var(--parchment)',fontSize:'1.4rem',letterSpacing:1,
@@ -8509,7 +8510,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.92</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.93</p>
       </div>
     </div>
   );
