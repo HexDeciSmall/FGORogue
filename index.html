@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -811,9 +812,11 @@ const firebaseConfig={
   appId:"1:177736740511:web:07a303e16d9701e0b1bcaa",
 };
 let fbDb=null;
+let fbAuth=null;
 try{
   const fbApp=firebase.initializeApp(firebaseConfig);
   fbDb=firebase.firestore();
+  fbAuth=firebase.auth();
 }catch(e){console.error('Firebase não pôde iniciar:',e);}
 
 // Cada categoria vira sua própria coleção (ranking_<cat>) — evita precisar de
@@ -5708,7 +5711,98 @@ function loadProfile(){
     };
   }catch{return def;}
 }
-function saveProfile(p){try{localStorage.setItem(SAVE_KEY,JSON.stringify(p));}catch{}}
+function saveProfile(p){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(p));}catch{}
+  nuvemAgendarPush(); // se logado, sincroniza com a nuvem (com debounce)
+}
+
+// ══════════════════════════════════════════════════════
+// LOGIN + SINCRONIZAÇÃO NA NUVEM (Firebase Auth + Firestore)
+// O jogo continua funcionando sem login (offline). Com login, o progresso
+// é salvo na nuvem e recuperável em qualquer dispositivo.
+
+let _nuvemPushTimer=null;
+// Agenda um envio do progresso pra nuvem (debounce de 3s para agrupar escritas).
+function nuvemAgendarPush(){
+  if(!fbAuth||!fbAuth.currentUser||!fbDb)return;
+  if(_nuvemPushTimer)clearTimeout(_nuvemPushTimer);
+  _nuvemPushTimer=setTimeout(nuvemPushAgora,3000);
+}
+// Envia o progresso local para a conta na nuvem imediatamente.
+async function nuvemPushAgora(){
+  if(!fbAuth||!fbAuth.currentUser||!fbDb)return;
+  try{
+    const uid=fbAuth.currentUser.uid;
+    const prof=loadProfile();
+    await fbDb.collection('saves').doc(uid).set({
+      profile:prof,
+      atualizadoEm:firebase.firestore.FieldValue.serverTimestamp(),
+    },{merge:true});
+  }catch(e){console.error('push nuvem',e);}
+}
+// Baixa o progresso da nuvem. Retorna o profile salvo ou null se não houver.
+async function nuvemPull(uid){
+  if(!fbDb)return null;
+  try{
+    const doc=await fbDb.collection('saves').doc(uid).get();
+    if(doc.exists){const d=doc.data();return d.profile||null;}
+    return null;
+  }catch(e){console.error('pull nuvem',e);return null;}
+}
+// Cadastro com email e senha.
+async function authCadastrar(email,senha){
+  if(!fbAuth)return {ok:false,erro:'Login indisponível.'};
+  try{await fbAuth.createUserWithEmailAndPassword(email,senha);return {ok:true};}
+  catch(e){return {ok:false,erro:authTraduzErro(e.code)};}
+}
+// Entrar com email e senha.
+async function authEntrar(email,senha){
+  if(!fbAuth)return {ok:false,erro:'Login indisponível.'};
+  try{await fbAuth.signInWithEmailAndPassword(email,senha);return {ok:true};}
+  catch(e){return {ok:false,erro:authTraduzErro(e.code)};}
+}
+// Entrar com Google (popup).
+async function authGoogle(){
+  if(!fbAuth)return {ok:false,erro:'Login indisponível.'};
+  try{
+    const prov=new firebase.auth.GoogleAuthProvider();
+    await fbAuth.signInWithPopup(prov);
+    return {ok:true};
+  }catch(e){return {ok:false,erro:authTraduzErro(e.code)};}
+}
+// Sair da conta.
+async function authSair(){if(fbAuth)try{await fbAuth.signOut();}catch{}}
+
+// Ao logar, decide o que fazer com o progresso local vs. o da nuvem.
+// Retorna o profile resultante. Escolhe o mais avançado por métricas-chave para
+// não fazer o jogador perder progresso ao entrar de outro dispositivo.
+function nuvemMesclar(local,nuvem){
+  if(!nuvem)return local; // primeira vez logando: sobe o local
+  if(!local)return nuvem;
+  // pontua cada save por progresso acumulado (maior = mais avançado)
+  const pontos=p=>{
+    const m=p.magus||{};const s=p.stats||{};
+    return (m.level||1)*1000+(m.xp||0)+(s.runs||0)*100+(p.sq||0)+(p.qp||0)/10
+      +((p.gachaOwned||[]).length)*5000+Object.keys(p.achievements||{}).length*500;
+  };
+  return pontos(nuvem)>=pontos(local)?nuvem:local;
+}
+// Traduz os códigos de erro do Firebase Auth para português.
+function authTraduzErro(code){
+  const m={
+    'auth/email-already-in-use':'Este email já está cadastrado. Tente entrar.',
+    'auth/invalid-email':'Email inválido.',
+    'auth/weak-password':'A senha precisa ter ao menos 6 caracteres.',
+    'auth/user-not-found':'Conta não encontrada. Cadastre-se primeiro.',
+    'auth/wrong-password':'Senha incorreta.',
+    'auth/invalid-credential':'Email ou senha incorretos.',
+    'auth/popup-closed-by-user':'Login cancelado.',
+    'auth/network-request-failed':'Falha de conexão. Verifique sua internet.',
+    'auth/too-many-requests':'Muitas tentativas. Aguarde um pouco.',
+  };
+  return m[code]||('Erro no login ('+code+')');
+}
+
 
 // ─── ÁLBUM: REAÇÕES DISPONÍVEIS ──────────────────────
 // As reações e comentários do Álbum são COMPARTILHADOS via Firestore (todos veem
@@ -8216,7 +8310,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.83</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.86</p>
       </div>
     </div>
   );
@@ -8901,6 +8995,25 @@ function descreverNP(np){
   if(l1.charmChance)partes.push(`Charme ${l1.charmChance}%`);
   if(l1.stunChance)partes.push(`Autoatordoamento ${l1.stunChance}%`);
   return partes;
+}
+
+// Descreve uma skill do Mestre a partir do seu efeito calculado (objeto de sv[key]).
+function descreverMasterSkill(key,ef){
+  if(!ef)return {nome:'',efeitos:[],cd:''};
+  const nomes={manaBuster:'Mana Buster',transf:'Transferência de Mana',veneno:'Veneno de Brasilisco',
+    tormento:'Tormento',ossos:'Ossos que Não São Meus',ukiyoe:'Ukiyo-e',fundir:'Fundir Ossos'};
+  // cada descrição é uma função — só a do key pedido é executada (evita ler campos ausentes)
+  const descr={
+    manaBuster:()=>['ATK +'+Math.round(ef.atkBoost||0)+'% por 1 turno'],
+    transf:()=>['Carrega NP +'+Math.round(ef.npGain||0)+'%'],
+    veneno:()=>['Atordoa o inimigo ('+Math.round(ef.stunChance||0)+'% chance)'],
+    tormento:()=>['Dano '+(ef.hpDmgPct||0).toFixed(1)+'% do HP máx do alvo (ignora DEF)'],
+    ossos:()=>['DEF +'+(ef.defUp||0)+'% por 3t','Remove 1 debuff'],
+    ukiyoe:()=>['Cura '+(ef.healHp||0)+' HP','Carrega NP +'+(ef.npGain||0)+'%','Evasão por 2t'],
+    fundir:()=>['Dano '+(ef.hpDmgPct||0)+'% do HP máx de TODOS os inimigos'],
+  };
+  const fn=descr[key];
+  return {nome:nomes[key]||key,efeitos:fn?fn():[],cd:(ef.cd||0)+'t'};
 }
 
 function CodexScreen({onNavigate,profile}){
@@ -9865,6 +9978,106 @@ function RessonanciaScreen({onNavigate,profile,setProfile}){
 
 // Sprite de servo que cicla entre espera → ataque → NP → espera, dando vida ao card.
 // Usa os GIFs de sprites.{idle,attack,np}; cai no busto estático se não houver.
+// Seção de Conta no perfil: login/cadastro/logout + sincronização na nuvem.
+function ContaSection({profile,setProfile}){
+  const[user,setUser]=useState(fbAuth?fbAuth.currentUser:null);
+  const[modo,setModo]=useState('entrar'); // 'entrar' | 'cadastrar'
+  const[email,setEmail]=useState('');
+  const[senha,setSenha]=useState('');
+  const[msg,setMsg]=useState('');
+  const[busy,setBusy]=useState(false);
+  const[aberto,setAberto]=useState(false);
+
+  useEffect(()=>{
+    if(!fbAuth)return;
+    const un=fbAuth.onAuthStateChanged(async u=>{
+      setUser(u);
+      if(u){
+        // ao logar: mescla progresso local + nuvem e aplica o mais avançado
+        const local=loadProfile();
+        const nuvem=await nuvemPull(u.uid);
+        const final=nuvemMesclar(local,nuvem);
+        saveProfile(final);setProfile(final);
+        nuvemPushAgora(); // garante que a nuvem fica com o resultado da mescla
+        setMsg('');setAberto(false);
+      }
+    });
+    return ()=>un();
+  },[]);
+
+  async function fazer(fn){
+    setBusy(true);setMsg('');
+    const r=await fn();
+    setBusy(false);
+    if(!r.ok)setMsg(r.erro||'Erro.');
+  }
+
+  if(!fbAuth){
+    return null; // Firebase indisponível — não mostra a seção
+  }
+
+  if(user){
+    // logado
+    return(
+      <div style={{background:'rgba(46,139,87,0.1)',border:'1px solid #2e8b57',borderRadius:10,padding:'14px 16px',marginBottom:18}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <span style={{fontSize:'1.5rem'}}>☁️</span>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:'.8rem',color:'#7ee08a',fontFamily:'Cinzel,serif'}}>Progresso na nuvem ativo</div>
+            <div style={{fontSize:'.66rem',color:'var(--parchment-dark)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{user.email||'Conta Google'}</div>
+          </div>
+          <button className="btn btn-sm" onClick={()=>{nuvemPushAgora();authSair();}}>Sair</button>
+        </div>
+        <div style={{fontSize:'.62rem',color:'var(--parchment-dark)',marginTop:8}}>
+          Seu progresso é salvo automaticamente e pode ser recuperado em qualquer dispositivo com esta conta.
+        </div>
+      </div>
+    );
+  }
+
+  // deslogado
+  return(
+    <div style={{background:'rgba(201,162,39,0.08)',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'14px 16px',marginBottom:18}}>
+      {!aberto?(
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <span style={{fontSize:'1.5rem'}}>💾</span>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:'.8rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>Salvar progresso na nuvem</div>
+            <div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>Entre para não perder seu progresso</div>
+          </div>
+          <button className="btn btn-sm" onClick={()=>setAberto(true)}>Entrar</button>
+        </div>
+      ):(
+        <div>
+          <div style={{display:'flex',gap:8,marginBottom:12}}>
+            <button onClick={()=>setModo('entrar')} style={{flex:1,padding:'6px',borderRadius:6,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.72rem',border:`1px solid ${modo==='entrar'?'var(--gold)':'var(--gold-dim)'}`,background:modo==='entrar'?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>Entrar</button>
+            <button onClick={()=>setModo('cadastrar')} style={{flex:1,padding:'6px',borderRadius:6,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.72rem',border:`1px solid ${modo==='cadastrar'?'var(--gold)':'var(--gold-dim)'}`,background:modo==='cadastrar'?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>Cadastrar</button>
+          </div>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com"
+            style={{width:'100%',padding:'8px 10px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.8rem',marginBottom:8}}/>
+          <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="senha (mín. 6 caracteres)"
+            style={{width:'100%',padding:'8px 10px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.8rem',marginBottom:8}}/>
+          {msg&&<div style={{fontSize:'.68rem',color:'#ff9090',marginBottom:8}}>{msg}</div>}
+          <button className="btn btn-full" disabled={busy} onClick={()=>fazer(()=>modo==='entrar'?authEntrar(email.trim(),senha):authCadastrar(email.trim(),senha))}
+            style={{marginBottom:8,opacity:busy?0.6:1}}>
+            {busy?'...':(modo==='entrar'?'Entrar':'Criar conta')}
+          </button>
+          <div style={{display:'flex',alignItems:'center',gap:8,margin:'8px 0'}}>
+            <div style={{flex:1,height:1,background:'var(--gold-dim)'}}/>
+            <span style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>ou</span>
+            <div style={{flex:1,height:1,background:'var(--gold-dim)'}}/>
+          </div>
+          <button className="btn btn-full btn-sm" disabled={busy} onClick={()=>fazer(authGoogle)}>🔵 Entrar com Google</button>
+          <button className="btn btn-full btn-sm" style={{marginTop:6,background:'transparent',border:'none',color:'var(--parchment-dark)'}} onClick={()=>setAberto(false)}>Agora não</button>
+          <div style={{fontSize:'.58rem',color:'var(--parchment-dark)',marginTop:8,fontStyle:'italic'}}>
+            Ao entrar, seu progresso atual é vinculado à conta.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ServoSpriteVivo({def,short,className,style}){
   const idleGuess=short?`assets/servos/${short}/${short}_espera.gif`:null;
   const sp=(def&&def.sprites)||{};
@@ -10023,6 +10236,9 @@ function ProfileScreen({onNavigate,profile,setProfile}){
             </div>
           </div>
         </div>
+
+        {/* Conta / login na nuvem */}
+        <ContaSection profile={profile} setProfile={setProfile}/>
 
         {/* Atalhos: Loja e Conquistas */}
         <div style={{display:'flex',gap:12,marginBottom:20}}>
@@ -15378,6 +15594,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   const[introShown,setIntroShown]=useState(false);
   const[npCutin,setNpCutin]=useState(null); // {src,name,quote} — arte em tela cheia ao usar NP
   const[velCombate,setVelCombate]=useState(COMBAT_SPEED.mult); // 1x/2x/3x
+  const[skillHover,setSkillHover]=useState(null); // {sk, x, y} — tooltip de skill
   function ciclarVelocidade(){
     const nova=velCombate===1?2:velCombate===2?3:1;
     setVelCombate(nova);COMBAT_SPEED.mult=nova;saveCombatSpeed(nova);
@@ -17565,6 +17782,40 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         </div>
       )}
 
+      {/* Tooltip de skill/NP/skill do Mestre (hover) */}
+      {skillHover&&(() => {
+        const ehNP=!!skillHover.np;
+        const ehMaster=!!skillHover.master;
+        let nome,sub,efeitos,desc,cor;
+        if(ehNP){
+          nome=skillHover.np.name;
+          sub=`${skillHover.np.type} · ${skillHover.np.isAoE?'Área':'Alvo único'}`;
+          efeitos=descreverNP(skillHover.np);cor='#9575cd';
+        }else if(ehMaster){
+          const d=descreverMasterSkill(skillHover.master,skillHover.ef);
+          nome=d.nome;sub=`Skill do Mestre · Recarga ${d.cd}`;efeitos=d.efeitos;cor='#4fc3f7';
+        }else{
+          const d=descreverSkill(skillHover.sk);
+          nome=skillHover.sk.name;sub=`Rank ${skillHover.sk.rank} · Recarga ${d.cd}`;
+          efeitos=d.efeitos;desc=skillHover.sk.desc;cor='var(--gold)';
+        }
+        return(
+          <div style={{position:'fixed',left:clamp(skillHover.x,120,window.innerWidth-120),top:skillHover.y-8,
+            transform:'translate(-50%,-100%)',zIndex:200,pointerEvents:'none',
+            background:'#1a1018',border:`1px solid ${cor}`,borderRadius:8,padding:'9px 12px',
+            maxWidth:250,boxShadow:'0 6px 20px rgba(0,0,0,0.6)'}}>
+            <div style={{fontSize:'.76rem',color:cor==='var(--gold)'?'var(--gold)':cor,fontFamily:'Cinzel,serif',marginBottom:2}}>{nome}</div>
+            <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',marginBottom:6}}>{sub}</div>
+            {desc&&<div style={{fontSize:'.64rem',color:'var(--parchment)',marginBottom:6,fontStyle:'italic',lineHeight:1.4}}>{desc}</div>}
+            <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+              {efeitos.map((ef,j)=>(<span key={j} style={{fontSize:'.6rem',padding:'2px 7px',borderRadius:7,background:'rgba(255,255,255,0.06)',border:`1px solid ${cor}`,color:'var(--parchment)'}}>{ef}</span>))}
+            </div>
+            <div style={{position:'absolute',bottom:-6,left:'50%',transform:'translateX(-50%) rotate(45deg)',
+              width:10,height:10,background:'#1a1018',borderRight:`1px solid ${cor}`,borderBottom:`1px solid ${cor}`}}/>
+          </div>
+        );
+      })()}
+
       {npCutin&&(
         <div className="np-cutin">
           <img src={npCutin.src} alt={npCutin.name}/>
@@ -17818,6 +18069,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
               const blocked=cd>0||!isServoTurn;
               return(
                 <button key={sk.id} className="skill-btn" onClick={()=>doSkill(sk.id)} disabled={blocked}
+                  onMouseEnter={e=>{const r=e.currentTarget.getBoundingClientRect();setSkillHover({sk,x:r.left+r.width/2,y:r.top});}}
+                  onMouseLeave={()=>setSkillHover(null)}
                   style={(!isServoTurn&&cd<=0)?{opacity:.4}:{}}>
                   <span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
                     <SkillIcon nome={sk.name} size={30}/>
@@ -17828,6 +18081,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
               );
             })}
             <button className={`btn btn-np`} onClick={doNP} disabled={!npReady||!isServoTurn}
+              onMouseEnter={e=>{const r=e.currentTarget.getBoundingClientRect();setSkillHover({np:SDEF.np,x:r.left+r.width/2,y:r.top});}}
+              onMouseLeave={()=>setSkillHover(null)}
               style={{opacity:(npReady&&isServoTurn)?1:0.4,minWidth:100}}>
               <span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
                 <SkillIcon nome={SDEF.np.name} emoji="⚡" size={44}/>
@@ -17851,6 +18106,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
               const nomeArte=MASTER_SKILL_NOME[key]||label;
               return(
                 <button key={key} className="skill-btn" onClick={()=>doProfileSkill(key)} disabled={blocked}
+                  onMouseEnter={e=>{const r=e.currentTarget.getBoundingClientRect();setSkillHover({master:key,ef:sv[key],x:r.left+r.width/2,y:r.top});}}
+                  onMouseLeave={()=>setSkillHover(null)}
                   style={(!isServoTurn&&cd<=0)?{opacity:.4}:{}}>
                   <span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
                     <SkillIcon nome={nomeArte} emoji={emoji} size={30}/>
