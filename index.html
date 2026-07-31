@@ -8510,7 +8510,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.97</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.98</p>
       </div>
     </div>
   );
@@ -9025,6 +9025,19 @@ const CODEX=[
      {label:'Mana',rank:'B'},{label:'Sorte',rank:'C'},{label:'NP',rank:'B'},
    ],
    va:'Kubo Yurika'},
+  {id:'daikokuten',cat:'servo',name:'Daikokuten',classe:'Caster',
+   art:'assets/servos/daikokuten/daikokuten_profile.png',
+   reveal:p=>(p.gachaOwned||[]).includes('daikokuten'),
+   info:'A deusa da fortuna e da riqueza, com seu exercito de ratos e o Martelo da Boa Sorte. Uma Caster de suporte que abençoa o grupo com cura, carga de NP e proteção. Serva exclusiva — obtida ao criar uma conta.',
+   details:[
+     {title:'IDENTIDADE',body:'Daikokuten é uma divindade sincrética japonesa da fortuna e da riqueza, uma das Sete Divindades da Sorte. Origina-se de Mahakala — a forma budista do deus hindu Shiva — fundida com o deus xintoísta Ōkuninushi. No FGO, manifesta-se como uma figura divina acompanhada de um exército de ratos, empunhando o Uchide no Kozuchi, o Martelo da Boa Sorte, capaz de conceder desejos. É a primeira Caster com Fantasma Nobre de tipo Quick em área.'},
+     {title:'PERSONALIDADE',body:'Generosa, protetora e maternal, Daikokuten trata o Mestre e os aliados como quem abençoa devotos — cuidando de sua saúde e prosperidade. Seus ratinhos, embora numerosos e capazes de se multiplicar rapidamente, compartilham memórias entre si e têm personalidades próprias. Sob a aparência divina e a fala doce, há uma deusa dedicada a nutrir e amparar aqueles sob sua proteção.'},
+   ],
+   params:[
+     {label:'Força',rank:'D'},{label:'Resistência',rank:'B'},{label:'Agilidade',rank:'C'},
+     {label:'Mana',rank:'A'},{label:'Sorte',rank:'A'},{label:'NP',rank:'C'},
+   ],
+   va:'Tanaka Minami'},
   {id:'oldman',cat:'npc',name:'Homem Idoso',classe:'Viajante',
    art:null,
    reveal:p=>!!(p.achievements&&p.achievements.defeat_archer)||(p.stats&&p.stats.runs||0)>3,
@@ -9349,7 +9362,7 @@ function CodexScreen({onNavigate,profile}){
                 {known&&cat==='servo'&&abaDetalhe==='dialogos'&&(() => {
                   const mapa={ibaraki:'ibaraki',qin:'qin',deon:'deon',archer:'sith',okuni:'okuni',mochizuki:'mochizuki',
                     kiara:'kiara',skadi:'skadi',okita:'okita',okita_alter:'okita_alter',meltryllis:'meltryllis',
-                    nobunaga:'nobunaga',nobunaga_zerker:'nobunaga_zerker'};
+                    nobunaga:'nobunaga',nobunaga_zerker:'nobunaga_zerker',daikokuten:'daikokuten'};
                   const short=mapa[c.id]||c.id;
                   const dialogos=c.dialogos||{};
                   return(
@@ -9419,7 +9432,7 @@ function CodexScreen({onNavigate,profile}){
                   const mapa={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',
                     okuni:'okuni_caster',mochizuki:'mochizuki_assassin',kiara:'kiara_summer',skadi:'skadi_summer',
                     okita:'okita_saber',okita_alter:'okita_alter',meltryllis:'meltryllis_summer',
-                    nobunaga:'nobunaga_archer',nobunaga_zerker:'nobunaga_berserker'};
+                    nobunaga:'nobunaga_archer',nobunaga_zerker:'nobunaga_berserker',daikokuten:'daikokuten'};
                   const sv=PLAYABLE_SERVOS[mapa[c.id]];
                   if(!sv)return null;
                   return(
@@ -9651,7 +9664,7 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
                 </div>
                 {inParty&&<span style={{position:'absolute',top:4,right:6,fontSize:'.7rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{selIdx===0?'★ Líder':`#${selIdx+1}`}</span>}
                 {unlocked&&(
-                  <span onClick={e=>{e.stopPropagation();const mapa={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',okuni:'okuni_caster',mochizuki:'mochizuki_assassin',kiara:'kiara_summer',skadi:'skadi_summer',okita:'okita_saber',okita_alter:'okita_alter',meltryllis:'meltryllis_summer',nobunaga:'nobunaga_archer',nobunaga_zerker:'nobunaga_berserker'};setVerDetalhe(PLAYABLE_SERVOS[mapa[s.id]]||null);}}
+                  <span onClick={e=>{e.stopPropagation();const mapa={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',okuni:'okuni_caster',mochizuki:'mochizuki_assassin',kiara:'kiara_summer',skadi:'skadi_summer',okita:'okita_saber',okita_alter:'okita_alter',meltryllis:'meltryllis_summer',nobunaga:'nobunaga_archer',nobunaga_zerker:'nobunaga_berserker',daikokuten:'daikokuten'};setVerDetalhe(PLAYABLE_SERVOS[mapa[s.id]]||null);}}
                     title="Ver detalhes" style={{position:'absolute',bottom:4,right:6,fontSize:'.8rem',cursor:'pointer',color:'var(--parchment-dark)',padding:'0 2px'}}>ⓘ</span>
                 )}
               </button>
