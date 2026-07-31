@@ -6,7 +6,7 @@
 <title>FGO Rogue</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js" async></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -712,7 +712,7 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
+<script type="text/plain" id="jsx-fonte">
 const {useState,useEffect,useRef,useCallback}=React;
 
 // ══════════════════════════════════════════════════════
@@ -8355,7 +8355,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.89</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.90</p>
       </div>
     </div>
   );
@@ -19575,6 +19575,74 @@ function App(){
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CACHE DE COMPILAÇÃO — acelera o início nas visitas seguintes.
+// 1ª visita: compila o JSX com Babel e guarda o JS resultante no localStorage.
+// Próximas: se o código não mudou, pula o Babel e executa o JS já compilado.
+(function(){
+  const CACHE_KEY='fate_compiled_js_v1';
+  const HASH_KEY='fate_compiled_hash_v1';
+  const fonte=document.getElementById('jsx-fonte').textContent;
+
+  // hash rápido (FNV-1a) para detectar mudanças no código-fonte
+  function hashRapido(str){
+    let h=2166136261;
+    for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}
+    return (h>>>0).toString(36)+'_'+str.length;
+  }
+  const hashAtual=hashRapido(fonte);
+
+  function executar(js){
+    try{
+      const s=document.createElement('script');
+      s.textContent=js;
+      document.body.appendChild(s);
+    }catch(e){
+      console.error('Falha ao executar o código:',e);
+    }
+  }
+
+  function compilarEGuardar(){
+    // compila com Babel (caminho da 1ª visita ou quando o código muda)
+    const compilado=Babel.transform(fonte,{presets:['react'],sourceType:'script'}).code;
+    try{
+      localStorage.setItem(CACHE_KEY,compilado);
+      localStorage.setItem(HASH_KEY,hashAtual);
+    }catch(e){
+      // localStorage cheio ou indisponível: segue sem cache (só não acelera)
+      console.warn('Não foi possível salvar o cache de compilação:',e);
+    }
+    executar(compilado);
+  }
+
+  // tenta usar o cache
+  let cacheJs=null;
+  try{
+    if(localStorage.getItem(HASH_KEY)===hashAtual){
+      cacheJs=localStorage.getItem(CACHE_KEY);
+    }
+  }catch{}
+
+  if(cacheJs){
+    // cache válido: executa direto, sem carregar/rodar o Babel
+    executar(cacheJs);
+  }else{
+    // sem cache válido: garante que o Babel está carregado e compila
+    if(window.Babel){
+      compilarEGuardar();
+    }else{
+      // espera o Babel terminar de baixar (script no <head>)
+      const ini=Date.now();
+      const timer=setInterval(function(){
+        if(window.Babel){clearInterval(timer);compilarEGuardar();}
+        else if(Date.now()-ini>15000){clearInterval(timer);console.error('Babel não carregou a tempo.');}
+      },50);
+    }
+  }
+})();
 </script>
 
 </body>
