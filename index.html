@@ -5712,7 +5712,10 @@ function loadProfile(){
   }catch{return def;}
 }
 function saveProfile(p){
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify(p));}catch{}
+  try{
+    p._salvoEm=Date.now(); // marca a hora do save (usado para resolver merge com a nuvem)
+    localStorage.setItem(SAVE_KEY,JSON.stringify(p));
+  }catch{}
   nuvemAgendarPush(); // se logado, sincroniza com a nuvem (com debounce)
 }
 
@@ -5773,19 +5776,21 @@ async function authGoogle(){
 // Sair da conta.
 async function authSair(){if(fbAuth)try{await fbAuth.signOut();}catch{}}
 
-// Ao logar, decide o que fazer com o progresso local vs. o da nuvem.
-// Retorna o profile resultante. Escolhe o mais avançado por métricas-chave para
-// não fazer o jogador perder progresso ao entrar de outro dispositivo.
+// Ao logar, decide entre progresso local e o da nuvem. Usa o timestamp de última
+// modificação (mais recente vence) — evita restaurar um estado antigo por engano.
+// Só cai na heurística de "mais avançado" se um dos saves não tiver timestamp.
 function nuvemMesclar(local,nuvem){
   if(!nuvem)return local; // primeira vez logando: sobe o local
   if(!local)return nuvem;
-  // pontua cada save por progresso acumulado (maior = mais avançado)
+  const tl=local._salvoEm||0, tn=nuvem._salvoEm||0;
+  if(tl||tn)return tn>tl?nuvem:local; // o mais recentemente salvo vence
+  // fallback (saves antigos sem timestamp): escolhe o mais avançado
   const pontos=p=>{
     const m=p.magus||{};const s=p.stats||{};
-    return (m.level||1)*1000+(m.xp||0)+(s.runs||0)*100+(p.sq||0)+(p.qp||0)/10
+    return (m.level||1)*1000+(m.xp||0)+(s.runs||0)*100
       +((p.gachaOwned||[]).length)*5000+Object.keys(p.achievements||{}).length*500;
   };
-  return pontos(nuvem)>=pontos(local)?nuvem:local;
+  return pontos(nuvem)>pontos(local)?nuvem:local;
 }
 // Traduz os códigos de erro do Firebase Auth para português.
 function authTraduzErro(code){
@@ -8310,7 +8315,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.86</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.87</p>
       </div>
     </div>
   );
@@ -9990,16 +9995,24 @@ function ContaSection({profile,setProfile}){
 
   useEffect(()=>{
     if(!fbAuth)return;
+    // guarda o uid já sincronizado nesta sessão, para não re-mesclar a cada
+    // vez que a tela de perfil (e este componente) é montada.
     const un=fbAuth.onAuthStateChanged(async u=>{
       setUser(u);
       if(u){
-        // ao logar: mescla progresso local + nuvem e aplica o mais avançado
-        const local=loadProfile();
-        const nuvem=await nuvemPull(u.uid);
-        const final=nuvemMesclar(local,nuvem);
-        saveProfile(final);setProfile(final);
-        nuvemPushAgora(); // garante que a nuvem fica com o resultado da mescla
+        const jaSync=window.__fateSyncedUid===u.uid;
+        if(!jaSync){
+          // primeira sincronização desta sessão para esta conta: mescla 1 vez
+          window.__fateSyncedUid=u.uid;
+          const local=loadProfile();
+          const nuvem=await nuvemPull(u.uid);
+          const final=nuvemMesclar(local,nuvem);
+          saveProfile(final);setProfile(final);
+          nuvemPushAgora();
+        }
         setMsg('');setAberto(false);
+      }else{
+        window.__fateSyncedUid=null; // deslogou: libera para re-sincronizar no próximo login
       }
     });
     return ()=>un();
