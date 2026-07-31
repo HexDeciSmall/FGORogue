@@ -5739,18 +5739,56 @@ async function nuvemPushAgora(){
     const prof=loadProfile();
     await fbDb.collection('saves').doc(uid).set({
       profile:prof,
+      salvoLocalEm:prof._salvoEm||Date.now(),
       atualizadoEm:firebase.firestore.FieldValue.serverTimestamp(),
     },{merge:true});
+    // registra o horário (servidor) deste push para o listener ignorar o próprio eco
+    try{
+      const doc=await fbDb.collection('saves').doc(uid).get();
+      const sm=doc.data()&&doc.data().atualizadoEm&&doc.data().atualizadoEm.toMillis?doc.data().atualizadoEm.toMillis():0;
+      if(sm)_meuUltimoPushMs=sm;
+    }catch{}
   }catch(e){console.error('push nuvem',e);}
 }
-// Baixa o progresso da nuvem. Retorna o profile salvo ou null se não houver.
+// Baixa o progresso da nuvem. Retorna {profile, salvoLocalEm} ou null.
 async function nuvemPull(uid){
   if(!fbDb)return null;
   try{
     const doc=await fbDb.collection('saves').doc(uid).get();
-    if(doc.exists){const d=doc.data();return d.profile||null;}
+    if(doc.exists){const d=doc.data();return d.profile?{profile:d.profile,salvoLocalEm:d.salvoLocalEm||d.profile._salvoEm||0}:null;}
     return null;
   }catch(e){console.error('pull nuvem',e);return null;}
+}
+
+// Listener em tempo real: mantém este dispositivo em dia com a nuvem.
+// Guarda o momento (servidor) do último push feito por ESTE dispositivo; se a
+// nuvem tiver algo mais novo que isso, foi outro dispositivo — então atualiza.
+let _nuvemUnsub=null;
+let _meuUltimoPushMs=0;
+function nuvemEscutar(uid,aoAtualizar){
+  if(!fbDb)return;
+  if(_nuvemUnsub){_nuvemUnsub();_nuvemUnsub=null;}
+  _nuvemUnsub=fbDb.collection('saves').doc(uid).onSnapshot(doc=>{
+    if(!doc.exists)return;
+    const d=doc.data();
+    if(!d.profile)return;
+    const servMs=d.atualizadoEm&&d.atualizadoEm.toMillis?d.atualizadoEm.toMillis():0;
+    // ignora o eco do próprio push deste dispositivo
+    if(servMs&&servMs<=_meuUltimoPushMs)return;
+    const localSalvo=(loadProfile()._salvoEm)||0;
+    const nuvemSalvo=d.salvoLocalEm||0;
+    // só aplica se a nuvem for genuinamente mais nova que o estado local atual
+    if(nuvemSalvo>localSalvo){
+      saveProfileSemPush(d.profile); // grava local sem re-enviar (evita loop)
+      _meuUltimoPushMs=servMs;
+      aoAtualizar&&aoAtualizar(d.profile);
+    }
+  },e=>console.error('escutar nuvem',e));
+}
+function nuvemPararEscuta(){if(_nuvemUnsub){_nuvemUnsub();_nuvemUnsub=null;}}
+// Salva localmente SEM disparar push pra nuvem (usado ao receber update da nuvem).
+function saveProfileSemPush(p){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(p));}catch{}
 }
 // Cadastro com email e senha.
 async function authCadastrar(email,senha){
@@ -5779,11 +5817,13 @@ async function authSair(){if(fbAuth)try{await fbAuth.signOut();}catch{}}
 // Ao logar, decide entre progresso local e o da nuvem. Usa o timestamp de última
 // modificação (mais recente vence) — evita restaurar um estado antigo por engano.
 // Só cai na heurística de "mais avançado" se um dos saves não tiver timestamp.
-function nuvemMesclar(local,nuvem){
-  if(!nuvem)return local; // primeira vez logando: sobe o local
+function nuvemMesclar(local,nuvemData){
+  if(!nuvemData)return local; // primeira vez logando: sobe o local
+  const nuvem=nuvemData.profile;
+  if(!nuvem)return local;
   if(!local)return nuvem;
-  const tl=local._salvoEm||0, tn=nuvem._salvoEm||0;
-  if(tl||tn)return tn>tl?nuvem:local; // o mais recentemente salvo vence
+  const tl=local._salvoEm||0, tn=nuvemData.salvoLocalEm||nuvem._salvoEm||0;
+  if(tl||tn)return tn>tl?nuvem:local; // o salvo mais recentemente vence
   // fallback (saves antigos sem timestamp): escolhe o mais avançado
   const pontos=p=>{
     const m=p.magus||{};const s=p.stats||{};
@@ -8315,7 +8355,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.88</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.89</p>
       </div>
     </div>
   );
@@ -10118,11 +10158,14 @@ function ContaSection({profile,setProfile}){
           const nuvem=await nuvemPull(u.uid);
           const final=nuvemMesclar(local,nuvem);
           saveProfile(final);setProfile(final);
-          nuvemPushAgora();
+          await nuvemPushAgora();
+          // passa a escutar mudanças em tempo real (outros dispositivos)
+          nuvemEscutar(u.uid,novoProf=>setProfile(novoProf));
         }
         setMsg('');setAberto(false);
       }else{
-        window.__fateSyncedUid=null; // deslogou: libera para re-sincronizar no próximo login
+        window.__fateSyncedUid=null;
+        nuvemPararEscuta();
       }
     });
     return ()=>un();
