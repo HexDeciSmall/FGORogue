@@ -8510,7 +8510,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.94</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.95</p>
       </div>
     </div>
   );
@@ -14031,7 +14031,153 @@ const GRACAS=[
   {id:'arjuna_foco',patrono:'arjuna',slot:'atk',name:'Foco Inabalável',
    v:V(15,25,40),desc:v=>`+${v}% de dano, mas some se você tiver qualquer debuff ativo.`,eff:v=>({focusDmgPct:v})},
   {id:'arjuna_juizo',patrono:'arjuna',slot:'def',name:'Juízo do Arqueiro',
-   v:V(10,16,24),desc:v=>`Executa inimigos comuns que caírem abaixo de ${v}% de HP.`,eff:v=>({executeThreshold:v})}
+   v:V(10,16,24),desc:v=>`Executa inimigos comuns que caírem abaixo de ${v}% de HP.`,eff:v=>({executeThreshold:v})},
+
+  // ═══════════ NOVAS BÊNÇÃOS — completando os patronos ═══════════
+
+  // ── Arjuna (Julgamento) — skill, util ──
+  {id:'arjuna_mantra',patrono:'arjuna',slot:'skill',name:'Mantra Divino',
+   v:V(8,14,22),desc:v=>`Usar uma Skill também carrega ${v}% da Barra de NP.`,eff:v=>({skillNpGain:v})},
+  {id:'arjuna_karma',patrono:'arjuna',slot:'util',name:'Equilíbrio Cármico',
+   v:V(3,5,8),desc:v=>`+${v}% de Barra de NP por turno.`,eff:v=>({npPerTurn:v})},
+
+  // ── Cleópatra (Encanto) — def, np ──
+  {id:'cleo_veu',patrono:'cleopatra',slot:'def',name:'Véu da Rainha',
+   v:V(18,30,45),desc:v=>`${v}% de chance de um inimigo atacar a si mesmo no turno dele.`,eff:v=>({charmChance:v})},
+  {id:'cleo_aspide',patrono:'cleopatra',slot:'np',name:'Beijo da Áspide',
+   v:V(10,16,24),desc:v=>`O Fantasma Nobre envenena: ${v}% do HP máx do alvo por turno (3 turnos).`,eff:v=>({poisonOnNpPct:v})},
+
+  // ── Cú Chulainn (Instinto) — np, skill ──
+  {id:'cu_gaebolg_rev',patrono:'cu',slot:'np',name:'Lança Reversa',
+   v:V(30,50,75),desc:v=>`Seu Fantasma Nobre ignora ${v}% da defesa do alvo.`,eff:v=>({npPierce:v})},
+  {id:'cu_instinto',patrono:'cu',slot:'skill',name:'Instinto de Batalha',
+   v:V(1,2,3),desc:v=>`Reduz a recarga de todas as Skills em ${v} turno(s).`,eff:v=>({skillCdDown:v})},
+
+  // ── EMIYA (Projeção) — def, np, skill ──
+  {id:'emiya_rho',patrono:'emiya',slot:'np',name:'Rho Aias Projetado',
+   v:V(20,35,50),desc:v=>`Começa cada combate com ${v}% da Barra de NP.`,eff:v=>({startNpPct:v})},
+  {id:'emiya_kanshou',patrono:'emiya',slot:'def',name:'Kanshou & Bakuya',
+   v:V(15,25,35),desc:v=>`+${v}% de defesa contra todo dano.`,eff:v=>({defUpPct:v})},
+  {id:'emiya_traco',patrono:'emiya',slot:'skill',name:'Análise Estrutural',
+   v:V(10,18,28),desc:v=>`Usar uma Skill também carrega ${v}% da Barra de NP.`,eff:v=>({skillNpGain:v})},
+
+  // ── Enkidu (Cadeia) — atk, np ──
+  {id:'enkidu_cadeia',patrono:'enkidu',slot:'atk',name:'Corrente Celestial',
+   v:V(15,24,35),desc:v=>`${v}% de chance de atordoar o alvo ao atacar.`,eff:v=>({stunChance:v})},
+  {id:'enkidu_barro',patrono:'enkidu',slot:'np',name:'Argila dos Deuses',
+   v:V(25,40,60),desc:v=>`Seu Fantasma Nobre ignora ${v}% de toda mitigação do alvo.`,eff:v=>({npTrueDmgPct:v})},
+
+  // ── Gilgamesh (Riqueza) — atk, def, np ──
+  {id:'gil_gate',patrono:'gilgamesh',slot:'atk',name:'Portal de Babilônia',
+   v:V(18,30,45),desc:v=>`${v}% de chance do ataque básico acertar duas vezes.`,eff:v=>({doubleHitChance:v})},
+  {id:'gil_aegis',patrono:'gilgamesh',slot:'def',name:'Tesouro Inviolável',
+   v:V(20,35,50),desc:v=>`Uma vez por combate, sobrevive a um golpe fatal com ${v}% do HP.`,eff:v=>({gutsOnce:v})},
+  {id:'gil_ea',patrono:'gilgamesh',slot:'np',name:'Ea, a Espada Rasgadora',
+   v:V(25,42,60),desc:v=>`+${v}% de dano do Fantasma Nobre.`,eff:v=>({npDmgUp:v})},
+
+  // ── Ibuki-Douji (Veneno) — def, skill, util ──
+  {id:'ibuki_escama',patrono:'ibuki',slot:'def',name:'Escama de Dragão',
+   v:V(15,25,35),desc:v=>`+${v}% de defesa contra todo dano.`,eff:v=>({defUpPct:v})},
+  {id:'ibuki_sopro',patrono:'ibuki',slot:'skill',name:'Sopro Tóxico',
+   v:V(8,14,22),desc:v=>`Usar uma Skill também carrega ${v}% da Barra de NP.`,eff:v=>({skillNpGain:v})},
+  {id:'ibuki_veneno',patrono:'ibuki',slot:'util',name:'Sangue Corrosivo',
+   v:V(6,10,16),desc:v=>`Ataques básicos aplicam veneno: ${v}% do dano por turno.`,eff:v=>({poisonOnHitPct:v})},
+
+  // ── Jeanne d'Arc (Proteção) — atk, np, skill ──
+  {id:'jeanne_luz',patrono:'jeanne',slot:'atk',name:'Luz da Santa',
+   v:V(15,25,38),desc:v=>`+${v}% de chance de acerto crítico.`,eff:v=>({critChanceUp:v})},
+  {id:'jeanne_ruler',patrono:'jeanne',slot:'np',name:'Luminosité Eternelle',
+   v:V(12,20,30),desc:v=>`Ao usar o Fantasma Nobre, cura ${v}% do HP máximo do grupo.`,eff:v=>({npHealPct:v})},
+  {id:'jeanne_fe',patrono:'jeanne',slot:'skill',name:'Revelação',
+   v:V(30,45,60),desc:v=>`${v}% de chance de resistir a debuffs inimigos.`,eff:v=>({debuffResistPct:v})},
+
+  // ── Karna (Perfuração) — np, skill, util ──
+  {id:'karna_brahma',patrono:'karna',slot:'np',name:'Brahmastra',
+   v:V(30,50,75),desc:v=>`Seu Fantasma Nobre ignora ${v}% da defesa do alvo.`,eff:v=>({npPierce:v})},
+  {id:'karna_kavacha',patrono:'karna',slot:'skill',name:'Kavacha e Kundala',
+   v:V(20,35,50),desc:v=>`Uma vez por combate, sobrevive a um golpe fatal com ${v}% do HP.`,eff:v=>({gutsOnce:v})},
+  {id:'karna_sol',patrono:'karna',slot:'util',name:'Filho do Sol',
+   v:V(4,7,11),desc:v=>`+${v}% de Barra de NP por turno.`,eff:v=>({npPerTurn:v})},
+
+  // ── Sakata Kintoki (Explosão) — skill ──
+  {id:'kintoki_ougi',patrono:'kintoki',slot:'skill',name:'Prontidão Dourada',
+   v:V(1,2,3),desc:v=>`Reduz a recarga de todas as Skills em ${v} turno(s).`,eff:v=>({skillCdDown:v})},
+
+  // ── Medusa (Petrificação) — def, skill ──
+  {id:'medusa_cintilante',patrono:'medusa',slot:'def',name:'Olhar Cintilante',
+   v:V(18,30,45),desc:v=>`${v}% de chance de um inimigo atacar a si mesmo no turno dele.`,eff:v=>({charmChance:v})},
+  {id:'medusa_harpe',patrono:'medusa',slot:'skill',name:'Presságio da Harpê',
+   v:V(8,14,22),desc:v=>`Usar uma Skill também carrega ${v}% da Barra de NP.`,eff:v=>({skillNpGain:v})},
+
+  // ── Merlin (Sonho) — atk, def, util ──
+  {id:'merlin_hero',patrono:'merlin',slot:'atk',name:'Criação de Heróis',
+   v:V(15,25,38),desc:v=>`+${v}% de chance de acerto crítico.`,eff:v=>({critChanceUp:v})},
+  {id:'merlin_garden',patrono:'merlin',slot:'def',name:'Jardim de Avalon',
+   v:V(20,35,50),desc:v=>`Uma vez por combate, sobrevive a um golpe fatal com ${v}% do HP.`,eff:v=>({gutsOnce:v})},
+  {id:'merlin_dream',patrono:'merlin',slot:'util',name:'Sonho Dourado',
+   v:V(5,8,12),desc:v=>`Regenera ${v}% do HP máximo por turno.`,eff:v=>({hpRegenPct:v})},
+
+  // ── Mordred (Rebelião) — def, util ──
+  {id:'mordred_sangue',patrono:'mordred',slot:'def',name:'Sangue do Rei',
+   v:V(20,35,50),desc:v=>`Uma vez por combate, sobrevive a um golpe fatal com ${v}% do HP.`,eff:v=>({gutsOnce:v})},
+  {id:'mordred_furia',patrono:'mordred',slot:'util',name:'Fúria Crescente',
+   v:V(6,10,15),desc:v=>`+${v}% de dano acumulado a cada turno de combate.`,eff:v=>({rampDmgPct:v})},
+
+  // ── Nero (Palco) — def, skill ──
+  {id:'nero_aestus',patrono:'nero',slot:'def',name:'Domus Aurea',
+   v:V(15,25,35),desc:v=>`+${v}% de defesa contra todo dano.`,eff:v=>({defUpPct:v})},
+  {id:'nero_canto',patrono:'nero',slot:'skill',name:'Canto Imperial',
+   v:V(10,18,28),desc:v=>`Usar uma Skill também carrega ${v}% da Barra de NP.`,eff:v=>({skillNpGain:v})},
+
+  // ── Nightingale (Cura) — atk, np ──
+  {id:'nightin_bisturi',patrono:'nightingale',slot:'atk',name:'Precisão Cirúrgica',
+   v:V(18,30,45),desc:v=>`Críticos causam +${v}% de dano extra.`,eff:v=>({critMultBonus:v})},
+  {id:'nightin_nherso',patrono:'nightingale',slot:'np',name:'Nightingale Pledge',
+   v:V(15,25,38),desc:v=>`Ao usar o Fantasma Nobre, cura ${v}% do HP máximo do grupo.`,eff:v=>({npHealPct:v})},
+
+  // ── Osakabehime (Defesa) — atk, np, skill ──
+  {id:'osakabe_otaku',patrono:'osakabe',slot:'atk',name:'Paixão Otaku',
+   v:V(15,25,40),desc:v=>`+${v}% de dano contra chefes.`,eff:v=>({bossDmgUp:v})},
+  {id:'osakabe_castelo',patrono:'osakabe',slot:'np',name:'Barreira do Castelo',
+   v:V(12,20,30),desc:v=>`Ao usar o Fantasma Nobre, cura ${v}% do HP máximo do grupo.`,eff:v=>({npHealPct:v})},
+  {id:'osakabe_silhueta',patrono:'osakabe',slot:'skill',name:'Toque Fantasma',
+   v:V(1,2,3),desc:v=>`Reduz a recarga de todas as Skills em ${v} turno(s).`,eff:v=>({skillCdDown:v})},
+
+  // ── Ozymandias (Majestade) — def, skill ──
+  {id:'ozy_muralha',patrono:'ozymandias',slot:'def',name:'Muralha do Sol',
+   v:V(15,25,35),desc:v=>`+${v}% de defesa contra todo dano.`,eff:v=>({defUpPct:v})},
+  {id:'ozy_decreto',patrono:'ozymandias',slot:'skill',name:'Decreto do Faraó',
+   v:V(8,14,22),desc:v=>`Usar uma Skill também carrega ${v}% da Barra de NP.`,eff:v=>({skillNpGain:v})},
+
+  // ── Minamoto no Raikou (Controle) — def ──
+  {id:'raikou_muro',patrono:'raikou',slot:'def',name:'Abraço Maternal',
+   v:V(15,25,35),desc:v=>`+${v}% de defesa contra todo dano.`,eff:v=>({defUpPct:v})},
+
+  // ── Scáthach (Letalidade) — def, np, util ──
+  {id:'scath_gate',patrono:'scathach',slot:'def',name:'Portão de Sombras',
+   v:V(10,17,25),desc:v=>`+${v}% de chance de evadir ataques inimigos.`,eff:v=>({evadeChanceUp:v})},
+  {id:'scath_gaebolg',patrono:'scathach',slot:'np',name:'Gáe Bolg Alternativo',
+   v:V(15,25,35),desc:v=>`Executa inimigos comuns que caírem abaixo de ${v}% de HP.`,eff:v=>({executeThreshold:v})},
+  {id:'scath_sombra',patrono:'scathach',slot:'util',name:'Terra das Sombras',
+   v:V(12,20,30),desc:v=>`+${v}% da Barra de NP ao derrotar um inimigo.`,eff:v=>({npChargeOnKill:v})},
+
+  // ── Shuten Douji (Risco) — def, skill ──
+  {id:'shuten_embriaguez',patrono:'shuten',slot:'def',name:'Dança da Embriaguez',
+   v:V(10,17,25),desc:v=>`+${v}% de chance de evadir ataques inimigos.`,eff:v=>({evadeChanceUp:v})},
+  {id:'shuten_rendou',patrono:'shuten',slot:'skill',name:'Intoxicação',
+   v:V(18,30,45),desc:v=>`${v}% de chance de um inimigo atacar a si mesmo no turno dele.`,eff:v=>({charmChance:v})},
+
+  // ── Tamamo-no-Mae (Sustento) — def ──
+  {id:'tamamo_barreira',patrono:'tamamo',slot:'def',name:'Manto Solar',
+   v:V(15,25,35),desc:v=>`+${v}% de defesa contra todo dano.`,eff:v=>({defUpPct:v})},
+
+  // ── Ushiwakamaru (Velocidade) — np, skill, util ──
+  {id:'ushiwaka_np',patrono:'ushiwaka',slot:'np',name:'Dan no Ura',
+   v:V(20,35,50),desc:v=>`Começa cada combate com ${v}% da Barra de NP.`,eff:v=>({startNpPct:v})},
+  {id:'ushiwaka_skill',patrono:'ushiwaka',slot:'skill',name:'Presságio Célere',
+   v:V(1,2,3),desc:v=>`Reduz a recarga de todas as Skills em ${v} turno(s).`,eff:v=>({skillCdDown:v})},
+  {id:'ushiwaka_util',patrono:'ushiwaka',slot:'util',name:'Passos do Vento',
+   v:V(4,7,11),desc:v=>`+${v}% de Barra de NP por turno.`,eff:v=>({npPerTurn:v})}
 ];
 const GRACA_BY_ID=Object.fromEntries(GRACAS.map(g=>[g.id,g]));
 
