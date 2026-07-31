@@ -5543,6 +5543,82 @@ GACHA_SERVOS.nobunaga_archer={
 };
 PLAYABLE_SERVOS.nobunaga_archer=GACHA_SERVOS.nobunaga_archer;
 
+// ── DAIKOKUTEN (Caster) — SERVA EXCLUSIVA DE REGISTRO ──
+// Liberada apenas ao criar uma conta (login por email ou Google). Deusa da fortuna
+// e da riqueza, com seu exército de ratos. Caster de SUPORTE: cura, carga de NP e buffs.
+GACHA_SERVOS.daikokuten={
+  id:'daikokuten',name:'Daikokuten',className:'Caster',
+  rarity:5,banner:'registro', // banner especial: não sai em pulls, só via registro
+  exclusivoRegistro:true,
+  getAtk:lvl=>Math.round(linear(lvl,1438,8629)),
+  getHp:lvl=>Math.round(linear(lvl,1901,11882)),
+  attributes:{
+    strength:{rank:'D',points:rankToPoints('D')},
+    agility:{rank:'C',points:rankToPoints('C')},
+    luck:{rank:'A',points:rankToPoints('A')},
+    endurance:{rank:'B',points:rankToPoints('B')},
+    mana:{rank:'A',points:rankToPoints('A'),gainPercent:manaGain('A')},
+    np:{rank:'C',points:rankToPoints('C')},
+  },
+  passiveSkills:[
+    {id:'territory',name:'Criação de Território C',effect:{type:'debuff_res',value:8}},
+    {id:'divindade',name:'Divindade A',effect:{type:'atk_passive',value:10}},
+    {id:'fortuna',name:'Bênção da Fortuna',effect:{type:'np_regen',value:8}},
+  ],
+  activeSkills:[
+    // Virtuous Service: buff de dano + cura contínua para si (adaptado do Quick Up + heal)
+    {id:'virtuous',name:'Serviço Virtuoso A',rank:'A',
+      desc:'Aumenta o Ataque e recupera HP por turno durante 3 turnos',
+      effectType:'buff_atk_heal',
+      getEffect:lvl=>({atkUp:linear(lvl,20,30),healPct:linear(lvl,8,15),dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // For All Living Things: forte carga de NP própria + crit (a signature de loop)
+    {id:'living',name:'Por Todos os Seres Vivos A',rank:'A',
+      desc:'Carrega bastante a Barra de NP e aumenta o Crítico por 3 turnos',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,30,50),critUp:linear(lvl,15,25),atkUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Evade + NP Gain: esquiva e carrega NP (a defensiva/loop)
+    {id:'mallet',name:'Martelo da Boa Sorte B',rank:'B',
+      desc:'Concede Evasão por 1 turno, aumenta o Ataque e carrega a Barra de NP',
+      effectType:'evade_atk_npcharge',
+      getEffect:lvl=>({evadeTurns:1,atkUp:linear(lvl,15,25),atkDur:3,npCharge:linear(lvl,20,30)}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+  ],
+  // NP: Nezumi Jyodo (Terra Pura dos Ratos) — AoE Quick que reduz DEF e reforça o crit
+  np:{
+    name:'Nezumi Jyōdo: Pure Land of Mice',type:'Anti-Army',isAoE:true,effectType:'dmg_defdown',
+    defDownDur:3,
+    levels:{
+      1:{dmgPct:450,defDown:20},2:{dmgPct:600,defDown:20},3:{dmgPct:675,defDown:20},
+      4:{dmgPct:712.5,defDown:20},5:{dmgPct:750,defDown:20},
+    },
+  },
+  dialogue:{
+    summon:'Caster, Daikokuten! A deusa da fortuna e da riqueza veio abençoar seu caminho, nya! Trouxe meus ratinhos e meu martelo mágico. Vamos prosperar juntos, Mestre!',
+    battle:'Chu chu! Meus ratos e eu cuidaremos disso!',
+    lose:'Aiya... até a deusa da fortuna tem dias de azar...',
+    win:'Fortuna e prosperidade! Foi uma bênção, nya!',
+    np:'Que os ratos herdem esta terra! Multipliquem-se! Nezumi Jyōdo!',
+    skill:'Uma bênção pra você, nya!',
+    mapDone:'A sorte sorri para os corajosos. Sigamos, Mestre!',
+  },
+  assets:{
+    default:'assets/servos/daikokuten/daikokuten_profile.png',
+    battle:'assets/servos/daikokuten/daikokuten_profile.png',
+    combat:'assets/servos/daikokuten/daikokuten_combat.png',
+    np:'assets/servos/daikokuten/daikokuten_combat.png',
+    full:'assets/servos/daikokuten/daikokuten_full.png',
+  },
+  sprites:{
+    idle:'assets/servos/daikokuten/daikokuten_espera.gif',
+    attack:'assets/servos/daikokuten/daikokuten_ataque.gif',
+    np:'assets/servos/daikokuten/daikokuten_np.gif',
+    flip:true,
+  },
+};
+PLAYABLE_SERVOS.daikokuten=GACHA_SERVOS.daikokuten;
+
 // Os 4 banners. `pool` = ids de GACHA_SERVOS que aparecem no banner.
 // `rateUp` (opcional) = id com chance aumentada (usado no "Especial").
 const GACHA_BANNERS=[
@@ -8433,7 +8509,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.91</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.92</p>
       </div>
     </div>
   );
@@ -9479,6 +9555,8 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
      ready:owned.includes('nobunaga_archer'),unlock:'gacha',lockText:'Banner Pull'},
     {id:'nobunaga_zerker',name:'Oda Nobunaga (Berserker)',classe:'Berserker',art:GACHA_SERVOS.nobunaga_berserker.assets.default,
      ready:owned.includes('nobunaga_berserker'),unlock:'gacha',lockText:'Banner Pull'},
+    {id:'daikokuten',name:'Daikokuten',classe:'Caster',art:GACHA_SERVOS.daikokuten.assets.default,
+     ready:owned.includes('daikokuten'),unlock:'gacha',lockText:'🎁 Crie uma conta'},
   ];
 
   // Adiciona/remove um servo da party (máx 3, sem repetir)
@@ -10220,6 +10298,7 @@ function ContaSection({profile,setProfile}){
   const[msg,setMsg]=useState('');
   const[busy,setBusy]=useState(false);
   const[aberto,setAberto]=useState(false);
+  const[recompensaRegistro,setRecompensaRegistro]=useState(false);
 
   useEffect(()=>{
     if(!fbAuth)return;
@@ -10235,10 +10314,17 @@ function ContaSection({profile,setProfile}){
           const local=loadProfile();
           const nuvem=await nuvemPull(u.uid);
           const final=nuvemMesclar(local,nuvem);
+          // 🎁 Serva exclusiva de registro: garante a Daikokuten para toda conta.
+          final.gachaOwned=final.gachaOwned||[];
+          let ganhouDaiko=false;
+          if(!final.gachaOwned.includes('daikokuten')){
+            final.gachaOwned=[...final.gachaOwned,'daikokuten'];
+            ganhouDaiko=true;
+          }
           saveProfile(final);setProfile(final);
           await nuvemPushAgora();
-          // passa a escutar mudanças em tempo real (outros dispositivos)
           nuvemEscutar(u.uid,novoProf=>setProfile(novoProf));
+          if(ganhouDaiko)setRecompensaRegistro(true); // mostra o aviso do presente
         }
         setMsg('');setAberto(false);
       }else{
@@ -10263,6 +10349,25 @@ function ContaSection({profile,setProfile}){
   if(user){
     // logado
     return(
+      <>
+      {recompensaRegistro&&(
+        <div onClick={()=>setRecompensaRegistro(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
+          <div onClick={e=>e.stopPropagation()} className="panel" style={{maxWidth:380,width:'100%',padding:0,overflow:'hidden',border:'1px solid var(--gold)',borderRadius:14}}>
+            <div style={{padding:'20px',textAlign:'center',background:'radial-gradient(circle at 50% 0%,rgba(201,162,39,0.25),transparent 70%),linear-gradient(160deg,#241120,#150a1a)'}}>
+              <div style={{fontSize:'.6rem',color:'var(--gold-dim)',letterSpacing:3,fontFamily:'Cinzel,serif',marginBottom:6}}>◈ PRESENTE DE REGISTRO ◈</div>
+              <div style={{width:120,height:120,margin:'0 auto 12px',borderRadius:12,overflow:'hidden',border:'2px solid var(--gold)',background:'rgba(0,0,0,0.3)'}}>
+                <img src={GACHA_SERVOS.daikokuten.assets.default} alt="Daikokuten" style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center 20%'}} onError={e=>{e.target.style.display='none';}}/>
+              </div>
+              <div className="cinzel" style={{fontSize:'1.3rem',background:'linear-gradient(90deg,#fff3b0,#c9a227)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Daikokuten</div>
+              <div style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:4}}>Caster · ★5 · Serva Exclusiva</div>
+              <p style={{fontSize:'.76rem',color:'var(--parchment)',lineHeight:1.5,margin:'10px 0 16px'}}>
+                A deusa da fortuna se juntou a você por criar sua conta! Uma Serva de suporte exclusiva, disponível na Torre de Desafios.
+              </p>
+              <button className="btn btn-full" onClick={()=>setRecompensaRegistro(false)}>Receber bênção</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{background:'rgba(46,139,87,0.1)',border:'1px solid #2e8b57',borderRadius:10,padding:'14px 16px',marginBottom:18}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <span style={{fontSize:'1.5rem'}}>☁️</span>
@@ -10276,6 +10381,7 @@ function ContaSection({profile,setProfile}){
           Seu progresso é salvo automaticamente e pode ser recuperado em qualquer dispositivo com esta conta.
         </div>
       </div>
+      </>
     );
   }
 
@@ -12073,7 +12179,7 @@ const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,arche
   okuni:OKUNI_PLAYABLE,mochizuki:MOCHIZUKI_PLAYABLE,kiara:GACHA_SERVOS.kiara_summer,
   skadi:GACHA_SERVOS.skadi_summer,okita:GACHA_SERVOS.okita_saber,okita_alter:GACHA_SERVOS.okita_alter,
   meltryllis:GACHA_SERVOS.meltryllis_summer,nobunaga:GACHA_SERVOS.nobunaga_archer,
-  nobunaga_zerker:GACHA_SERVOS.nobunaga_berserker};
+  nobunaga_zerker:GACHA_SERVOS.nobunaga_berserker,daikokuten:GACHA_SERVOS.daikokuten};
 const TOWER_SERVO_LISTA=[
   {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',unlock:null},
   {id:'qin',name:'Qin Liangyu',classe:'Lancer',unlock:'defeat_qin'},
@@ -12088,6 +12194,7 @@ const TOWER_SERVO_LISTA=[
   {id:'meltryllis',name:'Mysterious Alter Ego Λ',classe:'Alter Ego',unlock:'gacha',gachaId:'meltryllis_summer',lockText:'Banner Pull'},
   {id:'nobunaga',name:'Oda Nobunaga',classe:'Archer',unlock:'gacha',gachaId:'nobunaga_archer',lockText:'Banner Pull'},
   {id:'nobunaga_zerker',name:'Oda Nobunaga (Berserker)',classe:'Berserker',unlock:'gacha',gachaId:'nobunaga_berserker',lockText:'Banner Pull'},
+  {id:'daikokuten',name:'Daikokuten',classe:'Caster',unlock:'gacha',gachaId:'daikokuten',lockText:'🎁 Crie uma conta'},
 ];
 // O jogador tem acesso a este servo?
 function servoLiberado(s,profile){
