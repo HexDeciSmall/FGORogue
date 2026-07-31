@@ -797,6 +797,31 @@ const COMBAT_SPEED={mult:loadCombatSpeed()};
 // divide uma duração de animação pela velocidade atual (mínimo 60ms para não sumir)
 function animMs(ms){return Math.max(60,Math.round(ms/(COMBAT_SPEED.mult||1)));}
 
+// ══════════════════════════════════════════════════════
+// PATCH NOTES — novidades do ciclo atual (10 versões).
+// A cada novo ciclo, atualize APENAS este bloco: mude versaoAtual, ciclo e itens.
+// A tela aparece 1x automaticamente quando o jogador abre uma versão nova,
+// e fica sempre acessível pelo botão de novidades no menu.
+const PATCH_NOTES={
+  versaoAtual:'2.90',      // versão atual (bate com a exibida no menu)
+  ciclo:'v2.80 → v2.90',   // rótulo do ciclo mostrado no topo
+  titulo:'Novidades da Temporada',
+  itens:[
+    {icon:'⚔️',titulo:'Novos Servos jogáveis',texto:'Meltryllis (Alter Ego), Oda Nobunaga (Archer) e Oda Nobunaga (Berserker) chegaram aos banners Summer e Gudaguda — e à Torre.'},
+    {icon:'📖',titulo:'Kit de Combate no Codex',texto:'As Informações de cada Servo agora mostram skills e Fantasma Nobre com os efeitos reais de jogo, para você montar builds.'},
+    {icon:'🎙️',titulo:'Diálogos de Bond',texto:'Nova aba nos Servos com as falas e vozes (áudio + transcrição), incluindo os diálogos especiais de Bond.'},
+    {icon:'💾',titulo:'Login e progresso na nuvem',texto:'Crie uma conta para salvar seu progresso e recuperá-lo em qualquer dispositivo, com sincronização em tempo real.'},
+    {icon:'⚡',titulo:'Velocidade de combate',texto:'Botão de turbo (1x/2x/3x) para acelerar as animações nas runs mais longas.'},
+    {icon:'🔍',titulo:'Preview e tooltips',texto:'Veja os status do Servo antes de escolher na Torre, e passe o mouse nas skills em combate para ver os efeitos.'},
+    {icon:'✨',titulo:'Sprites vivos no perfil',texto:'Os Servos agora alternam entre poses de espera, ataque e NP, dando sensação de movimento.'},
+    {icon:'🚀',titulo:'Início mais rápido',texto:'O jogo agora guarda a compilação em cache — as próximas visitas abrem bem mais rápido.'},
+  ],
+};
+const PATCH_VISTO_KEY='fate_patch_visto_v1';
+function patchJaVisto(){try{return localStorage.getItem(PATCH_VISTO_KEY)===PATCH_NOTES.versaoAtual;}catch{return true;}}
+function marcarPatchVisto(){try{localStorage.setItem(PATCH_VISTO_KEY,PATCH_NOTES.versaoAtual);}catch{}}
+
+
 
 
 
@@ -8268,7 +8293,49 @@ function GachaScreen({onNavigate,profile,setProfile}){
   );
 }
 
+// Modal de Patch Notes: novidades do ciclo atual.
+function PatchNotesModal({onFechar}){
+  return(
+    <div onClick={onFechar} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:300,
+      display:'flex',alignItems:'center',justifyContent:'center',padding:14}}>
+      <div onClick={e=>e.stopPropagation()} className="panel"
+        style={{maxWidth:520,width:'100%',maxHeight:'86vh',overflowY:'auto',padding:0,
+          border:'1px solid var(--gold)',borderRadius:14,overflow:'hidden'}}>
+        {/* Cabeçalho */}
+        <div style={{padding:'18px 20px 14px',textAlign:'center',position:'relative',
+          background:'radial-gradient(circle at 50% 0%,rgba(201,162,39,0.2),transparent 70%),linear-gradient(160deg,#241120,#150a1a)'}}>
+          <div style={{fontSize:'.6rem',color:'var(--gold-dim)',letterSpacing:3,fontFamily:'Cinzel,serif',marginBottom:4}}>◈ ATUALIZAÇÃO ◈</div>
+          <h2 className="cinzel" style={{color:'var(--parchment)',fontSize:'1.4rem',letterSpacing:1,
+            background:'linear-gradient(90deg,#fff3b0,#c9a227)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+            {PATCH_NOTES.titulo}
+          </h2>
+          <div style={{fontSize:'.72rem',color:'var(--gold)',fontFamily:'Cinzel,serif',marginTop:4}}>{PATCH_NOTES.ciclo}</div>
+          <div className="mestre-orn" style={{marginTop:10,marginBottom:0}}><span className="line"/><span style={{fontSize:'.7rem'}}>❖</span><span className="line"/></div>
+        </div>
+        {/* Lista de novidades */}
+        <div style={{padding:'8px 18px 18px'}}>
+          {PATCH_NOTES.itens.map((it,i)=>(
+            <div key={i} style={{display:'flex',gap:12,padding:'11px 0',borderBottom:i<PATCH_NOTES.itens.length-1?'1px solid rgba(201,162,39,0.15)':'none'}}>
+              <span style={{fontSize:'1.5rem',flexShrink:0,filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.5))'}}>{it.icon}</span>
+              <div style={{flex:1}}>
+                <div className="cinzel" style={{color:'var(--gold)',fontSize:'.86rem',marginBottom:2}}>{it.titulo}</div>
+                <div style={{fontSize:'.74rem',color:'var(--parchment)',lineHeight:1.5}}>{it.texto}</div>
+              </div>
+            </div>
+          ))}
+          <button className="btn btn-full" style={{marginTop:16}} onClick={onFechar}>Continuar a jornada</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MenuScreen({onNavigate,profile}){
+  const[patchAberto,setPatchAberto]=useState(false);
+  // mostra as novidades automaticamente 1x quando o jogador abre uma versão nova
+  useEffect(()=>{
+    if(!patchJaVisto()){setPatchAberto(true);marcarPatchVisto();}
+  },[]);
   // Botões do menu: [id de navegação, ícone, rótulo, variante]
   const items=[
     ['campaign','⚔️','Iniciar Campanha','primary'],
@@ -8291,6 +8358,17 @@ function MenuScreen({onNavigate,profile}){
   }))).current;
   return(
     <div className="screen menu-screen">
+      {patchAberto&&<PatchNotesModal onFechar={()=>setPatchAberto(false)}/>}
+      {/* Botão de novidades (patch notes) */}
+      <button onClick={()=>setPatchAberto(true)} title="Novidades desta versão"
+        style={{position:'absolute',top:14,right:64,zIndex:20,width:42,height:42,borderRadius:'50%',
+          display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'1.1rem',
+          background:'rgba(20,10,26,0.7)',border:'1px solid var(--gold-dim)',color:'var(--gold)',
+          backdropFilter:'blur(4px)',transition:'transform .2s,border-color .15s'}}
+        onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.1)';e.currentTarget.style.borderColor='var(--gold)';}}
+        onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.borderColor='var(--gold-dim)';}}>
+        📋
+      </button>
       {/* Engrenagem de configurações no canto */}
       <button onClick={()=>onNavigate('config')} title="Configurações"
         style={{position:'absolute',top:14,right:14,zIndex:20,width:42,height:42,borderRadius:'50%',
@@ -8355,7 +8433,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.90</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.91</p>
       </div>
     </div>
   );
