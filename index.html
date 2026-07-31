@@ -8510,7 +8510,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v2.93</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v2.94</p>
       </div>
     </div>
   );
@@ -10459,6 +10459,7 @@ function ServoSpriteVivo({def,short,className,style}){
 
 function ProfileScreen({onNavigate,profile,setProfile}){
   const[nick,setNick]=useState(profile.nickname);
+  const[filtroClasse,setFiltroClasse]=useState('Todas'); // filtro da galeria por classe
   const[notif,setNotif]=useState('');
   const[treinando,setTreinando]=useState(null); // Servo aberto no Treinamento no Trono
   const[picker,setPicker]=useState(false);       // seletor de foto de perfil aberto
@@ -10806,12 +10807,38 @@ function ProfileScreen({onNavigate,profile,setProfile}){
 
         {/* Servos jogáveis desbloqueados — grid estilo "seleção de personagem" */}
         <div className="divider"><span className="divider-text">SERVOS</span></div>
-        <div className="char-grid">
-        {[
-          // Servos base (desbloqueados por conquista) + servos do gacha possuídos
-          ...PLAYABLE_ROSTER.filter(r=>r.unlock===null||!!(profile.achievements&&profile.achievements[r.unlock])),
-          ...(profile.gachaOwned||[]).filter(id=>GACHA_SERVOS[id]).map(id=>({id,short:id,unlock:null})),
-        ].map(r=>{
+        {(() => {
+          // monta a lista de servos do jogador (base + gacha) uma vez
+          const rosterCompleto=[
+            ...PLAYABLE_ROSTER.filter(r=>r.unlock===null||!!(profile.achievements&&profile.achievements[r.unlock])),
+            ...(profile.gachaOwned||[]).filter(id=>GACHA_SERVOS[id]).map(id=>({id,short:id,unlock:null})),
+          ].filter(r=>PLAYABLE_SERVOS[r.id]);
+          // ordem canônica das classes de Fate/Grand Order (em inglês)
+          const ORDEM_CLASSES=['Saber','Archer','Lancer','Rider','Caster','Assassin','Berserker',
+            'Ruler','Avenger','Moon Cancer','Alter Ego','Foreigner','Pretender','Shielder','Beast'];
+          // classes que o jogador realmente possui, na ordem canônica
+          const classesPresentes=ORDEM_CLASSES.filter(cl=>rosterCompleto.some(r=>PLAYABLE_SERVOS[r.id].className===cl));
+          const abas=['Todas',...classesPresentes];
+          const roster=filtroClasse==='Todas'?rosterCompleto:rosterCompleto.filter(r=>PLAYABLE_SERVOS[r.id].className===filtroClasse);
+          return(<>
+          {/* Filtro por classe */}
+          <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:14}}>
+            {abas.map(cl=>{
+              const ativo=filtroClasse===cl;
+              const conta=cl==='Todas'?rosterCompleto.length:rosterCompleto.filter(r=>PLAYABLE_SERVOS[r.id].className===cl).length;
+              return(
+                <button key={cl} onClick={()=>setFiltroClasse(cl)}
+                  style={{padding:'5px 12px',borderRadius:14,cursor:'pointer',fontSize:'.68rem',fontFamily:'Cinzel,serif',letterSpacing:.5,
+                    border:`1px solid ${ativo?'var(--gold)':'var(--gold-dim)'}`,
+                    background:ativo?'rgba(201,162,39,0.25)':'rgba(0,0,0,0.25)',
+                    color:ativo?'var(--gold)':'var(--parchment-dark)',transition:'all .15s'}}>
+                  {cl} <span style={{opacity:.6,fontSize:'.6rem'}}>({conta})</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="char-grid">
+          {roster.map(r=>{
           const def=PLAYABLE_SERVOS[r.id];
           if(!def)return null;
           const sxp=loadServoXP(r.id);
@@ -10849,6 +10876,13 @@ function ProfileScreen({onNavigate,profile,setProfile}){
           );
         })}
         </div>
+        {roster.length===0&&(
+          <p style={{textAlign:'center',color:'var(--parchment-dark)',fontSize:'.75rem',fontStyle:'italic',padding:'10px 0'}}>
+            Nenhum Servo da classe {filtroClasse} desbloqueado ainda.
+          </p>
+        )}
+        </>);
+        })()}
         <p style={{fontSize:'.7rem',color:'var(--parchment-dark)',marginTop:8,fontStyle:'italic'}}>
           Combate +{XP_COMBAT_WIN} XP · Confiança +{XP_TRUST_EVENT} XP · Boss +{XP_BOSS_WIN} XP · Bond: Confiança +150 · Combate +30
           <br/>🧬 Laplace no estoque: <b style={{color:'#7ee08a'}}>{profile.laplaceHp||0} HP</b> · <b style={{color:'#e0806a'}}>{profile.laplaceAtk||0} ATK</b> — clique num Servo para treinar e aplicar.
