@@ -804,18 +804,20 @@ function animMs(ms){return Math.max(60,Math.round(ms/(COMBAT_SPEED.mult||1)));}
 // A tela aparece 1x automaticamente quando o jogador abre uma versão nova,
 // e fica sempre acessível pelo botão de novidades no menu.
 const PATCH_NOTES={
-  versaoAtual:'2.90',      // versão atual (bate com a exibida no menu)
-  ciclo:'v2.80 → v2.90',   // rótulo do ciclo mostrado no topo
-  titulo:'Novidades da Temporada',
+  versaoAtual:'3.12',      // versão atual (bate com a exibida no menu)
+  ciclo:'v2.90 → v3.12',   // rótulo do ciclo mostrado no topo
+  titulo:'Atualização Social',
   itens:[
-    {icon:'⚔️',titulo:'Novos Servos jogáveis',texto:'Meltryllis (Alter Ego), Oda Nobunaga (Archer) e Oda Nobunaga (Berserker) chegaram aos banners Summer e Gudaguda — e à Torre.'},
-    {icon:'📖',titulo:'Kit de Combate no Codex',texto:'As Informações de cada Servo agora mostram skills e Fantasma Nobre com os efeitos reais de jogo, para você montar builds.'},
-    {icon:'🎙️',titulo:'Diálogos de Bond',texto:'Nova aba nos Servos com as falas e vozes (áudio + transcrição), incluindo os diálogos especiais de Bond.'},
-    {icon:'💾',titulo:'Login e progresso na nuvem',texto:'Crie uma conta para salvar seu progresso e recuperá-lo em qualquer dispositivo, com sincronização em tempo real.'},
-    {icon:'⚡',titulo:'Velocidade de combate',texto:'Botão de turbo (1x/2x/3x) para acelerar as animações nas runs mais longas.'},
-    {icon:'🔍',titulo:'Preview e tooltips',texto:'Veja os status do Servo antes de escolher na Torre, e passe o mouse nas skills em combate para ver os efeitos.'},
-    {icon:'✨',titulo:'Sprites vivos no perfil',texto:'Os Servos agora alternam entre poses de espera, ataque e NP, dando sensação de movimento.'},
-    {icon:'🚀',titulo:'Início mais rápido',texto:'O jogo agora guarda a compilação em cache — as próximas visitas abrem bem mais rápido.'},
+    {icon:'👥',titulo:'Sistema de Amigos',texto:'Busque outros Mestres pelo nome, adicione como amigos e veja o perfil completo deles: servos, conquistas e estatísticas.'},
+    {icon:'📰',titulo:'Feed Social',texto:'Compartilhe conquistas, teorias e imagens sobre Fate! Publique posts, curta e comente. A aba "Meu Diário" reúne suas próprias publicações.'},
+    {icon:'📷',titulo:'Foto de perfil personalizada',texto:'Envie sua própria imagem de avatar com uma etapa de recorte para enquadrar do jeito certo. Aparece no perfil, chat, feed e para os amigos.'},
+    {icon:'✦',titulo:'Lista de Suporte',texto:'Monte sua vitrine de Servos por classe (estilo FGO): 10 slots com arte, nome e descrição, visíveis quando um amigo visita seu perfil.'},
+    {icon:'🎁',titulo:'Daikokuten exclusiva',texto:'Crie uma conta e receba a Daikokuten (Caster de suporte) de presente — com kit completo e entrada no Codex.'},
+    {icon:'🎴',titulo:'Skills do Mestre organizadas',texto:'Em combate e no perfil, as skills do Mestre agora ficam num painel único e limpo, em vez de espalhadas pela tela.'},
+    {icon:'🔺',titulo:'Vantagem de classe e resumo',texto:'O combate mostra quando você tem bônus contra a classe do inimigo, e a tela de vitória traz um resumo com dano, abates e turnos.'},
+    {icon:'🎖️',titulo:'50 novas bênçãos',texto:'Todos os 22 patronos agora têm bênçãos nos 5 slots (110 no total) — muito mais variedade de build por run.'},
+    {icon:'⚖️',titulo:'Balanceamento',texto:'Ibaraki teve o Fantasma Nobre e o ataque reforçados; Okuni teve o dano em área ajustado para manter o equilíbrio.'},
+    {icon:'✨',titulo:'Melhorias e polimento',texto:'Filtro de galeria por classe, correções na contagem de servos dos amigos, limpeza de cenas antigas e vários ajustes finos.'},
   ],
 };
 const PATCH_VISTO_KEY='fate_patch_visto_v1';
@@ -6125,6 +6127,14 @@ function authTraduzErro(code){
 // pelo nome de Mestre. Amigos são salvos por uid na lista do próprio perfil.
 
 // Monta o resumo público a partir do perfil completo (o que amigos podem ver).
+// Conta os servos de um perfil PÚBLICO de forma consistente (base liberados por
+// conquista + gacha), igual ao que o perfil completo exibe.
+function contarServosPublico(p){
+  if(!p)return 0;
+  const baseIds=PLAYABLE_ROSTER.filter(r=>r.unlock===null||!!(p.achievements&&p.achievements[r.unlock])).map(r=>r.id);
+  const gachaIds=(p.gachaOwned||[]).filter(id=>GACHA_SERVOS[id]);
+  return [...new Set([...baseIds,...gachaIds])].filter(id=>PLAYABLE_SERVOS[id]).length;
+}
 function montarPerfilPublico(uid,prof){
   const magus=prof.magus||{};
   return {
@@ -8734,7 +8744,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.11</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.12</p>
       </div>
     </div>
   );
@@ -11028,7 +11038,11 @@ function AmigosScreen({onNavigate,profile,setProfile}){
   // ─── Modal: perfil completo de um amigo ───
   if(verPerfil){
     const p=verPerfil;
-    const servos=(p.gachaOwned||[]).filter(id=>GACHA_SERVOS[id]);
+    // Reconstrói o roster do amigo igual ao próprio perfil: servos base liberados
+    // por conquista + servos de gacha/registro (gachaOwned). Depois filtra válidos.
+    const baseIds=PLAYABLE_ROSTER.filter(r=>r.unlock===null||!!(p.achievements&&p.achievements[r.unlock])).map(r=>r.id);
+    const gachaIds=(p.gachaOwned||[]).filter(id=>GACHA_SERVOS[id]);
+    const servos=[...new Set([...baseIds,...gachaIds])].filter(id=>PLAYABLE_SERVOS[id]);
     const ehAmigo=amigosUids.includes(p.uid);
     return(
       <div className="screen" style={{padding:'20px 12px'}}>
@@ -11070,7 +11084,8 @@ function AmigosScreen({onNavigate,profile,setProfile}){
           {servos.length>0?(
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))',gap:10,margin:'14px 0'}}>
               {servos.map(id=>{
-                const sv=GACHA_SERVOS[id];
+                const sv=PLAYABLE_SERVOS[id];
+                if(!sv)return null;
                 return(
                   <div key={id} style={{background:'rgba(20,8,0,0.9)',border:'1px solid var(--gold-dim)',borderRadius:8,overflow:'hidden'}}>
                     <div style={{height:110,background:'rgba(0,0,0,0.3)'}}>
@@ -11158,7 +11173,7 @@ function AmigosScreen({onNavigate,profile,setProfile}){
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:'.82rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{p.nome}</div>
-                    <div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>Nível {p.nivel} · {(p.gachaOwned||[]).length} Servos</div>
+                    <div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>Nível {p.nivel} · {contarServosPublico(p)} Servos</div>
                   </div>
                   <button className="btn btn-sm" onClick={()=>setVerPerfil(p)}>Ver</button>
                   {!amigosUids.includes(p.uid)&&<button className="btn btn-sm" onClick={()=>adicionarAmigo(p)}>+ Add</button>}
@@ -11182,7 +11197,7 @@ function AmigosScreen({onNavigate,profile,setProfile}){
                     </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:'.85rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{p.nome}</div>
-                      <div style={{fontSize:'.66rem',color:'var(--parchment-dark)'}}>Nível {p.nivel} · {(p.gachaOwned||[]).length} Servos · {p.conquistas||0} conquistas</div>
+                      <div style={{fontSize:'.66rem',color:'var(--parchment-dark)'}}>Nível {p.nivel} · {contarServosPublico(p)} Servos · {p.conquistas||0} conquistas</div>
                     </div>
                     <span style={{color:'var(--gold)',fontSize:'1.1rem'}}>→</span>
                   </div>
