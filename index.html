@@ -5843,6 +5843,10 @@ async function nuvemPushAgora(){
       salvoLocalEm:prof._salvoEm||Date.now(),
       atualizadoEm:firebase.firestore.FieldValue.serverTimestamp(),
     },{merge:true});
+    // publica o perfil PÚBLICO (visível a amigos), se houver nome de Mestre definido
+    if(prof.nickname&&prof.nickname.trim()){
+      publicarPerfilPublico(uid,prof).catch(()=>{});
+    }
     // registra o horário (servidor) deste push para o listener ignorar o próprio eco
     try{
       const doc=await fbDb.collection('saves').doc(uid).get();
@@ -5949,6 +5953,59 @@ function authTraduzErro(code){
   return m[code]||('Erro no login ('+code+')');
 }
 
+// ══════════════════════════════════════════════════════
+// SISTEMA DE AMIGOS (Firebase Firestore)
+// Cada conta publica um "perfil público" na coleção perfis_publicos, buscável
+// pelo nome de Mestre. Amigos são salvos por uid na lista do próprio perfil.
+
+// Monta o resumo público a partir do perfil completo (o que amigos podem ver).
+function montarPerfilPublico(uid,prof){
+  const magus=prof.magus||{};
+  return {
+    uid,
+    nome:(prof.nickname||'Mestre').trim().slice(0,28),
+    nomeLower:(prof.nickname||'').trim().toLowerCase(), // para busca
+    avatar:prof.avatar||null,
+    nivel:magus.level||1,
+    sq:prof.sq||0,
+    qp:prof.qp||0,
+    gachaOwned:prof.gachaOwned||[],
+    conquistas:Object.keys(prof.achievements||{}).length,
+    stats:{
+      runs:(prof.stats&&prof.stats.runs)||0,
+      enemiesDefeated:(prof.stats&&prof.stats.enemiesDefeated)||0,
+      highestDamage:(prof.stats&&prof.stats.highestDamage)||0,
+    },
+    achievements:prof.achievements||{},
+    atualizadoEm:firebase.firestore.FieldValue.serverTimestamp(),
+  };
+}
+// Publica/atualiza o perfil público do jogador.
+async function publicarPerfilPublico(uid,prof){
+  if(!fbDb)return;
+  try{await fbDb.collection('perfis_publicos').doc(uid).set(montarPerfilPublico(uid,prof),{merge:true});}
+  catch(e){console.error('publicar perfil',e);}
+}
+// Busca perfis públicos pelo nome de Mestre (case-insensitive, prefixo).
+async function buscarPerfisPorNome(termo){
+  if(!fbDb||!termo||!termo.trim())return [];
+  const t=termo.trim().toLowerCase();
+  try{
+    // busca por prefixo usando range no campo nomeLower
+    const snap=await fbDb.collection('perfis_publicos')
+      .where('nomeLower','>=',t)
+      .where('nomeLower','<=',t+'\uf8ff')
+      .limit(15).get();
+    const meuUid=fbAuth&&fbAuth.currentUser?fbAuth.currentUser.uid:null;
+    return snap.docs.map(d=>d.data()).filter(p=>p.uid!==meuUid); // exclui a si mesmo
+  }catch(e){console.error('buscar perfis',e);return [];}
+}
+// Busca o perfil público completo de um amigo pelo uid.
+async function buscarPerfilPublico(uid){
+  if(!fbDb||!uid)return null;
+  try{const doc=await fbDb.collection('perfis_publicos').doc(uid).get();return doc.exists?doc.data():null;}
+  catch(e){console.error('buscar perfil',e);return null;}
+}
 
 // ─── ÁLBUM: REAÇÕES DISPONÍVEIS ──────────────────────
 // As reações e comentários do Álbum são COMPARTILHADOS via Firestore (todos veem
@@ -8510,7 +8567,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.00</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.04</p>
       </div>
     </div>
   );
@@ -10470,9 +10527,223 @@ function ServoSpriteVivo({def,short,className,style}){
   );
 }
 
+// ══════════════════════════════════════════════════════
+// TELA DE AMIGOS — buscar por nome, adicionar, e ver perfil completo.
+function AmigosScreen({onNavigate,profile,setProfile}){
+  const logado=fbAuth&&fbAuth.currentUser;
+  const[aba,setAba]=useState('lista'); // 'lista' | 'buscar'
+  const[termo,setTermo]=useState('');
+  const[resultados,setResultados]=useState([]);
+  const[buscando,setBuscando]=useState(false);
+  const[amigosData,setAmigosData]=useState([]); // perfis públicos dos amigos
+  const[carregando,setCarregando]=useState(true);
+  const[verPerfil,setVerPerfil]=useState(null); // perfil público aberto
+  const[msg,setMsg]=useState('');
+
+  const amigosUids=(profile.amigos||[]);
+
+  // carrega os perfis públicos dos amigos salvos
+  useEffect(()=>{
+    let vivo=true;
+    (async()=>{
+      setCarregando(true);
+      const perfis=await Promise.all(amigosUids.map(uid=>buscarPerfilPublico(uid)));
+      if(vivo){setAmigosData(perfis.filter(Boolean));setCarregando(false);}
+    })();
+    return ()=>{vivo=false;};
+  },[amigosUids.length]);
+
+  async function fazerBusca(){
+    if(!termo.trim())return;
+    setBuscando(true);setMsg('');
+    const r=await buscarPerfisPorNome(termo);
+    setResultados(r);setBuscando(false);
+    if(r.length===0)setMsg('Nenhum Mestre encontrado com esse nome.');
+  }
+  function adicionarAmigo(p){
+    if(amigosUids.includes(p.uid)){setMsg('Vocês já são amigos!');return;}
+    const novo={...profile,amigos:[...amigosUids,p.uid]};
+    saveProfile(novo);setProfile(novo);
+    setMsg(`${p.nome} adicionado(a) aos amigos!`);
+  }
+  function removerAmigo(uid){
+    const novo={...profile,amigos:amigosUids.filter(u=>u!==uid)};
+    saveProfile(novo);setProfile(novo);
+    setVerPerfil(null);
+  }
+
+  // ─── Modal: perfil completo de um amigo ───
+  if(verPerfil){
+    const p=verPerfil;
+    const servos=(p.gachaOwned||[]).filter(id=>GACHA_SERVOS[id]);
+    const ehAmigo=amigosUids.includes(p.uid);
+    return(
+      <div className="screen" style={{padding:'20px 12px'}}>
+        <div className="panel" style={{maxWidth:640}}>
+          <button className="btn" style={{marginBottom:14}} onClick={()=>setVerPerfil(null)}>← Voltar</button>
+          {/* Cabeçalho do Mestre */}
+          <div style={{textAlign:'center',marginBottom:20,padding:'20px',borderRadius:14,
+            background:'radial-gradient(circle at 50% 0%,rgba(201,162,39,0.15),transparent 70%),linear-gradient(160deg,#1a1018,#120a14)',border:'1px solid var(--gold-dim)'}}>
+            <div style={{width:88,height:88,margin:'0 auto 10px',borderRadius:'50%',overflow:'hidden',border:'2px solid var(--gold)',background:'rgba(0,0,0,0.3)'}}>
+              {p.avatar
+                ?<RessonanciaRetrato art={p.avatar} size={88}/>
+                :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2rem'}}>👤</div>}
+            </div>
+            <h2 className="cinzel" style={{color:'var(--gold)',fontSize:'1.3rem',letterSpacing:1}}>{p.nome}</h2>
+            <div style={{fontSize:'.78rem',color:'var(--parchment-dark)',marginTop:2}}>Mestre Nível {p.nivel}</div>
+          </div>
+          {/* Estatísticas */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:20}}>
+            {[
+              {icon:'⚔️',label:'Runs',val:(p.stats&&p.stats.runs)||0},
+              {icon:'💀',label:'Inimigos',val:(p.stats&&p.stats.enemiesDefeated)||0},
+              {icon:'🏆',label:'Conquistas',val:p.conquistas||0},
+              {icon:'💥',label:'Maior dano',val:((p.stats&&p.stats.highestDamage)||0).toLocaleString()},
+              {icon:'💎',label:'SQ',val:(p.sq||0).toLocaleString()},
+              {icon:'✦',label:'Servos',val:servos.length},
+            ].map((s,i)=>(
+              <div key={i} style={{background:'rgba(0,0,0,0.3)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'10px',textAlign:'center'}}>
+                <div style={{fontSize:'1.1rem'}}>{s.icon}</div>
+                <div style={{fontSize:'.9rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{s.val}</div>
+                <div style={{fontSize:'.56rem',color:'var(--parchment-dark)'}}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          {/* Servos do amigo */}
+          <div className="divider"><span className="divider-text">SERVOS ({servos.length})</span></div>
+          {servos.length>0?(
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))',gap:10,margin:'14px 0'}}>
+              {servos.map(id=>{
+                const sv=GACHA_SERVOS[id];
+                return(
+                  <div key={id} style={{background:'rgba(20,8,0,0.9)',border:'1px solid var(--gold-dim)',borderRadius:8,overflow:'hidden'}}>
+                    <div style={{height:110,background:'rgba(0,0,0,0.3)'}}>
+                      <img src={sv.assets.default} alt={sv.name} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center 12%'}}
+                        onError={ev=>{ev.target.style.display='none';}}/>
+                    </div>
+                    <div style={{padding:'6px 8px'}}>
+                      <div style={{fontSize:'.68rem',color:'var(--gold)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{sv.name}</div>
+                      <div style={{fontSize:'.58rem',color:'var(--red-bright)'}}>{sv.className}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ):(
+            <p style={{textAlign:'center',color:'var(--parchment-dark)',fontSize:'.75rem',fontStyle:'italic',padding:'14px'}}>
+              Este Mestre ainda não obteve Servos de invocação.
+            </p>
+          )}
+          {/* Conquistas */}
+          {p.achievements&&Object.keys(p.achievements).length>0&&(
+            <>
+              <div className="divider"><span className="divider-text">CONQUISTAS ({Object.keys(p.achievements).length})</span></div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:6,margin:'12px 0'}}>
+                {Object.keys(p.achievements).map(aid=>{
+                  const ach=(typeof ACHIEVEMENTS!=='undefined')?ACHIEVEMENTS.find(a=>a.id===aid):null;
+                  return(
+                    <span key={aid} title={ach?ach.desc:''} style={{fontSize:'.62rem',padding:'3px 9px',borderRadius:10,background:'rgba(201,162,39,0.12)',border:'1px solid var(--gold-dim)',color:'var(--parchment)'}}>
+                      🏆 {ach?ach.name:aid}
+                    </span>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {ehAmigo&&(
+            <button className="btn btn-full" style={{marginTop:16,background:'rgba(139,26,26,0.3)',borderColor:'var(--crimson)'}} onClick={()=>removerAmigo(p.uid)}>
+              Remover amizade
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Tela principal (lista + busca) ───
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      <div className="panel" style={{maxWidth:640}}>
+        <button className="btn" style={{marginBottom:14}} onClick={()=>onNavigate('profile')}>← Voltar ao Perfil</button>
+        <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,marginBottom:16}}>👥 AMIGOS</h2>
+
+        {!logado?(
+          <div style={{textAlign:'center',padding:'30px 20px',color:'var(--parchment-dark)'}}>
+            <div style={{fontSize:'2rem',marginBottom:10}}>🔒</div>
+            <p style={{fontSize:'.85rem',marginBottom:16}}>Você precisa estar logado para ter amigos e aparecer nas buscas.</p>
+            <button className="btn" onClick={()=>onNavigate('profile')}>Ir para o Perfil e entrar</button>
+          </div>
+        ):(<>
+          {/* Abas */}
+          <div style={{display:'flex',gap:8,marginBottom:16}}>
+            <button onClick={()=>setAba('lista')} style={{flex:1,padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.76rem',
+              border:`1px solid ${aba==='lista'?'var(--gold)':'var(--gold-dim)'}`,background:aba==='lista'?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>
+              Meus Amigos ({amigosUids.length})
+            </button>
+            <button onClick={()=>setAba('buscar')} style={{flex:1,padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.76rem',
+              border:`1px solid ${aba==='buscar'?'var(--gold)':'var(--gold-dim)'}`,background:aba==='buscar'?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>
+              🔍 Buscar
+            </button>
+          </div>
+
+          {msg&&<div style={{fontSize:'.72rem',color:'var(--gold)',marginBottom:12,textAlign:'center'}}>{msg}</div>}
+
+          {aba==='buscar'?(
+            <div>
+              <div style={{display:'flex',gap:8,marginBottom:16}}>
+                <input value={termo} onChange={e=>setTermo(e.target.value)} onKeyDown={e=>e.key==='Enter'&&fazerBusca()}
+                  placeholder="Nome do Mestre..." style={{flex:1,padding:'9px 12px',borderRadius:8,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.85rem'}}/>
+                <button className="btn" disabled={buscando} onClick={fazerBusca}>{buscando?'...':'Buscar'}</button>
+              </div>
+              {resultados.map(p=>(
+                <div key={p.uid} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',marginBottom:8,borderRadius:8,background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)'}}>
+                  <div style={{width:44,height:44,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+                    {p.avatar?<RessonanciaRetrato art={p.avatar} size={44}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>👤</div>}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:'.82rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{p.nome}</div>
+                    <div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>Nível {p.nivel} · {(p.gachaOwned||[]).length} Servos</div>
+                  </div>
+                  <button className="btn btn-sm" onClick={()=>setVerPerfil(p)}>Ver</button>
+                  {!amigosUids.includes(p.uid)&&<button className="btn btn-sm" onClick={()=>adicionarAmigo(p)}>+ Add</button>}
+                </div>
+              ))}
+            </div>
+          ):(
+            <div>
+              {carregando?(
+                <p style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px'}}>Carregando amigos...</p>
+              ):amigosData.length===0?(
+                <div style={{textAlign:'center',padding:'30px 20px',color:'var(--parchment-dark)'}}>
+                  <div style={{fontSize:'2rem',marginBottom:10}}>🤝</div>
+                  <p style={{fontSize:'.82rem'}}>Você ainda não tem amigos. Use a aba Buscar para encontrar outros Mestres pelo nome!</p>
+                </div>
+              ):(
+                amigosData.map(p=>(
+                  <div key={p.uid} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',marginBottom:8,borderRadius:8,background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',cursor:'pointer'}} onClick={()=>setVerPerfil(p)}>
+                    <div style={{width:48,height:48,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold)',background:'rgba(0,0,0,0.3)'}}>
+                      {p.avatar?<RessonanciaRetrato art={p.avatar} size={48}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>👤</div>}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:'.85rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{p.nome}</div>
+                      <div style={{fontSize:'.66rem',color:'var(--parchment-dark)'}}>Nível {p.nivel} · {(p.gachaOwned||[]).length} Servos · {p.conquistas||0} conquistas</div>
+                    </div>
+                    <span style={{color:'var(--gold)',fontSize:'1.1rem'}}>→</span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </>)}
+      </div>
+    </div>
+  );
+}
+
 function ProfileScreen({onNavigate,profile,setProfile}){
   const[nick,setNick]=useState(profile.nickname);
   const[filtroClasse,setFiltroClasse]=useState('Todas'); // filtro da galeria por classe
+  const[skillsPanelAberto,setSkillsPanelAberto]=useState(false); // painel de skills do Mestre
   const[notif,setNotif]=useState('');
   const[treinando,setTreinando]=useState(null); // Servo aberto no Treinamento no Trono
   const[picker,setPicker]=useState(false);       // seletor de foto de perfil aberto
@@ -10605,8 +10876,20 @@ function ProfileScreen({onNavigate,profile,setProfile}){
         {/* Conta / login na nuvem */}
         <ContaSection profile={profile} setProfile={setProfile}/>
 
-        {/* Atalhos: Loja e Conquistas */}
-        <div style={{display:'flex',gap:12,marginBottom:20}}>
+        {/* Atalho: Amigos (topo, largura total) */}
+        <div style={{marginBottom:12}}>
+          <button className="mestre-shortcut" style={{width:'100%'}} onClick={()=>onNavigate('amigos')}>
+            <span className="ico">👥</span>
+            <div style={{textAlign:'left',flex:1}}>
+              <div className="cinzel" style={{color:'var(--gold)',fontSize:'.88rem'}}>Amigos</div>
+              <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>Busque outros Mestres e veja seus perfis</div>
+            </div>
+            <span style={{color:'var(--gold)',fontSize:'1.1rem'}}>→</span>
+          </button>
+        </div>
+
+        {/* Loja de Perks + Skills do Mestre (lado a lado) */}
+        <div style={{display:'flex',gap:12,marginBottom:12}}>
           <button className="mestre-shortcut" onClick={()=>onNavigate('shop')}>
             <span className="ico">🏪</span>
             <div style={{textAlign:'left',flex:1}}>
@@ -10614,12 +10897,33 @@ function ProfileScreen({onNavigate,profile,setProfile}){
               <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>Melhorias permanentes</div>
             </div>
           </button>
-          <button className="mestre-shortcut" onClick={()=>onNavigate('achievements')}>
+          {(() => {
+            const gosanjoOk=!!(profile.achievements&&profile.achievements.defeat_gosanjo);
+            const desbloqueadas=skillDefs.filter(({adv,gosanjo})=>!((adv&&!profile.advSkillsUnlocked)||(gosanjo&&!gosanjoOk)));
+            const melhoraveis=desbloqueadas.filter(({key})=>{
+              const lvl=profile.skills[key]||1;const maxLvl=key==='fundir'?5:10;return lvl<maxLvl;
+            }).length;
+            return(
+              <button className="mestre-shortcut" onClick={()=>setSkillsPanelAberto(true)}>
+                <span className="ico">🎴</span>
+                <div style={{textAlign:'left',flex:1}}>
+                  <div className="cinzel" style={{color:'var(--gold)',fontSize:'.88rem'}}>Skills do Mestre</div>
+                  <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>{melhoraveis>0?`${melhoraveis} podem subir`:'Todas no máximo'}</div>
+                </div>
+              </button>
+            );
+          })()}
+        </div>
+
+        {/* Conquistas (largura total) */}
+        <div style={{marginBottom:20}}>
+          <button className="mestre-shortcut" style={{width:'100%'}} onClick={()=>onNavigate('achievements')}>
             <span className="ico">🏆</span>
             <div style={{textAlign:'left',flex:1}}>
               <div className="cinzel" style={{color:'var(--gold)',fontSize:'.88rem'}}>Conquistas</div>
               <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>Seus feitos e troféus</div>
             </div>
+            <span style={{color:'var(--gold)',fontSize:'1.1rem'}}>→</span>
           </button>
         </div>
 
@@ -10786,37 +11090,56 @@ function ProfileScreen({onNavigate,profile,setProfile}){
           );
         })()}
 
-        <div className="divider"><span className="divider-text">SKILLS DO MESTRE</span></div>
-
-        {skillDefs.map(({key,name,desc,adv,gosanjo})=>{
-          const lvl=profile.skills[key]||1;
+        {/* Painel modal das Skills do Mestre — aberto pelo botão nos atalhos acima */}
+        {(() => {
           const gosanjoOk=!!(profile.achievements&&profile.achievements.defeat_gosanjo);
-          const locked=(adv&&!profile.advSkillsUnlocked)||(gosanjo&&!gosanjoOk);
-          const maxLvl=key==='fundir'?5:10;
-          const lockMsg=gosanjo?'Desbloqueada ao derrotar o Go-Sanjo em Kurikara...':'Desbloqueada ao avançar pelo Caminho Tortuoso...';
-          return(
-            <div key={key} className="skill-row" style={locked?{opacity:.5}:{}}>
-              {!locked&&<SkillIcon nome={name} size={40} style={{marginRight:10}}/>}
-              <div className="skill-info">
-                <div className="skill-name">{locked?'🔒 ':''}{name} {!locked&&<span style={{color:'var(--parchment-dark)'}}>Nv.{lvl}</span>}</div>
-                <div className="skill-desc">{locked?lockMsg:desc(lvl)}</div>
-                {!locked&&(
-                  <div className="skill-level-pips">
-                    {Array.from({length:maxLvl},(_,i)=>(
-                      <div key={i} className={`pip${i<lvl?' filled':''}`}/>
-                    ))}
+          return(<>
+            {/* Painel modal com as skills (upgrade) */}
+            {skillsPanelAberto&&(
+              <div onClick={()=>setSkillsPanelAberto(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:150,display:'flex',alignItems:'center',justifyContent:'center',padding:14}}>
+                <div onClick={e=>e.stopPropagation()} className="panel" style={{maxWidth:520,width:'100%',maxHeight:'86vh',overflowY:'auto',padding:16,border:'1px solid var(--gold)',borderRadius:14}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                    <span style={{fontSize:'1.3rem'}}>🎴</span>
+                    <h3 className="cinzel" style={{color:'var(--gold)',fontSize:'1rem',flex:1,letterSpacing:1}}>SKILLS DO MESTRE</h3>
+                    <span style={{color:'var(--gold)',fontSize:'.72rem'}}>💎 {(sq||0).toLocaleString()} SQ</span>
+                    <button className="btn btn-sm" onClick={()=>setSkillsPanelAberto(false)}>✕</button>
                   </div>
-                )}
+                  <div style={{fontSize:'.62rem',color:'var(--parchment-dark)',fontStyle:'italic',marginBottom:12}}>
+                    Gaste Saint Quartz para elevar o nível das suas habilidades de Mestre.
+                  </div>
+                  {skillDefs.map(({key,name,desc,adv,gosanjo})=>{
+                    const lvl=profile.skills[key]||1;
+                    const locked=(adv&&!profile.advSkillsUnlocked)||(gosanjo&&!gosanjoOk);
+                    const maxLvl=key==='fundir'?5:10;
+                    const lockMsg=gosanjo?'Desbloqueada ao derrotar o Go-Sanjo em Kurikara...':'Desbloqueada ao avançar pelo Caminho Tortuoso...';
+                    return(
+                      <div key={key} className="skill-row" style={locked?{opacity:.5}:{}}>
+                        {!locked&&<SkillIcon nome={name} size={40} style={{marginRight:10}}/>}
+                        <div className="skill-info">
+                          <div className="skill-name">{locked?'🔒 ':''}{name} {!locked&&<span style={{color:'var(--parchment-dark)'}}>Nv.{lvl}</span>}</div>
+                          <div className="skill-desc">{locked?lockMsg:desc(lvl)}</div>
+                          {!locked&&(
+                            <div className="skill-level-pips">
+                              {Array.from({length:maxLvl},(_,i)=>(
+                                <div key={i} className={`pip${i<lvl?' filled':''}`}/>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {locked
+                          ?<span style={{color:'var(--parchment-dark)',fontSize:'.7rem'}}>🔒</span>
+                          :lvl<maxLvl
+                          ?<button className="btn btn-sm" onClick={()=>upgrade(key)}>↑ {skillCostFor(key,lvl)} SQ</button>
+                          :<span style={{color:'var(--gold)',fontSize:'.7rem',fontFamily:'Cinzel,serif'}}>MAX</span>
+                        }
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              {locked
-                ?<span style={{color:'var(--parchment-dark)',fontSize:'.7rem'}}>🔒</span>
-                :lvl<maxLvl
-                ?<button className="btn btn-sm" onClick={()=>upgrade(key)}>↑ {skillCostFor(key,lvl)} SQ</button>
-                :<span style={{color:'var(--gold)',fontSize:'.7rem',fontFamily:'Cinzel,serif'}}>MAX</span>
-              }
-            </div>
-          );
-        })}
+            )}
+          </>);
+        })()}
 
         {/* Servos jogáveis desbloqueados — grid estilo "seleção de personagem" */}
         <div className="divider"><span className="divider-text">SERVOS</span></div>
@@ -16142,6 +16465,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   const[npCutin,setNpCutin]=useState(null); // {src,name,quote} — arte em tela cheia ao usar NP
   const[velCombate,setVelCombate]=useState(COMBAT_SPEED.mult); // 1x/2x/3x
   const[skillHover,setSkillHover]=useState(null); // {sk, x, y} — tooltip de skill
+  const[masterPanelAberto,setMasterPanelAberto]=useState(false); // painel de skills do Mestre
   function ciclarVelocidade(){
     const nova=velCombate===1?2:velCombate===2?3:1;
     setVelCombate(nova);COMBAT_SPEED.mult=nova;saveCombatSpeed(nova);
@@ -18676,32 +19000,69 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           </div>
 
           <div className="divider"><span className="divider-text">SKILLS DO MESTRE</span></div>
-          <div className="skills-row">
-            {[['manaBuster','Mana Buster','💥'],['transf','Transf. Mana','🔮'],['veneno','Veneno','☠️'],
+          {(() => {
+            const lista=[['manaBuster','Mana Buster','💥'],['transf','Transf. Mana','🔮'],['veneno','Veneno','☠️'],
               ...(profile.advSkillsUnlocked?[['tormento','Tormento','🔥'],['ossos','Ossos','🦴']]:[]),
               ...(profile.achievements&&profile.achievements.defeat_gosanjo?[['ukiyoe','Ukiyo-e','🎴'],['fundir','Fundir Ossos','💀']]:[])
-            ].map(([key,label,emoji])=>{
-              const cd=masterCd[key]||0;
-              const blocked=cd>0||!isServoTurn;
-              // O nome completo (usado para achar a arte) difere do rótulo curto do botão.
-              const nomeArte=MASTER_SKILL_NOME[key]||label;
-              return(
-                <button key={key} className="skill-btn" onClick={()=>doProfileSkill(key)} disabled={blocked}
-                  onMouseEnter={e=>{const r=e.currentTarget.getBoundingClientRect();setSkillHover({master:key,ef:sv[key],x:r.left+r.width/2,y:r.top});}}
-                  onMouseLeave={()=>setSkillHover(null)}
-                  style={(!isServoTurn&&cd<=0)?{opacity:.4}:{}}>
-                  <span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
-                    <SkillIcon nome={nomeArte} emoji={emoji} size={30}/>
-                    <span>{label}</span>
-                  </span>
-                  <span className="skill-cd">{cd>0?`${cd}t recarga`:`Nv.${sv[key].lvl}`}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div style={{fontSize:'.65rem',color:'var(--parchment-dark)',textAlign:'center',marginTop:8,fontStyle:'italic'}}>
-            Skills são ações livres — apenas Atacar, NP ou Fugir encerram o turno.
-          </div>
+            ];
+            // quantas estão prontas para uso agora
+            const prontas=lista.filter(([key])=>!(masterCd[key]>0)&&isServoTurn).length;
+            return(<>
+              {/* Botão único que abre o painel de skills do Mestre (mantém o combate limpo) */}
+              <button className="mestre-shortcut" style={{width:'100%',marginBottom:8}} onClick={()=>setMasterPanelAberto(true)}>
+                <span className="ico">🎴</span>
+                <div style={{textAlign:'left',flex:1}}>
+                  <div className="cinzel" style={{color:'var(--gold)',fontSize:'.88rem'}}>Skills do Mestre</div>
+                  <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>{lista.length} habilidades · {prontas} prontas</div>
+                </div>
+                <span style={{color:prontas>0?'var(--gold)':'var(--parchment-dark)',fontSize:'1.1rem'}}>{prontas>0?'✦':'→'}</span>
+              </button>
+
+              {/* Painel modal com as skills do Mestre */}
+              {masterPanelAberto&&(
+                <div onClick={()=>setMasterPanelAberto(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:150,display:'flex',alignItems:'center',justifyContent:'center',padding:14}}>
+                  <div onClick={e=>e.stopPropagation()} className="panel" style={{maxWidth:440,width:'100%',maxHeight:'80vh',overflowY:'auto',padding:16,border:'1px solid var(--gold)',borderRadius:14}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                      <span style={{fontSize:'1.3rem'}}>🎴</span>
+                      <h3 className="cinzel" style={{color:'var(--gold)',fontSize:'1rem',flex:1,letterSpacing:1}}>SKILLS DO MESTRE</h3>
+                      <button className="btn btn-sm" onClick={()=>setMasterPanelAberto(false)}>✕</button>
+                    </div>
+                    <div style={{fontSize:'.62rem',color:'var(--parchment-dark)',fontStyle:'italic',marginBottom:12}}>
+                      Ações livres — não encerram o turno. Toque para usar.
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                      {lista.map(([key,label,emoji])=>{
+                        const cd=masterCd[key]||0;
+                        const blocked=cd>0||!isServoTurn;
+                        const nomeArte=MASTER_SKILL_NOME[key]||label;
+                        const d=descreverMasterSkill(key,sv[key]);
+                        return(
+                          <button key={key} onClick={()=>{doProfileSkill(key);setMasterPanelAberto(false);}} disabled={blocked}
+                            style={{padding:'10px',borderRadius:10,cursor:blocked?'default':'pointer',textAlign:'left',
+                              border:`1px solid ${blocked?'var(--gold-dim)':'var(--gold)'}`,
+                              background:blocked?'rgba(0,0,0,0.3)':'rgba(201,162,39,0.1)',
+                              opacity:blocked?0.55:1,transition:'all .15s'}}>
+                            <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:5}}>
+                              <SkillIcon nome={nomeArte} emoji={emoji} size={34}/>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{fontSize:'.74rem',color:'var(--gold)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{label}</div>
+                                <div style={{fontSize:'.56rem',color:cd>0?'#e0806a':'var(--parchment-dark)'}}>{cd>0?`${cd}t de recarga`:`Nível ${sv[key].lvl}`}</div>
+                              </div>
+                            </div>
+                            <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                              {d.efeitos.map((ef,j)=>(
+                                <span key={j} style={{fontSize:'.55rem',padding:'1px 6px',borderRadius:6,background:'rgba(0,0,0,0.35)',color:'var(--parchment)'}}>{ef}</span>
+                              ))}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>);
+          })()}
         </div>
 
         {/* Log */}
@@ -19955,6 +20316,7 @@ function App(){
   if(screen==='achievements')return <AchievementsScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='ranking')return <RankingScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='codex')return <CodexScreen onNavigate={navigate} profile={profile}/>;
+  if(screen==='amigos')return <AmigosScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='config')return <ConfigScreen onNavigate={navigate}/>;
   if(screen==='campaign')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate}/>;
   if(screen==='tower')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate} mode="tower"/>;
