@@ -6241,25 +6241,39 @@ function coliseuPoderTime(time){
 // Modelo: cada lado causa dano por turno (atk com variância) até um HP zerar.
 function coliseuSimularBatalha(timeAtk,timeDef){
   const A=coliseuPoderTime(timeAtk), D=coliseuPoderTime(timeDef);
-  let hpA=A.hp, hpD=D.hp;
-  const log=[];let turno=0;const MAX_TURNOS=40;
-  // vantagem de iniciativa: quem tem maior ATK total ataca primeiro
-  let vezAtacante=A.atk>=D.atk;
-  while(hpA>0&&hpD>0&&turno<MAX_TURNOS){
+  // monta os combatentes individuais de cada lado (com HP e ATK próprios)
+  const montar=(poder,time)=>(time.servos||[]).map((s,i)=>{
+    const sv=PLAYABLE_SERVOS[s.id];
+    const det=poder.detalhe[i]||{atk:1000,hp:8000};
+    return {id:s.id,nome:sv?sv.name:'?',className:sv?sv.className:'',
+      assets:sv?sv.assets:null,sprites:sv?sv.sprites:null,
+      atk:det.atk,hpMax:det.hp,hp:det.hp,vivo:true};
+  });
+  const ladoA=montar(A,timeAtk), ladoD=montar(D,timeDef);
+  const log=[];let turno=0;const MAX_TURNOS=60;
+  let vezA=A.atk>=D.atk; // quem tem maior ATK total começa
+  const vivos=lado=>lado.filter(c=>c.vivo);
+  while(vivos(ladoA).length&&vivos(ladoD).length&&turno<MAX_TURNOS){
     turno++;
-    const variancia=()=>0.82+Math.random()*0.36; // 82%–118%
-    if(vezAtacante){
-      const dano=Math.round(A.atk*0.55*variancia());
-      hpD-=dano;log.push({lado:'atk',dano,hpRestante:Math.max(0,hpD)});
-    }else{
-      const dano=Math.round(D.atk*0.55*variancia());
-      hpA-=dano;log.push({lado:'def',dano,hpRestante:Math.max(0,hpA)});
-    }
-    vezAtacante=!vezAtacante;
+    const atacantes=vezA?ladoA:ladoD, defensores=vezA?ladoD:ladoA;
+    const atk=vivos(atacantes)[turno%Math.max(1,vivos(atacantes).length)]||vivos(atacantes)[0];
+    const alvosVivos=vivos(defensores);
+    if(!atk||!alvosVivos.length)break;
+    const alvo=alvosVivos[Math.floor(Math.random()*alvosVivos.length)];
+    const variancia=0.82+Math.random()*0.36;
+    const crit=Math.random()<0.18;
+    const dano=Math.round(atk.atk*1.05*variancia*(crit?1.6:1));
+    alvo.hp=Math.max(0,alvo.hp-dano);
+    const morreu=alvo.hp<=0;if(morreu)alvo.vivo=false;
+    log.push({lado:vezA?'atk':'def',atacanteId:atk.id,alvoId:alvo.id,
+      alvoLado:vezA?'def':'atk',dano,crit,morreu,hpAlvo:alvo.hp,hpMaxAlvo:alvo.hpMax});
+    vezA=!vezA;
   }
-  const venceu=hpA>0&&hpD<=0?true:(hpD>0&&hpA<=0?false:(hpA>=hpD)); // empate por tempo: maior HP restante
-  return {venceu,turnos:turno,hpAtacante:Math.max(0,hpA),hpDefensor:Math.max(0,hpD),
-    hpMaxAtacante:A.hp,hpMaxDefensor:D.hp,poderAtk:A,poderDef:D,log};
+  const venceu=vivos(ladoA).length>0&&vivos(ladoD).length===0?true
+    :(vivos(ladoD).length>0&&vivos(ladoA).length===0?false
+    :(vivos(ladoA).length>=vivos(ladoD).length)); // empate por tempo: mais vivos
+  return {venceu,turnos:turno,ladoA,ladoD,log,
+    hpMaxAtacante:A.hp,hpMaxDefensor:D.hp,poderAtk:A,poderDef:D};
 }
 // Cálculo de ELO (fator K=32). Retorna a variação de pontos para o atacante.
 function coliseuDeltaElo(eloA,eloB,venceu){
@@ -8850,7 +8864,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.17</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.18</p>
       </div>
     </div>
   );
@@ -11192,79 +11206,144 @@ function ColiseuOponenteCard({time,profile,onDesafiar}){
 function ColiseuBatalha({profile,setProfile,meuTime,oponente,moeda,aposta,onFim}){
   const[fase,setFase]=useState('lutando'); // 'lutando' | 'resultado'
   const[resultado,setResultado]=useState(null);
-  const[hpAtk,setHpAtk]=useState(100);
-  const[hpDef,setHpDef]=useState(100);
+  const simRef=useRef(null);
+  // estado visual dos combatentes (HP animado por servo)
+  const[ladoA,setLadoA]=useState([]);
+  const[ladoD,setLadoD]=useState([]);
+  const[atacando,setAtacando]=useState(null); // id do servo atacando
+  const[atingido,setAtingido]=useState(null); // id do servo levando dano
+  const[flutuante,setFlutuante]=useState(null); // {id, dano, crit}
+  const[msgTurno,setMsgTurno]=useState('A batalha começa...');
 
   useEffect(()=>{
     const sim=coliseuSimularBatalha(meuTime,oponente);
-    // anima as barras de HP conforme o log
+    simRef.current=sim;
+    // clona o estado inicial dos combatentes (HP cheio)
+    setLadoA(sim.ladoA.map(c=>({...c})));
+    setLadoD(sim.ladoD.map(c=>({...c})));
     let i=0;const passos=sim.log;
-    const hpMaxA=sim.hpMaxAtacante,hpMaxD=sim.hpMaxDefensor;
-    let hA=hpMaxA,hD=hpMaxD;
-    const timer=setInterval(()=>{
-      if(i>=passos.length){
-        clearInterval(timer);
-        finalizarBatalha(sim);
-        return;
-      }
+    const intervalo=Math.max(650,Math.min(1100,4200/Math.max(1,passos.length)));
+
+    function passo(){
+      if(i>=passos.length){finalizarBatalha(sim);return;}
       const p=passos[i];
-      if(p.lado==='atk'){hD=p.hpRestante;setHpDef(Math.max(0,Math.round(hD/hpMaxD*100)));}
-      else{hA=p.hpRestante;setHpAtk(Math.max(0,Math.round(hA/hpMaxA*100)));}
+      setAtacando(p.atacanteId+'_'+(p.lado));
+      setMsgTurno('');
+      // aplica o dano visualmente após um pequeno atraso (tempo do "avanço")
+      setTimeout(()=>{
+        setAtingido(p.alvoId+'_'+p.alvoLado);
+        setFlutuante({id:p.alvoId+'_'+p.alvoLado,dano:p.dano,crit:p.crit});
+        const aplicar=(lado)=>lado.map(c=>c.id===p.alvoId?{...c,hp:p.hpAlvo,vivo:p.hpAlvo>0}:c);
+        if(p.alvoLado==='atk')setLadoA(aplicar);else setLadoD(aplicar);
+      },intervalo*0.35);
+      setTimeout(()=>{setAtacando(null);setAtingido(null);setFlutuante(null);},intervalo*0.85);
       i++;
-    },Math.max(60,320/Math.max(1,passos.length/8)));
-    return ()=>clearInterval(timer);
+      setTimeout(passo,intervalo);
+    }
+    const t=setTimeout(passo,700);
+    return ()=>clearTimeout(t);
   },[]);
 
   async function finalizarBatalha(sim){
     const venceu=sim.venceu;
-    // aplica aposta e ELO
     let novoProfile={...profile};
     if(aposta>0){
       const campo=moeda==='sq'?'sq':'qp';
       novoProfile[campo]=Math.max(0,(novoProfile[campo]||0)+(venceu?aposta:-aposta));
     }
     setProfile(novoProfile);saveProfile(novoProfile);
-    // ELO
     const meuElo=meuTime?(meuTime.elo||COLISEU_ELO_INICIAL):COLISEU_ELO_INICIAL;
     const opElo=oponente.elo||COLISEU_ELO_INICIAL;
     const delta=coliseuDeltaElo(meuElo,opElo,venceu);
     if(fbAuth&&fbAuth.currentUser){
       coliseuAplicarResultado(fbAuth.currentUser.uid,oponente.uid,venceu,delta).catch(()=>{});
     }
-    setResultado({venceu,delta,sim});
+    setResultado({venceu,delta});
     setFase('resultado');
   }
 
-  const BarraHP=({label,pct,cor})=>(
-    <div style={{marginBottom:10}}>
-      <div style={{fontSize:'.72rem',color:'var(--parchment)',marginBottom:3,fontFamily:'Cinzel,serif'}}>{label}</div>
-      <div style={{height:16,background:'rgba(0,0,0,0.5)',borderRadius:8,overflow:'hidden',border:'1px solid var(--gold-dim)'}}>
-        <div style={{height:'100%',width:pct+'%',background:cor,transition:'width .15s',borderRadius:8}}/>
+  // Card de um Servo na arena (arte + barra de HP individual)
+  const ServoArena=({c,lado,ehInimigo})=>{
+    const chave=c.id+'_'+lado;
+    const atacaAgora=atacando===chave;
+    const levaDano=atingido===chave;
+    const pctHp=Math.round(c.hp/c.hpMax*100);
+    const img=(c.assets&&(c.assets.combat||c.assets.default))||null;
+    return(
+      <div style={{position:'relative',width:'31%',transition:'transform .18s',
+        transform:atacaAgora?(ehInimigo?'translateX(-10px) scale(1.06)':'translateX(10px) scale(1.06)'):'none',
+        filter:c.vivo?'none':'grayscale(1) brightness(0.4)',opacity:c.vivo?1:0.55}}>
+        {/* número de dano flutuante */}
+        {flutuante&&flutuante.id===chave&&(
+          <div style={{position:'absolute',top:-6,left:'50%',transform:'translateX(-50%)',zIndex:5,
+            fontFamily:'Cinzel,serif',fontWeight:700,fontSize:flutuante.crit?'1.3rem':'1rem',
+            color:flutuante.crit?'#ffd54f':'#ff6b6b',textShadow:'0 2px 4px #000',
+            animation:'coliseuFloat .8s ease-out'}}>
+            {flutuante.crit?'★':''}{flutuante.dano}
+          </div>
+        )}
+        <div style={{position:'relative',borderRadius:8,overflow:'hidden',aspectRatio:'3/4',
+          border:`2px solid ${levaDano?'#ff5050':(ehInimigo?'var(--crimson)':'var(--gold)')}`,
+          background:'rgba(0,0,0,0.4)',boxShadow:levaDano?'0 0 12px #ff5050':'none',transition:'box-shadow .15s'}}>
+          {img?<img src={img} alt={c.nome} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center 15%',
+            transform:ehInimigo?'scaleX(-1)':'none'}} onError={e=>{e.target.style.display='none';}}/>
+            :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.6rem'}}>⚔️</div>}
+          {!c.vivo&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.8rem'}}>💀</div>}
+        </div>
+        {/* barra de HP individual */}
+        <div style={{height:6,background:'rgba(0,0,0,0.6)',borderRadius:4,overflow:'hidden',marginTop:3,border:'1px solid rgba(0,0,0,0.5)'}}>
+          <div style={{height:'100%',width:pctHp+'%',borderRadius:4,transition:'width .3s',
+            background:pctHp>50?'linear-gradient(90deg,#4a9,#7ee08a)':pctHp>25?'linear-gradient(90deg,#c98a27,#e0c85a)':'linear-gradient(90deg,#8b1a1a,#e05a4a)'}}/>
+        </div>
+        <div style={{fontSize:'.5rem',color:'var(--parchment-dark)',textAlign:'center',marginTop:2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{c.nome}</div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
-      <div className="panel" style={{maxWidth:520}}>
-        <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:2,textAlign:'center',marginBottom:18}}>⚔️ ARENA</h2>
+      <style>{`@keyframes coliseuFloat{0%{opacity:0;transform:translateX(-50%) translateY(0)}20%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-26px)}}`}</style>
+      <div className="panel" style={{maxWidth:560}}>
+        <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:2,textAlign:'center',marginBottom:16}}>⚔️ ARENA DO COLISEU</h2>
+
+        {/* Time inimigo (topo) */}
+        <div style={{marginBottom:6}}>
+          <div style={{fontSize:'.68rem',color:'var(--crimson-soft)',fontFamily:'Cinzel,serif',marginBottom:4,display:'flex',alignItems:'center',gap:6}}>
+            <span style={{width:22,height:22,borderRadius:'50%',overflow:'hidden',display:'inline-flex'}}>
+              {oponente.avatar?<RessonanciaRetrato art={oponente.avatar} size={22}/>:<span>⚔️</span>}
+            </span>
+            {oponente.nome}
+          </div>
+          <div style={{display:'flex',justifyContent:'space-around',gap:6}}>
+            {ladoD.map((c,i)=><ServoArena key={i} c={c} lado="def" ehInimigo={true}/>)}
+          </div>
+        </div>
+
+        <div style={{textAlign:'center',fontSize:'1.3rem',margin:'10px 0',color:'var(--gold)',letterSpacing:4}}>⚔ VS ⚔</div>
+
+        {/* Seu time (embaixo) */}
+        <div style={{marginBottom:10}}>
+          <div style={{display:'flex',justifyContent:'space-around',gap:6}}>
+            {ladoA.map((c,i)=><ServoArena key={i} c={c} lado="atk" ehInimigo={false}/>)}
+          </div>
+          <div style={{fontSize:'.68rem',color:'var(--gold)',fontFamily:'Cinzel,serif',marginTop:4,textAlign:'right'}}>
+            {profile.nickname||'Você'} (você)
+          </div>
+        </div>
 
         {fase==='lutando'?(
-          <div>
-            <BarraHP label={`🛡️ ${(profile.nickname||'Você')} (você)`} pct={hpAtk} cor="linear-gradient(90deg,#4a9,#7ee08a)"/>
-            <div style={{textAlign:'center',fontSize:'1.4rem',margin:'8px 0',color:'var(--gold)'}}>⚔️ VS 🛡️</div>
-            <BarraHP label={`⚔️ ${oponente.nome}`} pct={hpDef} cor="linear-gradient(90deg,#8b1a1a,#e05a4a)"/>
-            <p style={{textAlign:'center',fontSize:'.74rem',color:'var(--parchment-dark)',fontStyle:'italic',marginTop:16}}>A batalha se desenrola...</p>
-          </div>
+          <p style={{textAlign:'center',fontSize:'.72rem',color:'var(--parchment-dark)',fontStyle:'italic',marginTop:10}}>
+            {msgTurno||'⚔️ A batalha se desenrola...'}
+          </p>
         ):resultado&&(
-          <div style={{textAlign:'center'}}>
-            <div style={{fontSize:'2.6rem',marginBottom:8}}>{resultado.venceu?'🏆':'💀'}</div>
-            <h3 className="cinzel" style={{fontSize:'1.4rem',letterSpacing:2,marginBottom:12,color:resultado.venceu?'var(--gold)':'var(--crimson-soft)'}}>
+          <div style={{textAlign:'center',marginTop:14,paddingTop:14,borderTop:'1px solid var(--gold-dim)'}}>
+            <div style={{fontSize:'2.4rem',marginBottom:6}}>{resultado.venceu?'🏆':'💀'}</div>
+            <h3 className="cinzel" style={{fontSize:'1.3rem',letterSpacing:2,marginBottom:12,color:resultado.venceu?'var(--gold)':'var(--crimson-soft)'}}>
               {resultado.venceu?'VITÓRIA!':'DERROTA'}
             </h3>
-            <div style={{background:'rgba(0,0,0,0.3)',borderRadius:10,padding:'14px',marginBottom:14,border:'1px solid var(--gold-dim)'}}>
-              <div style={{fontSize:'.8rem',color:'var(--parchment)',marginBottom:6}}>
-                Pontos de ranking: <span style={{color:resultado.delta>=0?'#7ee08a':'#e88',fontFamily:'Cinzel,serif'}}>{resultado.delta>=0?'+':''}{resultado.delta} ELO</span>
+            <div style={{background:'rgba(0,0,0,0.3)',borderRadius:10,padding:'12px',marginBottom:12,border:'1px solid var(--gold-dim)',display:'inline-block',minWidth:200}}>
+              <div style={{fontSize:'.8rem',color:'var(--parchment)',marginBottom:aposta>0?6:0}}>
+                Ranking: <span style={{color:resultado.delta>=0?'#7ee08a':'#e88',fontFamily:'Cinzel,serif'}}>{resultado.delta>=0?'+':''}{resultado.delta} ELO</span>
               </div>
               {aposta>0&&(
                 <div style={{fontSize:'.8rem',color:'var(--parchment)'}}>
