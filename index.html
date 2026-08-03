@@ -10,6 +10,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -838,11 +839,57 @@ const firebaseConfig={
 };
 let fbDb=null;
 let fbAuth=null;
+let fbStorage=null;
 try{
   const fbApp=firebase.initializeApp(firebaseConfig);
   fbDb=firebase.firestore();
   fbAuth=firebase.auth();
+  try{fbStorage=firebase.storage();}catch(e){console.error('Storage indisponível:',e);}
 }catch(e){console.error('Firebase não pôde iniciar:',e);}
+
+// ══════════════════════════════════════════════════════
+// UPLOAD DE IMAGEM — Firebase Storage (sem token, só precisa estar logado).
+// Recebe um Blob e um caminho; retorna a URL pública de download.
+async function storageUpload(caminho,blob){
+  if(!fbStorage)throw new Error('Firebase Storage indisponível.');
+  const ref=fbStorage.ref().child(caminho);
+  await ref.put(blob);
+  return await ref.getDownloadURL();
+}
+// Converte um dataURL/base64 em Blob (para reaproveitar código que gera base64).
+function dataURLparaBlob(dataURL){
+  const [cab,dados]=dataURL.split(',');
+  const mime=(cab.match(/:(.*?);/)||[])[1]||'image/jpeg';
+  const bin=atob(dados);const n=bin.length;const arr=new Uint8Array(n);
+  for(let i=0;i<n;i++)arr[i]=bin.charCodeAt(i);
+  return new Blob([arr],{type:mime});
+}
+// Comprime/redimensiona uma imagem grande antes do upload, preservando a proporção.
+// Só reduz se exceder maxLado (px) — imagens já pequenas passam quase intactas.
+// Mantém boa qualidade visual mas evita arquivos de dezenas de MB no Storage.
+async function comprimirImagem(file,maxLado=1600,qualidade=0.9){
+  // arquivos pequenos (< 1.5MB) não precisam de reprocessamento
+  if(file.size<1.5*1024*1024)return file;
+  return new Promise((resolve)=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      let {width:w,height:h}=img;
+      if(w>maxLado||h>maxLado){
+        if(w>=h){h=Math.round(h*(maxLado/w));w=maxLado;}
+        else{w=Math.round(w*(maxLado/h));h=maxLado;}
+      }
+      const canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      canvas.toBlob(b=>resolve(b||file),'image/jpeg',qualidade);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);resolve(file);};
+    img.src=url;
+  });
+}
 
 // Cada categoria vira sua própria coleção (ranking_<cat>) — evita precisar de
 // índice composto no Firestore (orderBy simples já é suportado por padrão).
@@ -8630,7 +8677,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.07</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.09</p>
       </div>
     </div>
   );
@@ -10769,14 +10816,9 @@ function FeedComporModal({profile,meuUid,meuNome,onFechar}){
   const[tipo,setTipo]=useState('geral');
   const[arquivo,setArquivo]=useState(null);
   const[previewUrl,setPreviewUrl]=useState(null);
-  const[cfg,setCfg]=useState(loadGithubCfg());
-  const[senha,setSenha]=useState('');
-  const[token,setToken]=useState('');
-  const temCofre=existeTokenCofre();
   const[enviando,setEnviando]=useState(false);
   const[erro,setErro]=useState('');
   const[progresso,setProgresso]=useState('');
-  const[configAberta,setConfigAberta]=useState(false);
 
   function escolherArquivo(e){
     const f=e.target.files&&e.target.files[0];
@@ -10791,26 +10833,14 @@ function FeedComporModal({profile,meuUid,meuNome,onFechar}){
     setEnviando(true);
     let imagemUrl=null;
     try{
-      // se há imagem, sobe pro GitHub (mesma infra do álbum)
+      // se há imagem, sobe pro Firebase Storage (sem token, só precisa estar logado)
       if(arquivo){
-        if(!cfg.dono||!cfg.repo){setErro('Configure o repositório do GitHub para enviar imagens.');setEnviando(false);setConfigAberta(true);return;}
-        let tok='';
-        if(temCofre){
-          if(!senha.trim()){setErro('Digite sua senha para destravar o token.');setEnviando(false);return;}
-          tok=await abrirTokenCofre(senha);
-          if(!tok){setErro('Senha incorreta.');setEnviando(false);return;}
-        }else{
-          if(!token.trim()){setErro('Cole seu token do GitHub (ou configure o cofre).');setEnviando(false);setConfigAberta(true);return;}
-          tok=token.trim();
-        }
+        if(!fbAuth||!fbAuth.currentUser){setErro('Você precisa estar logado para enviar imagens.');setEnviando(false);return;}
+        setProgresso('Otimizando imagem...');
+        const otimizada=await comprimirImagem(arquivo,1600,0.9);
         setProgresso('Enviando imagem...');
-        const ext=(arquivo.name.split('.').pop()||'jpg').toLowerCase();
-        const pasta=(cfg.pasta||'comics').replace(/\/+$/,'');
-        const caminho=pasta+'/feed_'+Date.now()+'.'+ext;
-        const b64=await fileParaBase64(arquivo);
-        imagemUrl=await githubUpload(cfg,tok,caminho,b64,'Feed: imagem');
-        saveGithubCfg(cfg);
-        if(!temCofre&&senha.trim()){try{await salvarTokenCofre(tok,senha);}catch{}}
+        const caminho='feed/'+meuUid+'_'+Date.now()+'.jpg';
+        imagemUrl=await storageUpload(caminho,otimizada);
       }
       setProgresso('Publicando...');
       const r=await feedPublicar({
@@ -10857,24 +10887,6 @@ function FeedComporModal({profile,meuUid,meuNome,onFechar}){
           🖼️ {arquivo?'Trocar imagem':'Adicionar imagem'}
           <input type="file" accept="image/*" onChange={escolherArquivo} style={{display:'none'}}/>
         </label>
-
-        {/* Config do GitHub (só aparece se houver imagem ou o usuário abrir) */}
-        {(arquivo||configAberta)&&(
-          <div style={{background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'10px',marginBottom:10}}>
-            <div style={{fontSize:'.66rem',color:'var(--gold)',marginBottom:8,fontFamily:'Cinzel,serif'}}>📤 Envio de imagem (GitHub)</div>
-            <input value={cfg.dono} onChange={e=>setCfg({...cfg,dono:e.target.value})} placeholder="dono (usuário)" style={INP}/>
-            <input value={cfg.repo} onChange={e=>setCfg({...cfg,repo:e.target.value})} placeholder="repositório" style={INP}/>
-            {temCofre?(
-              <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="Senha do cofre do token" style={INP}/>
-            ):(
-              <>
-                <input type="password" value={token} onChange={e=>setToken(e.target.value)} placeholder="token do GitHub (github_pat_...)" style={INP}/>
-                <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="Crie uma senha para guardar o token" style={INP}/>
-              </>
-            )}
-            <div style={{fontSize:'.58rem',color:'var(--parchment-dark)'}}>O token fica guardado criptografado no seu navegador (mesmo do Álbum).</div>
-          </div>
-        )}
 
         {erro&&<div style={{fontSize:'.72rem',color:'#ff9090',marginBottom:8}}>{erro}</div>}
         {progresso&&<div style={{fontSize:'.72rem',color:'var(--gold)',marginBottom:8}}>{progresso}</div>}
@@ -11111,10 +11123,6 @@ function AvatarCropModal({profile,onFechar,onPronto,formato='circulo',titulo='FO
   const[arrastando,setArrastando]=useState(false);
   const dragRef=useRef({x:0,y:0,px:0,py:0});
   const imgRef=useRef(null);
-  const[cfg,setCfg]=useState(loadGithubCfg());
-  const[senha,setSenha]=useState('');
-  const[token,setToken]=useState('');
-  const temCofre=existeTokenCofre();
   const[enviando,setEnviando]=useState(false);
   const[erro,setErro]=useState('');
   const[progresso,setProgresso]=useState('');
@@ -11122,8 +11130,8 @@ function AvatarCropModal({profile,onFechar,onPronto,formato='circulo',titulo='FO
   const ehCard=formato==='card';
   const BOXW=ehCard?200:260;         // largura da moldura na tela
   const BOXH=ehCard?272:260;         // altura da moldura na tela (card é mais alto)
-  const OUTW=ehCard?384:512;         // largura de saída
-  const OUTH=ehCard?522:512;         // altura de saída
+  const OUTW=ehCard?768:1024;        // largura de saída (alta resolução p/ nitidez)
+  const OUTH=ehCard?1044:1024;       // altura de saída
   const BOX=BOXW; // compat
 
   function escolher(e){
@@ -11166,37 +11174,23 @@ function AvatarCropModal({profile,onFechar,onPronto,formato='circulo',titulo='FO
       const fatorX=OUTW/BOXW, fatorY=OUTH/BOXH;
       ctx.fillStyle='#120a14';ctx.fillRect(0,0,OUTW,OUTH);
       ctx.drawImage(img,offX*fatorX,offY*fatorY,larguraDisp*fatorX,alturaDisp*fatorY);
-      canvas.toBlob(b=>resolve(b),'image/jpeg',0.85);
+      canvas.toBlob(b=>resolve(b),'image/jpeg',0.92);
     });
   }
 
   async function confirmar(){
     setErro('');
     if(!imgSrc){setErro('Escolha uma imagem primeiro.');return;}
-    if(!cfg.dono||!cfg.repo){setErro('Configure o repositório do GitHub para enviar a foto.');return;}
-    let tok='';
-    if(temCofre){
-      if(!senha.trim()){setErro('Digite a senha do cofre do token.');return;}
-      tok=await abrirTokenCofre(senha);
-      if(!tok){setErro('Senha incorreta.');return;}
-    }else{
-      if(!token.trim()){setErro('Cole seu token do GitHub.');return;}
-      tok=token.trim();
-    }
+    if(!fbAuth||!fbAuth.currentUser){setErro('Você precisa estar logado para enviar imagens.');return;}
     setEnviando(true);
     try{
       setProgresso('Recortando...');
       const blob=await gerarRecorte();
       if(!blob){setErro('Falha ao gerar o recorte.');setEnviando(false);return;}
-      // blob → base64
-      const b64=await new Promise((res)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.readAsDataURL(blob);});
       setProgresso('Enviando...');
-      const pasta=(cfg.pasta||'comics').replace(/\/+$/,'');
-      const uid=fbAuth&&fbAuth.currentUser?fbAuth.currentUser.uid:'anon';
-      const caminho=pasta+'/avatar_'+uid+'_'+Date.now()+'.jpg';
-      const url=await githubUpload(cfg,tok,caminho,b64,'Foto de perfil');
-      saveGithubCfg(cfg);
-      if(!temCofre&&senha.trim()){try{await salvarTokenCofre(tok,senha);}catch{}}
+      const uid=fbAuth.currentUser.uid;
+      const caminho=(ehCard?'suporte/':'avatares/')+uid+'_'+Date.now()+'.jpg';
+      const url=await storageUpload(caminho,blob);
       onPronto(url);
     }catch(e){setErro(e.message||'Erro ao enviar.');}
     setEnviando(false);setProgresso('');
@@ -11238,21 +11232,6 @@ function AvatarCropModal({profile,onFechar,onPronto,formato='circulo',titulo='FO
             🔄 Trocar imagem
             <input type="file" accept="image/*" onChange={escolher} style={{display:'none'}}/>
           </label>
-
-          {/* Config do GitHub */}
-          <div style={{background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'10px',marginBottom:10}}>
-            <div style={{fontSize:'.66rem',color:'var(--gold)',marginBottom:8,fontFamily:'Cinzel,serif'}}>📤 Envio (GitHub)</div>
-            <input value={cfg.dono} onChange={e=>setCfg({...cfg,dono:e.target.value})} placeholder="dono (usuário)" style={INP}/>
-            <input value={cfg.repo} onChange={e=>setCfg({...cfg,repo:e.target.value})} placeholder="repositório" style={INP}/>
-            {temCofre?(
-              <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="Senha do cofre do token" style={INP}/>
-            ):(
-              <>
-                <input type="password" value={token} onChange={e=>setToken(e.target.value)} placeholder="token do GitHub" style={INP}/>
-                <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="Crie uma senha para guardar o token" style={INP}/>
-              </>
-            )}
-          </div>
 
           {erro&&<div style={{fontSize:'.72rem',color:'#ff9090',marginBottom:8}}>{erro}</div>}
           {progresso&&<div style={{fontSize:'.72rem',color:'var(--gold)',marginBottom:8}}>{progresso}</div>}
