@@ -8864,7 +8864,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.19</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.20</p>
       </div>
     </div>
   );
@@ -10724,35 +10724,11 @@ function ContaSection({profile,setProfile}){
 
   useEffect(()=>{
     if(!fbAuth)return;
-    // guarda o uid já sincronizado nesta sessão, para não re-mesclar a cada
-    // vez que a tela de perfil (e este componente) é montada.
-    const un=fbAuth.onAuthStateChanged(async u=>{
+    // A sincronização (merge + listener realtime) agora é feita globalmente no App.
+    // Aqui só acompanhamos o estado de login para atualizar a UI desta seção.
+    const un=fbAuth.onAuthStateChanged(u=>{
       setUser(u);
-      if(u){
-        const jaSync=window.__fateSyncedUid===u.uid;
-        if(!jaSync){
-          // primeira sincronização desta sessão para esta conta: mescla 1 vez
-          window.__fateSyncedUid=u.uid;
-          const local=loadProfile();
-          const nuvem=await nuvemPull(u.uid);
-          const final=nuvemMesclar(local,nuvem);
-          // 🎁 Serva exclusiva de registro: garante a Daikokuten para toda conta.
-          final.gachaOwned=final.gachaOwned||[];
-          let ganhouDaiko=false;
-          if(!final.gachaOwned.includes('daikokuten')){
-            final.gachaOwned=[...final.gachaOwned,'daikokuten'];
-            ganhouDaiko=true;
-          }
-          saveProfile(final);setProfile(final);
-          await nuvemPushAgora();
-          nuvemEscutar(u.uid,novoProf=>setProfile(novoProf));
-          if(ganhouDaiko)setRecompensaRegistro(true); // mostra o aviso do presente
-        }
-        setMsg('');setAberto(false);
-      }else{
-        window.__fateSyncedUid=null;
-        nuvemPararEscuta();
-      }
+      if(u){setMsg('');setAberto(false);}
     });
     return ()=>un();
   },[]);
@@ -21822,6 +21798,31 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
 function App(){
   const[screen,setScreen]=useState('menu');
   const[profile,setProfile]=useState(loadProfile());
+  // Sincronização com a nuvem em nível GLOBAL — roda assim que o jogo carrega,
+  // independente da tela aberta. Antes ficava só na tela de Perfil, então quem
+  // não abria o Perfil no outro aparelho não recebia os dados atualizados.
+  useEffect(()=>{
+    if(!fbAuth)return;
+    const un=fbAuth.onAuthStateChanged(async u=>{
+      if(u){
+        if(window.__fateSyncedUid!==u.uid){
+          window.__fateSyncedUid=u.uid;
+          const local=loadProfile();
+          const nuvem=await nuvemPull(u.uid);
+          const final=nuvemMesclar(local,nuvem);
+          final.gachaOwned=final.gachaOwned||[];
+          if(!final.gachaOwned.includes('daikokuten'))final.gachaOwned=[...final.gachaOwned,'daikokuten'];
+          saveProfileSemPush(final);setProfile(final);
+          await nuvemPushAgora();
+          nuvemEscutar(u.uid,novoProf=>setProfile(novoProf));
+        }
+      }else{
+        window.__fateSyncedUid=null;
+        nuvemPararEscuta();
+      }
+    });
+    return ()=>un();
+  },[]);
   // Som de clique global em qualquer botão (delegação de evento)
   useEffect(()=>{
     const onClick=e=>{const b=e.target.closest('button, .btn, .menu-btn');if(b&&!b.disabled)sfx('click');};
