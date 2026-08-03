@@ -8850,7 +8850,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.15</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.17</p>
       </div>
     </div>
   );
@@ -11062,21 +11062,56 @@ function ColiseuTimeEditor({profile,meuUid,roster,meuTime,onSalvo}){
       </div>
 
       <div className="divider"><span className="divider-text">BÊNÇÃOS (1 de cada tipo)</span></div>
-      {COLISEU_SLOTS_GRACA.map(({slot,label,icon})=>{
-        const opcoes=GRACAS.filter(g=>g.slot===slot);
-        const escolhida=gracas[slot];
+      {/* Progresso dos 5 slots — mostra quais tipos já foram escolhidos */}
+      <div style={{display:'flex',gap:6,justifyContent:'center',marginBottom:12,flexWrap:'wrap'}}>
+        {COLISEU_SLOTS_GRACA.map(({slot,label,icon})=>{
+          const ok=!!gracas[slot];
+          return(
+            <div key={slot} style={{display:'flex',alignItems:'center',gap:3,fontSize:'.6rem',padding:'3px 8px',borderRadius:10,
+              border:`1px solid ${ok?'var(--gold)':'var(--gold-dim)'}`,background:ok?'rgba(201,162,39,0.15)':'transparent',color:ok?'var(--gold)':'var(--parchment-dark)'}}>
+              {icon} {label} {ok?'✓':''}
+            </div>
+          );
+        })}
+      </div>
+      <p style={{fontSize:'.64rem',color:'var(--parchment-dark)',fontStyle:'italic',textAlign:'center',marginBottom:12}}>
+        Escolha 1 bênção de cada tipo. Cada Patrono oferece 5 bênçãos (uma por tipo).
+      </p>
+
+      {/* Agrupadas por Patrono, com a foto do Patrono e o ícone do tipo em cada bênção */}
+      {Object.values(PATRONOS).map(pat=>{
+        const opcoes=GRACAS.filter(g=>g.patrono===pat.id);
+        if(!opcoes.length)return null;
         return(
-          <div key={slot} style={{marginBottom:12}}>
-            <div style={{fontSize:'.7rem',color:'var(--gold)',fontFamily:'Cinzel,serif',marginBottom:5}}>{icon} {label}</div>
-            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-              {opcoes.map(g=>(
-                <button key={g.id} onClick={()=>escolherGraca(slot,g.id)} title={g.desc(g.v(2))}
-                  style={{fontSize:'.6rem',padding:'4px 9px',borderRadius:8,cursor:'pointer',
-                    border:`1px solid ${escolhida===g.id?'var(--gold)':'var(--gold-dim)'}`,
-                    background:escolhida===g.id?'rgba(201,162,39,0.2)':'transparent',color:'var(--parchment)'}}>
-                  {g.name}
-                </button>
-              ))}
+          <div key={pat.id} style={{marginBottom:14,background:'rgba(0,0,0,0.2)',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'10px 12px'}}>
+            {/* Cabeçalho do Patrono com foto */}
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+              <div style={{width:34,height:34,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:`1px solid ${pat.color||'var(--gold-dim)'}`,background:'rgba(0,0,0,0.3)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <PatronoIcon pat={pat} size={34}/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:'.76rem',color:pat.color||'var(--gold)',fontFamily:'Cinzel,serif'}}>{pat.name}</div>
+                <div style={{fontSize:'.58rem',color:'var(--parchment-dark)'}}>{pat.tag}</div>
+              </div>
+            </div>
+            {/* Bênçãos do Patrono */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+              {opcoes.map(g=>{
+                const slotInfo=COLISEU_SLOTS_GRACA.find(s=>s.slot===g.slot);
+                const escolhida=gracas[g.slot]===g.id;
+                return(
+                  <button key={g.id} onClick={()=>escolherGraca(g.slot,g.id)} title={g.desc(g.v(2))}
+                    style={{display:'flex',alignItems:'center',gap:6,fontSize:'.58rem',padding:'6px 8px',borderRadius:8,cursor:'pointer',textAlign:'left',
+                      border:`1px solid ${escolhida?'var(--gold)':'var(--gold-dim)'}`,
+                      background:escolhida?'rgba(201,162,39,0.2)':'rgba(0,0,0,0.2)',color:'var(--parchment)'}}>
+                    <span style={{width:26,height:26,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                      <SkillIcon nome={g.name} emoji={slotInfo?slotInfo.icon:'✦'} size={26}/>
+                    </span>
+                    <span style={{flex:1,minWidth:0,lineHeight:1.2}}>{g.name}</span>
+                    {escolhida&&<span style={{color:'var(--gold)',flexShrink:0}}>✓</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
         );
@@ -16120,6 +16155,54 @@ const SKILL_ART_BASE=(()=>{
   };
   const map={};
   for(const file in groups)for(const nome of groups[file])map[nome]=file;
+  // ── Bênçãos novas dos patronos: associadas ao ícone que combina com o efeito ──
+  const mapExtra={
+    // Crítico
+    'Luz da Santa':'skill_star','Criação de Heróis':'skill_star','Precisão Cirúrgica':'skill_star',
+    // Encanto
+    'Véu da Rainha':'skill_charm','Olhar Cintilante':'skill_charm','Intoxicação':'skill_charm',
+    // Veneno
+    'Beijo da Áspide':'skill_poison','Sangue Corrosivo':'skill_poison',
+    // Perfuração / dano de NP verdadeiro
+    'Lança Reversa':'skill_break','Brahmastra':'skill_break','Agni Gandiva':'skill_break',
+    'Argila dos Deuses':'skill_buster','Ea, a Espada Rasgadora':'skill_buster',
+    // Carga / regen de NP
+    'Rho Aias Projetado':'skill_npregen','Dan no Ura':'skill_npregen',
+    'Equilíbrio Cármico':'skill_npregen','Filho do Sol':'skill_npregen','Passos do Vento':'skill_npregen',
+    'Terra das Sombras':'skill_npup',
+    // Carga por skill
+    'Mantra Divino':'skill_arts','Análise Estrutural':'skill_arts','Sopro Tóxico':'skill_arts',
+    'Presságio da Harpê':'skill_arts','Canto Imperial':'skill_arts','Decreto do Faraó':'skill_arts',
+    // Guts
+    'Tesouro Inviolável':'skill_guts','Kavacha e Kundala':'skill_guts',
+    'Jardim de Avalon':'skill_guts','Sangue do Rei':'skill_guts',
+    // Defesa
+    'Kanshou & Bakuya':'skill_def','Escama de Dragão':'skill_def','Domus Aurea':'skill_def',
+    'Muralha do Sol':'skill_def','Abraço Maternal':'skill_def','Manto Solar':'skill_def',
+    // Evasão
+    'Portão de Sombras':'skill_evade','Dança da Embriaguez':'skill_evade',
+    // Regeneração / cura
+    'Sonho Dourado':'skill_regen','Luminosité Eternelle':'skill_regen',
+    'Nightingale Pledge':'skill_regen','Barreira do Castelo':'skill_regen',
+    // Atordoamento
+    'Corrente Celestial':'skill_atord',
+    // Ataque duplo / velocidade
+    'Portal de Babilônia':'skill_quick',
+    // Resistência a debuff
+    'Revelação':'skill_resist',
+    // Redução de cooldown (tempo)
+    'Instinto de Batalha':'skill_time','Prontidão Dourada':'skill_time',
+    'Toque Fantasma':'skill_time','Presságio Célere':'skill_time',
+    // Dano ofensivo / bônus
+    'Paixão Otaku':'skill_bonus','Fúria Crescente':'skill_ataque',
+    // Execução
+    'Gáe Bolg Alternativo':'skill_hand',
+    // Def down ao acertar
+    'Uraeus Astrape':'skill_defatk',
+    // Dano vs debuffados / foco
+    'Carisma da Rainha':'skill_ataque','Foco Inabalável':'skill_efect',
+  };
+  for(const nome in mapExtra)if(!map[nome])map[nome]=mapExtra[nome];
   return map;
 })();
 function artFor(nome){return nome?(SKILL_ART_BASE[nome]?SKILL_ART_DIR+SKILL_ART_BASE[nome]+'.png':null):null;}
