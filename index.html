@@ -848,14 +848,72 @@ try{
 }catch(e){console.error('Firebase não pôde iniciar:',e);}
 
 // ══════════════════════════════════════════════════════
-// UPLOAD DE IMAGEM — Firebase Storage (sem token, só precisa estar logado).
-// Recebe um Blob e um caminho; retorna a URL pública de download.
-async function storageUpload(caminho,blob){
-  if(!fbStorage)throw new Error('Firebase Storage indisponível.');
-  const ref=fbStorage.ref().child(caminho);
-  await ref.put(blob);
-  return await ref.getDownloadURL();
+// CONFIG COMPARTILHADA DO GITHUB (Firestore) — o dono define uma vez (dono/repo/
+// pasta + token criptografado). Os demais jogadores logados leem e usam para subir
+// imagens, sem precisar configurar nada. Guardado em config/github.
+let _ghConfigCache=null;
+async function carregarGithubCompartilhado(){
+  if(_ghConfigCache)return _ghConfigCache;
+  if(!fbDb)return null;
+  try{
+    const doc=await fbDb.collection('config').doc('github').get();
+    if(!doc.exists)return null;
+    _ghConfigCache=doc.data();
+    return _ghConfigCache;
+  }catch(e){console.error('carregar gh compartilhado',e);return null;}
 }
+// Salva a config compartilhada (chamado só pelo dono, com o token já criptografado).
+async function salvarGithubCompartilhado(dados){
+  if(!fbDb)return {ok:false,erro:'Firebase indisponível'};
+  try{
+    await fbDb.collection('config').doc('github').set(dados,{merge:true});
+    _ghConfigCache=null; // invalida cache
+    return {ok:true};
+  }catch(e){return {ok:false,erro:e.message};}
+}
+// Descriptografa o token da config compartilhada usando a "senha compartilhada"
+// fixa (embutida) — o objetivo aqui não é sigilo forte, e sim evitar o token
+// em texto puro e manter o uso sem fricção para os amigos.
+const _GH_SHARED_PWD='fate-rogue-shared-2026';
+async function obterTokenCompartilhado(){
+  const cfg=await carregarGithubCompartilhado();
+  if(!cfg||!cfg.tokenCifrado)return null;
+  try{
+    const {salt,iv,dado}=cfg.tokenCifrado;
+    const enc=new TextEncoder();
+    const baseKey=await crypto.subtle.importKey('raw',enc.encode(_GH_SHARED_PWD),'PBKDF2',false,['deriveKey']);
+    const key=await crypto.subtle.deriveKey(
+      {name:'PBKDF2',salt:_b642buf(salt),iterations:120000,hash:'SHA-256'},
+      baseKey,{name:'AES-GCM',length:256},false,['decrypt']);
+    const claro=await crypto.subtle.decrypt({name:'AES-GCM',iv:_b642buf(iv)},key,_b642buf(dado));
+    return new TextDecoder().decode(claro);
+  }catch(e){console.error('destravar token compartilhado',e);return null;}
+}
+// Cifra um token com a senha compartilhada, para o dono salvar no Firestore.
+async function cifrarTokenCompartilhado(token){
+  const enc=new TextEncoder();
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const baseKey=await crypto.subtle.importKey('raw',enc.encode(_GH_SHARED_PWD),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey(
+    {name:'PBKDF2',salt,iterations:120000,hash:'SHA-256'},
+    baseKey,{name:'AES-GCM',length:256},false,['encrypt']);
+  const cifra=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(token));
+  return {salt:_buf2b64(salt),iv:_buf2b64(iv),dado:_buf2b64(new Uint8Array(cifra))};
+}
+// Sobe uma imagem (Blob) usando a config COMPARTILHADA do GitHub. Retorna a URL.
+async function uploadImagemCompartilhado(prefixo,blob){
+  const cfg=await carregarGithubCompartilhado();
+  if(!cfg||!cfg.dono||!cfg.repo)throw new Error('O upload de imagens ainda não foi configurado pelo administrador.');
+  const tok=await obterTokenCompartilhado();
+  if(!tok)throw new Error('Configuração de imagens indisponível. Avise o administrador.');
+  const b64=await new Promise((res)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.readAsDataURL(blob);});
+  const pasta=(cfg.pasta||'imagens').replace(/\/+$/,'');
+  const uid=fbAuth&&fbAuth.currentUser?fbAuth.currentUser.uid:'anon';
+  const caminho=pasta+'/'+prefixo+'_'+uid+'_'+Date.now()+'.jpg';
+  return await githubUpload({dono:cfg.dono,repo:cfg.repo,pasta:cfg.pasta,branch:cfg.branch||'main'},tok,caminho,b64,'Imagem: '+prefixo);
+}
+
 // Converte um dataURL/base64 em Blob (para reaproveitar código que gera base64).
 function dataURLparaBlob(dataURL){
   const [cab,dados]=dataURL.split(',');
@@ -8677,7 +8735,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.09</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.10</p>
       </div>
     </div>
   );
@@ -10485,6 +10543,7 @@ function ContaSection({profile,setProfile}){
   const[msg,setMsg]=useState('');
   const[busy,setBusy]=useState(false);
   const[aberto,setAberto]=useState(false);
+  const[adminCfgAberto,setAdminCfgAberto]=useState(false);
   const[recompensaRegistro,setRecompensaRegistro]=useState(false);
 
   useEffect(()=>{
@@ -10567,6 +10626,11 @@ function ContaSection({profile,setProfile}){
         <div style={{fontSize:'.62rem',color:'var(--parchment-dark)',marginTop:8}}>
           Seu progresso é salvo automaticamente e pode ser recuperado em qualquer dispositivo com esta conta.
         </div>
+        {/* Config de imagens (admin) — discreto, para o dono configurar o GitHub compartilhado */}
+        <button onClick={()=>setAdminCfgAberto(true)} style={{background:'none',border:'none',color:'var(--parchment-dark)',fontSize:'.6rem',cursor:'pointer',marginTop:10,textDecoration:'underline',opacity:0.6}}>
+          ⚙️ Configurar upload de imagens (admin)
+        </button>
+        {adminCfgAberto&&<AdminGithubConfig onFechar={()=>setAdminCfgAberto(false)}/>}
       </div>
       </>
     );
@@ -10839,8 +10903,7 @@ function FeedComporModal({profile,meuUid,meuNome,onFechar}){
         setProgresso('Otimizando imagem...');
         const otimizada=await comprimirImagem(arquivo,1600,0.9);
         setProgresso('Enviando imagem...');
-        const caminho='feed/'+meuUid+'_'+Date.now()+'.jpg';
-        imagemUrl=await storageUpload(caminho,otimizada);
+        imagemUrl=await uploadImagemCompartilhado('feed',otimizada);
       }
       setProgresso('Publicando...');
       const r=await feedPublicar({
@@ -11188,9 +11251,8 @@ function AvatarCropModal({profile,onFechar,onPronto,formato='circulo',titulo='FO
       const blob=await gerarRecorte();
       if(!blob){setErro('Falha ao gerar o recorte.');setEnviando(false);return;}
       setProgresso('Enviando...');
-      const uid=fbAuth.currentUser.uid;
-      const caminho=(ehCard?'suporte/':'avatares/')+uid+'_'+Date.now()+'.jpg';
-      const url=await storageUpload(caminho,blob);
+      const prefixo=ehCard?'suporte':'avatar';
+      const url=await uploadImagemCompartilhado(prefixo,blob);
       onPronto(url);
     }catch(e){setErro(e.message||'Erro ao enviar.');}
     setEnviando(false);setProgresso('');
@@ -11237,6 +11299,79 @@ function AvatarCropModal({profile,onFechar,onPronto,formato='circulo',titulo='FO
           {progresso&&<div style={{fontSize:'.72rem',color:'var(--gold)',marginBottom:8}}>{progresso}</div>}
           <button className="btn btn-full" disabled={enviando} onClick={confirmar} style={{opacity:enviando?0.6:1}}>
             {enviando?'Enviando...':'✓ Usar esta foto'}
+          </button>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+// Configuração compartilhada do GitHub — usada pelo ADMIN (dono) uma única vez.
+// Define dono/repo/pasta e o token (que é cifrado antes de ir ao Firestore).
+function AdminGithubConfig({onFechar}){
+  const[cfg,setCfg]=useState({dono:'',repo:'',pasta:'imagens',branch:'main'});
+  const[token,setToken]=useState('');
+  const[carregando,setCarregando]=useState(true);
+  const[temToken,setTemToken]=useState(false);
+  const[salvando,setSalvando]=useState(false);
+  const[msg,setMsg]=useState('');
+  const[erro,setErro]=useState('');
+
+  useEffect(()=>{
+    (async()=>{
+      const c=await carregarGithubCompartilhado();
+      if(c){setCfg({dono:c.dono||'',repo:c.repo||'',pasta:c.pasta||'imagens',branch:c.branch||'main'});setTemToken(!!c.tokenCifrado);}
+      setCarregando(false);
+    })();
+  },[]);
+
+  async function salvar(){
+    setErro('');setMsg('');
+    if(!cfg.dono.trim()||!cfg.repo.trim()){setErro('Preencha dono e repositório.');return;}
+    setSalvando(true);
+    try{
+      const dados={dono:cfg.dono.trim(),repo:cfg.repo.trim(),pasta:(cfg.pasta||'imagens').trim(),branch:(cfg.branch||'main').trim()};
+      // só re-cifra o token se um novo foi digitado
+      if(token.trim()){dados.tokenCifrado=await cifrarTokenCompartilhado(token.trim());}
+      const r=await salvarGithubCompartilhado(dados);
+      if(r.ok){setMsg('Configuração salva! Os jogadores já podem enviar imagens.');setToken('');setTemToken(true);}
+      else setErro(r.erro||'Erro ao salvar.');
+    }catch(e){setErro(e.message||'Erro.');}
+    setSalvando(false);
+  }
+
+  const INP={width:'100%',padding:'9px 11px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.82rem',marginBottom:10};
+
+  return(
+    <div onClick={onFechar} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:14}}>
+      <div onClick={e=>e.stopPropagation()} className="panel" style={{maxWidth:460,width:'100%',maxHeight:'88vh',overflowY:'auto',padding:16,border:'1px solid var(--gold)',borderRadius:14}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+          <h3 className="cinzel" style={{color:'var(--gold)',fontSize:'1rem',flex:1,letterSpacing:1}}>⚙️ CONFIG DE IMAGENS (ADMIN)</h3>
+          <button className="btn btn-sm" onClick={onFechar}>✕</button>
+        </div>
+        <p style={{fontSize:'.68rem',color:'var(--parchment-dark)',fontStyle:'italic',marginBottom:14}}>
+          Configure uma vez o repositório do GitHub que hospeda as imagens. Depois disso, todos os jogadores logados poderão enviar fotos sem precisar de token.
+        </p>
+        {carregando?(
+          <p style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px'}}>Carregando...</p>
+        ):(<>
+          <label style={{fontSize:'.66rem',color:'var(--gold)',display:'block',marginBottom:4}}>Dono (usuário do GitHub)</label>
+          <input value={cfg.dono} onChange={e=>setCfg({...cfg,dono:e.target.value})} placeholder="hexdecismall" style={INP}/>
+          <label style={{fontSize:'.66rem',color:'var(--gold)',display:'block',marginBottom:4}}>Repositório</label>
+          <input value={cfg.repo} onChange={e=>setCfg({...cfg,repo:e.target.value})} placeholder="FGORogue" style={INP}/>
+          <label style={{fontSize:'.66rem',color:'var(--gold)',display:'block',marginBottom:4}}>Pasta</label>
+          <input value={cfg.pasta} onChange={e=>setCfg({...cfg,pasta:e.target.value})} placeholder="imagens" style={INP}/>
+          <label style={{fontSize:'.66rem',color:'var(--gold)',display:'block',marginBottom:4}}>
+            Token do GitHub {temToken&&<span style={{color:'#7ee08a'}}>(já configurado — deixe vazio para manter)</span>}
+          </label>
+          <input type="password" value={token} onChange={e=>setToken(e.target.value)} placeholder={temToken?'••••••••••••':'github_pat_...'} style={INP}/>
+          <div style={{fontSize:'.58rem',color:'var(--parchment-dark)',marginBottom:12}}>
+            Use um token <b>fine-grained</b> com permissão apenas de <b>Contents (Read and write)</b> neste repositório. O token é cifrado antes de ser salvo.
+          </div>
+          {erro&&<div style={{fontSize:'.72rem',color:'#ff9090',marginBottom:8}}>{erro}</div>}
+          {msg&&<div style={{fontSize:'.72rem',color:'#7ee08a',marginBottom:8}}>{msg}</div>}
+          <button className="btn btn-full" disabled={salvando} onClick={salvar} style={{opacity:salvando?0.6:1}}>
+            {salvando?'Salvando...':'💾 Salvar configuração'}
           </button>
         </>)}
       </div>
