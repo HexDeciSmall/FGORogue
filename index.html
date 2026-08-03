@@ -1111,6 +1111,67 @@ async function comicPostAtualizar(id,dados){
 }
 
 // ══════════════════════════════════════════════════════
+// FEED SOCIAL (Firestore) — publicações dos jogadores (texto + imagem opcional)
+// Estrutura: feed_posts/<autoId> → { uid, nome, avatar, texto, imagem, tipo, curtidas:[uid], ts }
+// Comentários: feed_posts/<postId>/comentarios/<autoId> → { uid, nome, texto, ts }
+
+// Cria uma nova publicação no feed.
+async function feedPublicar(post){
+  if(!fbDb)return {ok:false,erro:'Firebase indisponível'};
+  try{
+    const ref=await fbDb.collection('feed_posts').add({
+      ...post,
+      curtidas:[],
+      ts:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return {ok:true,id:ref.id};
+  }catch(e){return {ok:false,erro:e.message};}
+}
+// Observa o feed em tempo real (mais novos primeiro).
+function feedWatch(cb){
+  if(!fbDb){cb([]);return ()=>{};}
+  return fbDb.collection('feed_posts').orderBy('ts','desc').limit(100).onSnapshot(snap=>{
+    cb(snap.docs.map(d=>({id:d.id,...d.data()})));
+  },e=>{console.error('feed watch',e);cb([]);});
+}
+// Curte/descurte um post (toggle pelo uid).
+async function feedCurtir(postId,uid){
+  if(!fbDb||!uid)return;
+  try{
+    const ref=fbDb.collection('feed_posts').doc(postId);
+    const doc=await ref.get();
+    if(!doc.exists)return;
+    const curtidas=doc.data().curtidas||[];
+    const nova=curtidas.includes(uid)?curtidas.filter(u=>u!==uid):[...curtidas,uid];
+    await ref.update({curtidas:nova});
+  }catch(e){console.error('curtir',e);}
+}
+// Apaga um post (só o dono).
+async function feedApagar(postId){
+  if(!fbDb)return {ok:false};
+  try{await fbDb.collection('feed_posts').doc(postId).delete();return {ok:true};}
+  catch(e){return {ok:false,erro:e.message};}
+}
+// Adiciona um comentário a um post.
+async function feedComentar(postId,comentario){
+  if(!fbDb)return {ok:false};
+  try{
+    await fbDb.collection('feed_posts').doc(postId).collection('comentarios').add({
+      ...comentario,ts:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    return {ok:true};
+  }catch(e){return {ok:false,erro:e.message};}
+}
+// Observa os comentários de um post.
+function feedComentariosWatch(postId,cb){
+  if(!fbDb){cb([]);return ()=>{};}
+  return fbDb.collection('feed_posts').doc(postId).collection('comentarios').orderBy('ts','asc').onSnapshot(snap=>{
+    cb(snap.docs.map(d=>({id:d.id,...d.data()})));
+  },e=>{console.error('comentarios',e);cb([]);});
+}
+
+
+// ══════════════════════════════════════════════════════
 // BATE-PAPO (Firestore) — salas de chat por tema, em tempo real
 // Estrutura: chat/<canalId>/msgs/<autoId> → { nome, txt, avatar, dev, ts }
 // Canais fixos por tema (adicione/edite à vontade):
@@ -5977,6 +6038,7 @@ function montarPerfilPublico(uid,prof){
       highestDamage:(prof.stats&&prof.stats.highestDamage)||0,
     },
     achievements:prof.achievements||{},
+    suporte:prof.suporte||null, // lista de suporte (10 slots com arte, nome e descrição)
     atualizadoEm:firebase.firestore.FieldValue.serverTimestamp(),
   };
 }
@@ -8476,6 +8538,7 @@ function MenuScreen({onNavigate,profile}){
     ['tower','🗼','Torre de Desafios','danger'],
     ['gacha','⛩️','Invocação',''],
     ['comics','📖','Álbum de Tradução',''],
+    ['feed','📰','Feed',''],
     ['chat','💬','Bate-Papo',''],
     ['jogos','🎰','Jogos & Apostas',''],
     ['ranking','🌐','Ranking Online',''],
@@ -8567,7 +8630,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.04</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.07</p>
       </div>
     </div>
   );
@@ -9954,7 +10017,13 @@ function AchievementsScreen({onNavigate,profile}){
 // Retrato de Servo da Ressonância: tenta em ordem a arte de Patrono (assets/patronos/,
 // que muitos Servos jogáveis já têm), depois o PNG em assets/ressonancia/<art>.png, e
 // por fim cai para o emoji grande se nada existir (vários não são jogáveis, sem sprite).
-function RessonanciaRetrato({art,patronoArt,emoji,size=120}){
+function RessonanciaRetrato({art,patronoArt,emoji,size=120,objPos}){
+  // Avatar personalizado: se 'art' for uma URL (imagem enviada pelo jogador),
+  // renderiza direto. objPos permite ajustar o enquadramento (do recorte).
+  if(art&&typeof art==='string'&&/^https?:\/\//.test(art)){
+    return <img src={art} alt="" width={size} height={size}
+      style={{width:size,height:size,objectFit:'cover',objectPosition:objPos||'center',borderRadius:8,flexShrink:0}}/>;
+  }
   // Reaproveita a MESMA função patronoCandidates() usada pelo PatronoIcon (que funciona),
   // passando um objeto {art} com o nome do arquivo do patrono. Depois procura a arte própria
   // do Servo tanto em assets/patronos/ (onde as artes novas foram colocadas) quanto em
@@ -10529,6 +10598,295 @@ function ServoSpriteVivo({def,short,className,style}){
 
 // ══════════════════════════════════════════════════════
 // TELA DE AMIGOS — buscar por nome, adicionar, e ver perfil completo.
+// ══════════════════════════════════════════════════════
+// FEED SOCIAL — publicações dos jogadores (texto + imagem), curtir e comentar.
+// Aba "Feed" mostra todos; aba "Diário" mostra só os posts do próprio jogador.
+function FeedScreen({onNavigate,profile}){
+  const logado=fbAuth&&fbAuth.currentUser;
+  const meuUid=logado?fbAuth.currentUser.uid:null;
+  const[aba,setAba]=useState('feed'); // 'feed' | 'diario'
+  const[posts,setPosts]=useState([]);
+  const[carregando,setCarregando]=useState(true);
+  const[compondo,setCompondo]=useState(false);
+  const[comentandoEm,setComentandoEm]=useState(null); // postId aberto para comentários
+
+  useEffect(()=>{
+    const un=feedWatch(lista=>{setPosts(lista);setCarregando(false);});
+    return ()=>un&&un();
+  },[]);
+
+  const meuNome=(profile&&profile.nickname)?profile.nickname:'';
+  const visiveis=aba==='diario'?posts.filter(p=>p.uid===meuUid):posts;
+
+  function tempoRelativo(ts){
+    if(!ts||!ts.toMillis)return 'agora';
+    const s=Math.floor((Date.now()-ts.toMillis())/1000);
+    if(s<60)return 'agora';
+    if(s<3600)return `${Math.floor(s/60)}min`;
+    if(s<86400)return `${Math.floor(s/3600)}h`;
+    return `${Math.floor(s/86400)}d`;
+  }
+
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      <div className="panel" style={{maxWidth:640}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+          <button className="btn" onClick={()=>onNavigate('menu')}>← Voltar</button>
+          <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,flex:1,textAlign:'center'}}>📰 FEED</h2>
+          <div style={{width:60}}/>
+        </div>
+
+        {/* Abas Feed / Diário */}
+        <div style={{display:'flex',gap:8,marginBottom:14}}>
+          <button onClick={()=>setAba('feed')} style={{flex:1,padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.76rem',
+            border:`1px solid ${aba==='feed'?'var(--gold)':'var(--gold-dim)'}`,background:aba==='feed'?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>
+            🌐 Feed
+          </button>
+          <button onClick={()=>setAba('diario')} style={{flex:1,padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.76rem',
+            border:`1px solid ${aba==='diario'?'var(--crimson)':'var(--gold-dim)'}`,background:aba==='diario'?'rgba(224,90,74,0.18)':'transparent',color:aba==='diario'?'var(--crimson-soft)':'var(--gold)'}}>
+            📓 Meu Diário
+          </button>
+        </div>
+
+        {/* Botão de publicar */}
+        {logado&&meuNome?(
+          <button className="btn btn-full" style={{marginBottom:16}} onClick={()=>setCompondo(true)}>✍️ Nova publicação</button>
+        ):(
+          <div style={{background:'rgba(201,162,39,0.08)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'12px',marginBottom:16,textAlign:'center',fontSize:'.75rem',color:'var(--parchment-dark)'}}>
+            {!logado?'Entre na sua conta (no Perfil) para publicar no Feed.':'Defina um nome de Mestre no Perfil para publicar.'}
+          </div>
+        )}
+
+        {/* Modal de composição */}
+        {compondo&&<FeedComporModal profile={profile} meuUid={meuUid} meuNome={meuNome} onFechar={()=>setCompondo(false)}/>}
+
+        {/* Lista de posts */}
+        {carregando?(
+          <p style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px'}}>Carregando publicações...</p>
+        ):visiveis.length===0?(
+          <div style={{textAlign:'center',padding:'34px 20px',color:'var(--parchment-dark)'}}>
+            <div style={{fontSize:'2rem',marginBottom:10}}>{aba==='diario'?'📓':'📰'}</div>
+            <p style={{fontSize:'.82rem'}}>{aba==='diario'?'Você ainda não publicou nada. Compartilhe suas conquistas e teorias!':'O Feed está vazio. Seja o primeiro a publicar!'}</p>
+          </div>
+        ):(
+          visiveis.map(p=>(
+            <FeedCard key={p.id} post={p} meuUid={meuUid} meuNome={meuNome}
+              tempoRel={tempoRelativo(p.ts)}
+              comentariosAbertos={comentandoEm===p.id}
+              onToggleComentarios={()=>setComentandoEm(comentandoEm===p.id?null:p.id)}/>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Card de uma publicação do feed.
+function FeedCard({post,meuUid,meuNome,tempoRel,comentariosAbertos,onToggleComentarios}){
+  const[comentarios,setComentarios]=useState([]);
+  const[novoComentario,setNovoComentario]=useState('');
+  const curtidas=post.curtidas||[];
+  const euCurti=meuUid&&curtidas.includes(meuUid);
+  const souDono=meuUid&&post.uid===meuUid;
+  const TIPOS={geral:{icon:'💬',label:'Geral',cor:'var(--gold)'},conquista:{icon:'🏆',label:'Conquista',cor:'#e0c85a'},teoria:{icon:'🔮',label:'Teoria',cor:'#9575cd'}};
+  const tipo=TIPOS[post.tipo]||TIPOS.geral;
+
+  useEffect(()=>{
+    if(!comentariosAbertos)return;
+    const un=feedComentariosWatch(post.id,setComentarios);
+    return ()=>un&&un();
+  },[comentariosAbertos]);
+
+  async function enviarComentario(){
+    if(!novoComentario.trim()||!meuUid)return;
+    await feedComentar(post.id,{uid:meuUid,nome:meuNome||'Mestre',texto:novoComentario.trim().slice(0,300)});
+    setNovoComentario('');
+  }
+
+  return(
+    <div style={{background:'rgba(20,10,20,0.6)',border:'1px solid var(--gold-dim)',borderRadius:12,padding:'14px',marginBottom:14}}>
+      {/* Cabeçalho: autor + tipo + tempo */}
+      <div style={{display:'flex',alignItems:'center',gap:9,marginBottom:10}}>
+        <div style={{width:38,height:38,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+          {post.avatar?<RessonanciaRetrato art={post.avatar} size={38}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>👤</div>}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:'.8rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{post.nome||'Mestre'}</div>
+          <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>{tempoRel} atrás</div>
+        </div>
+        <span style={{fontSize:'.6rem',padding:'2px 9px',borderRadius:10,border:`1px solid ${tipo.cor}`,color:tipo.cor}}>{tipo.icon} {tipo.label}</span>
+        {souDono&&<button onClick={async()=>{if(confirm('Apagar esta publicação?'))await feedApagar(post.id);}} style={{background:'none',border:'none',color:'var(--parchment-dark)',cursor:'pointer',fontSize:'.9rem'}}>🗑️</button>}
+      </div>
+
+      {/* Texto */}
+      {post.texto&&<p style={{fontSize:'.85rem',color:'var(--parchment)',lineHeight:1.6,marginBottom:post.imagem?10:12,whiteSpace:'pre-wrap'}}>{post.texto}</p>}
+
+      {/* Imagem */}
+      {post.imagem&&(
+        <div style={{borderRadius:8,overflow:'hidden',marginBottom:12,border:'1px solid var(--gold-dim)'}}>
+          <img src={post.imagem} alt="" style={{width:'100%',display:'block'}} onError={e=>{e.target.parentElement.style.display='none';}}/>
+        </div>
+      )}
+
+      {/* Ações: curtir + comentar */}
+      <div style={{display:'flex',gap:16,borderTop:'1px solid rgba(201,162,39,0.15)',paddingTop:10}}>
+        <button onClick={()=>meuUid&&feedCurtir(post.id,meuUid)} disabled={!meuUid}
+          style={{background:'none',border:'none',cursor:meuUid?'pointer':'default',color:euCurti?'var(--crimson-soft)':'var(--parchment-dark)',fontSize:'.75rem',display:'flex',alignItems:'center',gap:5}}>
+          {euCurti?'❤️':'🤍'} {curtidas.length>0&&curtidas.length}
+        </button>
+        <button onClick={onToggleComentarios}
+          style={{background:'none',border:'none',cursor:'pointer',color:comentariosAbertos?'var(--gold)':'var(--parchment-dark)',fontSize:'.75rem',display:'flex',alignItems:'center',gap:5}}>
+          💬 Comentar
+        </button>
+      </div>
+
+      {/* Comentários */}
+      {comentariosAbertos&&(
+        <div style={{marginTop:12,paddingTop:10,borderTop:'1px solid rgba(201,162,39,0.15)'}}>
+          {comentarios.map(c=>(
+            <div key={c.id} style={{marginBottom:8,fontSize:'.75rem'}}>
+              <span style={{color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{c.nome}: </span>
+              <span style={{color:'var(--parchment)'}}>{c.texto}</span>
+            </div>
+          ))}
+          {comentarios.length===0&&<div style={{fontSize:'.68rem',color:'var(--parchment-dark)',fontStyle:'italic',marginBottom:8}}>Nenhum comentário ainda.</div>}
+          {meuUid&&meuNome&&(
+            <div style={{display:'flex',gap:6,marginTop:8}}>
+              <input value={novoComentario} onChange={e=>setNovoComentario(e.target.value)} onKeyDown={e=>e.key==='Enter'&&enviarComentario()}
+                placeholder="Escreva um comentário..." style={{flex:1,padding:'7px 10px',borderRadius:8,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.75rem'}}/>
+              <button className="btn btn-sm" onClick={enviarComentario}>Enviar</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Modal para compor uma nova publicação (texto + imagem opcional via GitHub).
+function FeedComporModal({profile,meuUid,meuNome,onFechar}){
+  const[texto,setTexto]=useState('');
+  const[tipo,setTipo]=useState('geral');
+  const[arquivo,setArquivo]=useState(null);
+  const[previewUrl,setPreviewUrl]=useState(null);
+  const[cfg,setCfg]=useState(loadGithubCfg());
+  const[senha,setSenha]=useState('');
+  const[token,setToken]=useState('');
+  const temCofre=existeTokenCofre();
+  const[enviando,setEnviando]=useState(false);
+  const[erro,setErro]=useState('');
+  const[progresso,setProgresso]=useState('');
+  const[configAberta,setConfigAberta]=useState(false);
+
+  function escolherArquivo(e){
+    const f=e.target.files&&e.target.files[0];
+    if(!f)return;
+    setArquivo(f);
+    const r=new FileReader();r.onload=()=>setPreviewUrl(r.result);r.readAsDataURL(f);
+  }
+
+  async function publicar(){
+    setErro('');
+    if(!texto.trim()&&!arquivo){setErro('Escreva algo ou adicione uma imagem.');return;}
+    setEnviando(true);
+    let imagemUrl=null;
+    try{
+      // se há imagem, sobe pro GitHub (mesma infra do álbum)
+      if(arquivo){
+        if(!cfg.dono||!cfg.repo){setErro('Configure o repositório do GitHub para enviar imagens.');setEnviando(false);setConfigAberta(true);return;}
+        let tok='';
+        if(temCofre){
+          if(!senha.trim()){setErro('Digite sua senha para destravar o token.');setEnviando(false);return;}
+          tok=await abrirTokenCofre(senha);
+          if(!tok){setErro('Senha incorreta.');setEnviando(false);return;}
+        }else{
+          if(!token.trim()){setErro('Cole seu token do GitHub (ou configure o cofre).');setEnviando(false);setConfigAberta(true);return;}
+          tok=token.trim();
+        }
+        setProgresso('Enviando imagem...');
+        const ext=(arquivo.name.split('.').pop()||'jpg').toLowerCase();
+        const pasta=(cfg.pasta||'comics').replace(/\/+$/,'');
+        const caminho=pasta+'/feed_'+Date.now()+'.'+ext;
+        const b64=await fileParaBase64(arquivo);
+        imagemUrl=await githubUpload(cfg,tok,caminho,b64,'Feed: imagem');
+        saveGithubCfg(cfg);
+        if(!temCofre&&senha.trim()){try{await salvarTokenCofre(tok,senha);}catch{}}
+      }
+      setProgresso('Publicando...');
+      const r=await feedPublicar({
+        uid:meuUid,nome:meuNome||'Mestre',avatar:profile.avatar||null,
+        texto:texto.trim().slice(0,1000),imagem:imagemUrl,tipo,
+      });
+      if(r.ok)onFechar();
+      else setErro(r.erro||'Erro ao publicar.');
+    }catch(e){setErro(e.message||'Erro ao enviar.');}
+    setEnviando(false);setProgresso('');
+  }
+
+  const TIPOS=[['geral','💬 Geral'],['conquista','🏆 Conquista'],['teoria','🔮 Teoria']];
+  const INP={width:'100%',padding:'8px 10px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.8rem',marginBottom:8};
+
+  return(
+    <div onClick={onFechar} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:14}}>
+      <div onClick={e=>e.stopPropagation()} className="panel" style={{maxWidth:500,width:'100%',maxHeight:'88vh',overflowY:'auto',padding:16,border:'1px solid var(--gold)',borderRadius:14}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+          <h3 className="cinzel" style={{color:'var(--gold)',fontSize:'1rem',flex:1,letterSpacing:1}}>✍️ NOVA PUBLICAÇÃO</h3>
+          <button className="btn btn-sm" onClick={onFechar}>✕</button>
+        </div>
+
+        {/* Tipo do post */}
+        <div style={{display:'flex',gap:6,marginBottom:12}}>
+          {TIPOS.map(([k,label])=>(
+            <button key={k} onClick={()=>setTipo(k)} style={{flex:1,padding:'6px',borderRadius:8,cursor:'pointer',fontSize:'.68rem',
+              border:`1px solid ${tipo===k?'var(--gold)':'var(--gold-dim)'}`,background:tipo===k?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>{label}</button>
+          ))}
+        </div>
+
+        <textarea value={texto} onChange={e=>setTexto(e.target.value)} placeholder="O que você quer compartilhar? Conquistas, teorias sobre Fate, dicas..."
+          maxLength={1000} style={{...INP,minHeight:100,resize:'vertical',fontFamily:'inherit'}}/>
+        <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',textAlign:'right',marginBottom:10}}>{texto.length}/1000</div>
+
+        {/* Imagem */}
+        {previewUrl&&(
+          <div style={{position:'relative',marginBottom:10}}>
+            <img src={previewUrl} alt="" style={{width:'100%',borderRadius:8,border:'1px solid var(--gold-dim)'}}/>
+            <button onClick={()=>{setArquivo(null);setPreviewUrl(null);}} style={{position:'absolute',top:6,right:6,background:'rgba(0,0,0,0.7)',border:'1px solid var(--crimson)',borderRadius:'50%',width:28,height:28,color:'#fff',cursor:'pointer'}}>✕</button>
+          </div>
+        )}
+        <label className="btn btn-full btn-sm" style={{marginBottom:10,cursor:'pointer',display:'block',textAlign:'center'}}>
+          🖼️ {arquivo?'Trocar imagem':'Adicionar imagem'}
+          <input type="file" accept="image/*" onChange={escolherArquivo} style={{display:'none'}}/>
+        </label>
+
+        {/* Config do GitHub (só aparece se houver imagem ou o usuário abrir) */}
+        {(arquivo||configAberta)&&(
+          <div style={{background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'10px',marginBottom:10}}>
+            <div style={{fontSize:'.66rem',color:'var(--gold)',marginBottom:8,fontFamily:'Cinzel,serif'}}>📤 Envio de imagem (GitHub)</div>
+            <input value={cfg.dono} onChange={e=>setCfg({...cfg,dono:e.target.value})} placeholder="dono (usuário)" style={INP}/>
+            <input value={cfg.repo} onChange={e=>setCfg({...cfg,repo:e.target.value})} placeholder="repositório" style={INP}/>
+            {temCofre?(
+              <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="Senha do cofre do token" style={INP}/>
+            ):(
+              <>
+                <input type="password" value={token} onChange={e=>setToken(e.target.value)} placeholder="token do GitHub (github_pat_...)" style={INP}/>
+                <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="Crie uma senha para guardar o token" style={INP}/>
+              </>
+            )}
+            <div style={{fontSize:'.58rem',color:'var(--parchment-dark)'}}>O token fica guardado criptografado no seu navegador (mesmo do Álbum).</div>
+          </div>
+        )}
+
+        {erro&&<div style={{fontSize:'.72rem',color:'#ff9090',marginBottom:8}}>{erro}</div>}
+        {progresso&&<div style={{fontSize:'.72rem',color:'var(--gold)',marginBottom:8}}>{progresso}</div>}
+
+        <button className="btn btn-full" disabled={enviando} onClick={publicar} style={{opacity:enviando?0.6:1}}>
+          {enviando?'Publicando...':'📢 Publicar'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AmigosScreen({onNavigate,profile,setProfile}){
   const logado=fbAuth&&fbAuth.currentUser;
   const[aba,setAba]=useState('lista'); // 'lista' | 'buscar'
@@ -10609,6 +10967,9 @@ function AmigosScreen({onNavigate,profile,setProfile}){
               </div>
             ))}
           </div>
+          {/* Lista de Suporte do amigo */}
+          <ListaSuporteView suporte={p.suporte}/>
+
           {/* Servos do amigo */}
           <div className="divider"><span className="divider-text">SERVOS ({servos.length})</span></div>
           {servos.length>0?(
@@ -10740,6 +11101,293 @@ function AmigosScreen({onNavigate,profile,setProfile}){
   );
 }
 
+// ══════════════════════════════════════════════════════
+// RECORTE DE FOTO DE PERFIL — o jogador escolhe uma imagem, ajusta o
+// enquadramento (arrastar + zoom) e o resultado quadrado sobe pro GitHub.
+function AvatarCropModal({profile,onFechar,onPronto,formato='circulo',titulo='FOTO PERSONALIZADA'}){
+  const[imgSrc,setImgSrc]=useState(null);
+  const[zoom,setZoom]=useState(1);
+  const[pos,setPos]=useState({x:0,y:0}); // deslocamento em px dentro da moldura
+  const[arrastando,setArrastando]=useState(false);
+  const dragRef=useRef({x:0,y:0,px:0,py:0});
+  const imgRef=useRef(null);
+  const[cfg,setCfg]=useState(loadGithubCfg());
+  const[senha,setSenha]=useState('');
+  const[token,setToken]=useState('');
+  const temCofre=existeTokenCofre();
+  const[enviando,setEnviando]=useState(false);
+  const[erro,setErro]=useState('');
+  const[progresso,setProgresso]=useState('');
+  // formato 'circulo' = avatar quadrado 1:1; 'card' = retângulo vertical (estilo FGO 512x680)
+  const ehCard=formato==='card';
+  const BOXW=ehCard?200:260;         // largura da moldura na tela
+  const BOXH=ehCard?272:260;         // altura da moldura na tela (card é mais alto)
+  const OUTW=ehCard?384:512;         // largura de saída
+  const OUTH=ehCard?522:512;         // altura de saída
+  const BOX=BOXW; // compat
+
+  function escolher(e){
+    const f=e.target.files&&e.target.files[0];
+    if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{setImgSrc(r.result);setZoom(1);setPos({x:0,y:0});};
+    r.readAsDataURL(f);
+  }
+
+  // arrastar para reposicionar
+  function onDown(e){
+    setArrastando(true);
+    const p=e.touches?e.touches[0]:e;
+    dragRef.current={x:p.clientX,y:p.clientY,px:pos.x,py:pos.y};
+  }
+  function onMove(e){
+    if(!arrastando)return;
+    const p=e.touches?e.touches[0]:e;
+    setPos({x:dragRef.current.px+(p.clientX-dragRef.current.x),y:dragRef.current.py+(p.clientY-dragRef.current.y)});
+  }
+  function onUp(){setArrastando(false);}
+
+  // gera a imagem recortada num canvas quadrado (512x512)
+  async function gerarRecorte(){
+    return new Promise((resolve)=>{
+      const canvas=document.createElement('canvas');
+      canvas.width=OUTW;canvas.height=OUTH;
+      const ctx=canvas.getContext('2d');
+      const img=imgRef.current;
+      if(!img){resolve(null);return;}
+      // a imagem é exibida com object-fit:cover na moldura (BOXW x BOXH), escalada por
+      // zoom e deslocada por pos. Replicamos essa transformação no canvas de saída.
+      const escalaBase=Math.max(BOXW/img.naturalWidth,BOXH/img.naturalHeight);
+      const escala=escalaBase*zoom;
+      const larguraDisp=img.naturalWidth*escala;
+      const alturaDisp=img.naturalHeight*escala;
+      const offX=(BOXW-larguraDisp)/2+pos.x;
+      const offY=(BOXH-alturaDisp)/2+pos.y;
+      const fatorX=OUTW/BOXW, fatorY=OUTH/BOXH;
+      ctx.fillStyle='#120a14';ctx.fillRect(0,0,OUTW,OUTH);
+      ctx.drawImage(img,offX*fatorX,offY*fatorY,larguraDisp*fatorX,alturaDisp*fatorY);
+      canvas.toBlob(b=>resolve(b),'image/jpeg',0.85);
+    });
+  }
+
+  async function confirmar(){
+    setErro('');
+    if(!imgSrc){setErro('Escolha uma imagem primeiro.');return;}
+    if(!cfg.dono||!cfg.repo){setErro('Configure o repositório do GitHub para enviar a foto.');return;}
+    let tok='';
+    if(temCofre){
+      if(!senha.trim()){setErro('Digite a senha do cofre do token.');return;}
+      tok=await abrirTokenCofre(senha);
+      if(!tok){setErro('Senha incorreta.');return;}
+    }else{
+      if(!token.trim()){setErro('Cole seu token do GitHub.');return;}
+      tok=token.trim();
+    }
+    setEnviando(true);
+    try{
+      setProgresso('Recortando...');
+      const blob=await gerarRecorte();
+      if(!blob){setErro('Falha ao gerar o recorte.');setEnviando(false);return;}
+      // blob → base64
+      const b64=await new Promise((res)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.readAsDataURL(blob);});
+      setProgresso('Enviando...');
+      const pasta=(cfg.pasta||'comics').replace(/\/+$/,'');
+      const uid=fbAuth&&fbAuth.currentUser?fbAuth.currentUser.uid:'anon';
+      const caminho=pasta+'/avatar_'+uid+'_'+Date.now()+'.jpg';
+      const url=await githubUpload(cfg,tok,caminho,b64,'Foto de perfil');
+      saveGithubCfg(cfg);
+      if(!temCofre&&senha.trim()){try{await salvarTokenCofre(tok,senha);}catch{}}
+      onPronto(url);
+    }catch(e){setErro(e.message||'Erro ao enviar.');}
+    setEnviando(false);setProgresso('');
+  }
+
+  const INP={width:'100%',padding:'8px 10px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.8rem',marginBottom:8};
+
+  return(
+    <div onClick={onFechar} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:110,display:'flex',alignItems:'center',justifyContent:'center',padding:14}}>
+      <div onClick={e=>e.stopPropagation()} className="panel" style={{maxWidth:420,width:'100%',maxHeight:'90vh',overflowY:'auto',padding:16,border:'1px solid var(--gold)',borderRadius:14}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+          <h3 className="cinzel" style={{color:'var(--gold)',fontSize:'1rem',flex:1,letterSpacing:1}}>📷 {titulo}</h3>
+          <button className="btn btn-sm" onClick={onFechar}>✕</button>
+        </div>
+
+        {!imgSrc?(
+          <label className="btn btn-full" style={{cursor:'pointer',display:'block',textAlign:'center',marginBottom:10}}>
+            🖼️ Escolher imagem
+            <input type="file" accept="image/*" onChange={escolher} style={{display:'none'}}/>
+          </label>
+        ):(<>
+          {/* Moldura de recorte */}
+          <div style={{fontSize:'.66rem',color:'var(--parchment-dark)',textAlign:'center',marginBottom:8,fontStyle:'italic'}}>
+            Arraste para posicionar · use o controle para dar zoom
+          </div>
+          <div style={{width:BOXW,height:BOXH,margin:'0 auto 12px',borderRadius:ehCard?'10px':'50%',overflow:'hidden',position:'relative',border:'2px solid var(--gold)',cursor:arrastando?'grabbing':'grab',background:'#120a14',touchAction:'none'}}
+            onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
+            onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}>
+            <img ref={imgRef} src={imgSrc} alt="" draggable={false}
+              style={{position:'absolute',left:'50%',top:'50%',
+                transform:`translate(calc(-50% + ${pos.x}px),calc(-50% + ${pos.y}px)) scale(${zoom})`,
+                minWidth:'100%',minHeight:'100%',width:'100%',height:'100%',objectFit:'cover',userSelect:'none',pointerEvents:'none'}}/>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
+            <span style={{fontSize:'.8rem'}}>🔍</span>
+            <input type="range" min="1" max="3" step="0.02" value={zoom} onChange={e=>setZoom(parseFloat(e.target.value))} style={{flex:1}}/>
+          </div>
+          <label className="btn btn-full btn-sm" style={{cursor:'pointer',display:'block',textAlign:'center',marginBottom:12}}>
+            🔄 Trocar imagem
+            <input type="file" accept="image/*" onChange={escolher} style={{display:'none'}}/>
+          </label>
+
+          {/* Config do GitHub */}
+          <div style={{background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'10px',marginBottom:10}}>
+            <div style={{fontSize:'.66rem',color:'var(--gold)',marginBottom:8,fontFamily:'Cinzel,serif'}}>📤 Envio (GitHub)</div>
+            <input value={cfg.dono} onChange={e=>setCfg({...cfg,dono:e.target.value})} placeholder="dono (usuário)" style={INP}/>
+            <input value={cfg.repo} onChange={e=>setCfg({...cfg,repo:e.target.value})} placeholder="repositório" style={INP}/>
+            {temCofre?(
+              <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="Senha do cofre do token" style={INP}/>
+            ):(
+              <>
+                <input type="password" value={token} onChange={e=>setToken(e.target.value)} placeholder="token do GitHub" style={INP}/>
+                <input type="password" value={senha} onChange={e=>setSenha(e.target.value)} placeholder="Crie uma senha para guardar o token" style={INP}/>
+              </>
+            )}
+          </div>
+
+          {erro&&<div style={{fontSize:'.72rem',color:'#ff9090',marginBottom:8}}>{erro}</div>}
+          {progresso&&<div style={{fontSize:'.72rem',color:'var(--gold)',marginBottom:8}}>{progresso}</div>}
+          <button className="btn btn-full" disabled={enviando} onClick={confirmar} style={{opacity:enviando?0.6:1}}>
+            {enviando?'Enviando...':'✓ Usar esta foto'}
+          </button>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+// As 10 categorias da lista de suporte (estilo FGO).
+const SUPORTE_SLOTS=[
+  {id:'all',label:'Todos',icon:'✳️'},
+  {id:'saber',label:'Saber',icon:'⚔️'},
+  {id:'archer',label:'Archer',icon:'🏹'},
+  {id:'lancer',label:'Lancer',icon:'🔱'},
+  {id:'rider',label:'Rider',icon:'🐎'},
+  {id:'caster',label:'Caster',icon:'✨'},
+  {id:'assassin',label:'Assassin',icon:'🗡️'},
+  {id:'berserker',label:'Berserker',icon:'🪓'},
+  {id:'extra1',label:'Extra I',icon:'🌟'},
+  {id:'extra2',label:'Extra II',icon:'💠'},
+];
+
+// Editor da lista de suporte: 10 cards, cada um com arte (recortável), nome e descrição.
+function ListaSuporteEditor({profile,setProfile,onFechar}){
+  const[suporte,setSuporte]=useState(()=>{
+    const base=profile.suporte||{};
+    const obj={};
+    SUPORTE_SLOTS.forEach(s=>{obj[s.id]=base[s.id]||{art:null,nome:'',desc:''};});
+    return obj;
+  });
+  const[cropSlot,setCropSlot]=useState(null); // id do slot em edição de arte
+  const[salvo,setSalvo]=useState(false);
+
+  function atualizar(id,campo,valor){
+    setSuporte(prev=>({...prev,[id]:{...prev[id],[campo]:valor}}));
+    setSalvo(false);
+  }
+  function salvar(){
+    const p={...profile,suporte};
+    saveProfile(p);setProfile(p);setSalvo(true);
+    setTimeout(()=>setSalvo(false),2000);
+  }
+
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      {cropSlot&&(
+        <AvatarCropModal profile={profile} formato="card" titulo={`ARTE — ${SUPORTE_SLOTS.find(s=>s.id===cropSlot).label}`}
+          onFechar={()=>setCropSlot(null)}
+          onPronto={(url)=>{atualizar(cropSlot,'art',url);setCropSlot(null);}}/>
+      )}
+      <div className="panel" style={{maxWidth:900}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+          <button className="btn" onClick={onFechar}>← Voltar</button>
+          <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,flex:1,textAlign:'center',fontSize:'1.1rem'}}>✦ LISTA DE SUPORTE ✦</h2>
+          <button className="btn" onClick={salvar}>{salvo?'✓ Salvo':'Salvar'}</button>
+        </div>
+        <p style={{fontSize:'.68rem',color:'var(--parchment-dark)',fontStyle:'italic',textAlign:'center',marginBottom:16}}>
+          Monte sua vitrine de Servos por classe. As artes, nomes e descrições aparecem quando um amigo visita seu perfil.
+        </p>
+
+        {/* Grade de cards estilo FGO */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:12}}>
+          {SUPORTE_SLOTS.map(slot=>{
+            const s=suporte[slot.id];
+            return(
+              <div key={slot.id} style={{background:'linear-gradient(165deg,rgba(20,8,0,0.9),rgba(40,20,5,0.92))',border:'1px solid var(--gold-dim)',borderRadius:10,overflow:'hidden'}}>
+                {/* Cabeçalho da classe */}
+                <div style={{display:'flex',alignItems:'center',gap:5,padding:'6px 8px',background:'rgba(0,0,0,0.3)',borderBottom:'1px solid var(--gold-dim)'}}>
+                  <span style={{fontSize:'.85rem'}}>{slot.icon}</span>
+                  <span style={{fontSize:'.66rem',color:'var(--gold)',fontFamily:'Cinzel,serif',letterSpacing:.5}}>{slot.label}</span>
+                </div>
+                {/* Arte (clicável para editar) */}
+                <button onClick={()=>setCropSlot(slot.id)} title="Escolher/ajustar arte"
+                  style={{width:'100%',aspectRatio:'3/4',border:'none',cursor:'pointer',padding:0,display:'block',position:'relative',
+                    background:s.art?'#120a14':'radial-gradient(circle at 50% 35%,rgba(201,162,39,0.12),rgba(20,10,26,0.5))'}}>
+                  {s.art
+                    ?<img src={s.art} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+                    :<span style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,color:'var(--gold-dim)'}}>
+                       <span style={{fontSize:'1.6rem'}}>＋</span>
+                       <span style={{fontSize:'.6rem',fontFamily:'Cinzel,serif'}}>SELECT</span>
+                     </span>}
+                </button>
+                {/* Nome + descrição */}
+                <div style={{padding:'7px 8px'}}>
+                  <input value={s.nome} onChange={e=>atualizar(slot.id,'nome',e.target.value.slice(0,24))} placeholder="Nome do Servo"
+                    style={{width:'100%',padding:'4px 6px',borderRadius:5,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--gold)',fontSize:'.68rem',fontFamily:'Cinzel,serif',marginBottom:5}}/>
+                  <textarea value={s.desc} onChange={e=>atualizar(slot.id,'desc',e.target.value.slice(0,80))} placeholder="Descrição curta..."
+                    style={{width:'100%',padding:'4px 6px',borderRadius:5,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.6rem',resize:'none',height:38,fontFamily:'inherit'}}/>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <button className="btn btn-full" style={{marginTop:16}} onClick={salvar}>{salvo?'✓ Lista salva!':'💾 Salvar lista de suporte'}</button>
+      </div>
+    </div>
+  );
+}
+
+// Visualização (somente leitura) da lista de suporte no perfil de um amigo.
+function ListaSuporteView({suporte}){
+  if(!suporte)return null;
+  const preenchidos=SUPORTE_SLOTS.filter(s=>suporte[s.id]&&(suporte[s.id].art||suporte[s.id].nome));
+  if(preenchidos.length===0)return null;
+  return(
+    <>
+      <div className="divider"><span className="divider-text">LISTA DE SUPORTE</span></div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))',gap:10,margin:'14px 0'}}>
+        {preenchidos.map(slot=>{
+          const s=suporte[slot.id];
+          return(
+            <div key={slot.id} style={{background:'linear-gradient(165deg,rgba(20,8,0,0.9),rgba(40,20,5,0.92))',border:'1px solid var(--gold-dim)',borderRadius:10,overflow:'hidden'}}>
+              <div style={{display:'flex',alignItems:'center',gap:5,padding:'5px 8px',background:'rgba(0,0,0,0.3)',borderBottom:'1px solid var(--gold-dim)'}}>
+                <span style={{fontSize:'.78rem'}}>{slot.icon}</span>
+                <span style={{fontSize:'.62rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{slot.label}</span>
+              </div>
+              <div style={{width:'100%',aspectRatio:'3/4',background:'#120a14'}}>
+                {s.art&&<img src={s.art} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>}
+              </div>
+              <div style={{padding:'6px 8px'}}>
+                {s.nome&&<div style={{fontSize:'.66rem',color:'var(--gold)',fontFamily:'Cinzel,serif',marginBottom:2}}>{s.nome}</div>}
+                {s.desc&&<div style={{fontSize:'.58rem',color:'var(--parchment-dark)',lineHeight:1.35}}>{s.desc}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 function ProfileScreen({onNavigate,profile,setProfile}){
   const[nick,setNick]=useState(profile.nickname);
   const[filtroClasse,setFiltroClasse]=useState('Todas'); // filtro da galeria por classe
@@ -10748,6 +11396,8 @@ function ProfileScreen({onNavigate,profile,setProfile}){
   const[treinando,setTreinando]=useState(null); // Servo aberto no Treinamento no Trono
   const[picker,setPicker]=useState(false);       // seletor de foto de perfil aberto
   const[buscaAvatar,setBuscaAvatar]=useState(''); // busca dentro do seletor
+  const[cropAberto,setCropAberto]=useState(false); // modal de recorte de foto personalizada
+  const[suporteAberto,setSuporteAberto]=useState(false); // editor da lista de suporte
   const sv=profileSkillValues(profile.skills);
   // Clicar num Servo abre a tela de compra de níveis com SQ
   if(treinando)return <ServoTrainScreen servoId={treinando} onBack={()=>setTreinando(null)}
@@ -10802,6 +11452,9 @@ function ProfileScreen({onNavigate,profile,setProfile}){
      desc:lvl=>`AoE: tira ${20+5*(lvl-1)}% do HP de todos os inimigos · Recarga 10t`},
   ];
 
+  // Se o editor da lista de suporte está aberto, mostra ele em tela cheia
+  if(suporteAberto)return <ListaSuporteEditor profile={profile} setProfile={setProfile} onFechar={()=>setSuporteAberto(false)}/>;
+
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
       {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
@@ -10815,7 +11468,9 @@ function ProfileScreen({onNavigate,profile,setProfile}){
               <button className="mestre-avatar" onClick={()=>setPicker(true)} title="Trocar foto de perfil">
                 <span className="ring"/>
                 <span className="inner">
-                  {avatarServo?(
+                  {profile.avatar&&/^https?:\/\//.test(profile.avatar)?(
+                    <RessonanciaRetrato art={profile.avatar} size={104}/>
+                  ):avatarServo?(
                     <RessonanciaRetrato art={avatarServo.art} patronoArt={avatarServo.patronoArt} emoji={avatarServo.emoji} size={104}/>
                   ):(
                     <span style={{fontSize:'2.6rem',color:'var(--gold-dim)',display:'flex',width:'100%',height:'100%',alignItems:'center',justifyContent:'center'}}>👤</span>
@@ -10916,7 +11571,7 @@ function ProfileScreen({onNavigate,profile,setProfile}){
         </div>
 
         {/* Conquistas (largura total) */}
-        <div style={{marginBottom:20}}>
+        <div style={{marginBottom:12}}>
           <button className="mestre-shortcut" style={{width:'100%'}} onClick={()=>onNavigate('achievements')}>
             <span className="ico">🏆</span>
             <div style={{textAlign:'left',flex:1}}>
@@ -10927,7 +11582,28 @@ function ProfileScreen({onNavigate,profile,setProfile}){
           </button>
         </div>
 
+        {/* Lista de Suporte (largura total) */}
+        <div style={{marginBottom:20}}>
+          <button className="mestre-shortcut" style={{width:'100%'}} onClick={()=>setSuporteAberto(true)}>
+            <span className="ico">✦</span>
+            <div style={{textAlign:'left',flex:1}}>
+              <div className="cinzel" style={{color:'var(--gold)',fontSize:'.88rem'}}>Lista de Suporte</div>
+              <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>Monte sua vitrine de Servos por classe</div>
+            </div>
+            <span style={{color:'var(--gold)',fontSize:'1.1rem'}}>→</span>
+          </button>
+        </div>
+
         {/* Seletor de foto de perfil (modal) */}
+        {cropAberto&&(
+          <AvatarCropModal profile={profile}
+            onFechar={()=>setCropAberto(false)}
+            onPronto={(url)=>{
+              const p={...profile,avatar:url};
+              saveProfile(p);setProfile(p);setCropAberto(false);
+              setNotif('Foto de perfil personalizada aplicada!');
+            }}/>
+        )}
         {picker&&(
           <div onClick={()=>setPicker(false)}
             style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:100,
@@ -10942,6 +11618,10 @@ function ProfileScreen({onNavigate,profile,setProfile}){
                 placeholder="🔍 Buscar Servo..."
                 style={{width:'100%',padding:'8px 10px',borderRadius:4,border:'1px solid var(--gold-dim)',
                   background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.8rem',marginBottom:10}}/>
+              {/* Foto personalizada (upload + recorte) */}
+              <button className="btn btn-full" style={{marginBottom:10}} onClick={()=>{setPicker(false);setCropAberto(true);}}>
+                📷 Enviar foto personalizada
+              </button>
               <div style={{overflowY:'auto',flex:1,display:'grid',
                 gridTemplateColumns:'repeat(auto-fill,minmax(72px,1fr))',gap:8,paddingRight:4}}>
                 {profile.avatar&&(
@@ -20317,6 +20997,7 @@ function App(){
   if(screen==='ranking')return <RankingScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='codex')return <CodexScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='amigos')return <AmigosScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
+  if(screen==='feed')return <FeedScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='config')return <ConfigScreen onNavigate={navigate}/>;
   if(screen==='campaign')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate}/>;
   if(screen==='tower')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate} mode="tower"/>;
