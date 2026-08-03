@@ -8864,7 +8864,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.18</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.19</p>
       </div>
     </div>
   );
@@ -11121,7 +11121,12 @@ function ColiseuTimeEditor({profile,meuUid,roster,meuTime,onSalvo}){
                     <span style={{width:26,height:26,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
                       <SkillIcon nome={g.name} emoji={slotInfo?slotInfo.icon:'✦'} size={26}/>
                     </span>
-                    <span style={{flex:1,minWidth:0,lineHeight:1.2}}>{g.name}</span>
+                    <span style={{flex:1,minWidth:0}}>
+                      <span style={{display:'block',lineHeight:1.2}}>{g.name}</span>
+                      <span style={{display:'block',fontSize:'.52rem',color:escolhida?'var(--gold)':'var(--parchment-dark)',marginTop:1}}>
+                        {slotInfo?`${slotInfo.icon} ${slotInfo.label}`:''}
+                      </span>
+                    </span>
                     {escolhida&&<span style={{color:'var(--gold)',flexShrink:0}}>✓</span>}
                   </button>
                 );
