@@ -6185,6 +6185,43 @@ async function buscarPerfilPublico(uid){
 }
 
 // ══════════════════════════════════════════════════════
+// TIER LISTS — jogadores montam rankings de servos (SS/S/A editável ou numérico).
+// Coleção: tier_lists/<id> → {id,uid,nome,titulo,avatar,tipo:'faixas'|'numerica',
+//   faixas:[{id,label,cor}], itens:{faixaId:[servoId,...]}, atualizadoEm}
+async function tierListSalvar(tl){
+  if(!fbDb)return {ok:false,erro:'Firebase indisponível'};
+  try{
+    const id=tl.id||fbDb.collection('tier_lists').doc().id;
+    const dados={...tl,id,atualizadoEm:firebase.firestore.FieldValue.serverTimestamp()};
+    await fbDb.collection('tier_lists').doc(id).set(dados,{merge:true});
+    return {ok:true,id};
+  }catch(e){return {ok:false,erro:e.message};}
+}
+async function tierListApagar(id){
+  if(!fbDb)return {ok:false};
+  try{await fbDb.collection('tier_lists').doc(id).delete();return {ok:true};}
+  catch(e){return {ok:false,erro:e.message};}
+}
+// Lista as tier lists de um jogador específico.
+async function tierListDoJogador(uid){
+  if(!fbDb||!uid)return [];
+  try{
+    const snap=await fbDb.collection('tier_lists').where('uid','==',uid).get();
+    const arr=snap.docs.map(d=>d.data());
+    arr.sort((a,b)=>{const ta=a.atualizadoEm&&a.atualizadoEm.seconds||0,tb=b.atualizadoEm&&b.atualizadoEm.seconds||0;return tb-ta;});
+    return arr;
+  }catch(e){console.error('tier lists do jogador',e);return [];}
+}
+// Lista as tier lists mais recentes de todos (para o Feed comunitário).
+async function tierListRecentes(limite=30){
+  if(!fbDb)return [];
+  try{
+    const snap=await fbDb.collection('tier_lists').orderBy('atualizadoEm','desc').limit(limite).get();
+    return snap.docs.map(d=>d.data());
+  }catch(e){console.error('tier lists recentes',e);return [];}
+}
+
+// ══════════════════════════════════════════════════════
 // COLISEU (PvP assíncrono) — cada jogador registra um TIME DE DEFESA (3 servos +
 // 5 bênçãos). Outros o enfrentam contra a IA. Apostas (dobra ou perde) e ranking ELO.
 // Coleção: coliseu_times/<uid> → {uid,nome,avatar,servos:[{id,lvl}],gracas:[ids],elo,vitorias,derrotas,atualizadoEm}
@@ -8881,7 +8918,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.22</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.23</p>
       </div>
     </div>
   );
@@ -11387,6 +11424,317 @@ function ColiseuRanking({times,meuUid}){
   );
 }
 
+// Editor da tier list com arrastar-e-soltar (mouse + toque).
+function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
+  const[tl,setTl]=useState(()=>JSON.parse(JSON.stringify(inicial)));
+  const[busca,setBusca]=useState('');
+  const[classeFiltro,setClasseFiltro]=useState('');
+  const[salvando,setSalvando]=useState(false);
+  const[arrastando,setArrastando]=useState(null);
+  const[sobreFaixa,setSobreFaixa]=useState(null);
+  const[servoSelecionado,setServoSelecionado]=useState(null);
+
+  const colocados=useMemo(()=>{
+    const s=new Set();
+    Object.keys(tl.itens).forEach(fid=>{if(fid!=='pool')(tl.itens[fid]||[]).forEach(id=>s.add(id));});
+    return s;
+  },[tl]);
+
+  const servosDisponiveis=useMemo(()=>{
+    let arr=RESSONANCIA_SERVOS.filter(s=>!colocados.has(s.id));
+    if(classeFiltro)arr=arr.filter(s=>s.classe===classeFiltro);
+    if(busca.trim()){const q=busca.trim().toLowerCase();arr=arr.filter(s=>s.nome.toLowerCase().includes(q));}
+    return arr;
+  },[colocados,classeFiltro,busca]);
+
+  const classes=useMemo(()=>[...new Set(RESSONANCIA_SERVOS.map(s=>s.classe))].sort(),[]);
+
+  function moverPara(servoId,faixaId){
+    setTl(prev=>{
+      const novo=JSON.parse(JSON.stringify(prev));
+      Object.keys(novo.itens).forEach(fid=>{novo.itens[fid]=(novo.itens[fid]||[]).filter(id=>id!==servoId);});
+      if(faixaId&&faixaId!=='pool'){novo.itens[faixaId]=novo.itens[faixaId]||[];novo.itens[faixaId].push(servoId);}
+      return novo;
+    });
+  }
+  function onDragStart(e,servoId){setArrastando(servoId);e.dataTransfer.effectAllowed='move';}
+  function onDropFaixa(e,faixaId){e.preventDefault();if(arrastando){moverPara(arrastando,faixaId);setArrastando(null);setSobreFaixa(null);}}
+  function tocarServo(servoId){setServoSelecionado(prev=>prev===servoId?null:servoId);}
+  function tocarFaixa(faixaId){if(servoSelecionado){moverPara(servoSelecionado,faixaId);setServoSelecionado(null);}}
+  function renomearFaixa(fid,label){setTl(prev=>({...prev,faixas:prev.faixas.map(f=>f.id===fid?{...f,label:label.slice(0,4)}:f)}));}
+  function mudarCorFaixa(fid){setTl(prev=>({...prev,faixas:prev.faixas.map(f=>{if(f.id!==fid)return f;const i=TIER_CORES.indexOf(f.cor);return {...f,cor:TIER_CORES[(i+1)%TIER_CORES.length]};})}));}
+  function addFaixa(){
+    setTl(prev=>{
+      const novo={...prev};
+      if(prev.tipo==='numerica'){
+        const n=prev.faixas.length+1;const fid='n_'+n;
+        novo.faixas=[...prev.faixas,{id:fid,label:String(n),cor:TIER_CORES[(n-1)%TIER_CORES.length]}];
+        novo.itens={...prev.itens,[fid]:[]};
+      }else{
+        const fid='f_'+Date.now();
+        novo.faixas=[...prev.faixas,{id:fid,label:'?',cor:TIER_CORES[prev.faixas.length%TIER_CORES.length]}];
+        novo.itens={...prev.itens,[fid]:[]};
+      }
+      return novo;
+    });
+  }
+  function removerFaixa(fid){
+    setTl(prev=>{
+      const novo=JSON.parse(JSON.stringify(prev));
+      delete novo.itens[fid];
+      novo.faixas=novo.faixas.filter(f=>f.id!==fid);
+      return novo;
+    });
+  }
+  async function salvar(){
+    setSalvando(true);
+    const dados={...tl,uid:meuUid,nome:meuNome||'Mestre',avatar:avatar||null};
+    const r=await tierListSalvar(dados);
+    setSalvando(false);
+    if(r.ok)onSair();
+    else alert('Erro ao salvar: '+(r.erro||'tente novamente'));
+  }
+
+  return(
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+        <button className="btn btn-sm" onClick={onSair}>← Voltar</button>
+        <input value={tl.titulo} onChange={e=>setTl({...tl,titulo:e.target.value.slice(0,40)})}
+          placeholder="Título da tier list" style={{flex:1,padding:'7px 10px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'.8rem'}}/>
+      </div>
+
+      {servoSelecionado&&(
+        <div style={{background:'rgba(201,162,39,0.15)',border:'1px solid var(--gold)',borderRadius:8,padding:'8px 12px',marginBottom:10,fontSize:'.72rem',color:'var(--gold)',textAlign:'center'}}>
+          Servo selecionado — toque numa faixa para colocá-lo, ou <button onClick={()=>setServoSelecionado(null)} style={{background:'none',border:'none',color:'var(--crimson-soft)',cursor:'pointer',textDecoration:'underline'}}>cancele</button>
+        </div>
+      )}
+
+      <div style={{marginBottom:14}}>
+        {tl.faixas.map(f=>{
+          const servos=(tl.itens[f.id]||[]).map(id=>RESSONANCIA_SERVOS.find(s=>s.id===id)).filter(Boolean);
+          return(
+            <div key={f.id}
+              onDragOver={e=>{e.preventDefault();setSobreFaixa(f.id);}}
+              onDragLeave={()=>setSobreFaixa(null)}
+              onDrop={e=>onDropFaixa(e,f.id)}
+              onClick={()=>tocarFaixa(f.id)}
+              style={{display:'flex',marginBottom:4,borderRadius:6,overflow:'hidden',minHeight:56,
+                border:`2px solid ${sobreFaixa===f.id?'var(--gold)':'transparent'}`,
+                cursor:servoSelecionado?'pointer':'default',background:'rgba(0,0,0,0.25)'}}>
+              <div style={{width:58,flexShrink:0,background:f.cor,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 2px',gap:2}}>
+                {tl.tipo==='faixas'?(
+                  <input value={f.label} onClick={e=>e.stopPropagation()} onChange={e=>renomearFaixa(f.id,e.target.value)}
+                    style={{width:'100%',textAlign:'center',background:'transparent',border:'none',color:'#1a0e0e',fontFamily:'Cinzel,serif',fontWeight:700,fontSize:'1rem',padding:0}}/>
+                ):(
+                  <span style={{color:'#1a0e0e',fontFamily:'Cinzel,serif',fontWeight:700,fontSize:'1.1rem'}}>{f.label}</span>
+                )}
+                <div style={{display:'flex',gap:2}}>
+                  <button onClick={e=>{e.stopPropagation();mudarCorFaixa(f.id);}} title="Cor" style={{background:'rgba(0,0,0,0.25)',border:'none',borderRadius:3,cursor:'pointer',fontSize:'.5rem',padding:'1px 3px'}}>🎨</button>
+                  {tl.faixas.length>1&&<button onClick={e=>{e.stopPropagation();removerFaixa(f.id);}} title="Remover faixa" style={{background:'rgba(0,0,0,0.25)',border:'none',borderRadius:3,cursor:'pointer',fontSize:'.5rem',padding:'1px 3px',color:'#1a0e0e'}}>✕</button>}
+                </div>
+              </div>
+              <div style={{flex:1,display:'flex',flexWrap:'wrap',gap:3,padding:5,alignContent:'flex-start',minHeight:56}}>
+                {servos.map(s=>(
+                  <div key={s.id} draggable
+                    onDragStart={e=>onDragStart(e,s.id)}
+                    onClick={e=>{e.stopPropagation();moverPara(s.id,'pool');}}
+                    title={s.nome+' (toque para remover)'}
+                    style={{width:42,height:42,borderRadius:5,overflow:'hidden',cursor:'grab',border:'1px solid rgba(0,0,0,0.4)'}}>
+                    <RessonanciaRetrato art={s.art} patronoArt={s.patronoArt} emoji={s.emoji} size={42}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        <button onClick={addFaixa} className="btn btn-sm" style={{marginTop:4}}>+ Adicionar faixa</button>
+      </div>
+
+      <button className="btn btn-full" disabled={salvando} onClick={salvar} style={{marginBottom:16,opacity:salvando?0.6:1}}>
+        {salvando?'Salvando...':'💾 Salvar tier list'}
+      </button>
+
+      <div className="divider"><span className="divider-text">SERVOS ({servosDisponiveis.length})</span></div>
+      <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="🔍 Buscar servo pelo nome..."
+        style={{width:'100%',padding:'8px 11px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.8rem',marginBottom:8}}/>
+      <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:10}}>
+        <button onClick={()=>setClasseFiltro('')} style={{fontSize:'.6rem',padding:'3px 9px',borderRadius:8,cursor:'pointer',border:`1px solid ${!classeFiltro?'var(--gold)':'var(--gold-dim)'}`,background:!classeFiltro?'rgba(201,162,39,0.2)':'transparent',color:'var(--parchment)'}}>Todas</button>
+        {classes.map(c=>(
+          <button key={c} onClick={()=>setClasseFiltro(c)} style={{fontSize:'.6rem',padding:'3px 9px',borderRadius:8,cursor:'pointer',border:`1px solid ${classeFiltro===c?'var(--gold)':'var(--gold-dim)'}`,background:classeFiltro===c?'rgba(201,162,39,0.2)':'transparent',color:'var(--parchment)'}}>{c}</button>
+        ))}
+      </div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:4,maxHeight:280,overflowY:'auto',padding:'4px',background:'rgba(0,0,0,0.2)',borderRadius:8}}>
+        {servosDisponiveis.map(s=>(
+          <div key={s.id} draggable
+            onDragStart={e=>onDragStart(e,s.id)}
+            onClick={()=>tocarServo(s.id)}
+            title={s.nome}
+            style={{width:46,height:46,borderRadius:5,overflow:'hidden',cursor:'grab',position:'relative',
+              border:`2px solid ${servoSelecionado===s.id?'var(--gold)':'transparent'}`}}>
+            <RessonanciaRetrato art={s.art} patronoArt={s.patronoArt} emoji={s.emoji} size={46}/>
+          </div>
+        ))}
+      </div>
+      <p style={{fontSize:'.62rem',color:'var(--parchment-dark)',fontStyle:'italic',marginTop:8,textAlign:'center'}}>
+        Arraste os servos para as faixas — ou toque num servo e depois na faixa (no celular). Toque num servo já colocado para removê-lo.
+      </p>
+    </div>
+  );
+}
+
+// Visualização de uma tier list (própria ou de amigo).
+function TierListVisual({tl,onVoltar,podeEditar,onEditar}){
+  return(
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+        <button className="btn btn-sm" onClick={onVoltar}>← Voltar</button>
+        <div style={{flex:1}}>
+          <div style={{fontSize:'.9rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{tl.titulo||'Tier List'}</div>
+          <div style={{fontSize:'.62rem',color:'var(--parchment-dark)'}}>por {tl.nome||'Mestre'}</div>
+        </div>
+        {podeEditar&&<button className="btn btn-sm" onClick={onEditar}>✏️ Editar</button>}
+      </div>
+
+      {tl.faixas.map(f=>{
+        const servos=(tl.itens[f.id]||[]).map(id=>RESSONANCIA_SERVOS.find(s=>s.id===id)).filter(Boolean);
+        return(
+          <div key={f.id} style={{display:'flex',marginBottom:4,borderRadius:6,overflow:'hidden',minHeight:54,background:'rgba(0,0,0,0.25)'}}>
+            <div style={{width:54,flexShrink:0,background:f.cor,display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <span style={{color:'#1a0e0e',fontFamily:'Cinzel,serif',fontWeight:700,fontSize:'1.05rem'}}>{f.label}</span>
+            </div>
+            <div style={{flex:1,display:'flex',flexWrap:'wrap',gap:3,padding:5,alignContent:'flex-start'}}>
+              {servos.map(s=>(
+                <div key={s.id} title={s.nome} style={{width:42,height:42,borderRadius:5,overflow:'hidden',border:'1px solid rgba(0,0,0,0.4)'}}>
+                  <RessonanciaRetrato art={s.art} patronoArt={s.patronoArt} emoji={s.emoji} size={42}/>
+                </div>
+              ))}
+              {servos.length===0&&<span style={{fontSize:'.62rem',color:'var(--parchment-dark)',alignSelf:'center',fontStyle:'italic'}}>—</span>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
+// TIER LIST — jogadores montam rankings de servos (300+ da ressonância).
+// Dois tipos: 'faixas' (SS/S/A... editáveis) ou 'numerica' (1,2,3...).
+// Drag & drop com suporte a toque. Salva na nuvem, amigos veem.
+
+const TIER_CORES=['#e04a4a','#e0873a','#e0c85a','#7ee08a','#5aa0e0','#9575cd','#c77dff','#888'];
+function tierListNova(tipo,uid,nome,avatar){
+  const base={id:null,uid,nome,avatar:avatar||null,titulo:'Minha Tier List',tipo,itens:{pool:[]}};
+  if(tipo==='faixas'){
+    base.faixas=[
+      {id:'f_ss',label:'SS',cor:'#e04a4a'},
+      {id:'f_s',label:'S',cor:'#e0873a'},
+      {id:'f_a',label:'A',cor:'#e0c85a'},
+      {id:'f_b',label:'B',cor:'#7ee08a'},
+      {id:'f_c',label:'C',cor:'#5aa0e0'},
+    ];
+    base.faixas.forEach(f=>base.itens[f.id]=[]);
+  }else{
+    // numérica: começa com 5 posições
+    base.faixas=[1,2,3,4,5].map(n=>({id:'n_'+n,label:String(n),cor:TIER_CORES[(n-1)%TIER_CORES.length]}));
+    base.faixas.forEach(f=>base.itens[f.id]=[]);
+  }
+  return base;
+}
+
+function TierListAba({profile,meuUid,meuNome,logado}){
+  const[modo,setModo]=useState('lista'); // 'lista' | 'editor' | 'ver'
+  const[editando,setEditando]=useState(null);
+  const[vendo,setVendo]=useState(null);
+  const[minhas,setMinhas]=useState([]);
+  const[comunidade,setComunidade]=useState([]);
+  const[carregando,setCarregando]=useState(true);
+
+  async function recarregar(){
+    setCarregando(true);
+    if(meuUid){const m=await tierListDoJogador(meuUid);setMinhas(m);}
+    const c=await tierListRecentes(30);
+    setComunidade(c.filter(t=>t.uid!==meuUid));
+    setCarregando(false);
+  }
+  useEffect(()=>{recarregar();},[meuUid]);
+
+  if(modo==='editor'){
+    return <TierListEditor inicial={editando} meuUid={meuUid} meuNome={meuNome} avatar={profile.avatar}
+      onSair={()=>{setModo('lista');setEditando(null);recarregar();}}/>;
+  }
+  if(modo==='ver'&&vendo){
+    return <TierListVisual tl={vendo} onVoltar={()=>{setModo('lista');setVendo(null);}}
+      podeEditar={vendo.uid===meuUid} onEditar={()=>{setEditando(vendo);setModo('editor');}}/>;
+  }
+
+  return(
+    <div>
+      {!logado?(
+        <div style={{background:'rgba(201,162,39,0.08)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'12px',marginBottom:16,textAlign:'center',fontSize:'.75rem',color:'var(--parchment-dark)'}}>
+          Entre na sua conta (no Perfil) para criar tier lists.
+        </div>
+      ):(
+        <div style={{display:'flex',gap:8,marginBottom:16}}>
+          <button className="btn btn-full" onClick={()=>{setEditando(tierListNova('faixas',meuUid,meuNome,profile.avatar));setModo('editor');}}>
+            🏆 Nova (SS/S/A)
+          </button>
+          <button className="btn btn-full" onClick={()=>{setEditando(tierListNova('numerica',meuUid,meuNome,profile.avatar));setModo('editor');}}>
+            🔢 Nova (1,2,3)
+          </button>
+        </div>
+      )}
+
+      {carregando?(
+        <p style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px'}}>Carregando tier lists...</p>
+      ):(
+        <>
+          {minhas.length>0&&(
+            <>
+              <div className="divider"><span className="divider-text">MINHAS TIER LISTS</span></div>
+              {minhas.map(tl=><TierListCard key={tl.id} tl={tl} onAbrir={()=>{setVendo(tl);setModo('ver');}}
+                onApagar={async()=>{if(confirm('Apagar esta tier list?')){await tierListApagar(tl.id);recarregar();}}} ehMinha={true}/>)}
+            </>
+          )}
+          <div className="divider"><span className="divider-text">DA COMUNIDADE</span></div>
+          {comunidade.length===0?(
+            <p style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px',fontSize:'.8rem'}}>Nenhuma tier list da comunidade ainda. Seja o primeiro!</p>
+          ):comunidade.map(tl=><TierListCard key={tl.id} tl={tl} onAbrir={()=>{setVendo(tl);setModo('ver');}} ehMinha={false}/>)}
+        </>
+      )}
+    </div>
+  );
+}
+
+// Card resumido de uma tier list na listagem.
+function TierListCard({tl,onAbrir,onApagar,ehMinha}){
+  const totalServos=Object.values(tl.itens||{}).reduce((acc,arr)=>acc+(arr?arr.length:0),0)-((tl.itens&&tl.itens.pool)?tl.itens.pool.length:0);
+  return(
+    <div style={{background:'rgba(20,10,20,0.6)',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'12px',marginBottom:10}}>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <div style={{width:36,height:36,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+          {tl.avatar?<RessonanciaRetrato art={tl.avatar} size={36}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>👤</div>}
+        </div>
+        <div style={{flex:1,minWidth:0,cursor:'pointer'}} onClick={onAbrir}>
+          <div style={{fontSize:'.84rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{tl.titulo||'Tier List'}</div>
+          <div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>
+            por {tl.nome||'Mestre'} · {tl.tipo==='numerica'?'🔢 Numérica':'🏆 Faixas'} · {totalServos} servos
+          </div>
+        </div>
+        <button className="btn btn-sm" onClick={onAbrir}>Ver</button>
+        {ehMinha&&onApagar&&<button onClick={onApagar} style={{background:'none',border:'none',color:'var(--parchment-dark)',cursor:'pointer',fontSize:'.9rem'}}>🗑️</button>}
+      </div>
+      {/* mini-preview das faixas */}
+      <div style={{display:'flex',gap:3,marginTop:8,flexWrap:'wrap'}}>
+        {(tl.faixas||[]).slice(0,6).map(f=>{
+          const qtd=(tl.itens&&tl.itens[f.id]||[]).length;
+          return <span key={f.id} style={{fontSize:'.56rem',padding:'2px 7px',borderRadius:6,background:f.cor,color:'#1a0e0e',fontFamily:'Cinzel,serif',fontWeight:700}}>{f.label} · {qtd}</span>;
+        })}
+      </div>
+    </div>
+  );
+}
+
 function FeedScreen({onNavigate,profile}){
   const logado=fbAuth&&fbAuth.currentUser;
   const meuUid=logado?fbAuth.currentUser.uid:null;
@@ -11432,8 +11780,16 @@ function FeedScreen({onNavigate,profile}){
             border:`1px solid ${aba==='diario'?'var(--crimson)':'var(--gold-dim)'}`,background:aba==='diario'?'rgba(224,90,74,0.18)':'transparent',color:aba==='diario'?'var(--crimson-soft)':'var(--gold)'}}>
             📓 Meu Diário
           </button>
+          <button onClick={()=>setAba('tierlist')} style={{flex:1,padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.76rem',
+            border:`1px solid ${aba==='tierlist'?'var(--gold)':'var(--gold-dim)'}`,background:aba==='tierlist'?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>
+            🏆 Tier List
+          </button>
         </div>
 
+        {/* Aba Tier List */}
+        {aba==='tierlist'?(
+          <TierListAba profile={profile} meuUid={meuUid} meuNome={meuNome} logado={logado}/>
+        ):(<>
         {/* Botão de publicar */}
         {logado&&meuNome?(
           <button className="btn btn-full" style={{marginBottom:16}} onClick={()=>setCompondo(true)}>✍️ Nova publicação</button>
@@ -11462,6 +11818,7 @@ function FeedScreen({onNavigate,profile}){
               onToggleComentarios={()=>setComentandoEm(comentandoEm===p.id?null:p.id)}/>
           ))
         )}
+        </>)}
       </div>
     </div>
   );
