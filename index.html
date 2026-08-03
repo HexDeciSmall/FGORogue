@@ -6184,6 +6184,112 @@ async function buscarPerfilPublico(uid){
   catch(e){console.error('buscar perfil',e);return null;}
 }
 
+// ══════════════════════════════════════════════════════
+// COLISEU (PvP assíncrono) — cada jogador registra um TIME DE DEFESA (3 servos +
+// 5 bênçãos). Outros o enfrentam contra a IA. Apostas (dobra ou perde) e ranking ELO.
+// Coleção: coliseu_times/<uid> → {uid,nome,avatar,servos:[{id,lvl}],gracas:[ids],elo,vitorias,derrotas,atualizadoEm}
+
+const COLISEU_ELO_INICIAL=1000;
+// Publica/atualiza o time de defesa do jogador.
+async function coliseuRegistrarTime(uid,dados){
+  if(!fbDb)return {ok:false,erro:'Firebase indisponível'};
+  try{
+    await fbDb.collection('coliseu_times').doc(uid).set(dados,{merge:true});
+    return {ok:true};
+  }catch(e){return {ok:false,erro:e.message};}
+}
+// Busca o time de defesa de um jogador.
+async function coliseuBuscarTime(uid){
+  if(!fbDb||!uid)return null;
+  try{const doc=await fbDb.collection('coliseu_times').doc(uid).get();return doc.exists?doc.data():null;}
+  catch(e){return null;}
+}
+// Lista times de defesa disponíveis (exceto o próprio), ordenados por ELO.
+async function coliseuListarTimes(meuUid){
+  if(!fbDb)return [];
+  try{
+    const snap=await fbDb.collection('coliseu_times').orderBy('elo','desc').limit(50).get();
+    return snap.docs.map(d=>d.data()).filter(t=>t.uid!==meuUid&&t.servos&&t.servos.length);
+  }catch(e){console.error('listar coliseu',e);return [];}
+}
+// Calcula o "poder de combate" de um time do Coliseu a partir dos servos e bênçãos.
+// Usado na simulação de batalha PvP.
+function coliseuPoderTime(time){
+  if(!time||!time.servos)return {atk:0,hp:0,detalhe:[]};
+  const gEff={};
+  (time.gracas||[]).forEach(gid=>{
+    const def=GRACA_BY_ID[gid];if(!def)return;
+    const e=def.eff(def.v(3))||{}; // usa nível médio da graça
+    for(const k of Object.keys(e))gEff[k]=(gEff[k]||0)+e[k];
+  });
+  const atkBonus=1+((gEff.atkFlatUp||0)+(gEff.npDmgUp||0)*0.5)/100;
+  const hpBonus=1+((gEff.maxHpUpPct||0)+(gEff.defUpPct||0)*0.5)/100;
+  let totalAtk=0,totalHp=0;const detalhe=[];
+  time.servos.forEach(s=>{
+    const sv=PLAYABLE_SERVOS[s.id];if(!sv)return;
+    const lvl=s.lvl||MAX_LEVEL;
+    const atk=Math.round(sv.getAtk(lvl)*atkBonus);
+    const hp=Math.round(sv.getHp(lvl)*hpBonus);
+    totalAtk+=atk;totalHp+=hp;
+    detalhe.push({nome:sv.name,className:sv.className,atk,hp});
+  });
+  // bônus de crítico/execução das graças entram como pequeno multiplicador de poder
+  const critBonus=1+((gEff.critChanceUp||0)*0.3+(gEff.executeThreshold||0)*0.5)/100;
+  return {atk:Math.round(totalAtk*critBonus),hp:totalHp,detalhe,gEff};
+}
+// Simula uma batalha entre dois times. Retorna {venceu, turnos, hpAtacante, hpDefensor, log}.
+// Modelo: cada lado causa dano por turno (atk com variância) até um HP zerar.
+function coliseuSimularBatalha(timeAtk,timeDef){
+  const A=coliseuPoderTime(timeAtk), D=coliseuPoderTime(timeDef);
+  let hpA=A.hp, hpD=D.hp;
+  const log=[];let turno=0;const MAX_TURNOS=40;
+  // vantagem de iniciativa: quem tem maior ATK total ataca primeiro
+  let vezAtacante=A.atk>=D.atk;
+  while(hpA>0&&hpD>0&&turno<MAX_TURNOS){
+    turno++;
+    const variancia=()=>0.82+Math.random()*0.36; // 82%–118%
+    if(vezAtacante){
+      const dano=Math.round(A.atk*0.55*variancia());
+      hpD-=dano;log.push({lado:'atk',dano,hpRestante:Math.max(0,hpD)});
+    }else{
+      const dano=Math.round(D.atk*0.55*variancia());
+      hpA-=dano;log.push({lado:'def',dano,hpRestante:Math.max(0,hpA)});
+    }
+    vezAtacante=!vezAtacante;
+  }
+  const venceu=hpA>0&&hpD<=0?true:(hpD>0&&hpA<=0?false:(hpA>=hpD)); // empate por tempo: maior HP restante
+  return {venceu,turnos:turno,hpAtacante:Math.max(0,hpA),hpDefensor:Math.max(0,hpD),
+    hpMaxAtacante:A.hp,hpMaxDefensor:D.hp,poderAtk:A,poderDef:D,log};
+}
+// Cálculo de ELO (fator K=32). Retorna a variação de pontos para o atacante.
+function coliseuDeltaElo(eloA,eloB,venceu){
+  const esperado=1/(1+Math.pow(10,(eloB-eloA)/400));
+  return Math.round(32*((venceu?1:0)-esperado));
+}
+// Aplica o resultado de uma luta: atualiza ELO e vitórias/derrotas de ambos,
+// e transfere a aposta (dobra ou perde). Tudo em transações para consistência.
+async function coliseuAplicarResultado(atacante,defensorUid,venceu,delta){
+  if(!fbDb)return;
+  try{
+    const refA=fbDb.collection('coliseu_times').doc(atacante);
+    const refD=fbDb.collection('coliseu_times').doc(defensorUid);
+    await fbDb.runTransaction(async(tx)=>{
+      const dA=await tx.get(refA), dD=await tx.get(refD);
+      if(dA.exists){
+        const a=dA.data();
+        tx.update(refA,{elo:Math.max(0,(a.elo||COLISEU_ELO_INICIAL)+delta),
+          vitorias:(a.vitorias||0)+(venceu?1:0),derrotas:(a.derrotas||0)+(venceu?0:1)});
+      }
+      if(dD.exists){
+        const d=dD.data();
+        // o defensor ganha/perde o inverso do atacante
+        tx.update(refD,{elo:Math.max(0,(d.elo||COLISEU_ELO_INICIAL)-delta),
+          vitorias:(d.vitorias||0)+(venceu?0:1),derrotas:(d.derrotas||0)+(venceu?1:0)});
+      }
+    });
+  }catch(e){console.error('aplicar resultado coliseu',e);}
+}
+
 // ─── ÁLBUM: REAÇÕES DISPONÍVEIS ──────────────────────
 // As reações e comentários do Álbum são COMPARTILHADOS via Firestore (todos veem
 // os mesmos), implementados mais abaixo em albumWatchReacts/albumAddComment etc.
@@ -8744,7 +8850,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.12</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.14</p>
       </div>
     </div>
   );
@@ -9772,6 +9878,7 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
   // Party: até 3 servos distintos (ids curtos). O 1º escolhido é o líder.
   const[partySel,setPartySel]=useState(['ibaraki']);
   const[verDetalhe,setVerDetalhe]=useState(null); // servo cujo preview de stats está aberto
+  const[andaresExpandido,setAndaresExpandido]=useState(false); // lista de andares recolhível
   const OBJ_ID={ibaraki:'ibaraki_douji',qin:'qin_liangyu',deon:'deon_saber',archer:'sith_archer',okuni:'okuni_caster',mochizuki:'mochizuki_chiyome',kiara:'kiara_summer',skadi:'skadi_summer',okita:'okita_saber',okita_alter:'okita_alter'};
   const done=profile.achievements||{};
   const owned=profile.gachaOwned||[];
@@ -9913,29 +10020,42 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
         <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:12,textAlign:'center'}}>
           Suba andar por andar numa escalada contínua. Vença o boss de cada andar para avançar ao próximo. Se cair, a escalada recomeça do topo... digo, da base.
         </p>
-        <div style={{display:'flex',flexDirection:'column-reverse',gap:6,marginBottom:16}}>
-          {TOWER_ORDER.map((mid,i)=>{
-            const map=TOWER_MAPS[mid];
-            return(
-              <div key={mid} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',
-                background:i===0?'rgba(201,162,39,0.12)':'rgba(120,40,40,0.08)',
-                border:`1px solid ${i===0?'var(--gold)':'var(--red)'}`,borderRadius:3}}>
-                <div style={{textAlign:'left'}}>
-                  <div className="cinzel" style={{color:i===0?'var(--gold)':'var(--parchment)',fontSize:'.88rem',letterSpacing:1}}>
-                    Andar {i+1} — {map.name}
+        {/* Cabeçalho recolhível: mostra só um resumo até o jogador expandir */}
+        <button onClick={()=>setAndaresExpandido(v=>!v)}
+          style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',marginBottom:andaresExpandido?6:16,cursor:'pointer',
+            background:'rgba(201,162,39,0.08)',border:'1px solid var(--gold-dim)',borderRadius:6,color:'var(--parchment)'}}>
+          <span style={{display:'flex',alignItems:'center',gap:8}}>
+            <span style={{fontSize:'1rem'}}>🗼</span>
+            <span className="cinzel" style={{color:'var(--gold)',fontSize:'.82rem',letterSpacing:1}}>{TOWER_ORDER.length} andares</span>
+            <span style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>· começa em {TOWER_MAPS[TOWER_ORDER[0]].name}</span>
+          </span>
+          <span style={{color:'var(--gold)',fontSize:'.72rem'}}>{andaresExpandido?'▲ recolher':'▼ ver andares'}</span>
+        </button>
+        {andaresExpandido&&(
+          <div style={{display:'flex',flexDirection:'column-reverse',gap:6,marginBottom:16}}>
+            {TOWER_ORDER.map((mid,i)=>{
+              const map=TOWER_MAPS[mid];
+              return(
+                <div key={mid} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',
+                  background:i===0?'rgba(201,162,39,0.12)':'rgba(120,40,40,0.08)',
+                  border:`1px solid ${i===0?'var(--gold)':'var(--red)'}`,borderRadius:3}}>
+                  <div style={{textAlign:'left'}}>
+                    <div className="cinzel" style={{color:i===0?'var(--gold)':'var(--parchment)',fontSize:'.88rem',letterSpacing:1}}>
+                      Andar {i+1} — {map.name}
+                    </div>
+                    <div style={{fontSize:'.66rem',color:'var(--parchment-dark)',marginTop:2}}>
+                      20 fases · boss na fase 20{i===0?' · ponto de partida':''}
+                      <span style={{color:'#e88',marginLeft:6}}>
+                        ×{(map.towerHpMult||1).toFixed(2)} HP · ×{(map.towerAtkMult||1).toFixed(2)} ATK
+                      </span>
+                    </div>
                   </div>
-                  <div style={{fontSize:'.66rem',color:'var(--parchment-dark)',marginTop:2}}>
-                    20 fases · boss na fase 20{i===0?' · ponto de partida':''}
-                    <span style={{color:'#e88',marginLeft:6}}>
-                      ×{(map.towerHpMult||1).toFixed(2)} HP · ×{(map.towerAtkMult||1).toFixed(2)} ATK
-                    </span>
-                  </div>
+                  <span style={{fontSize:'1.1rem'}}>{i===0?'🚪':'🔺'}</span>
                 </div>
-                <span style={{fontSize:'1.1rem'}}>{i===0?'🚪':'🔺'}</span>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         <button className="btn btn-full btn-red" style={{marginBottom:8,fontSize:'.9rem',padding:'14px'}}
           disabled={partySel.length<1}
@@ -9978,6 +10098,18 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
             📅 &nbsp; Jogar Desafio de Hoje {partySel.length<1?'(monte a party!)':''}
           </button>
           <button className="btn btn-full btn-sm" onClick={()=>onNavigate('desafioRank')}>🏆 Ver ranking do dia</button>
+        </div>
+
+        <div className="divider"><span className="divider-text">✦ COLISEU ✦</span></div>
+        <div style={{background:'rgba(139,26,26,.1)',border:'1px solid var(--crimson)',borderRadius:8,padding:'12px 14px',marginBottom:10}}>
+          <div className="cinzel" style={{color:'var(--crimson-soft)',fontSize:'.9rem',letterSpacing:2,marginBottom:4}}>🏛️ ARENA PVP</div>
+          <p style={{fontSize:'.74rem',color:'var(--parchment-dark)',lineHeight:1.6,marginBottom:10}}>
+            Registre um time de <b>3 Servos e 5 bênçãos</b> e enfrente os times de outros Mestres!
+            Aposte SQ ou QP (dobra ou perde) e suba no <b>ranking ELO</b>.
+          </p>
+          <button className="btn btn-full btn-red" style={{padding:'12px'}} onClick={()=>onNavigate('coliseu')}>
+            🏛️ &nbsp; Entrar no Coliseu
+          </button>
         </div>
 
         <button className="btn btn-full btn-red" style={{marginBottom:8}} onClick={onOpenShop}>🏪 &nbsp; Loja da Torre</button>
@@ -10742,6 +10874,404 @@ function ServoSpriteVivo({def,short,className,style}){
 // ══════════════════════════════════════════════════════
 // FEED SOCIAL — publicações dos jogadores (texto + imagem), curtir e comentar.
 // Aba "Feed" mostra todos; aba "Diário" mostra só os posts do próprio jogador.
+// ══════════════════════════════════════════════════════
+// COLISEU — PvP assíncrono. Registre um time de defesa (3 servos + 5 bênçãos),
+// enfrente times de outros jogadores contra a IA, aposte SQ/QP e suba no ranking ELO.
+const COLISEU_SLOTS_GRACA=[
+  {slot:'atk',label:'Ataque',icon:'⚔️'},
+  {slot:'def',label:'Defesa',icon:'🛡️'},
+  {slot:'np',label:'Fantasma Nobre',icon:'🌟'},
+  {slot:'skill',label:'Skill',icon:'✨'},
+  {slot:'util',label:'Utilidade',icon:'🔧'},
+];
+
+function ColiseuScreen({onNavigate,profile,setProfile}){
+  const logado=fbAuth&&fbAuth.currentUser;
+  const meuUid=logado?fbAuth.currentUser.uid:null;
+  const[aba,setAba]=useState('batalhar'); // 'batalhar' | 'time' | 'ranking'
+  const[meuTime,setMeuTime]=useState(null);
+  const[times,setTimes]=useState([]);
+  const[carregando,setCarregando]=useState(true);
+  const[batalha,setBatalha]=useState(null); // {oponente, moeda, aposta} → tela de luta
+
+  // roster de servos do jogador
+  const roster=useMemo(()=>{
+    const baseIds=PLAYABLE_ROSTER.filter(r=>r.unlock===null||!!(profile.achievements&&profile.achievements[r.unlock])).map(r=>r.id);
+    const gachaIds=(profile.gachaOwned||[]).filter(id=>GACHA_SERVOS[id]);
+    return [...new Set([...baseIds,...gachaIds])].filter(id=>PLAYABLE_SERVOS[id]);
+  },[profile]);
+
+  useEffect(()=>{
+    let vivo=true;
+    (async()=>{
+      setCarregando(true);
+      if(meuUid){
+        const t=await coliseuBuscarTime(meuUid);
+        if(vivo)setMeuTime(t);
+      }
+      const lista=await coliseuListarTimes(meuUid);
+      if(vivo){setTimes(lista);setCarregando(false);}
+    })();
+    return ()=>{vivo=false;};
+  },[meuUid,aba]);
+
+  // se está numa batalha, mostra a tela de luta
+  if(batalha){
+    return <ColiseuBatalha profile={profile} setProfile={setProfile} meuTime={meuTime}
+      oponente={batalha.oponente} moeda={batalha.moeda} aposta={batalha.aposta}
+      onFim={()=>{setBatalha(null);setAba('batalhar');}}/>;
+  }
+
+  if(!logado){
+    return(
+      <div className="screen" style={{padding:'20px 12px'}}>
+        <div className="panel" style={{maxWidth:640}}>
+          <button className="btn" style={{marginBottom:14}} onClick={()=>onNavigate('menu')}>← Voltar</button>
+          <div style={{textAlign:'center',padding:'40px 20px',color:'var(--parchment-dark)'}}>
+            <div style={{fontSize:'2.4rem',marginBottom:12}}>🏛️</div>
+            <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:2,marginBottom:12}}>COLISEU</h2>
+            <p style={{fontSize:'.85rem',marginBottom:16}}>Você precisa estar logado para competir no Coliseu.</p>
+            <button className="btn" onClick={()=>onNavigate('profile')}>Ir para o Perfil e entrar</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const temTime=meuTime&&meuTime.servos&&meuTime.servos.length>0;
+
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      <div className="panel" style={{maxWidth:680}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+          <button className="btn" onClick={()=>onNavigate('menu')}>← Voltar</button>
+          <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,flex:1,textAlign:'center'}}>🏛️ COLISEU</h2>
+          <div style={{width:60}}/>
+        </div>
+
+        {/* status do jogador */}
+        <div style={{display:'flex',gap:10,marginBottom:14,justifyContent:'center',flexWrap:'wrap'}}>
+          <span style={{fontSize:'.72rem',color:'var(--gold)'}}>🏅 ELO: {meuTime?(meuTime.elo||COLISEU_ELO_INICIAL):'—'}</span>
+          {meuTime&&<span style={{fontSize:'.72rem',color:'#7ee08a'}}>✔ {meuTime.vitorias||0}V</span>}
+          {meuTime&&<span style={{fontSize:'.72rem',color:'#e88'}}>✘ {meuTime.derrotas||0}D</span>}
+          <span style={{fontSize:'.72rem',color:'var(--gold)'}}>💎 {(profile.sq||0).toLocaleString()} SQ</span>
+          <span style={{fontSize:'.72rem',color:'var(--parchment)'}}>🪙 {(profile.qp||0).toLocaleString()} QP</span>
+        </div>
+
+        {/* Abas */}
+        <div style={{display:'flex',gap:6,marginBottom:16}}>
+          {[['batalhar','⚔️ Batalhar'],['time','🛡️ Meu Time'],['ranking','🏆 Ranking']].map(([k,label])=>(
+            <button key={k} onClick={()=>setAba(k)} style={{flex:1,padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.72rem',
+              border:`1px solid ${aba===k?'var(--gold)':'var(--gold-dim)'}`,background:aba===k?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>{label}</button>
+          ))}
+        </div>
+
+        {aba==='time'&&(
+          <ColiseuTimeEditor profile={profile} meuUid={meuUid} roster={roster} meuTime={meuTime}
+            onSalvo={(t)=>{setMeuTime(t);setAba('batalhar');}}/>
+        )}
+
+        {aba==='batalhar'&&(
+          !temTime?(
+            <div style={{textAlign:'center',padding:'30px 20px',color:'var(--parchment-dark)'}}>
+              <div style={{fontSize:'2rem',marginBottom:10}}>🛡️</div>
+              <p style={{fontSize:'.82rem',marginBottom:14}}>Registre seu time de defesa antes de batalhar. Ele também defende você quando outros te desafiam!</p>
+              <button className="btn" onClick={()=>setAba('time')}>Montar meu time</button>
+            </div>
+          ):carregando?(
+            <p style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px'}}>Buscando oponentes...</p>
+          ):times.length===0?(
+            <div style={{textAlign:'center',padding:'30px 20px',color:'var(--parchment-dark)'}}>
+              <div style={{fontSize:'2rem',marginBottom:10}}>🏜️</div>
+              <p style={{fontSize:'.82rem'}}>Nenhum outro gladiador registrou time ainda. Convide seus amigos para o Coliseu!</p>
+            </div>
+          ):(
+            <div>
+              <p style={{fontSize:'.68rem',color:'var(--parchment-dark)',fontStyle:'italic',marginBottom:12,textAlign:'center'}}>
+                Escolha um oponente. Você aposta SQ ou QP: vencendo, dobra; perdendo, perde a aposta.
+              </p>
+              {times.map(t=>(
+                <ColiseuOponenteCard key={t.uid} time={t} profile={profile}
+                  onDesafiar={(moeda,aposta)=>setBatalha({oponente:t,moeda,aposta})}/>
+              ))}
+            </div>
+          )
+        )}
+
+        {aba==='ranking'&&(
+          <ColiseuRanking times={[...times,...(meuTime?[meuTime]:[])].sort((a,b)=>(b.elo||0)-(a.elo||0))} meuUid={meuUid}/>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Editor do time de defesa: escolher 3 servos + 1 graça de cada slot.
+function ColiseuTimeEditor({profile,meuUid,roster,meuTime,onSalvo}){
+  const[servos,setServos]=useState(()=>(meuTime&&meuTime.servos?meuTime.servos.map(s=>s.id):[]));
+  const[gracas,setGracas]=useState(()=>{
+    const init={};
+    if(meuTime&&meuTime.gracas){meuTime.gracas.forEach(gid=>{const g=GRACA_BY_ID[gid];if(g)init[g.slot]=gid;});}
+    return init;
+  });
+  const[salvando,setSalvando]=useState(false);
+  const[msg,setMsg]=useState('');
+
+  function toggleServo(id){
+    setServos(prev=>{
+      if(prev.includes(id))return prev.filter(s=>s!==id);
+      if(prev.length>=3)return prev;
+      return [...prev,id];
+    });
+  }
+  function escolherGraca(slot,gid){setGracas(prev=>({...prev,[slot]:prev[slot]===gid?null:gid}));}
+
+  async function salvar(){
+    if(servos.length!==3){setMsg('Escolha exatamente 3 Servos.');return;}
+    setSalvando(true);setMsg('');
+    const gracasIds=COLISEU_SLOTS_GRACA.map(s=>gracas[s.slot]).filter(Boolean);
+    const time={
+      uid:meuUid,nome:(profile.nickname||'Gladiador').slice(0,28),avatar:profile.avatar||null,
+      servos:servos.map(id=>({id,lvl:MAX_LEVEL})),gracas:gracasIds,
+      elo:meuTime?(meuTime.elo||COLISEU_ELO_INICIAL):COLISEU_ELO_INICIAL,
+      vitorias:meuTime?(meuTime.vitorias||0):0,derrotas:meuTime?(meuTime.derrotas||0):0,
+      atualizadoEm:firebase.firestore.FieldValue.serverTimestamp(),
+    };
+    const r=await coliseuRegistrarTime(meuUid,time);
+    setSalvando(false);
+    if(r.ok){setMsg('Time registrado!');onSalvo(time);}
+    else setMsg('Erro: '+(r.erro||'tente novamente'));
+  }
+
+  return(
+    <div>
+      <div className="divider"><span className="divider-text">SERVOS ({servos.length}/3)</span></div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(90px,1fr))',gap:8,marginBottom:16}}>
+        {roster.map(id=>{
+          const sv=PLAYABLE_SERVOS[id];const sel=servos.includes(id);const idx=servos.indexOf(id);
+          return(
+            <button key={id} onClick={()=>toggleServo(id)} style={{position:'relative',padding:0,border:`2px solid ${sel?'var(--gold)':'var(--gold-dim)'}`,borderRadius:8,overflow:'hidden',cursor:'pointer',background:'rgba(20,8,0,0.9)',opacity:(!sel&&servos.length>=3)?0.4:1}}>
+              <div style={{height:70,background:'rgba(0,0,0,0.3)'}}>
+                <img src={sv.assets.default} alt={sv.name} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center 12%'}} onError={e=>{e.target.style.display='none';}}/>
+              </div>
+              <div style={{fontSize:'.56rem',color:'var(--gold)',padding:'3px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{sv.name}</div>
+              {sel&&<span style={{position:'absolute',top:2,left:2,background:'var(--gold)',color:'#000',borderRadius:'50%',width:16,height:16,fontSize:'.6rem',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>{idx+1}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="divider"><span className="divider-text">BÊNÇÃOS (1 de cada tipo)</span></div>
+      {COLISEU_SLOTS_GRACA.map(({slot,label,icon})=>{
+        const opcoes=GRACAS.filter(g=>g.slot===slot);
+        const escolhida=gracas[slot];
+        return(
+          <div key={slot} style={{marginBottom:12}}>
+            <div style={{fontSize:'.7rem',color:'var(--gold)',fontFamily:'Cinzel,serif',marginBottom:5}}>{icon} {label}</div>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              {opcoes.map(g=>(
+                <button key={g.id} onClick={()=>escolherGraca(slot,g.id)} title={g.desc(g.v(2))}
+                  style={{fontSize:'.6rem',padding:'4px 9px',borderRadius:8,cursor:'pointer',
+                    border:`1px solid ${escolhida===g.id?'var(--gold)':'var(--gold-dim)'}`,
+                    background:escolhida===g.id?'rgba(201,162,39,0.2)':'transparent',color:'var(--parchment)'}}>
+                  {g.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {msg&&<div style={{fontSize:'.74rem',color:msg.startsWith('Erro')?'#ff9090':'var(--gold)',margin:'10px 0',textAlign:'center'}}>{msg}</div>}
+      <button className="btn btn-full" disabled={salvando||servos.length!==3} onClick={salvar} style={{marginTop:8,opacity:(salvando||servos.length!==3)?0.5:1}}>
+        {salvando?'Salvando...':'💾 Registrar time de defesa'}
+      </button>
+    </div>
+  );
+}
+
+// Card de um oponente na lista, com opção de apostar e desafiar.
+function ColiseuOponenteCard({time,profile,onDesafiar}){
+  const[expandido,setExpandido]=useState(false);
+  const[moeda,setMoeda]=useState('sq');
+  const[aposta,setAposta]=useState(0);
+  const saldoMax=moeda==='sq'?(profile.sq||0):(profile.qp||0);
+  const passos=moeda==='sq'?[0,5,10,25,50]:[0,1000,5000,10000,25000];
+
+  return(
+    <div style={{background:'rgba(20,10,20,0.6)',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'12px',marginBottom:10}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}} onClick={()=>setExpandido(v=>!v)}>
+        <div style={{width:42,height:42,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+          {time.avatar?<RessonanciaRetrato art={time.avatar} size={42}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>👤</div>}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:'.82rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{time.nome}</div>
+          <div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>🏅 {time.elo||COLISEU_ELO_INICIAL} · {time.vitorias||0}V {time.derrotas||0}D</div>
+        </div>
+        <span style={{color:'var(--gold)'}}>{expandido?'▲':'▼'}</span>
+      </div>
+
+      {expandido&&(
+        <div style={{marginTop:12,paddingTop:12,borderTop:'1px solid rgba(201,162,39,0.15)'}}>
+          {/* servos do oponente */}
+          <div style={{display:'flex',gap:6,marginBottom:12,justifyContent:'center'}}>
+            {(time.servos||[]).map((s,i)=>{
+              const sv=PLAYABLE_SERVOS[s.id];if(!sv)return null;
+              return(
+                <div key={i} style={{width:56,textAlign:'center'}}>
+                  <div style={{width:56,height:56,borderRadius:6,overflow:'hidden',border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+                    <img src={sv.assets.default} alt={sv.name} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center 12%'}} onError={e=>{e.target.style.display='none';}}/>
+                  </div>
+                  <div style={{fontSize:'.5rem',color:'var(--parchment-dark)',marginTop:2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{sv.name}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* aposta */}
+          <div style={{display:'flex',gap:8,marginBottom:8,justifyContent:'center'}}>
+            <button onClick={()=>{setMoeda('sq');setAposta(0);}} style={{flex:1,padding:'6px',borderRadius:6,fontSize:'.68rem',cursor:'pointer',border:`1px solid ${moeda==='sq'?'var(--gold)':'var(--gold-dim)'}`,background:moeda==='sq'?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>💎 SQ</button>
+            <button onClick={()=>{setMoeda('qp');setAposta(0);}} style={{flex:1,padding:'6px',borderRadius:6,fontSize:'.68rem',cursor:'pointer',border:`1px solid ${moeda==='qp'?'var(--gold)':'var(--gold-dim)'}`,background:moeda==='qp'?'rgba(201,162,39,0.2)':'transparent',color:'var(--parchment)'}}>🪙 QP</button>
+          </div>
+          <div style={{display:'flex',gap:5,flexWrap:'wrap',justifyContent:'center',marginBottom:10}}>
+            {passos.map(v=>(
+              <button key={v} onClick={()=>setAposta(v)} disabled={v>saldoMax}
+                style={{fontSize:'.64rem',padding:'4px 10px',borderRadius:8,cursor:v>saldoMax?'default':'pointer',
+                  border:`1px solid ${aposta===v?'var(--gold)':'var(--gold-dim)'}`,
+                  background:aposta===v?'rgba(201,162,39,0.2)':'transparent',color:v>saldoMax?'#666':'var(--parchment)',opacity:v>saldoMax?0.4:1}}>
+                {v===0?'Casual':v.toLocaleString()}
+              </button>
+            ))}
+          </div>
+
+          <button className="btn btn-full btn-red" onClick={()=>onDesafiar(moeda,aposta)}>
+            ⚔️ {aposta>0?`Desafiar apostando ${aposta.toLocaleString()} ${moeda.toUpperCase()}`:'Desafiar (casual)'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Tela de batalha: roda a simulação, mostra o desenrolar e aplica o resultado.
+function ColiseuBatalha({profile,setProfile,meuTime,oponente,moeda,aposta,onFim}){
+  const[fase,setFase]=useState('lutando'); // 'lutando' | 'resultado'
+  const[resultado,setResultado]=useState(null);
+  const[hpAtk,setHpAtk]=useState(100);
+  const[hpDef,setHpDef]=useState(100);
+
+  useEffect(()=>{
+    const sim=coliseuSimularBatalha(meuTime,oponente);
+    // anima as barras de HP conforme o log
+    let i=0;const passos=sim.log;
+    const hpMaxA=sim.hpMaxAtacante,hpMaxD=sim.hpMaxDefensor;
+    let hA=hpMaxA,hD=hpMaxD;
+    const timer=setInterval(()=>{
+      if(i>=passos.length){
+        clearInterval(timer);
+        finalizarBatalha(sim);
+        return;
+      }
+      const p=passos[i];
+      if(p.lado==='atk'){hD=p.hpRestante;setHpDef(Math.max(0,Math.round(hD/hpMaxD*100)));}
+      else{hA=p.hpRestante;setHpAtk(Math.max(0,Math.round(hA/hpMaxA*100)));}
+      i++;
+    },Math.max(60,320/Math.max(1,passos.length/8)));
+    return ()=>clearInterval(timer);
+  },[]);
+
+  async function finalizarBatalha(sim){
+    const venceu=sim.venceu;
+    // aplica aposta e ELO
+    let novoProfile={...profile};
+    if(aposta>0){
+      const campo=moeda==='sq'?'sq':'qp';
+      novoProfile[campo]=Math.max(0,(novoProfile[campo]||0)+(venceu?aposta:-aposta));
+    }
+    setProfile(novoProfile);saveProfile(novoProfile);
+    // ELO
+    const meuElo=meuTime?(meuTime.elo||COLISEU_ELO_INICIAL):COLISEU_ELO_INICIAL;
+    const opElo=oponente.elo||COLISEU_ELO_INICIAL;
+    const delta=coliseuDeltaElo(meuElo,opElo,venceu);
+    if(fbAuth&&fbAuth.currentUser){
+      coliseuAplicarResultado(fbAuth.currentUser.uid,oponente.uid,venceu,delta).catch(()=>{});
+    }
+    setResultado({venceu,delta,sim});
+    setFase('resultado');
+  }
+
+  const BarraHP=({label,pct,cor})=>(
+    <div style={{marginBottom:10}}>
+      <div style={{fontSize:'.72rem',color:'var(--parchment)',marginBottom:3,fontFamily:'Cinzel,serif'}}>{label}</div>
+      <div style={{height:16,background:'rgba(0,0,0,0.5)',borderRadius:8,overflow:'hidden',border:'1px solid var(--gold-dim)'}}>
+        <div style={{height:'100%',width:pct+'%',background:cor,transition:'width .15s',borderRadius:8}}/>
+      </div>
+    </div>
+  );
+
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      <div className="panel" style={{maxWidth:520}}>
+        <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:2,textAlign:'center',marginBottom:18}}>⚔️ ARENA</h2>
+
+        {fase==='lutando'?(
+          <div>
+            <BarraHP label={`🛡️ ${(profile.nickname||'Você')} (você)`} pct={hpAtk} cor="linear-gradient(90deg,#4a9,#7ee08a)"/>
+            <div style={{textAlign:'center',fontSize:'1.4rem',margin:'8px 0',color:'var(--gold)'}}>⚔️ VS 🛡️</div>
+            <BarraHP label={`⚔️ ${oponente.nome}`} pct={hpDef} cor="linear-gradient(90deg,#8b1a1a,#e05a4a)"/>
+            <p style={{textAlign:'center',fontSize:'.74rem',color:'var(--parchment-dark)',fontStyle:'italic',marginTop:16}}>A batalha se desenrola...</p>
+          </div>
+        ):resultado&&(
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:'2.6rem',marginBottom:8}}>{resultado.venceu?'🏆':'💀'}</div>
+            <h3 className="cinzel" style={{fontSize:'1.4rem',letterSpacing:2,marginBottom:12,color:resultado.venceu?'var(--gold)':'var(--crimson-soft)'}}>
+              {resultado.venceu?'VITÓRIA!':'DERROTA'}
+            </h3>
+            <div style={{background:'rgba(0,0,0,0.3)',borderRadius:10,padding:'14px',marginBottom:14,border:'1px solid var(--gold-dim)'}}>
+              <div style={{fontSize:'.8rem',color:'var(--parchment)',marginBottom:6}}>
+                Pontos de ranking: <span style={{color:resultado.delta>=0?'#7ee08a':'#e88',fontFamily:'Cinzel,serif'}}>{resultado.delta>=0?'+':''}{resultado.delta} ELO</span>
+              </div>
+              {aposta>0&&(
+                <div style={{fontSize:'.8rem',color:'var(--parchment)'}}>
+                  Aposta: <span style={{color:resultado.venceu?'#7ee08a':'#e88',fontFamily:'Cinzel,serif'}}>
+                    {resultado.venceu?'+':'-'}{aposta.toLocaleString()} {moeda.toUpperCase()}
+                  </span>
+                </div>
+              )}
+            </div>
+            <button className="btn btn-full" onClick={onFim}>Voltar ao Coliseu</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Ranking do Coliseu por ELO.
+function ColiseuRanking({times,meuUid}){
+  if(!times.length)return <p style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px'}}>Ninguém no ranking ainda.</p>;
+  return(
+    <div>
+      {times.map((t,i)=>(
+        <div key={t.uid} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',marginBottom:6,borderRadius:8,
+          background:t.uid===meuUid?'rgba(201,162,39,0.14)':'rgba(0,0,0,0.25)',border:`1px solid ${t.uid===meuUid?'var(--gold)':'var(--gold-dim)'}`}}>
+          <span style={{fontSize:'.9rem',fontFamily:'Cinzel,serif',color:i<3?'var(--gold)':'var(--parchment-dark)',width:28,textAlign:'center'}}>
+            {i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`}
+          </span>
+          <div style={{width:34,height:34,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+            {t.avatar?<RessonanciaRetrato art={t.avatar} size={34}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.9rem'}}>👤</div>}
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:'.78rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{t.nome}{t.uid===meuUid?' (você)':''}</div>
+            <div style={{fontSize:'.62rem',color:'var(--parchment-dark)'}}>{t.vitorias||0}V · {t.derrotas||0}D</div>
+          </div>
+          <span style={{fontSize:'.82rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{t.elo||COLISEU_ELO_INICIAL}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function FeedScreen({onNavigate,profile}){
   const logado=fbAuth&&fbAuth.currentUser;
   const meuUid=logado?fbAuth.currentUser.uid:null;
@@ -21147,6 +21677,7 @@ function App(){
   if(screen==='codex')return <CodexScreen onNavigate={navigate} profile={profile}/>;
   if(screen==='amigos')return <AmigosScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='feed')return <FeedScreen onNavigate={navigate} profile={profile}/>;
+  if(screen==='coliseu')return <ColiseuScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   if(screen==='config')return <ConfigScreen onNavigate={navigate}/>;
   if(screen==='campaign')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate}/>;
   if(screen==='tower')return <CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate} mode="tower"/>;
