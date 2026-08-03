@@ -6241,39 +6241,56 @@ function coliseuPoderTime(time){
 // Modelo: cada lado causa dano por turno (atk com variância) até um HP zerar.
 function coliseuSimularBatalha(timeAtk,timeDef){
   const A=coliseuPoderTime(timeAtk), D=coliseuPoderTime(timeDef);
-  // monta os combatentes individuais de cada lado (com HP e ATK próprios)
-  const montar=(poder,time)=>(time.servos||[]).map((s,i)=>{
+  // Combatentes: estado INICIAL sempre com HP cheio. A simulação trabalha numa
+  // cópia interna (combA/combD) e NÃO muta os arrays retornados — assim a animação
+  // recebe o estado inicial limpo e reconstrói o combate a partir do log.
+  const criar=(poder,time)=>(time.servos||[]).map((s,i)=>{
     const sv=PLAYABLE_SERVOS[s.id];
-    const det=poder.detalhe[i]||{atk:1000,hp:8000};
-    return {id:s.id,nome:sv?sv.name:'?',className:sv?sv.className:'',
-      assets:sv?sv.assets:null,sprites:sv?sv.sprites:null,
-      atk:det.atk,hpMax:det.hp,hp:det.hp,vivo:true};
+    const det=poder.detalhe[i]||{atk:1500,hp:30000};
+    return {id:s.id,idx:i,nome:sv?sv.name:'?',className:sv?sv.className:'',
+      assets:sv?sv.assets:null,atk:det.atk,hpMax:det.hp,hp:det.hp,vivo:true};
   });
-  const ladoA=montar(A,timeAtk), ladoD=montar(D,timeDef);
-  const log=[];let turno=0;const MAX_TURNOS=60;
-  let vezA=A.atk>=D.atk; // quem tem maior ATK total começa
+  const iniA=criar(A,timeAtk), iniD=criar(D,timeDef);
+  // cópias internas para simular (não afetam iniA/iniD)
+  const combA=iniA.map(c=>({...c})), combD=iniD.map(c=>({...c}));
+  const log=[];let turno=0;const MAX_TURNOS=120;
   const vivos=lado=>lado.filter(c=>c.vivo);
-  while(vivos(ladoA).length&&vivos(ladoD).length&&turno<MAX_TURNOS){
+  // quem começa: maior ATK total
+  let vezA=A.atk>=D.atk;
+  // ponteiros de rotação de atacante por lado
+  let ptrA=0, ptrD=0;
+  while(vivos(combA).length&&vivos(combD).length&&turno<MAX_TURNOS){
     turno++;
-    const atacantes=vezA?ladoA:ladoD, defensores=vezA?ladoD:ladoA;
-    const atk=vivos(atacantes)[turno%Math.max(1,vivos(atacantes).length)]||vivos(atacantes)[0];
-    const alvosVivos=vivos(defensores);
-    if(!atk||!alvosVivos.length)break;
-    const alvo=alvosVivos[Math.floor(Math.random()*alvosVivos.length)];
-    const variancia=0.82+Math.random()*0.36;
-    const crit=Math.random()<0.18;
-    const dano=Math.round(atk.atk*1.05*variancia*(crit?1.6:1));
+    const atacantesLado=vezA?combA:combD;
+    const defensoresLado=vezA?combD:combA;
+    const vivosAtk=vivos(atacantesLado);
+    const vivosDef=vivos(defensoresLado);
+    if(!vivosAtk.length||!vivosDef.length)break;
+    // escolhe o próximo atacante vivo (rotação) e um alvo vivo (o de menor HP%, com chance de aleatório)
+    let ptr=vezA?ptrA:ptrD;
+    const atacante=vivosAtk[ptr%vivosAtk.length];
+    if(vezA)ptrA++;else ptrD++;
+    // alvo: 60% mira o mais ferido (foco), 40% aleatório — dá dinâmica sem ser previsível
+    let alvo;
+    if(Math.random()<0.6){alvo=[...vivosDef].sort((a,b)=>(a.hp/a.hpMax)-(b.hp/b.hpMax))[0];}
+    else{alvo=vivosDef[Math.floor(Math.random()*vivosDef.length)];}
+    // dano: escalado para o combate durar vários golpes por servo.
+    // servos nv25: ATK ~25k, HP ~32k. Com fator 0.22, cada golpe tira ~5.5k (~17% do HP),
+    // então cada servo aguenta ~5–7 golpes — combate com desenrolar visível.
+    const variancia=0.85+Math.random()*0.3; // 85%–115%
+    const crit=Math.random()<0.15;
+    const dano=Math.max(1,Math.round(atacante.atk*0.22*variancia*(crit?1.7:1)));
     alvo.hp=Math.max(0,alvo.hp-dano);
     const morreu=alvo.hp<=0;if(morreu)alvo.vivo=false;
-    log.push({lado:vezA?'atk':'def',atacanteId:atk.id,alvoId:alvo.id,
-      alvoLado:vezA?'def':'atk',dano,crit,morreu,hpAlvo:alvo.hp,hpMaxAlvo:alvo.hpMax});
+    log.push({atacanteLado:vezA?'A':'D',atacanteIdx:atacante.idx,
+      alvoLado:vezA?'D':'A',alvoIdx:alvo.idx,dano,crit,morreu,
+      hpAlvo:alvo.hp,hpMaxAlvo:alvo.hpMax});
     vezA=!vezA;
   }
-  const venceu=vivos(ladoA).length>0&&vivos(ladoD).length===0?true
-    :(vivos(ladoD).length>0&&vivos(ladoA).length===0?false
-    :(vivos(ladoA).length>=vivos(ladoD).length)); // empate por tempo: mais vivos
-  return {venceu,turnos:turno,ladoA,ladoD,log,
-    hpMaxAtacante:A.hp,hpMaxDefensor:D.hp,poderAtk:A,poderDef:D};
+  const vA=vivos(combA).length, vD=vivos(combD).length;
+  const venceu = vA>0&&vD===0 ? true : (vD>0&&vA===0 ? false : (vA>=vD));
+  // retorna o estado INICIAL limpo (iniA/iniD) — a animação parte daqui
+  return {venceu,turnos:turno,iniA,iniD,log,poderAtk:A,poderDef:D};
 }
 // Cálculo de ELO (fator K=32). Retorna a variação de pontos para o atacante.
 function coliseuDeltaElo(eloA,eloB,venceu){
@@ -8864,7 +8881,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.20</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.21</p>
       </div>
     </div>
   );
@@ -11199,29 +11216,32 @@ function ColiseuBatalha({profile,setProfile,meuTime,oponente,moeda,aposta,onFim}
   useEffect(()=>{
     const sim=coliseuSimularBatalha(meuTime,oponente);
     simRef.current=sim;
-    // clona o estado inicial dos combatentes (HP cheio)
-    setLadoA(sim.ladoA.map(c=>({...c})));
-    setLadoD(sim.ladoD.map(c=>({...c})));
+    // estado inicial limpo (HP cheio) — vem de iniA/iniD, nunca mutados
+    setLadoA(sim.iniA.map(c=>({...c})));
+    setLadoD(sim.iniD.map(c=>({...c})));
     let i=0;const passos=sim.log;
-    const intervalo=Math.max(650,Math.min(1100,4200/Math.max(1,passos.length)));
+    // ritmo: entre 520ms e 900ms por golpe, ajustado ao total
+    const intervalo=Math.max(520,Math.min(900,5000/Math.max(1,passos.length)));
 
     function passo(){
-      if(i>=passos.length){finalizarBatalha(sim);return;}
+      if(i>=passos.length){setTimeout(()=>finalizarBatalha(sim),500);return;}
       const p=passos[i];
-      setAtacando(p.atacanteId+'_'+(p.lado));
-      setMsgTurno('');
-      // aplica o dano visualmente após um pequeno atraso (tempo do "avanço")
+      // chave única = lado + índice (evita confundir servos repetidos)
+      const chaveAtacante=p.atacanteLado+p.atacanteIdx;
+      const chaveAlvo=p.alvoLado+p.alvoIdx;
+      setAtacando(chaveAtacante);
+      // aplica o dano visualmente após o "avanço" do atacante
       setTimeout(()=>{
-        setAtingido(p.alvoId+'_'+p.alvoLado);
-        setFlutuante({id:p.alvoId+'_'+p.alvoLado,dano:p.dano,crit:p.crit});
-        const aplicar=(lado)=>lado.map(c=>c.id===p.alvoId?{...c,hp:p.hpAlvo,vivo:p.hpAlvo>0}:c);
-        if(p.alvoLado==='atk')setLadoA(aplicar);else setLadoD(aplicar);
-      },intervalo*0.35);
-      setTimeout(()=>{setAtacando(null);setAtingido(null);setFlutuante(null);},intervalo*0.85);
+        setAtingido(chaveAlvo);
+        setFlutuante({chave:chaveAlvo,dano:p.dano,crit:p.crit});
+        const aplicar=(lado)=>lado.map(c=>c.idx===p.alvoIdx?{...c,hp:p.hpAlvo,vivo:p.hpAlvo>0}:c);
+        if(p.alvoLado==='A')setLadoA(aplicar);else setLadoD(aplicar);
+      },intervalo*0.4);
+      setTimeout(()=>{setAtacando(null);setAtingido(null);setFlutuante(null);},intervalo*0.9);
       i++;
       setTimeout(passo,intervalo);
     }
-    const t=setTimeout(passo,700);
+    const t=setTimeout(passo,800);
     return ()=>clearTimeout(t);
   },[]);
 
@@ -11245,7 +11265,7 @@ function ColiseuBatalha({profile,setProfile,meuTime,oponente,moeda,aposta,onFim}
 
   // Card de um Servo na arena (arte + barra de HP individual)
   const ServoArena=({c,lado,ehInimigo})=>{
-    const chave=c.id+'_'+lado;
+    const chave=lado+c.idx;
     const atacaAgora=atacando===chave;
     const levaDano=atingido===chave;
     const pctHp=Math.round(c.hp/c.hpMax*100);
@@ -11255,7 +11275,7 @@ function ColiseuBatalha({profile,setProfile,meuTime,oponente,moeda,aposta,onFim}
         transform:atacaAgora?(ehInimigo?'translateX(-10px) scale(1.06)':'translateX(10px) scale(1.06)'):'none',
         filter:c.vivo?'none':'grayscale(1) brightness(0.4)',opacity:c.vivo?1:0.55}}>
         {/* número de dano flutuante */}
-        {flutuante&&flutuante.id===chave&&(
+        {flutuante&&flutuante.chave===chave&&(
           <div style={{position:'absolute',top:-6,left:'50%',transform:'translateX(-50%)',zIndex:5,
             fontFamily:'Cinzel,serif',fontWeight:700,fontSize:flutuante.crit?'1.3rem':'1rem',
             color:flutuante.crit?'#ffd54f':'#ff6b6b',textShadow:'0 2px 4px #000',
@@ -11296,7 +11316,7 @@ function ColiseuBatalha({profile,setProfile,meuTime,oponente,moeda,aposta,onFim}
             {oponente.nome}
           </div>
           <div style={{display:'flex',justifyContent:'space-around',gap:6}}>
-            {ladoD.map((c,i)=><ServoArena key={i} c={c} lado="def" ehInimigo={true}/>)}
+            {ladoD.map((c,i)=><ServoArena key={i} c={c} lado="D" ehInimigo={true}/>)}
           </div>
         </div>
 
@@ -11305,7 +11325,7 @@ function ColiseuBatalha({profile,setProfile,meuTime,oponente,moeda,aposta,onFim}
         {/* Seu time (embaixo) */}
         <div style={{marginBottom:10}}>
           <div style={{display:'flex',justifyContent:'space-around',gap:6}}>
-            {ladoA.map((c,i)=><ServoArena key={i} c={c} lado="atk" ehInimigo={false}/>)}
+            {ladoA.map((c,i)=><ServoArena key={i} c={c} lado="A" ehInimigo={false}/>)}
           </div>
           <div style={{fontSize:'.68rem',color:'var(--gold)',fontFamily:'Cinzel,serif',marginTop:4,textAlign:'right'}}>
             {profile.nickname||'Você'} (você)
