@@ -679,21 +679,33 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 
 /* ═══ CARDS DO ÁLBUM (estilo feed social) ═══ */
 @keyframes favPop{0%{transform:scale(1)}40%{transform:scale(1.4)}100%{transform:scale(1)}}
-.album-card{margin-bottom:16px;border-radius:14px;overflow:hidden;
-  background:linear-gradient(180deg,rgba(30,18,26,0.5),rgba(15,10,18,0.6));
-  border:1px solid var(--gold-dim);transition:border-color .2s,box-shadow .2s;}
-.album-card:hover{border-color:rgba(201,162,39,0.55);box-shadow:0 8px 28px rgba(0,0,0,0.4);}
-.album-head{display:flex;align-items:center;gap:11px;padding:11px 13px;}
-.album-ava{width:42px;height:42px;border-radius:50%;overflow:hidden;flex-shrink:0;
-  border:2px solid var(--gold);background:rgba(0,0,0,0.3);}
+.album-card{margin-bottom:18px;border-radius:16px;overflow:hidden;position:relative;
+  background:linear-gradient(180deg,rgba(38,22,32,0.65),rgba(15,10,18,0.72));
+  border:1px solid var(--gold-dim);transition:border-color .25s,box-shadow .25s,transform .25s;}
+.album-card:hover{border-color:rgba(201,162,39,0.7);box-shadow:0 10px 34px rgba(0,0,0,0.5),0 0 0 1px rgba(201,162,39,0.15);transform:translateY(-2px);}
+.feed-card{transition:border-color .25s,box-shadow .25s,transform .25s;}
+.feed-card:hover{border-color:rgba(201,162,39,0.5);box-shadow:0 6px 22px rgba(0,0,0,0.4);transform:translateY(-1px);}
+.album-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;z-index:2;
+  background:linear-gradient(90deg,transparent,var(--gold),var(--crimson),transparent);opacity:0.6;}
+.album-head{display:flex;align-items:center;gap:11px;padding:12px 14px;}
+.album-ava{width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;
+  border:2px solid var(--gold);background:rgba(0,0,0,0.3);box-shadow:0 0 10px rgba(201,162,39,0.25);}
 .album-cover{position:relative;width:100%;aspect-ratio:1/1;overflow:hidden;background:#0d0710;cursor:pointer;}
-.album-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s;}
-.album-card:hover .album-cover img{transform:scale(1.03);}
+.album-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease;}
+.album-card:hover .album-cover img{transform:scale(1.05);}
+.album-cover::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 60%,rgba(10,5,12,0.55));opacity:0;transition:opacity .3s;}
+.album-card:hover .album-cover::after{opacity:1;}
+.album-cover-hint{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:3;
+  font-size:.64rem;color:var(--parchment);background:rgba(0,0,0,0.65);padding:5px 14px;border-radius:20px;
+  backdrop-filter:blur(4px);border:1px solid rgba(201,162,39,0.35);opacity:0;transition:opacity .3s;
+  display:flex;align-items:center;gap:5px;white-space:nowrap;font-family:Cinzel,serif;letter-spacing:1px;}
+.album-card:hover .album-cover-hint{opacity:1;}
 .album-stack::after{content:'';position:absolute;top:6px;right:6px;bottom:-6px;left:6px;z-index:-1;
   border-radius:10px;background:rgba(201,162,39,0.25);}
 .album-pagebadge{position:absolute;top:10px;right:10px;font-size:.62rem;color:var(--parchment);
-  background:rgba(0,0,0,0.7);padding:3px 9px;border-radius:20px;backdrop-filter:blur(4px);
-  display:flex;align-items:center;gap:4px;border:1px solid rgba(201,162,39,0.3);}
+  background:rgba(0,0,0,0.7);padding:4px 10px;border-radius:20px;backdrop-filter:blur(4px);
+  display:flex;align-items:center;gap:4px;border:1px solid rgba(201,162,39,0.4);z-index:3;font-family:Cinzel,serif;}
 .album-fav{background:none;border:none;cursor:pointer;font-size:1.15rem;padding:2px;flex-shrink:0;
   transition:filter .2s;line-height:1;}
 .album-fav.on{animation:favPop .35s ease;}
@@ -8429,14 +8441,20 @@ function ComicAlbumScreen({onNavigate,profile}){
       )}
       <div style={{maxWidth:560,width:'100%',margin:'0 auto'}}>
         {/* Cabeçalho */}
-        <div className="panel" style={{marginBottom:12,padding:'14px 16px'}}>
-          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,marginBottom:4}}>📖 ÁLBUM DE TRADUÇÃO</h2>
-          <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:10}}>
-            Traduções de comics da franquia. Role o feed ou busque por autor ou personagem.
-          </p>
+        <div className="panel" style={{marginBottom:12,padding:0,overflow:'hidden'}}>
+          <div style={{position:'relative',padding:'20px 16px 16px',
+            background:'radial-gradient(ellipse at top,rgba(139,26,26,0.28),transparent 70%),linear-gradient(180deg,rgba(40,20,30,0.6),rgba(15,10,18,0.3))',
+            borderBottom:'1px solid var(--gold-dim)'}}>
+            <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,transparent,var(--gold),var(--crimson),var(--gold),transparent)'}}/>
+            <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:6,fontSize:'1.3rem',textShadow:'0 2px 12px rgba(201,162,39,0.3)'}}>📖 ÁLBUM DE TRADUÇÃO</h2>
+            <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:0,fontStyle:'italic',lineHeight:1.5}}>
+              Uma coletânea das traduções de comics da franquia — feita pela comunidade, para a comunidade.
+            </p>
+          </div>
+          <div style={{padding:'12px 16px 14px'}}>
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,flexWrap:'wrap'}}>
             <button className="btn btn-sm" onClick={()=>setEnviar(true)}>📤 Enviar tradução</button>
-            <span style={{fontSize:'.66rem',color:'var(--parchment-dark)'}}>{posts.length} tradução{posts.length!==1?'ões':''}</span>
+            <span style={{fontSize:'.66rem',color:'var(--gold)',fontFamily:'Cinzel,serif',background:'rgba(201,162,39,0.12)',padding:'3px 10px',borderRadius:12,border:'1px solid var(--gold-dim)'}}>{posts.length} tradução{posts.length!==1?'ões':''}</span>
             <div style={{display:'flex',gap:4,marginLeft:'auto'}}>
               {[['recentes','🕐'],['reacoes','🔥'],['favoritos','⭐']].map(([o,ic])=>(
                 <button key={o} onClick={()=>setOrdem(o)} title={o==='recentes'?'Mais recentes':o==='reacoes'?'Mais reações':'Favoritos'}
@@ -8519,6 +8537,7 @@ function ComicAlbumScreen({onNavigate,profile}){
               )}
             </div>
           )}
+          </div>
         </div>
 
         {/* Feed de posts */}
@@ -8571,6 +8590,7 @@ function ComicAlbumScreen({onNavigate,profile}){
                 <img src={post.pages[0]} alt="Capa"
                   onError={e=>{e.target.src='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#1a1512"/><text x="200" y="195" font-family="Georgia" font-size="16" fill="#6a5a4a" text-anchor="middle">📄 Imagem não encontrada</text><text x="200" y="220" font-family="Georgia" font-size="12" fill="#4a3f38" text-anchor="middle">'+post.pages[0].split('/').pop()+'</text></svg>');}}/>
                 {multi&&<span className="album-pagebadge">📄 {post.pages.length} páginas</span>}
+                <span className="album-cover-hint">🔍 {multi?'Ler tradução':'Ampliar'}</span>
               </div>
 
               {/* Tags */}
@@ -8918,7 +8938,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.25</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.27</p>
       </div>
     </div>
   );
@@ -11828,27 +11848,36 @@ function FeedScreen({onNavigate,profile}){
 
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
-      <div className="panel" style={{maxWidth:640}}>
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
-          <button className="btn" onClick={()=>onNavigate('menu')}>← Voltar</button>
-          <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,flex:1,textAlign:'center'}}>📰 FEED</h2>
-          <div style={{width:60}}/>
+      <div className="panel" style={{maxWidth:640,padding:0,overflow:'hidden'}}>
+        {/* Cabeçalho temático */}
+        <div style={{position:'relative',padding:'18px 16px 14px',
+          background:'radial-gradient(ellipse at top,rgba(224,90,74,0.25),transparent 70%),linear-gradient(180deg,rgba(40,20,30,0.6),rgba(15,10,18,0.3))',
+          borderBottom:'1px solid var(--gold-dim)'}}>
+          <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,transparent,var(--crimson),var(--gold),var(--crimson),transparent)'}}/>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <button className="btn btn-sm" onClick={()=>onNavigate('menu')}>← Voltar</button>
+            <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,flex:1,textAlign:'center',fontSize:'1.3rem',textShadow:'0 2px 12px rgba(224,90,74,0.3)'}}>📰 FEED</h2>
+            <div style={{width:60}}/>
+          </div>
+          <p style={{fontSize:'.7rem',color:'var(--parchment-dark)',textAlign:'center',margin:'6px 0 0',fontStyle:'italic'}}>
+            Conquistas, teorias e rankings da comunidade de Mestres.
+          </p>
         </div>
 
-        {/* Abas Feed / Diário */}
-        <div style={{display:'flex',gap:8,marginBottom:14}}>
-          <button onClick={()=>setAba('feed')} style={{flex:1,padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.76rem',
-            border:`1px solid ${aba==='feed'?'var(--gold)':'var(--gold-dim)'}`,background:aba==='feed'?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>
-            🌐 Feed
-          </button>
-          <button onClick={()=>setAba('diario')} style={{flex:1,padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.76rem',
-            border:`1px solid ${aba==='diario'?'var(--crimson)':'var(--gold-dim)'}`,background:aba==='diario'?'rgba(224,90,74,0.18)':'transparent',color:aba==='diario'?'var(--crimson-soft)':'var(--gold)'}}>
-            📓 Meu Diário
-          </button>
-          <button onClick={()=>setAba('tierlist')} style={{flex:1,padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.76rem',
-            border:`1px solid ${aba==='tierlist'?'var(--gold)':'var(--gold-dim)'}`,background:aba==='tierlist'?'rgba(201,162,39,0.2)':'transparent',color:'var(--gold)'}}>
-            🏆 Tier List
-          </button>
+        <div style={{padding:'14px 16px 18px'}}>
+        {/* Abas */}
+        <div style={{display:'flex',gap:6,marginBottom:16,background:'rgba(0,0,0,0.25)',padding:5,borderRadius:12,border:'1px solid var(--gold-dim)'}}>
+          {[['feed','🌐','Feed','var(--gold)','rgba(201,162,39,0.22)'],
+            ['diario','📓','Diário','var(--crimson-soft)','rgba(224,90,74,0.2)'],
+            ['tierlist','🏆','Tier List','var(--gold)','rgba(201,162,39,0.22)']].map(([k,ic,label,cor,bg])=>(
+            <button key={k} onClick={()=>setAba(k)} style={{flex:1,padding:'9px 4px',borderRadius:9,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.74rem',
+              display:'flex',flexDirection:'column',alignItems:'center',gap:2,transition:'all .2s',
+              border:`1px solid ${aba===k?cor:'transparent'}`,background:aba===k?bg:'transparent',
+              color:aba===k?cor:'var(--parchment-dark)',boxShadow:aba===k?'0 2px 8px rgba(0,0,0,0.3)':'none'}}>
+              <span style={{fontSize:'1.1rem'}}>{ic}</span>
+              <span>{label}</span>
+            </button>
+          ))}
         </div>
 
         {/* Aba Tier List */}
@@ -11884,6 +11913,7 @@ function FeedScreen({onNavigate,profile}){
           ))
         )}
         </>)}
+        </div>
       </div>
     </div>
   );
@@ -11912,17 +11942,18 @@ function FeedCard({post,meuUid,meuNome,tempoRel,comentariosAbertos,onToggleComen
   }
 
   return(
-    <div style={{background:'rgba(20,10,20,0.6)',border:'1px solid var(--gold-dim)',borderRadius:12,padding:'14px',marginBottom:14}}>
+    <div className="feed-card" style={{background:'linear-gradient(180deg,rgba(28,14,26,0.7),rgba(15,10,18,0.65))',border:'1px solid var(--gold-dim)',borderRadius:14,padding:'14px',marginBottom:14,position:'relative',overflow:'hidden'}}>
+      <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,transparent,${tipo.cor},transparent)`,opacity:0.7}}/>
       {/* Cabeçalho: autor + tipo + tempo */}
       <div style={{display:'flex',alignItems:'center',gap:9,marginBottom:10}}>
-        <div style={{width:38,height:38,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
-          {post.avatar?<RessonanciaRetrato art={post.avatar} size={38}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>👤</div>}
+        <div style={{width:40,height:40,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'2px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',boxShadow:'0 0 8px rgba(201,162,39,0.2)'}}>
+          {post.avatar?<RessonanciaRetrato art={post.avatar} size={40}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>👤</div>}
         </div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:'.8rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{post.nome||'Mestre'}</div>
           <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>{tempoRel} atrás</div>
         </div>
-        <span style={{fontSize:'.6rem',padding:'2px 9px',borderRadius:10,border:`1px solid ${tipo.cor}`,color:tipo.cor}}>{tipo.icon} {tipo.label}</span>
+        <span style={{fontSize:'.6rem',padding:'3px 10px',borderRadius:12,border:`1px solid ${tipo.cor}`,color:tipo.cor,background:'rgba(0,0,0,0.25)',fontFamily:'Cinzel,serif'}}>{tipo.icon} {tipo.label}</span>
         {souDono&&<button onClick={async()=>{if(confirm('Apagar esta publicação?'))await feedApagar(post.id);}} style={{background:'none',border:'none',color:'var(--parchment-dark)',cursor:'pointer',fontSize:'.9rem'}}>🗑️</button>}
       </div>
 
