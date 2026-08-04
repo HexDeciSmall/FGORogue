@@ -8918,7 +8918,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.23</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.24</p>
       </div>
     </div>
   );
@@ -11426,13 +11426,38 @@ function ColiseuRanking({times,meuUid}){
 
 // Editor da tier list com arrastar-e-soltar (mouse + toque).
 function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
-  const[tl,setTl]=useState(()=>JSON.parse(JSON.stringify(inicial)));
+  const[tl,setTl]=useState(()=>{
+    const base=JSON.parse(JSON.stringify(inicial));
+    if(!base.extras)base.extras=[]; // servos personalizados (imagem própria)
+    return base;
+  });
   const[busca,setBusca]=useState('');
   const[classeFiltro,setClasseFiltro]=useState('');
   const[salvando,setSalvando]=useState(false);
   const[arrastando,setArrastando]=useState(null);
   const[sobreFaixa,setSobreFaixa]=useState(null);
   const[servoSelecionado,setServoSelecionado]=useState(null);
+  const[enviandoExtra,setEnviandoExtra]=useState(false);
+  const extraInputRef=useRef(null);
+
+  // resolve um id em servo (RESSONANCIA ou extra personalizado da lista)
+  function acharServo(id){
+    return RESSONANCIA_SERVOS.find(s=>s.id===id)||(tl.extras||[]).find(e=>e.id===id)||null;
+  }
+
+  // adiciona um servo extra com imagem personalizada
+  async function adicionarExtra(file){
+    if(!file)return;
+    setEnviandoExtra(true);
+    try{
+      const otimizada=await comprimirImagem(file,600,0.85);
+      const url=await uploadImagemCompartilhado('tierextra',otimizada);
+      const nome=prompt('Nome deste extra:','Extra')||'Extra';
+      const extra={id:'x_'+Date.now(),nome:nome.slice(0,24),imgCustom:url,classe:'Extra'};
+      setTl(prev=>({...prev,extras:[...(prev.extras||[]),extra]}));
+    }catch(e){alert('Erro ao enviar imagem: '+(e.message||'tente novamente'));}
+    setEnviandoExtra(false);
+  }
 
   const colocados=useMemo(()=>{
     const s=new Set();
@@ -11441,11 +11466,13 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
   },[tl]);
 
   const servosDisponiveis=useMemo(()=>{
-    let arr=RESSONANCIA_SERVOS.filter(s=>!colocados.has(s.id));
+    // combina servos da ressonância + extras personalizados, tira os já colocados
+    const todos=[...RESSONANCIA_SERVOS,...(tl.extras||[])];
+    let arr=todos.filter(s=>!colocados.has(s.id));
     if(classeFiltro)arr=arr.filter(s=>s.classe===classeFiltro);
     if(busca.trim()){const q=busca.trim().toLowerCase();arr=arr.filter(s=>s.nome.toLowerCase().includes(q));}
     return arr;
-  },[colocados,classeFiltro,busca]);
+  },[colocados,classeFiltro,busca,tl.extras]);
 
   const classes=useMemo(()=>[...new Set(RESSONANCIA_SERVOS.map(s=>s.classe))].sort(),[]);
 
@@ -11511,17 +11538,17 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
 
       <div style={{marginBottom:14}}>
         {tl.faixas.map(f=>{
-          const servos=(tl.itens[f.id]||[]).map(id=>RESSONANCIA_SERVOS.find(s=>s.id===id)).filter(Boolean);
+          const servos=(tl.itens[f.id]||[]).map(id=>acharServo(id)).filter(Boolean);
           return(
             <div key={f.id}
               onDragOver={e=>{e.preventDefault();setSobreFaixa(f.id);}}
               onDragLeave={()=>setSobreFaixa(null)}
               onDrop={e=>onDropFaixa(e,f.id)}
               onClick={()=>tocarFaixa(f.id)}
-              style={{display:'flex',marginBottom:4,borderRadius:6,overflow:'hidden',minHeight:56,
+              style={{display:'flex',marginBottom:5,borderRadius:6,overflow:'hidden',minHeight:74,
                 border:`2px solid ${sobreFaixa===f.id?'var(--gold)':'transparent'}`,
                 cursor:servoSelecionado?'pointer':'default',background:'rgba(0,0,0,0.25)'}}>
-              <div style={{width:58,flexShrink:0,background:f.cor,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 2px',gap:2}}>
+              <div style={{width:64,flexShrink:0,background:f.cor,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'4px 2px',gap:3}}>
                 {tl.tipo==='faixas'?(
                   <input value={f.label} onClick={e=>e.stopPropagation()} onChange={e=>renomearFaixa(f.id,e.target.value)}
                     style={{width:'100%',textAlign:'center',background:'transparent',border:'none',color:'#1a0e0e',fontFamily:'Cinzel,serif',fontWeight:700,fontSize:'1rem',padding:0}}/>
@@ -11533,14 +11560,16 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
                   {tl.faixas.length>1&&<button onClick={e=>{e.stopPropagation();removerFaixa(f.id);}} title="Remover faixa" style={{background:'rgba(0,0,0,0.25)',border:'none',borderRadius:3,cursor:'pointer',fontSize:'.5rem',padding:'1px 3px',color:'#1a0e0e'}}>✕</button>}
                 </div>
               </div>
-              <div style={{flex:1,display:'flex',flexWrap:'wrap',gap:3,padding:5,alignContent:'flex-start',minHeight:56}}>
+              <div style={{flex:1,display:'flex',flexWrap:'wrap',gap:4,padding:6,alignContent:'flex-start',minHeight:74}}>
                 {servos.map(s=>(
                   <div key={s.id} draggable
                     onDragStart={e=>onDragStart(e,s.id)}
                     onClick={e=>{e.stopPropagation();moverPara(s.id,'pool');}}
                     title={s.nome+' (toque para remover)'}
-                    style={{width:42,height:42,borderRadius:5,overflow:'hidden',cursor:'grab',border:'1px solid rgba(0,0,0,0.4)'}}>
-                    <RessonanciaRetrato art={s.art} patronoArt={s.patronoArt} emoji={s.emoji} size={42}/>
+                    style={{width:58,height:58,borderRadius:6,overflow:'hidden',cursor:'grab',border:'1px solid rgba(0,0,0,0.4)'}}>
+                    {s.imgCustom
+                      ?<img src={s.imgCustom} alt={s.nome} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                      :<RessonanciaRetrato art={s.art} patronoArt={s.patronoArt} emoji={s.emoji} size={58}/>}
                   </div>
                 ))}
               </div>
@@ -11555,8 +11584,14 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
       </button>
 
       <div className="divider"><span className="divider-text">SERVOS ({servosDisponiveis.length})</span></div>
-      <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="🔍 Buscar servo pelo nome..."
-        style={{width:'100%',padding:'8px 11px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.8rem',marginBottom:8}}/>
+      <div style={{display:'flex',gap:8,marginBottom:8}}>
+        <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="🔍 Buscar servo pelo nome..."
+          style={{flex:1,padding:'8px 11px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.8rem'}}/>
+        <input ref={extraInputRef} type="file" accept="image/*" style={{display:'none'}} onChange={e=>{const f=e.target.files[0];if(f)adicionarExtra(f);e.target.value='';}}/>
+        <button className="btn btn-sm" disabled={enviandoExtra} onClick={()=>extraInputRef.current&&extraInputRef.current.click()} title="Adicionar um extra com imagem própria" style={{whiteSpace:'nowrap',opacity:enviandoExtra?0.6:1}}>
+          {enviandoExtra?'...':'➕ Extra'}
+        </button>
+      </div>
       <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:10}}>
         <button onClick={()=>setClasseFiltro('')} style={{fontSize:'.6rem',padding:'3px 9px',borderRadius:8,cursor:'pointer',border:`1px solid ${!classeFiltro?'var(--gold)':'var(--gold-dim)'}`,background:!classeFiltro?'rgba(201,162,39,0.2)':'transparent',color:'var(--parchment)'}}>Todas</button>
         {classes.map(c=>(
@@ -11569,9 +11604,11 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
             onDragStart={e=>onDragStart(e,s.id)}
             onClick={()=>tocarServo(s.id)}
             title={s.nome}
-            style={{width:46,height:46,borderRadius:5,overflow:'hidden',cursor:'grab',position:'relative',
+            style={{width:56,height:56,borderRadius:6,overflow:'hidden',cursor:'grab',position:'relative',
               border:`2px solid ${servoSelecionado===s.id?'var(--gold)':'transparent'}`}}>
-            <RessonanciaRetrato art={s.art} patronoArt={s.patronoArt} emoji={s.emoji} size={46}/>
+            {s.imgCustom
+              ?<img src={s.imgCustom} alt={s.nome} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+              :<RessonanciaRetrato art={s.art} patronoArt={s.patronoArt} emoji={s.emoji} size={56}/>}
           </div>
         ))}
       </div>
@@ -11584,6 +11621,7 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
 
 // Visualização de uma tier list (própria ou de amigo).
 function TierListVisual({tl,onVoltar,podeEditar,onEditar}){
+  const acharServo=(id)=>RESSONANCIA_SERVOS.find(s=>s.id===id)||(tl.extras||[]).find(e=>e.id===id)||null;
   return(
     <div>
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
@@ -11596,16 +11634,18 @@ function TierListVisual({tl,onVoltar,podeEditar,onEditar}){
       </div>
 
       {tl.faixas.map(f=>{
-        const servos=(tl.itens[f.id]||[]).map(id=>RESSONANCIA_SERVOS.find(s=>s.id===id)).filter(Boolean);
+        const servos=(tl.itens[f.id]||[]).map(id=>acharServo(id)).filter(Boolean);
         return(
-          <div key={f.id} style={{display:'flex',marginBottom:4,borderRadius:6,overflow:'hidden',minHeight:54,background:'rgba(0,0,0,0.25)'}}>
-            <div style={{width:54,flexShrink:0,background:f.cor,display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <span style={{color:'#1a0e0e',fontFamily:'Cinzel,serif',fontWeight:700,fontSize:'1.05rem'}}>{f.label}</span>
+          <div key={f.id} style={{display:'flex',marginBottom:5,borderRadius:6,overflow:'hidden',minHeight:70,background:'rgba(0,0,0,0.25)'}}>
+            <div style={{width:64,flexShrink:0,background:f.cor,display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <span style={{color:'#1a0e0e',fontFamily:'Cinzel,serif',fontWeight:700,fontSize:'1.15rem'}}>{f.label}</span>
             </div>
-            <div style={{flex:1,display:'flex',flexWrap:'wrap',gap:3,padding:5,alignContent:'flex-start'}}>
+            <div style={{flex:1,display:'flex',flexWrap:'wrap',gap:4,padding:6,alignContent:'flex-start'}}>
               {servos.map(s=>(
-                <div key={s.id} title={s.nome} style={{width:42,height:42,borderRadius:5,overflow:'hidden',border:'1px solid rgba(0,0,0,0.4)'}}>
-                  <RessonanciaRetrato art={s.art} patronoArt={s.patronoArt} emoji={s.emoji} size={42}/>
+                <div key={s.id} title={s.nome} style={{width:56,height:56,borderRadius:6,overflow:'hidden',border:'1px solid rgba(0,0,0,0.4)'}}>
+                  {s.imgCustom
+                    ?<img src={s.imgCustom} alt={s.nome} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                    :<RessonanciaRetrato art={s.art} patronoArt={s.patronoArt} emoji={s.emoji} size={56}/>}
                 </div>
               ))}
               {servos.length===0&&<span style={{fontSize:'.62rem',color:'var(--parchment-dark)',alignSelf:'center',fontStyle:'italic'}}>—</span>}
