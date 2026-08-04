@@ -2018,6 +2018,25 @@ function chaveDiaHoje(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
+// Formata um timestamp do Firestore (com .seconds ou .toMillis) em data + hora
+// de forma inteligente: hoje → "HH:MM"; ontem → "ontem HH:MM"; este ano →
+// "DD/MM HH:MM"; anos anteriores → "DD/MM/AAAA HH:MM". Aceita um fallback para
+// quando o timestamp ainda não chegou do servidor (ex.: 'agora' ou '').
+function fmtDataHora(ts,vazio='agora'){
+  let ms=null;
+  if(ts&&typeof ts.toMillis==='function')ms=ts.toMillis();
+  else if(ts&&typeof ts.seconds==='number')ms=ts.seconds*1000;
+  if(ms==null)return vazio;
+  const d=new Date(ms), agora=new Date();
+  const hh=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  const mesmoDia=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+  const ontem=new Date(agora); ontem.setDate(agora.getDate()-1);
+  if(mesmoDia(d,agora))return hh;
+  if(mesmoDia(d,ontem))return 'ontem '+hh;
+  const dd=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+  if(d.getFullYear()===agora.getFullYear())return dd+' '+hh;
+  return dd+'/'+d.getFullYear()+' '+hh;
+}
 function seedDoDia(chave){
   let h=2166136261;
   for(let i=0;i<chave.length;i++){h^=chave.charCodeAt(i);h=Math.imul(h,16777619);}
@@ -7995,9 +8014,7 @@ function ChatScreen({onNavigate,profile}){
   async function apagar(id){await chatDelete(canal.id,id);}
 
   function quando(ts){
-    if(!ts||!ts.seconds)return '';
-    const d=new Date(ts.seconds*1000);
-    return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+    return fmtDataHora(ts,'');
   }
 
   // ─── LISTA DE CANAIS ───
@@ -8194,12 +8211,7 @@ function ComicSocial({postId,profile,onReactCount}){
 
   const nComs=coms.length;
   function quando(ts){
-    if(!ts||!ts.seconds)return 'agora';
-    const d=Math.floor(Date.now()/1000-ts.seconds);
-    if(d<60)return 'agora';
-    if(d<3600)return Math.floor(d/60)+'min';
-    if(d<86400)return Math.floor(d/3600)+'h';
-    return Math.floor(d/86400)+'d';
+    return fmtDataHora(ts,'agora');
   }
 
   return(
@@ -8830,7 +8842,7 @@ function ComicAlbumScreen({onNavigate,profile,categoria='comics',onVoltarHub}){
     ...postsFS
       .filter(p=>(p.categoria||'comics')===categoria) // só posts desta categoria
       .map(p=>({
-      id:p.id, firestore:true, dev:p.dev,
+      id:p.id, firestore:true, dev:p.dev, ts:p.ts,
       profileInline:p.profileInline||null, // {name,handle,avatar} embutido
       pages:p.pages||[],
       tags:p.tags||{autor:'',personagens:[]},
@@ -9032,7 +9044,9 @@ function ComicAlbumScreen({onNavigate,profile,categoria='comics',onVoltarHub}){
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:'.85rem',color:'var(--gold)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{prof.name}</div>
-                  {(prof.handle||post.tags?.autor)&&<div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>{prof.handle||post.tags?.autor}</div>}
+                  {(prof.handle||post.tags?.autor||post.ts)&&<div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>
+                    {prof.handle||post.tags?.autor}{(prof.handle||post.tags?.autor)&&post.ts?' · ':''}{post.ts&&<span title="Publicado em">🕐 {fmtDataHora(post.ts,'')}</span>}
+                  </div>}
                 </div>
                 <button className={'album-fav'+(favOn?' on':'')} onClick={()=>toggleFav(post.id)}
                   title={favOn?'Desfavoritar':'Favoritar'}
@@ -9587,7 +9601,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.42</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.43</p>
       </div>
     </div>
   );
@@ -12507,12 +12521,7 @@ function FeedScreen({onNavigate,profile}){
   const visiveis=aba==='diario'?posts.filter(p=>p.uid===meuUid):posts;
 
   function tempoRelativo(ts){
-    if(!ts||!ts.toMillis)return 'agora';
-    const s=Math.floor((Date.now()-ts.toMillis())/1000);
-    if(s<60)return 'agora';
-    if(s<3600)return `${Math.floor(s/60)}min`;
-    if(s<86400)return `${Math.floor(s/3600)}h`;
-    return `${Math.floor(s/86400)}d`;
+    return fmtDataHora(ts,'agora');
   }
 
   return(
