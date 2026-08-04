@@ -9098,7 +9098,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.33</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.34</p>
       </div>
     </div>
   );
@@ -22585,6 +22585,26 @@ function CampaignController({profile,setProfile,onNavigate,mode='campaign'}){
 // ══════════════════════════════════════════════════════
 // APP
 // ══════════════════════════════════════════════════════
+// Botão global "voltar" — fixo no topo esquerdo em todas as telas (menos o menu
+// e telas de combate/campanha, que têm navegação própria). Volta ao menu.
+function BotaoVoltarGlobal({screen,onVoltar}){
+  // telas que NÃO mostram o botão global (raiz, combate, ou que já têm voltar próprio no topo)
+  const ocultar=['menu','campaign','tower','feed','amigos','coliseu','comics'];
+  if(ocultar.includes(screen))return null;
+  return(
+    <button onClick={onVoltar} title="Voltar ao menu" aria-label="Voltar ao menu"
+      style={{position:'fixed',top:14,left:14,zIndex:8500,display:'flex',alignItems:'center',gap:6,
+        padding:'8px 15px',borderRadius:22,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.72rem',
+        letterSpacing:1,color:'var(--gold)',background:'rgba(20,10,26,0.9)',
+        border:'1px solid var(--gold-dim)',backdropFilter:'blur(6px)',
+        boxShadow:'0 4px 14px rgba(0,0,0,0.5)',transition:'border-color .2s,transform .15s'}}
+      onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--gold)';e.currentTarget.style.transform='translateX(-2px)';}}
+      onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--gold-dim)';e.currentTarget.style.transform='none';}}>
+      ← Menu
+    </button>
+  );
+}
+
 // Botão global "subir ao topo" — aparece em qualquer tela ao rolar para baixo.
 // Escuta tanto o scroll da janela quanto o de containers .screen roláveis.
 function BotaoSubirTopo(){
@@ -22680,7 +22700,7 @@ function App(){
   else if(screen==='campaign')tela=<CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate}/>;
   else if(screen==='tower')tela=<CampaignController profile={profile} setProfile={setProfile} onNavigate={navigate} mode="tower"/>;
   else if(screen==='desafioRank')tela=<DesafioRankScreen onNavigate={navigate} profile={profile}/>;
-  return <>{tela}<BotaoSubirTopo/></>;
+  return <>{tela}<BotaoVoltarGlobal screen={screen} onVoltar={()=>navigate('menu')}/><BotaoSubirTopo/></>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
