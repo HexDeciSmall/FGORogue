@@ -5698,6 +5698,88 @@ GACHA_SERVOS.nobunaga_berserker={
 };
 PLAYABLE_SERVOS.nobunaga_berserker=GACHA_SERVOS.nobunaga_berserker;
 
+// ═══ ODA NOBUNAGA (MAOU) — Avenger 5★, banner Gudaguda ═══
+// A Rei Demônio do Sexto Céu (Dairokuten Maou) manifestada como Avenger. Nobunaga
+// abraça plenamente a alcunha de "Rei Demônio" que lhe deram em vida. Top tier: NP
+// AoE massivo que se auto-potencializa (ATK + Crítico). Fiel ao FGO.
+GACHA_SERVOS.nobunaga_maou={
+  id:'nobunaga_maou',name:'Oda Nobunaga (Maou)',className:'Avenger',
+  rarity:5,banner:'gudaguda',
+  getAtk:lvl=>Math.round(linear(lvl,1912,12378)),
+  getHp:lvl=>Math.round(linear(lvl,1789,12201)),
+  attributes:{
+    strength:{rank:'B',points:rankToPoints('B')},
+    agility:{rank:'B',points:rankToPoints('B')},
+    luck:{rank:'E',points:rankToPoints('E')},
+    endurance:{rank:'C',points:rankToPoints('C')},
+    mana:{rank:'A',points:rankToPoints('A'),gainPercent:manaGain('A')},
+    np:{rank:'A+',points:rankToPoints('A+')},
+  },
+  // ── PASSIVAS ── (Avenger canônicas + Divindade Demoníaca)
+  passiveSkills:[
+    {id:'avenger',name:'Avenger A',effect:{type:'atk_passive',value:20}},
+    {id:'oblivion',name:'Correção da Obliteração A',effect:{type:'crit_passive',value:18}},
+    {id:'selfrestore',name:'Restauração de Magia (Vingança) A',effect:{type:'np_regen',value:2}},
+  ],
+  // ── SKILLS ATIVAS ── as 3 do FGO (Maou Nobunaga)
+  activeSkills:[
+    // Rei Demônio do Sexto Céu: enorme buff de ATK próprio
+    {id:'maou',name:'Rei Demônio do Sexto Céu',rank:'A',
+      desc:'Aumenta muito o próprio Ataque por 3 turnos e carrega a Barra de NP',
+      effectType:'buff_atk_np',
+      getEffect:lvl=>({atkUp:linear(lvl,30,50),npUp:linear(lvl,20,30),dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Tédio da Conquista: crítico massivo + NP
+    {id:'tedio',name:'Tédio da Conquista',rank:'B',
+      desc:'Grande aumento de Crítico por 3 turnos e carrega a Barra de NP',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,20,40),critUp:linear(lvl,30,50),atkUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Revolução Militar: dano direto e afronta os "inimigos do céu"
+    {id:'revolucao',name:'Revolução Militar EX',rank:'EX',
+      desc:'Aumenta o dano do próprio Fantasma Nobre por 1 turno e o Ataque contra inimigos',
+      effectType:'buff_atk_npdmg',
+      getEffect:lvl=>({atkUp:linear(lvl,20,40),npDmgUp:linear(lvl,25,45),dur:1}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+  ],
+  // ── NP: Pāpīyas Reborn, Demon King of the Sixth Heaven — AoE + auto-buff ──
+  np:{
+    name:'Pāpīyas Reborn, Demon King of the Sixth Heaven',type:'Anti-Army',isAoE:true,effectType:'dmg_selfbuff_crit',sureHit:false,
+    selfBuffDur:3,
+    levels:{
+      1:{dmgPct:600,atkUp:30,critUp:20},
+      2:{dmgPct:800,atkUp:35,critUp:25},
+      3:{dmgPct:900,atkUp:40,critUp:30},
+      4:{dmgPct:950,atkUp:45,critUp:35},
+      5:{dmgPct:1000,atkUp:50,critUp:40},
+    },
+  },
+  dialogue:{
+    summon:'Avenger, Oda Nobunaga! Ou melhor... o Rei Demônio do Sexto Céu, Dairokuten Maou! Vieram me chamar de volta ao mundo, nanodesu? Kukuku... então que ardam todos!',
+    battle:'A Rei Demônio marcha!',
+    lose:'Ku... então este é o meu Honnō-ji de novo...?',
+    win:'Tenka Fubu! O mundo inteiro se curva ao Rei Demônio, nanodesu!',
+    np:'Vocês que ousam desafiar os céus... conheçam o inferno que eu comando! Ardam até as cinzas! Pāpīyas Reborn — Dairokuten Maou!',
+    skill:'A vingança é um prato que se serve em chamas!',
+    mapDone:'Tenka Fubu — o mundo é meu! Sigamos, Mestre.',
+  },
+  assets:{
+    default:'assets/servos/nobunaga_maou/nobunaga_maou_profile.png',
+    battle:'assets/servos/nobunaga_maou/nobunaga_maou_profile.png',
+    combat:'assets/servos/nobunaga_maou/nobunaga_maou_combat.png',
+    np:'assets/servos/nobunaga_maou/nobunaga_maou_combat.png',
+    full:'assets/servos/nobunaga_maou/nobunaga_maou_full.png',
+  },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) ──
+  sprites:{
+    idle:'assets/servos/nobunaga_maou/nobunaga_maou_espera.gif',
+    attack:'assets/servos/nobunaga_maou/nobunaga_maou_ataque.gif',
+    np:'assets/servos/nobunaga_maou/nobunaga_maou_np.gif',
+    flip:true,
+  },
+};
+PLAYABLE_SERVOS.nobunaga_maou=GACHA_SERVOS.nobunaga_maou;
+
 // ── ODA NOBUNAGA (Archer) — a versão normal, do Gudaguda ──
 // A Rei Demônio do Sexto Céu com seu mosquete anti-Divino. Archer de crítico
 // devastador e NP AoE que arrasa fileiras inteiras.
@@ -5925,13 +6007,94 @@ GACHA_SERVOS.medusa_rider={
 };
 PLAYABLE_SERVOS.medusa_rider=GACHA_SERVOS.medusa_rider;
 
+// ═══ YANG GUIFEI (Foreigner) — 5★, banner Noite de Expurgo ═══
+// Uma das Quatro Belezas da China antiga, agora tocada por uma entidade do Vazio.
+// Foreigner AoE top tier: seu NP incendeia todos os inimigos com uma queima
+// implacável (dano por turno). Fiel ao FGO.
+GACHA_SERVOS.yang_guifei={
+  id:'yang_guifei',name:'Yang Guifei',className:'Foreigner',
+  rarity:5,banner:'expurgo',
+  getAtk:lvl=>Math.round(linear(lvl,1801,11655)),
+  getHp:lvl=>Math.round(linear(lvl,1901,12965)),
+  attributes:{
+    strength:{rank:'C',points:rankToPoints('C')},
+    agility:{rank:'B',points:rankToPoints('B')},
+    luck:{rank:'A',points:rankToPoints('A')},
+    endurance:{rank:'C',points:rankToPoints('C')},
+    mana:{rank:'A',points:rankToPoints('A'),gainPercent:manaGain('A')},
+    np:{rank:'A',points:rankToPoints('A')},
+  },
+  // ── PASSIVAS ──
+  passiveSkills:[
+    {id:'magicres',name:'Resistência Mágica A',effect:{type:'debuff_res',value:20}},
+    {id:'existoutside',name:'Existência Fora do Domínio EX',effect:{type:'crit_passive',value:20}},
+    {id:'divinity',name:'Divindade C',effect:{type:'atk_passive',value:12}},
+  ],
+  // ── SKILLS ATIVAS ── as 3 do FGO (Yang Guifei)
+  activeSkills:[
+    // Beleza Fatal: charme e reduz a defesa do inimigo
+    {id:'fatalbeauty',name:'Beleza que Derruba Impérios',rank:'A',
+      desc:'Reduz a Defesa dos inimigos e carrega a própria Barra de NP',
+      effectType:'enemyseal_npcharge',
+      getEffect:lvl=>({sealChance:linear(lvl,40,70),sealDur:1,npGain:linear(lvl,15,25)}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Amor do Imperador: buff de ATK e cura leve
+    {id:'emperorlove',name:'Amor Inesquecível',rank:'B',
+      desc:'Aumenta o próprio Ataque por 3 turnos e recupera HP',
+      effectType:'buff_atk_heal',
+      getEffect:lvl=>({atkUp:linear(lvl,20,40),heal:linear(lvl,1500,4000),dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Toque do Vazio: crítico e carga de NP
+    {id:'voidtouch',name:'Sussurro do Vazio',rank:'EX',
+      desc:'Grande aumento de Crítico por 3 turnos e carrega bastante a Barra de NP',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,25,50),critUp:linear(lvl,20,40),atkUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+  ],
+  // ── NP: Xuanshi Yulou, Yuzhi Chentang — AoE dano + queima implacável ──
+  np:{
+    name:'Xuanshi Yulou, Yuzhi Chentang',type:'Anti-Army',isAoE:true,effectType:'dmg_curse',sureHit:true,
+    levels:{
+      1:{dmgPct:500,cursePctOfAtk:15,curseTurns:5},
+      2:{dmgPct:650,cursePctOfAtk:18,curseTurns:5},
+      3:{dmgPct:725,cursePctOfAtk:21,curseTurns:5},
+      4:{dmgPct:762,cursePctOfAtk:23,curseTurns:5},
+      5:{dmgPct:800,cursePctOfAtk:25,curseTurns:5},
+    },
+  },
+  dialogue:{
+    summon:'Foreigner, Yang Guifei. Fui uma vez a mulher mais amada de um império... e agora carrego algo que veio de muito além. Cuide bem de mim, sim?',
+    battle:'Não me subestime por ser bela...',
+    lose:'Ah... então até esta beleza um dia se apaga...',
+    win:'Que pena. Deveriam ter simplesmente me admirado de longe.',
+    np:'Deixem que este fogo os envolva por completo... Ardam em meu amor eterno! Xuanshi Yulou, Yuzhi Chentang!',
+    skill:'Um sorriso meu vale mil exércitos.',
+    mapDone:'Seguimos, Mestre. Fique ao meu lado, sim?',
+  },
+  assets:{
+    default:'assets/servos/yang_guifei/yang_guifei_profile.png',
+    battle:'assets/servos/yang_guifei/yang_guifei_profile.png',
+    combat:'assets/servos/yang_guifei/yang_guifei_combat.png',
+    np:'assets/servos/yang_guifei/yang_guifei_combat.png',
+    full:'assets/servos/yang_guifei/yang_guifei_full.png',
+  },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) ──
+  sprites:{
+    idle:'assets/servos/yang_guifei/yang_guifei_espera.gif',
+    attack:'assets/servos/yang_guifei/yang_guifei_ataque.gif',
+    np:'assets/servos/yang_guifei/yang_guifei_np.gif',
+    flip:true,
+  },
+};
+PLAYABLE_SERVOS.yang_guifei=GACHA_SERVOS.yang_guifei;
+
 // Os 4 banners. `pool` = ids de GACHA_SERVOS que aparecem no banner.
 // `rateUp` (opcional) = id com chance aumentada (usado no "Especial").
 const GACHA_BANNERS=[
   {id:'summer',name:'Summer',subtitle:'Servos de Verão',
    theme:'#3aa0c0',art:'assets/banners/summer.jpg',pool:['kiara_summer','skadi_summer','meltryllis_summer','nobunaga_berserker']},
   {id:'gudaguda',name:'Gudaguda',subtitle:'Servos do Evento Gudaguda',
-   theme:'#c0863a',art:'assets/banners/gudaguda.jpg',pool:['okita_saber','okita_alter','nobunaga_archer']},
+   theme:'#c0863a',art:'assets/banners/gudaguda.jpg',pool:['okita_saber','okita_alter','nobunaga_archer','nobunaga_maou']},
   {id:'especial',name:'Especial',subtitle:'Banner rotativo — sempre um Servo em rate up',
    theme:'#c0a03a',art:null,pool:[],rateUp:null},
   {id:'expurgo',name:'Noite de Expurgo',subtitle:'Invocação caótica entre todos os banners',
@@ -9098,7 +9261,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.34</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.36</p>
       </div>
     </div>
   );
@@ -14793,7 +14956,8 @@ const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,arche
   skadi:GACHA_SERVOS.skadi_summer,okita:GACHA_SERVOS.okita_saber,okita_alter:GACHA_SERVOS.okita_alter,
   meltryllis:GACHA_SERVOS.meltryllis_summer,nobunaga:GACHA_SERVOS.nobunaga_archer,
   nobunaga_zerker:GACHA_SERVOS.nobunaga_berserker,daikokuten:GACHA_SERVOS.daikokuten,
-  medusa_rider:GACHA_SERVOS.medusa_rider};
+  medusa_rider:GACHA_SERVOS.medusa_rider,nobunaga_maou:GACHA_SERVOS.nobunaga_maou,
+  yang_guifei:GACHA_SERVOS.yang_guifei};
 const TOWER_SERVO_LISTA=[
   {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',unlock:null},
   {id:'qin',name:'Qin Liangyu',classe:'Lancer',unlock:'defeat_qin'},
@@ -14810,6 +14974,8 @@ const TOWER_SERVO_LISTA=[
   {id:'nobunaga_zerker',name:'Oda Nobunaga (Berserker)',classe:'Berserker',unlock:'gacha',gachaId:'nobunaga_berserker',lockText:'Banner Pull'},
   {id:'daikokuten',name:'Daikokuten',classe:'Caster',unlock:'gacha',gachaId:'daikokuten',lockText:'🎁 Crie uma conta'},
   {id:'medusa_rider',name:'Medusa',classe:'Rider',unlock:'gacha',gachaId:'medusa_rider',lockText:'Banner Pull'},
+  {id:'nobunaga_maou',name:'Oda Nobunaga (Maou)',classe:'Avenger',unlock:'gacha',gachaId:'nobunaga_maou',lockText:'Banner Pull'},
+  {id:'yang_guifei',name:'Yang Guifei',classe:'Foreigner',unlock:'gacha',gachaId:'yang_guifei',lockText:'Banner Pull'},
 ];
 // O jogador tem acesso a este servo?
 function servoLiberado(s,profile){
