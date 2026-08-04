@@ -12640,7 +12640,7 @@ function FeedCard({post,meuUid,meuNome,tempoRel,comentariosAbertos,onToggleComen
         </div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:'.8rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{post.nome||'Mestre'}</div>
-          <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>{tempoRel} atrás</div>
+          <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>{tempoRel}</div>
         </div>
         <span style={{fontSize:'.6rem',padding:'3px 10px',borderRadius:12,border:`1px solid ${tipo.cor}`,color:tipo.cor,background:'rgba(0,0,0,0.25)',fontFamily:'Cinzel,serif'}}>{tipo.icon} {tipo.label}</span>
         {souDono&&<button onClick={async()=>{if(confirm('Apagar esta publicação?'))await feedApagar(post.id);}} style={{background:'none',border:'none',color:'var(--parchment-dark)',cursor:'pointer',fontSize:'.9rem'}}>🗑️</button>}
