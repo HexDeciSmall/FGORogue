@@ -725,6 +725,8 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .codex-card:hover .codex-art{transform:scale(1.06);}
 .codex-card-locked{transition:opacity .18s;}
 .codex-card-locked:hover{opacity:0.75!important;}
+.hub-cat-card{transition:transform .18s,box-shadow .18s,border-color .18s;}
+.hub-cat-card:hover{transform:translateY(-2px);border-color:var(--cor)!important;box-shadow:0 6px 20px color-mix(in srgb,var(--cor) 30%,transparent);}
 .gacha-banner-card{position:relative;border-radius:12px;overflow:hidden;cursor:pointer;text-align:left;
   border:2px solid;transition:transform .22s,box-shadow .22s;}
 .gacha-banner-card:hover{transform:translateY(-3px) scale(1.015);box-shadow:0 10px 30px rgba(0,0,0,0.55),0 0 20px var(--tema);}
@@ -8283,7 +8285,7 @@ const ENV_INP={flex:1,minWidth:0,padding:'8px 10px',borderRadius:4,border:'1px s
 const ENV_LBL={display:'block',fontSize:'.6rem',color:'var(--parchment-dark)',letterSpacing:1,marginBottom:4,fontFamily:'Cinzel,serif'};
 
 // Modal de envio de tradução: sobe imagens pro GitHub e cria o post no Firestore.
-function EnviarTraducaoModal({profile,onFechar,onPronto}){
+function EnviarTraducaoModal({profile,onFechar,onPronto,categoria='comics'}){
   const[cfg,setCfg]=useState(()=>loadGithubCfg());
   const[token,setToken]=useState('');
   const[senha,setSenha]=useState('');           // senha do cofre
@@ -8349,7 +8351,9 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
 
     setEnviando(true);
     saveGithubCfg(cfg);
-    const pasta=(cfg.pasta||'comics').replace(/\/+$/,'');
+    // Subpasta por categoria evita colisão de nomes entre Comics/Doujinshi/+18.
+    const subcat=categoria==='+18'?'adult':(categoria||'comics');
+    const pasta=((cfg.pasta||'comics').replace(/\/+$/,''))+'/'+subcat;
     const pages=[];
     try{
       for(let i=0;i<arquivos.length;i++){
@@ -8376,6 +8380,7 @@ function EnviarTraducaoModal({profile,onFechar,onPronto}){
           avatar:primeiroServo?null:(pages[0]||null)},
         pages,
         tags:{autor:tagAutor.trim(),personagens:pers},
+        categoria:categoria||'comics',
       };
       const r=await comicPostSalvar(post);
       if(!r.ok)throw new Error(r.erro||'Erro ao salvar o post.');
@@ -8691,7 +8696,94 @@ function EditarPostModal({post,onFechar,onSalvo}){
   );
 }
 
-function ComicAlbumScreen({onNavigate,profile}){
+// Hub do Álbum: escolhe a categoria antes de entrar (Comics / Doujinshi / +18).
+// O +18 exige confirmação de idade antes de abrir.
+function ComicHubScreen({onNavigate,onAbrir}){
+  const [avisoIdade,setAvisoIdade]=useState(false); // modal de confirmação +18
+  const CATS=[
+    {id:'comics',nome:'Comics',icon:'📖',cor:'#c9a227',
+     desc:'Traduções de comics oficiais da franquia, feitas pela comunidade.'},
+    {id:'doujinshi',nome:'Doujinshi',icon:'🎨',cor:'#e0873a',
+     desc:'Doujinshi — obras independentes de fãs, traduzidas.'},
+    {id:'+18',nome:'+18',icon:'🔞',cor:'#e05a4a',
+     desc:'Conteúdo adulto. Restrito a maiores de 18 anos.'},
+  ];
+  return(
+    <div className="screen" style={{padding:'20px 12px',alignItems:'flex-start',justifyContent:'flex-start'}}>
+      {/* Modal de confirmação de idade para o +18 */}
+      {avisoIdade&&(
+        <div onClick={()=>setAvisoIdade(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:200,
+          display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
+          <div onClick={e=>e.stopPropagation()} className="panel" style={{maxWidth:420,width:'100%',padding:0,overflow:'hidden',border:'1.5px solid #e05a4a',borderRadius:14}}>
+            <div style={{padding:'22px 20px 16px',textAlign:'center',
+              background:'radial-gradient(ellipse at top,rgba(224,90,74,0.3),transparent 70%),linear-gradient(180deg,rgba(45,18,20,0.7),rgba(15,10,18,0.3))',
+              borderBottom:'1px solid rgba(224,90,74,0.4)'}}>
+              <div style={{fontSize:'2.6rem',marginBottom:6}}>🔞</div>
+              <h2 className="cinzel" style={{color:'#ff8a7a',letterSpacing:2,fontSize:'1.15rem'}}>CONTEÚDO ADULTO</h2>
+            </div>
+            <div style={{padding:'16px 20px 20px'}}>
+              <p style={{fontSize:'.8rem',color:'var(--parchment)',lineHeight:1.6,marginBottom:8,textAlign:'center'}}>
+                Esta seção contém material destinado exclusivamente a <b style={{color:'#ff8a7a'}}>maiores de 18 anos</b>.
+              </p>
+              <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',lineHeight:1.6,marginBottom:18,textAlign:'center'}}>
+                Ao continuar, você declara ter 18 anos ou mais e concorda em visualizar conteúdo adulto.
+              </p>
+              <button className="btn btn-full btn-red" style={{marginBottom:8}}
+                onClick={()=>{setAvisoIdade(false);onAbrir('+18');}}>
+                Tenho 18+ e desejo continuar
+              </button>
+              <button className="btn btn-full" onClick={()=>setAvisoIdade(false)}>Voltar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{maxWidth:560,width:'100%',margin:'0 auto'}}>
+        {/* Cabeçalho */}
+        <div className="panel" style={{marginBottom:16,padding:0,overflow:'hidden'}}>
+          <div style={{position:'relative',padding:'22px 18px 16px',
+            background:'radial-gradient(ellipse at top,rgba(139,26,26,0.28),transparent 70%),linear-gradient(180deg,rgba(40,20,30,0.6),rgba(15,10,18,0.3))',
+            borderBottom:'1px solid var(--gold-dim)'}}>
+            <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,transparent,var(--gold),var(--crimson),var(--gold),transparent)'}}/>
+            <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:6,fontSize:'1.3rem',textShadow:'0 2px 12px rgba(201,162,39,0.3)'}}>📚 BIBLIOTECA</h2>
+            <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',margin:0,fontStyle:'italic',lineHeight:1.5}}>
+              Escolha uma categoria para explorar as traduções da comunidade.
+            </p>
+          </div>
+        </div>
+
+        {/* Cards das categorias */}
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          {CATS.map(c=>(
+            <button key={c.id} onClick={()=>c.id==='+18'?setAvisoIdade(true):onAbrir(c.id)}
+              className="hub-cat-card"
+              style={{'--cor':c.cor,display:'flex',alignItems:'center',gap:16,width:'100%',textAlign:'left',
+                padding:'18px 18px',cursor:'pointer',borderRadius:12,position:'relative',overflow:'hidden',
+                background:`linear-gradient(120deg, ${c.cor}1e, rgba(0,0,0,0.5))`,border:`1.5px solid ${c.cor}66`}}>
+              <div style={{position:'absolute',top:0,left:0,bottom:0,width:3,background:c.cor}}/>
+              <span style={{fontSize:'2.4rem',flexShrink:0,filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.5))'}}>{c.icon}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div className="cinzel" style={{color:c.cor,fontSize:'1.15rem',letterSpacing:1,marginBottom:3}}>{c.nome}</div>
+                <div style={{fontSize:'.68rem',color:'var(--parchment-dark)',lineHeight:1.4}}>{c.desc}</div>
+              </div>
+              <span style={{color:c.cor,fontSize:'1.4rem',flexShrink:0}}>›</span>
+            </button>
+          ))}
+        </div>
+
+        <button className="btn btn-full" style={{marginTop:18,marginBottom:20}} onClick={()=>onNavigate('menu')}>← Voltar ao Menu</button>
+      </div>
+    </div>
+  );
+}
+
+function ComicAlbumScreen({onNavigate,profile,categoria='comics',onVoltarHub}){
+  const CAT_INFO={
+    comics:{nome:'Comics',icon:'📖',cor:'#c9a227',desc:'Traduções de comics oficiais da franquia'},
+    doujinshi:{nome:'Doujinshi',icon:'🎨',cor:'#e0873a',desc:'Doujinshi (obras de fãs) traduzidos'},
+    '+18':{nome:'+18',icon:'🔞',cor:'#e05a4a',desc:'Conteúdo adulto — apenas para maiores de 18 anos'},
+  };
+  const catInfo=CAT_INFO[categoria]||CAT_INFO.comics;
   const[search,setSearch]=useState('');
   const[activeTag,setActiveTag]=useState(null); // {tipo:'personagem'|'autor', valor}
   const[filtrosAbertos,setFiltrosAbertos]=useState(false); // seção de filtros expandida?
@@ -8735,13 +8827,15 @@ function ComicAlbumScreen({onNavigate,profile}){
   // Combina posts fixos (código) + posts do Firestore. Os do Firestore usam a mesma
   // "forma": {id, profile?, pages, tags, autorNome?, dev?}. Os do Firestore vêm primeiro.
   const todosPosts=[
-    ...postsFS.map(p=>({
+    ...postsFS
+      .filter(p=>(p.categoria||'comics')===categoria) // só posts desta categoria
+      .map(p=>({
       id:p.id, firestore:true, dev:p.dev,
       profileInline:p.profileInline||null, // {name,handle,avatar} embutido
       pages:p.pages||[],
       tags:p.tags||{autor:'',personagens:[]},
     })),
-    ...COMIC_POSTS,
+    ...(categoria==='comics'?COMIC_POSTS:[]), // os fixos só na categoria Comics
   ];
   const tags=(() => {
     const autores=new Set(),personagens=new Set();
@@ -8801,17 +8895,17 @@ function ComicAlbumScreen({onNavigate,profile}){
 
   return(
     <div className="screen" style={{padding:'16px 10px',alignItems:'flex-start',justifyContent:'flex-start'}}>
-      {enviar&&<EnviarTraducaoModal profile={profile} onFechar={()=>setEnviar(false)}
+      {enviar&&<EnviarTraducaoModal profile={profile} categoria={categoria} onFechar={()=>setEnviar(false)}
         onPronto={()=>{setEnviar(false);}}/>}
       {editando&&<EditarPostModal post={editando} onFechar={()=>setEditando(null)}
         onSalvo={()=>setEditando(null)}/>}
-      {/* Botão de voltar fixo no topo */}
-      <button onClick={()=>onNavigate('menu')} title="Voltar ao menu"
+      {/* Botão de voltar fixo no topo — volta ao hub de categorias */}
+      <button onClick={()=>onVoltarHub?onVoltarHub():onNavigate('menu')} title="Voltar às categorias"
         style={{position:'sticky',top:8,alignSelf:'flex-start',zIndex:40,marginBottom:8,
           display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:20,cursor:'pointer',
           background:'rgba(20,10,26,0.85)',border:'1px solid var(--gold-dim)',color:'var(--gold)',
           fontFamily:'Cinzel,serif',fontSize:'.72rem',backdropFilter:'blur(6px)'}}>
-        ← Voltar
+        ← Categorias
       </button>
       <div style={{maxWidth:560,width:'100%',margin:'0 auto'}}>
         {/* Cabeçalho */}
@@ -8819,10 +8913,10 @@ function ComicAlbumScreen({onNavigate,profile}){
           <div style={{position:'relative',padding:'20px 16px 16px',
             background:'radial-gradient(ellipse at top,rgba(139,26,26,0.28),transparent 70%),linear-gradient(180deg,rgba(40,20,30,0.6),rgba(15,10,18,0.3))',
             borderBottom:'1px solid var(--gold-dim)'}}>
-            <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,transparent,var(--gold),var(--crimson),var(--gold),transparent)'}}/>
-            <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:6,fontSize:'1.3rem',textShadow:'0 2px 12px rgba(201,162,39,0.3)'}}>📖 ÁLBUM DE TRADUÇÃO</h2>
+            <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,transparent,${catInfo.cor},var(--crimson),${catInfo.cor},transparent)`}}/>
+            <h2 className="cinzel" style={{color:catInfo.cor,letterSpacing:3,marginBottom:6,fontSize:'1.3rem',textShadow:'0 2px 12px rgba(201,162,39,0.3)'}}>{catInfo.icon} {catInfo.nome.toUpperCase()}</h2>
             <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:0,fontStyle:'italic',lineHeight:1.5}}>
-              Uma coletânea das traduções de comics da franquia — feita pela comunidade, para a comunidade.
+              {catInfo.desc}
             </p>
           </div>
           <div style={{padding:'12px 16px 14px'}}>
@@ -9493,7 +9587,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.41</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.42</p>
       </div>
     </div>
   );
@@ -23186,6 +23280,7 @@ function BotaoSubirTopo(){
 
 function App(){
   const[screen,setScreen]=useState('menu');
+  const[albumCat,setAlbumCat]=useState(null); // categoria do álbum aberta (null = hub)
   const[profile,setProfile]=useState(loadProfile());
   // Sincronização com a nuvem em nível GLOBAL — roda assim que o jogo carrega,
   // independente da tela aberta. Antes ficava só na tela de Perfil, então quem
@@ -23218,14 +23313,16 @@ function App(){
     document.addEventListener('click',onClick,true);
     return ()=>document.removeEventListener('click',onClick,true);
   },[]);
-  function navigate(s){setScreen(s);}
+  function navigate(s){if(s!=='comics')setAlbumCat(null);setScreen(s);}
   let tela=null;
   if(screen==='menu')tela=<MenuScreen onNavigate={navigate} profile={profile}/>;
   else if(screen==='profile')tela=<ProfileScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   else if(screen==='ressonancia')tela=<RessonanciaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   else if(screen==='shop')tela=<ShopScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   else if(screen==='gacha')tela=<GachaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
-  else if(screen==='comics')tela=<ComicAlbumScreen onNavigate={navigate} profile={profile}/>;
+  else if(screen==='comics')tela=albumCat
+    ?<ComicAlbumScreen onNavigate={navigate} profile={profile} categoria={albumCat} onVoltarHub={()=>setAlbumCat(null)}/>
+    :<ComicHubScreen onNavigate={navigate} onAbrir={cat=>setAlbumCat(cat)}/>;
   else if(screen==='chat')tela=<ChatScreen onNavigate={navigate} profile={profile}/>;
   else if(screen==='jogos')tela=<JogosScreen onNavigate={navigate} profile={profile}/>;
   else if(screen==='blackjack')tela=<BlackjackScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
