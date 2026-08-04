@@ -804,20 +804,20 @@ function animMs(ms){return Math.max(60,Math.round(ms/(COMBAT_SPEED.mult||1)));}
 // A tela aparece 1x automaticamente quando o jogador abre uma versão nova,
 // e fica sempre acessível pelo botão de novidades no menu.
 const PATCH_NOTES={
-  versaoAtual:'3.12',      // versão atual (bate com a exibida no menu)
-  ciclo:'v2.90 → v3.12',   // rótulo do ciclo mostrado no topo
-  titulo:'Atualização Social',
+  versaoAtual:'3.25',      // versão atual (bate com a exibida no menu)
+  ciclo:'v3.12 → v3.25',   // rótulo do ciclo mostrado no topo
+  titulo:'Coliseu & Tier Lists',
   itens:[
-    {icon:'👥',titulo:'Sistema de Amigos',texto:'Busque outros Mestres pelo nome, adicione como amigos e veja o perfil completo deles: servos, conquistas e estatísticas.'},
-    {icon:'📰',titulo:'Feed Social',texto:'Compartilhe conquistas, teorias e imagens sobre Fate! Publique posts, curta e comente. A aba "Meu Diário" reúne suas próprias publicações.'},
-    {icon:'📷',titulo:'Foto de perfil personalizada',texto:'Envie sua própria imagem de avatar com uma etapa de recorte para enquadrar do jeito certo. Aparece no perfil, chat, feed e para os amigos.'},
-    {icon:'✦',titulo:'Lista de Suporte',texto:'Monte sua vitrine de Servos por classe (estilo FGO): 10 slots com arte, nome e descrição, visíveis quando um amigo visita seu perfil.'},
-    {icon:'🎁',titulo:'Daikokuten exclusiva',texto:'Crie uma conta e receba a Daikokuten (Caster de suporte) de presente — com kit completo e entrada no Codex.'},
-    {icon:'🎴',titulo:'Skills do Mestre organizadas',texto:'Em combate e no perfil, as skills do Mestre agora ficam num painel único e limpo, em vez de espalhadas pela tela.'},
-    {icon:'🔺',titulo:'Vantagem de classe e resumo',texto:'O combate mostra quando você tem bônus contra a classe do inimigo, e a tela de vitória traz um resumo com dano, abates e turnos.'},
-    {icon:'🎖️',titulo:'50 novas bênçãos',texto:'Todos os 22 patronos agora têm bênçãos nos 5 slots (110 no total) — muito mais variedade de build por run.'},
-    {icon:'⚖️',titulo:'Balanceamento',texto:'Ibaraki teve o Fantasma Nobre e o ataque reforçados; Okuni teve o dano em área ajustado para manter o equilíbrio.'},
-    {icon:'✨',titulo:'Melhorias e polimento',texto:'Filtro de galeria por classe, correções na contagem de servos dos amigos, limpeza de cenas antigas e vários ajustes finos.'},
+    {icon:'🏛️',titulo:'Coliseu — PvP entre Mestres',texto:'Registre um time de defesa (3 Servos + 5 bênçãos) e desafie os times de outros jogadores! Batalhas com arena visual, onde os Servos lutam com suas artes, barras de HP individuais e golpes animados.'},
+    {icon:'⚔️',titulo:'Apostas e Ranking ELO',texto:'Aposte SQ ou QP nas batalhas do Coliseu (dobra ou perde) e suba no ranking ELO. Vença adversários mais fortes para ganhar mais pontos.'},
+    {icon:'🏆',titulo:'Tier Lists de Servos',texto:'Nova aba no Feed! Monte rankings dos 300+ Servos em faixas editáveis (SS/S/A, tipo TierMaker) ou numéricas. Adicione extras com imagem própria, salve na nuvem e veja as listas da comunidade.'},
+    {icon:'🎖️',titulo:'Bênçãos por Patrono com arte',texto:'No Coliseu, as bênçãos aparecem organizadas por Patrono, cada uma com a foto do Patrono, o ícone da bênção e o tipo (Ataque, Defesa, NP, Skill, Utilidade).'},
+    {icon:'📷',titulo:'Upload de imagens sem complicação',texto:'O envio de fotos (perfil, feed, suporte) agora usa uma configuração compartilhada — os amigos só precisam estar logados. Imagens em maior resolução e com compressão inteligente.'},
+    {icon:'☁️',titulo:'Sincronização entre aparelhos',texto:'Correção importante: sua conta agora sincroniza avatar, lista de suporte e todo o progresso entre dispositivos assim que o jogo abre, não só ao visitar o Perfil.'},
+    {icon:'✦',titulo:'Lista de Suporte alinhada',texto:'A vitrine de Servos ganhou um layout em grade fixa (estilo FGO), com todos os 10 slots alinhados e os vazios discretos.'},
+    {icon:'🗼',titulo:'Torre mais enxuta',texto:'A lista de andares da Torre agora é recolhível — a tela fica limpa e você expande só quando quer conferir a dificuldade.'},
+    {icon:'👥',titulo:'Contagem de Servos corrigida',texto:'O perfil dos amigos agora conta e exibe corretamente os Servos (base + gacha), sem divergências entre as telas.'},
+    {icon:'✨',titulo:'Ajustes e polimento',texto:'Combate do Coliseu rebalanceado (sem mais Servo entrando "morto"), tier lists maiores e mais legíveis, seleção fixa no topo para posicionar Servos com facilidade, e vários ajustes finos.'},
   ],
 };
 const PATCH_VISTO_KEY='fate_patch_visto_v1';
