@@ -735,6 +735,10 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
   background:linear-gradient(105deg,transparent,rgba(255,255,255,0.22),transparent);transform:skewX(-18deg);}
 .gacha-banner-card:hover .gacha-banner-shine{animation:gachaShine .8s ease;}
 @keyframes gachaShine{0%{left:-80%}100%{left:130%}}
+.gacha-pool-card{transition:transform .18s,box-shadow .18s;}
+.gacha-pool-card:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 6px 18px var(--rar);z-index:2;}
+.gacha-pool-art{transition:transform .3s ease;}
+.gacha-pool-card:hover .gacha-pool-art{transform:scale(1.08);}
 @keyframes gachaRaios{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 @keyframes gachaAura{0%,100%{opacity:0.6;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}}
 .album-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;z-index:2;
@@ -8990,6 +8994,105 @@ function ComicAlbumScreen({onNavigate,profile}){
   );
 }
 
+// Modal de detalhes de um Servo do banner — mostra arte, stats, skills e NP.
+function GachaServoDetalhe({sv,possui,onFechar}){
+  const rar=sv.rarity||3;
+  const rarCor=rar>=5?'#ffd54f':rar>=4?'#c77dff':'#c0c0c0';
+  const maxLvl=25;
+  return(
+    <div onClick={onFechar} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:400,
+      display:'flex',alignItems:'center',justifyContent:'center',padding:14}}>
+      <div onClick={e=>e.stopPropagation()} className="panel"
+        style={{maxWidth:460,width:'100%',maxHeight:'88vh',overflowY:'auto',padding:0,
+          border:`1.5px solid ${rarCor}`,borderRadius:14}}>
+        {/* Cabeçalho com arte */}
+        <div style={{position:'relative',padding:'0',borderRadius:'14px 14px 0 0',overflow:'hidden'}}>
+          <div style={{position:'relative',height:200,overflow:'hidden'}}>
+            <img src={sv.assets?.full||sv.assets?.combat||sv.assets?.default} alt={sv.name}
+              style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center 18%'}}
+              onError={e=>{e.target.style.display='none';}}/>
+            <div style={{position:'absolute',inset:0,background:`linear-gradient(180deg,transparent 40%,rgba(15,10,18,0.95)),radial-gradient(circle at 50% 30%,${rarCor}22,transparent 70%)`}}/>
+            <button onClick={onFechar} style={{position:'absolute',top:10,right:10,width:30,height:30,borderRadius:'50%',
+              background:'rgba(0,0,0,0.6)',border:`1px solid ${rarCor}`,color:rarCor,cursor:'pointer',fontSize:'.9rem'}}>✕</button>
+            {possui&&<div style={{position:'absolute',top:10,left:10,fontSize:'.6rem',fontFamily:'Cinzel,serif',color:'#1a0e0e',background:rarCor,padding:'3px 10px',borderRadius:12,fontWeight:700}}>✓ NO ELENCO</div>}
+            <div style={{position:'absolute',bottom:8,left:0,right:0,textAlign:'center'}}>
+              <div style={{fontSize:'.72rem',color:rarCor,letterSpacing:2,textShadow:`0 0 8px ${rarCor}`}}>{'★'.repeat(rar)}</div>
+              <div className="cinzel" style={{color:'#fff',fontSize:'1.15rem',textShadow:'0 2px 8px #000'}}>{sv.name}</div>
+              <div style={{fontSize:'.66rem',color:'var(--parchment)',textShadow:'0 1px 3px #000'}}>{sv.className}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{padding:'14px 16px 18px'}}>
+          {/* Stats principais */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:14}}>
+            <div style={{background:'rgba(224,90,74,0.1)',border:'1px solid rgba(224,90,74,0.3)',borderRadius:8,padding:'8px',textAlign:'center'}}>
+              <div style={{fontSize:'.56rem',color:'var(--parchment-dark)'}}>⚔️ ATK (Nv{maxLvl})</div>
+              <div className="cinzel" style={{color:'#e05a4a',fontSize:'1rem'}}>{sv.getAtk?sv.getAtk(maxLvl).toLocaleString():'—'}</div>
+            </div>
+            <div style={{background:'rgba(126,224,138,0.1)',border:'1px solid rgba(126,224,138,0.3)',borderRadius:8,padding:'8px',textAlign:'center'}}>
+              <div style={{fontSize:'.56rem',color:'var(--parchment-dark)'}}>❤️ HP (Nv{maxLvl})</div>
+              <div className="cinzel" style={{color:'#7ee08a',fontSize:'1rem'}}>{sv.getHp?sv.getHp(maxLvl).toLocaleString():'—'}</div>
+            </div>
+          </div>
+
+          {/* Fantasma Nobre */}
+          {sv.np&&(
+            <div style={{marginBottom:14}}>
+              <div className="perfil-secao-titulo" style={{margin:'0 0 8px'}}><span>❖</span> FANTASMA NOBRE <span>❖</span></div>
+              <div style={{background:'linear-gradient(160deg,rgba(201,162,39,0.1),rgba(0,0,0,0.3))',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'10px 12px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4,flexWrap:'wrap'}}>
+                  <span style={{fontSize:'.82rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{sv.np.name}</span>
+                  <span style={{fontSize:'.54rem',color:'var(--parchment-dark)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'1px 7px'}}>{sv.np.type}</span>
+                  {sv.np.isAoE&&<span style={{fontSize:'.54rem',color:'#e05a4a',border:'1px solid rgba(224,90,74,0.4)',borderRadius:8,padding:'1px 7px'}}>Em Área</span>}
+                </div>
+                {sv.np.levels&&sv.np.levels[1]&&(
+                  <div style={{fontSize:'.64rem',color:'var(--parchment)',lineHeight:1.4}}>
+                    Dano: {sv.np.levels[1].dmgPct}% → {sv.np.levels[5].dmgPct}%
+                    {sv.np.levels[5].defDown?` · reduz DEF ${sv.np.levels[5].defDown}%`:''}
+                    {sv.np.levels[5].cursePctOfAtk?` · queima ${sv.np.levels[5].cursePctOfAtk}%/turno`:''}
+                    {sv.np.levels[5].atkUp?` · auto-ATK +${sv.np.levels[5].atkUp}%`:''}
+                    {sv.np.levels[5].critUp?` · auto-Crit +${sv.np.levels[5].critUp}%`:''}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Skills */}
+          {sv.activeSkills&&sv.activeSkills.length>0&&(
+            <div style={{marginBottom:14}}>
+              <div className="perfil-secao-titulo" style={{margin:'0 0 8px'}}><span>❖</span> HABILIDADES <span>❖</span></div>
+              {sv.activeSkills.map((sk,i)=>(
+                <div key={i} style={{background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'8px 10px',marginBottom:6}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
+                    <span style={{fontSize:'.74rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{sk.name}</span>
+                    <span style={{fontSize:'.5rem',color:'var(--parchment-dark)'}}>Rank {sk.rank}</span>
+                  </div>
+                  <div style={{fontSize:'.62rem',color:'var(--parchment-dark)',lineHeight:1.3}}>{sk.desc}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Passivas */}
+          {sv.passiveSkills&&sv.passiveSkills.length>0&&(
+            <div style={{marginBottom:12}}>
+              <div style={{display:'flex',gap:5,flexWrap:'wrap',justifyContent:'center'}}>
+                {sv.passiveSkills.map((p,i)=>(
+                  <span key={i} style={{fontSize:'.54rem',color:'var(--parchment-dark)',background:'rgba(201,162,39,0.08)',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'2px 8px'}}>{p.name}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button className="btn btn-full" onClick={onFechar}>Fechar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GachaScreen({onNavigate,profile,setProfile}){
   const[view,setView]=useState('banners'); // 'banners' | 'pull'
   const[banner,setBanner]=useState(null);
@@ -8997,6 +9100,7 @@ function GachaScreen({onNavigate,profile,setProfile}){
   const[spinning,setSpinning]=useState(false);
   const[reelIndex,setReelIndex]=useState(0); // qual arte está no centro da vitrine
   const[result,setResult]=useState(null); // servo obtido {id,new}
+  const[detalhe,setDetalhe]=useState(null); // servo em visualização de detalhes
   const[notif,setNotif]=useState('');
   const spinRef=useRef(null);
 
@@ -9124,6 +9228,7 @@ function GachaScreen({onNavigate,profile,setProfile}){
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
       {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
+      {detalhe&&<GachaServoDetalhe sv={detalhe} possui={(profile.gachaOwned||[]).includes(detalhe.id)} onFechar={()=>setDetalhe(null)}/>}
       <div className="panel" style={{maxWidth:520,textAlign:'center'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
           <h2 className="cinzel" style={{color:banner.theme,fontSize:'1rem',letterSpacing:2}}>{banner.name}</h2>
@@ -9192,6 +9297,45 @@ function GachaScreen({onNavigate,profile,setProfile}){
             <span style={{color:'var(--gold)',fontSize:'.85rem',fontFamily:'Cinzel,serif'}}>
               {result.isNew?'✨ NOVO SERVO OBTIDO!':'Servo obtido (duplicado)'}
             </span>
+          </div>
+        )}
+
+        {/* ═══ SERVOS DESTE BANNER ═══ */}
+        {pool.length>0&&(
+          <div style={{marginBottom:14}}>
+            <div className="divider"><span className="divider-text">SERVOS NESTE BANNER ({pool.length})</span></div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(64px,1fr))',gap:8,marginTop:10}}>
+              {pool.map(id=>{
+                const sv=GACHA_SERVOS[id];
+                if(!sv)return null;
+                const rar=sv.rarity||3;
+                const rarCor=rar>=5?'#ffd54f':rar>=4?'#c77dff':'#c0c0c0';
+                const possui=(profile.gachaOwned||[]).includes(id);
+                const emDestaque=banner.rateUp===id;
+                return(
+                  <button key={id} onClick={()=>setDetalhe(sv)} className="gacha-pool-card"
+                    style={{'--rar':rarCor,position:'relative',borderRadius:9,overflow:'hidden',cursor:'pointer',
+                      border:`1.5px solid ${rarCor}`,background:`linear-gradient(160deg, ${rarCor}22, rgba(0,0,0,0.6))`,padding:0}}>
+                    <div style={{position:'relative',width:'100%',aspectRatio:'3/4',overflow:'hidden'}}>
+                      <img src={sv.assets?.combat||sv.assets?.default} alt={sv.name} className="gacha-pool-art"
+                        style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center 12%'}}
+                        onError={e=>{e.target.style.display='none';e.target.parentNode.style.background='rgba(0,0,0,0.4)';}}/>
+                      {/* estrelas de raridade */}
+                      <div style={{position:'absolute',top:3,left:0,right:0,textAlign:'center',fontSize:'.5rem',color:rarCor,textShadow:'0 1px 3px #000',letterSpacing:-1}}>{'★'.repeat(rar)}</div>
+                      {/* selo de "já possui" */}
+                      {possui&&<div style={{position:'absolute',top:3,right:3,fontSize:'.7rem',filter:'drop-shadow(0 1px 2px #000)'}}>✓</div>}
+                      {/* rate up */}
+                      {emDestaque&&<div style={{position:'absolute',bottom:0,left:0,right:0,fontSize:'.44rem',fontFamily:'Cinzel,serif',color:'#1a0e0e',background:rarCor,textAlign:'center',padding:'1px 0',fontWeight:700}}>DESTAQUE</div>}
+                      {/* gradiente + nome */}
+                      <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'10px 2px 2px',background:'linear-gradient(transparent,rgba(0,0,0,0.9))'}}>
+                        <div style={{fontSize:'.44rem',color:'#fff',fontFamily:'Cinzel,serif',lineHeight:1.1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',padding:'0 2px'}}>{sv.name}</div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{fontSize:'.58rem',color:'var(--parchment-dark)',fontStyle:'italic',marginTop:8}}>Toque num Servo para ver os detalhes.</div>
           </div>
         )}
 
@@ -9349,7 +9493,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.40</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.41</p>
       </div>
     </div>
   );
