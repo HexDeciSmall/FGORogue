@@ -710,6 +710,18 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .album-card:hover{border-color:rgba(201,162,39,0.7);box-shadow:0 10px 34px rgba(0,0,0,0.5),0 0 0 1px rgba(201,162,39,0.15);transform:translateY(-2px);}
 .feed-card{transition:border-color .25s,box-shadow .25s,transform .25s;}
 .feed-card:hover{border-color:rgba(201,162,39,0.5);box-shadow:0 6px 22px rgba(0,0,0,0.4);transform:translateY(-1px);}
+.gacha-banner-card{position:relative;border-radius:12px;overflow:hidden;cursor:pointer;text-align:left;
+  border:2px solid;transition:transform .22s,box-shadow .22s;}
+.gacha-banner-card:hover{transform:translateY(-3px) scale(1.015);box-shadow:0 10px 30px rgba(0,0,0,0.55),0 0 20px var(--tema);}
+.gacha-banner-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.5;
+  transition:transform .5s ease,opacity .3s;z-index:1;}
+.gacha-banner-card:hover .gacha-banner-art{transform:scale(1.08);opacity:0.65;}
+.gacha-banner-shine{position:absolute;top:0;left:-80%;width:60%;height:100%;z-index:3;pointer-events:none;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,0.22),transparent);transform:skewX(-18deg);}
+.gacha-banner-card:hover .gacha-banner-shine{animation:gachaShine .8s ease;}
+@keyframes gachaShine{0%{left:-80%}100%{left:130%}}
+@keyframes gachaRaios{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes gachaAura{0%,100%{opacity:0.6;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}}
 .album-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;z-index:2;
   background:linear-gradient(90deg,transparent,var(--gold),var(--crimson),transparent);opacity:0.6;}
 .album-head{display:flex;align-items:center;gap:11px;padding:12px 14px;}
@@ -5824,6 +5836,86 @@ GACHA_SERVOS.daikokuten={
 };
 PLAYABLE_SERVOS.daikokuten=GACHA_SERVOS.daikokuten;
 
+// ═══ MEDUSA (Rider) — 3★, banner Noite de Expurgo ═══
+// A Górgona domada como Servo Rider. Cavaleira montada em Pégaso, empunha a foice
+// Harpe. Seu NP Bellerophon é uma investida em área. Fiel ao FGO (Rider clássica).
+GACHA_SERVOS.medusa_rider={
+  id:'medusa_rider',name:'Medusa',className:'Rider',
+  rarity:3,banner:'expurgo',
+  getAtk:lvl=>Math.round(linear(lvl,1311,7069)),
+  getHp:lvl=>Math.round(linear(lvl,1746,9702)),
+  attributes:{
+    strength:{rank:'C',points:rankToPoints('C')},
+    agility:{rank:'A',points:rankToPoints('A')},
+    luck:{rank:'D',points:rankToPoints('D')},
+    endurance:{rank:'C',points:rankToPoints('C')},
+    mana:{rank:'B',points:rankToPoints('B'),gainPercent:manaGain('B')},
+    np:{rank:'A',points:rankToPoints('A')},
+  },
+  // ── PASSIVAS ──
+  passiveSkills:[
+    {id:'magicres',name:'Resistência Mágica B',effect:{type:'debuff_res',value:17}},
+    {id:'riding',name:'Montaria A+',effect:{type:'evade_passive',value:14}},
+    {id:'divinity',name:'Divindade E',effect:{type:'crit_passive',value:8}},
+  ],
+  // ── SKILLS ATIVAS ── as 3 do FGO (Medusa Rider)
+  activeSkills:[
+    // Monstruoso (Monstrous Strength): aumento de Ataque
+    {id:'monstrous',name:'Monstruoso',rank:'B',
+      desc:'Aumenta o próprio Ataque por 3 turnos',
+      effectType:'buff_atk_np',
+      getEffect:lvl=>({atkUp:linear(lvl,20,40),npUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,7,6,5)},
+    // Olhos Místicos (Mystic Eyes — Cybele): chance de selar o NP inimigo (petrificação)
+    {id:'mysticeyes',name:'Olhos Místicos: Cybele',rank:'B',
+      desc:'Chance de selar o Fantasma Nobre do inimigo (petrificação) e carrega sua própria Barra de NP',
+      effectType:'enemyseal_npcharge',
+      getEffect:lvl=>({sealChance:linear(lvl,50,80),sealDur:1,npGain:linear(lvl,10,20)}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Bloodfort Andromeda: carrega o NP e afia o crítico
+    {id:'bloodfort',name:'Bloodfort Andromeda',rank:'A',
+      desc:'Carrega bastante a própria Barra de NP e aumenta o Crítico por 3 turnos',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,25,50),critUp:linear(lvl,15,30),atkUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+  ],
+  // ── NP: Bellerophon — investida em área montada em Pégaso ──
+  np:{
+    name:'Bellerophon',type:'Anti-Army',isAoE:true,effectType:'dmg',sureHit:false,
+    levels:{
+      1:{dmgPct:450},
+      2:{dmgPct:600},
+      3:{dmgPct:675},
+      4:{dmgPct:712},
+      5:{dmgPct:750},
+    },
+  },
+  dialogue:{
+    summon:'Servo, Rider. Sou Medusa... Se este é o seu desejo, eu o servirei. Não me olhe diretamente, por favor.',
+    battle:'Vou encarar você...',
+    lose:'Perdão... eu não pude protegê-lo.',
+    win:'Está tudo acabado. Você pode abrir os olhos agora.',
+    np:'Venha a mim, meu amado corcel... Cruze os céus e pulverize meus inimigos! Bellerophon!',
+    skill:'Meus olhos... não os tema.',
+    mapDone:'Seguimos em frente, Mestre. Fique perto de mim.',
+  },
+  assets:{
+    default:'assets/servos/medusa/medusa_profile.png',
+    battle:'assets/servos/medusa/medusa_profile.png',
+    combat:'assets/servos/medusa/medusa_combat.png',
+    np:'assets/servos/medusa/medusa_combat.png',
+    full:'assets/servos/medusa/medusa_full.png',
+  },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) ──
+  sprites:{
+    idle:'assets/servos/medusa/medusa_espera.gif',
+    attack:'assets/servos/medusa/medusa_ataque.gif',
+    np:'assets/servos/medusa/medusa_np.gif',
+    flip:true,
+  },
+};
+PLAYABLE_SERVOS.medusa_rider=GACHA_SERVOS.medusa_rider;
+
 // Os 4 banners. `pool` = ids de GACHA_SERVOS que aparecem no banner.
 // `rateUp` (opcional) = id com chance aumentada (usado no "Especial").
 const GACHA_BANNERS=[
@@ -5842,6 +5934,8 @@ function resolveBannerPool(banner){
   if(banner.pool==='ALL'){
     const all=new Set();
     GACHA_BANNERS.forEach(b=>{ if(b.pool!=='ALL')(b.pool||[]).forEach(id=>all.add(id)); });
+    // inclui também os servos marcados como exclusivos do Expurgo (banner:'expurgo')
+    Object.keys(GACHA_SERVOS).forEach(id=>{ if(GACHA_SERVOS[id]&&GACHA_SERVOS[id].banner==='expurgo')all.add(id); });
     return[...all];
   }
   return banner.pool||[];
@@ -8705,29 +8799,50 @@ function GachaScreen({onNavigate,profile,setProfile}){
     return(
       <div className="screen" style={{padding:'20px 12px'}}>
         {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
-        <div className="panel" style={{maxWidth:640}}>
-          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:4}}>⛩️ INVOCAÇÃO</h2>
-          <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:6}}>
-            Invoque Servos lendários que não aparecem na história. Cada giro custa {GACHA_PULL_COST} SQ e concede um Servo do banner.
-          </p>
-          <div style={{textAlign:'right',marginBottom:14,color:'var(--gold)',fontSize:'.85rem',fontFamily:'Cinzel,serif'}}>💠 {sq} SQ</div>
+        <div className="panel" style={{maxWidth:640,padding:0,overflow:'hidden'}}>
+          {/* Cabeçalho temático */}
+          <div style={{position:'relative',padding:'22px 18px 16px',
+            background:'radial-gradient(ellipse at top,rgba(201,162,39,0.28),transparent 70%),linear-gradient(180deg,rgba(40,25,15,0.6),rgba(15,10,18,0.3))',
+            borderBottom:'1px solid var(--gold-dim)'}}>
+            <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,transparent,var(--gold),#fff3b0,var(--gold),transparent)'}}/>
+            <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:4,marginBottom:6,fontSize:'1.4rem',textShadow:'0 2px 16px rgba(201,162,39,0.4)'}}>⛩️ INVOCAÇÃO</h2>
+            <p style={{color:'var(--parchment-dark)',fontSize:'.72rem',marginBottom:0,fontStyle:'italic',lineHeight:1.5}}>
+              Rasgue o véu entre os mundos e chame Servos lendários ao seu lado. Cada giro custa {GACHA_PULL_COST} SQ.
+            </p>
+          </div>
 
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+          <div style={{padding:'14px 16px 18px'}}>
+          <div style={{textAlign:'right',marginBottom:14}}>
+            <span style={{color:'var(--gold)',fontSize:'.9rem',fontFamily:'Cinzel,serif',background:'rgba(201,162,39,0.12)',padding:'5px 14px',borderRadius:20,border:'1px solid var(--gold-dim)'}}>💠 {sq.toLocaleString()} SQ</span>
+          </div>
+
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
             {GACHA_BANNERS.map(b=>{
               const pool=resolveBannerPool(b);
+              const temServos=pool.length>0;
               return(
-                <button key={b.id} onClick={()=>openBanner(b)}
-                  style={{position:'relative',borderRadius:6,overflow:'hidden',cursor:'pointer',
-                    border:`2px solid ${b.theme}`,minHeight:150,textAlign:'left',
-                    background:`linear-gradient(160deg, ${b.theme}22, rgba(0,0,0,0.6))`}}>
+                <button key={b.id} onClick={()=>openBanner(b)} className="gacha-banner-card"
+                  style={{'--tema':b.theme,borderColor:b.theme,minHeight:170,
+                    background:`linear-gradient(160deg, ${b.theme}33, rgba(0,0,0,0.7))`,opacity:temServos?1:0.7}}>
                   {b.art
-                    ?<img src={b.art} alt={b.name} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.55}} onError={e=>{e.target.style.display='none';}}/>
-                    :null}
-                  <div style={{position:'relative',padding:'14px 12px',height:'100%',display:'flex',flexDirection:'column',justifyContent:'flex-end'}}>
-                    <div className="cinzel" style={{color:'#fff',fontSize:'1.05rem',letterSpacing:1,textShadow:'0 2px 8px #000'}}>{b.name}</div>
-                    <div style={{fontSize:'.66rem',color:'var(--parchment)',marginTop:3,textShadow:'0 1px 4px #000'}}>{b.subtitle}</div>
-                    <div style={{fontSize:'.6rem',color:b.theme,marginTop:6,fontFamily:'Cinzel,serif'}}>
-                      {pool.length>0?`${pool.length} Servo(s)`:'Em breve'}
+                    ?<img src={b.art} alt={b.name} className="gacha-banner-art" onError={e=>{e.target.style.display='none';}}/>
+                    :<div className="gacha-banner-art" style={{background:`radial-gradient(circle at 50% 35%, ${b.theme}44, transparent 70%)`}}/>}
+                  <div className="gacha-banner-shine"/>
+                  <div style={{position:'relative',padding:'14px 13px',height:'100%',display:'flex',flexDirection:'column',justifyContent:'flex-end',zIndex:2}}>
+                    <div style={{position:'absolute',top:10,right:10}}>
+                      {temServos?(
+                        <span style={{fontSize:'.56rem',fontFamily:'Cinzel,serif',color:'#1a0e0e',background:b.theme,padding:'3px 9px',borderRadius:12,fontWeight:700,boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}>
+                          {pool.length} ✦
+                        </span>
+                      ):(
+                        <span style={{fontSize:'.54rem',fontFamily:'Cinzel,serif',color:'var(--parchment-dark)',background:'rgba(0,0,0,0.6)',padding:'3px 9px',borderRadius:12}}>EM BREVE</span>
+                      )}
+                    </div>
+                    <div className="cinzel" style={{color:'#fff',fontSize:'1.15rem',letterSpacing:1,textShadow:`0 2px 10px #000, 0 0 20px ${b.theme}`,lineHeight:1.1}}>{b.name}</div>
+                    <div style={{fontSize:'.64rem',color:'var(--parchment)',marginTop:4,textShadow:'0 1px 4px #000',lineHeight:1.3}}>{b.subtitle}</div>
+                    <div style={{marginTop:8,display:'flex',alignItems:'center',gap:5}}>
+                      <span style={{fontSize:'.58rem',color:b.theme,fontFamily:'Cinzel,serif',letterSpacing:1,textShadow:'0 1px 3px #000'}}>INVOCAR</span>
+                      <span style={{color:b.theme,fontSize:'.7rem'}}>→</span>
                     </div>
                   </div>
                 </button>
@@ -8736,6 +8851,7 @@ function GachaScreen({onNavigate,profile,setProfile}){
           </div>
 
           <button className="btn btn-full" style={{marginTop:18}} onClick={()=>onNavigate('menu')}>← Voltar</button>
+          </div>
         </div>
       </div>
     );
@@ -8756,33 +8872,52 @@ function GachaScreen({onNavigate,profile,setProfile}){
         <p style={{fontSize:'.68rem',color:'var(--parchment-dark)',marginBottom:14}}>{banner.subtitle}</p>
 
         {/* VITRINE (cilindro) */}
-        <div style={{position:'relative',height:300,borderRadius:8,overflow:'hidden',
-          border:`2px solid ${banner.theme}`,background:'radial-gradient(circle at 50% 40%, rgba(255,255,255,0.06), rgba(0,0,0,0.7))',
-          display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14}}>
-          {/* Marcadores de "seleção" no centro */}
-          <div style={{position:'absolute',top:0,bottom:0,left:'50%',width:2,background:`${banner.theme}66`,transform:'translateX(-50%)'}}/>
+        <div style={{position:'relative',height:320,borderRadius:12,overflow:'hidden',
+          border:`2px solid ${banner.theme}`,
+          background:`radial-gradient(ellipse at 50% 38%, ${banner.theme}33, rgba(0,0,0,0.85) 72%)`,
+          display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14,
+          boxShadow:`inset 0 0 40px rgba(0,0,0,0.6), 0 0 24px ${banner.theme}44`}}>
+          {/* raios de fundo girando durante o giro */}
+          {spinning&&<div style={{position:'absolute',inset:'-50%',
+            background:`conic-gradient(from 0deg, transparent, ${banner.theme}22, transparent, ${banner.theme}22, transparent)`,
+            animation:'gachaRaios 1.2s linear infinite'}}/>}
+          {/* linha central de seleção */}
+          <div style={{position:'absolute',top:0,bottom:0,left:'50%',width:2,background:`linear-gradient(180deg,transparent,${banner.theme}88,transparent)`,transform:'translateX(-50%)'}}/>
           {pool.length===0?(
-            <div style={{color:'var(--parchment-dark)',fontSize:'.85rem',fontStyle:'italic',padding:20}}>
+            <div style={{color:'var(--parchment-dark)',fontSize:'.85rem',fontStyle:'italic',padding:20,position:'relative'}}>
               🚧 Este banner ainda não tem Servos.<br/>Em breve!
             </div>
           ):result&&!spinning?(
-            // Resultado final: servo grande em destaque
-            <div style={{animation:'cutinZoom .6s ease'}}>
-              {(()=>{const sv=GACHA_SERVOS[result.id];return(
+            // Resultado final: servo grande em destaque, com aura de raridade
+            <div style={{animation:'cutinZoom .6s ease',position:'relative',display:'flex',flexDirection:'column',alignItems:'center'}}>
+              {(()=>{const sv=GACHA_SERVOS[result.id];const rar=sv?.rarity||3;
+                const rarCor=rar>=5?'#ffd54f':rar>=4?'#c77dff':'#c0c0c0';
+                return(
                 <>
+                  {/* aura de raridade atrás do servo */}
+                  <div style={{position:'absolute',top:'40%',left:'50%',transform:'translate(-50%,-50%)',
+                    width:220,height:220,borderRadius:'50%',
+                    background:`radial-gradient(circle, ${rarCor}55, transparent 65%)`,
+                    animation:'gachaAura 2s ease-in-out infinite'}}/>
                   <img src={sv?.assets?.full||sv?.assets?.combat||sv?.assets?.default} alt={sv?.name}
-                    style={{maxHeight:230,maxWidth:'90%',objectFit:'contain',filter:'drop-shadow(0 0 20px '+banner.theme+')'}}
+                    style={{maxHeight:240,maxWidth:'92%',objectFit:'contain',position:'relative',
+                      filter:`drop-shadow(0 0 24px ${rarCor})`}}
                     onError={e=>{e.target.style.display='none';}}/>
-                  <div className="cinzel" style={{color:'var(--gold)',fontSize:'1.1rem',marginTop:6}}>{sv?.name||result.id}</div>
+                  <div style={{position:'relative',marginTop:4}}>
+                    <div style={{fontSize:'.9rem',color:rarCor,letterSpacing:2,textShadow:`0 0 10px ${rarCor}`}}>
+                      {'★'.repeat(rar)}
+                    </div>
+                    <div className="cinzel" style={{color:'#fff',fontSize:'1.2rem',textShadow:`0 2px 10px #000, 0 0 16px ${rarCor}`}}>{sv?.name||result.id}</div>
+                  </div>
                 </>
               );})()}
             </div>
           ):(
             // Vitrine girando (ou parada num servo) — com fade suave na troca idle
-            <div style={{transition:spinning?'none':'transform .2s',opacity:spinning?0.85:1}}>
+            <div style={{transition:spinning?'none':'transform .2s',opacity:spinning?0.9:1,position:'relative'}}>
               {centerServo?(
                 <img key={reelIndex} src={centerServo.assets?.full||centerServo.assets?.combat||centerServo.assets?.default} alt=""
-                  style={{maxHeight:240,maxWidth:'90%',objectFit:'contain',filter:spinning?'blur(1px)':'none',
+                  style={{maxHeight:250,maxWidth:'90%',objectFit:'contain',filter:spinning?'blur(2px) brightness(0.85)':'none',
                     animation:spinning?'none':'fadeInArt .5s ease'}}
                   onError={e=>{e.target.style.display='none';}}/>
               ):(
@@ -8954,7 +9089,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.29</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.31</p>
       </div>
     </div>
   );
