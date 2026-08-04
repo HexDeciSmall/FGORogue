@@ -5429,7 +5429,7 @@ PLAYABLE_SERVOS.skadi_summer=GACHA_SERVOS.skadi_summer;
 // evasão, roubo de buffs (charme), e dano crítico devastador. Elegante e cruel.
 GACHA_SERVOS.meltryllis_summer={
   id:'meltryllis_summer',name:'Mysterious Alter Ego Λ',className:'Alter Ego',
-  rarity:5,banner:'summer',
+  rarity:4,banner:'summer',
   getAtk:lvl=>Math.round(linear(lvl,1786,11562)),
   getHp:lvl=>Math.round(linear(lvl,1980,13500)),
   attributes:{
@@ -5663,7 +5663,7 @@ PLAYABLE_SERVOS.okita_alter=GACHA_SERVOS.okita_alter;
 // de brinquedo que dispara balas MUITO reais. Archer de crítico puro e NP AoE anti-Divino.
 GACHA_SERVOS.nobunaga_berserker={
   id:'nobunaga_berserker',name:'Oda Nobunaga (Berserker)',className:'Berserker',
-  rarity:5,banner:'summer',
+  rarity:4,banner:'summer',
   getAtk:lvl=>Math.round(linear(lvl,1901,12300)),
   getHp:lvl=>Math.round(linear(lvl,1710,11664)),
   attributes:{
@@ -5816,7 +5816,7 @@ PLAYABLE_SERVOS.nobunaga_maou=GACHA_SERVOS.nobunaga_maou;
 // devastador e NP AoE que arrasa fileiras inteiras.
 GACHA_SERVOS.nobunaga_archer={
   id:'nobunaga_archer',name:'Oda Nobunaga',className:'Archer',
-  rarity:5,banner:'gudaguda',
+  rarity:4,banner:'gudaguda',
   getAtk:lvl=>Math.round(linear(lvl,1745,11298)),
   getHp:lvl=>Math.round(linear(lvl,1636,11157)),
   attributes:{
@@ -6207,7 +6207,7 @@ const GACHA_BANNERS=[
   {id:'summer',name:'Summer',subtitle:'Servos de Verão',
    theme:'#3aa0c0',art:'assets/banners/summer.jpg',pool:['kiara_summer','skadi_summer','meltryllis_summer','nobunaga_berserker']},
   {id:'gudaguda',name:'Gudaguda',subtitle:'Servos do Evento Gudaguda',
-   theme:'#c0863a',art:'assets/banners/gudaguda.jpg',pool:['okita_saber','okita_alter','nobunaga_archer','nobunaga_maou']},
+   theme:'#c0863a',art:'assets/banners/gudaguda.jpg',pool:['okita_saber','okita_alter','nobunaga_archer','nobunaga_berserker','nobunaga_maou']},
   {id:'especial',name:'Especial',subtitle:'Banner rotativo — sempre um Servo em rate up',
    theme:'#c0a03a',art:null,pool:[],rateUp:null},
   {id:'expurgo',name:'Noite de Expurgo',subtitle:'Invocação caótica entre todos os banners',
@@ -6367,7 +6367,7 @@ const SAVE_KEY='oni_tactics_profile';
 const BOND_KEY=id=>`oni_tactics_bond_${id}`;
 
 function loadProfile(){
-  const def={nickname:'',avatar:null,gameStats:{},desafioDiario:null,sq:0,qp:0,qinDefeats:0,advSkillsUnlocked:false,deviceId:null,
+  const def={nickname:'',avatar:null,gameStats:{},desafioDiario:null,sq:0,qp:0,arcturo:0,qinDefeats:0,advSkillsUnlocked:false,deviceId:null,
     stats:{runs:0,enemiesDefeated:0,highestDamage:0},
     magus:{level:1,xp:0}, // EXP Magus — nível do Mestre (jogador), separado do XP dos Servos
     achievements:{}, // id da conquista → true quando concedida (recompensa já paga)
@@ -9244,9 +9244,15 @@ function GachaScreen({onNavigate,profile,setProfile}){
         // Registra o servo obtido
         const owned=afterCost.gachaOwned||[];
         const isNew=!owned.includes(wonId);
-        const p2={...afterCost,gachaOwned:isNew?[...owned,wonId]:owned};
+        // Duplicata converte em Arcturo (moeda de essência), escalado pela raridade.
+        const rarWon=(GACHA_SERVOS[wonId]&&GACHA_SERVOS[wonId].rarity)||3;
+        const arcGanho=isNew?0:(rarWon>=5?30:rarWon>=4?10:3);
+        const p2={...afterCost,
+          gachaOwned:isNew?[...owned,wonId]:owned,
+          arcturo:(afterCost.arcturo||0)+arcGanho,
+        };
         saveProfile(p2);setProfile(p2);
-        setResult({id:wonId,isNew});
+        setResult({id:wonId,isNew,arcturo:arcGanho});
         setSpinning(false);
       }
     },70+Math.min(ticks*2,120)); // acelera->desacelera aproximado
@@ -9405,6 +9411,11 @@ function GachaScreen({onNavigate,profile,setProfile}){
             <span style={{color:'var(--gold)',fontSize:'.85rem',fontFamily:'Cinzel,serif'}}>
               {result.isNew?'✨ NOVO SERVO OBTIDO!':'Servo obtido (duplicado)'}
             </span>
+            {!result.isNew&&result.arcturo>0&&(
+              <div style={{marginTop:5,fontSize:'.78rem',color:'#6fd3e0',fontFamily:'Cinzel,serif',display:'flex',alignItems:'center',justifyContent:'center',gap:5}}>
+                <span style={{fontSize:'.95rem'}}>✦</span> +{result.arcturo} Arcturo
+              </div>
+            )}
           </div>
         )}
 
@@ -9601,7 +9612,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.43</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.45</p>
       </div>
     </div>
   );
@@ -13526,6 +13537,7 @@ function ProfileScreen({onNavigate,profile,setProfile}){
             <div style={{display:'flex',gap:9,justifyContent:'center',flexWrap:'wrap',marginBottom:14}}>
               <span className="mestre-pill" style={{color:'var(--gold)',background:'rgba(201,162,39,0.13)',border:'1px solid var(--gold-dim)'}}>💎 {(profile.sq||0).toLocaleString()} SQ</span>
               <span className="mestre-pill" style={{color:'#4fc3f7',background:'rgba(79,195,247,0.1)',border:'1px solid rgba(79,195,247,0.35)'}}>🪙 {(profile.qp||0).toLocaleString()} QP</span>
+              <span className="mestre-pill" title="Essência obtida ao invocar Servos que você já possui" style={{color:'#6fd3e0',background:'rgba(111,211,224,0.1)',border:'1px solid rgba(111,211,224,0.35)'}}>✦ {(profile.arcturo||0).toLocaleString()} Arcturo</span>
               {(() => {const gs=profile.gameStats||{};const v=(gs.blackjack?.v||0)+(gs.xadrez?.v||0);return v>0?(
                 <span className="mestre-pill" style={{color:'var(--parchment)',background:'rgba(255,255,255,0.05)',border:'1px solid var(--gold-dim)'}}>🏆 {v} vitória{v!==1?'s':''}</span>
               ):null;})()}
