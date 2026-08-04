@@ -8918,7 +8918,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.24</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.25</p>
       </div>
     </div>
   );
@@ -11530,11 +11530,36 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
           placeholder="Título da tier list" style={{flex:1,padding:'7px 10px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--gold)',fontFamily:'Cinzel,serif',fontSize:'.8rem'}}/>
       </div>
 
-      {servoSelecionado&&(
-        <div style={{background:'rgba(201,162,39,0.15)',border:'1px solid var(--gold)',borderRadius:8,padding:'8px 12px',marginBottom:10,fontSize:'.72rem',color:'var(--gold)',textAlign:'center'}}>
-          Servo selecionado — toque numa faixa para colocá-lo, ou <button onClick={()=>setServoSelecionado(null)} style={{background:'none',border:'none',color:'var(--crimson-soft)',cursor:'pointer',textDecoration:'underline'}}>cancele</button>
-        </div>
-      )}
+      {servoSelecionado&&(()=>{
+        const sv=acharServo(servoSelecionado);
+        if(!sv)return null;
+        return(
+          <div style={{position:'sticky',top:0,zIndex:30,background:'linear-gradient(180deg,rgba(30,12,12,0.98),rgba(30,12,12,0.94))',
+            border:'2px solid var(--gold)',borderRadius:10,padding:'10px 12px',marginBottom:12,boxShadow:'0 4px 16px rgba(0,0,0,0.6)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+              <div style={{width:44,height:44,borderRadius:6,overflow:'hidden',flexShrink:0,border:'1px solid var(--gold)'}}>
+                {sv.imgCustom?<img src={sv.imgCustom} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                  :<RessonanciaRetrato art={sv.art} patronoArt={sv.patronoArt} emoji={sv.emoji} size={44}/>}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:'.8rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{sv.nome}</div>
+                <div style={{fontSize:'.62rem',color:'var(--parchment-dark)'}}>Toque na faixa de destino ↓</div>
+              </div>
+              <button onClick={()=>setServoSelecionado(null)} style={{background:'none',border:'1px solid var(--gold-dim)',borderRadius:6,color:'var(--crimson-soft)',cursor:'pointer',fontSize:'.7rem',padding:'4px 8px'}}>✕ cancelar</button>
+            </div>
+            {/* botões rápidos: colocar direto em cada faixa sem rolar */}
+            <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+              {tl.faixas.map(f=>(
+                <button key={f.id} onClick={()=>{moverPara(servoSelecionado,f.id);setServoSelecionado(null);}}
+                  style={{fontSize:'.66rem',fontFamily:'Cinzel,serif',fontWeight:700,padding:'5px 12px',borderRadius:6,cursor:'pointer',
+                    background:f.cor,color:'#1a0e0e',border:'none'}}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={{marginBottom:14}}>
         {tl.faixas.map(f=>{
