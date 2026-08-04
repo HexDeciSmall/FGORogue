@@ -719,6 +719,12 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .suporte-card:hover{transform:translateY(-3px) scale(1.03);border-color:var(--gold)!important;box-shadow:0 8px 22px rgba(201,162,39,0.3);z-index:3;}
 .suporte-art{transition:transform .4s ease;}
 .suporte-card:hover .suporte-art{transform:scale(1.08);}
+.codex-card{transition:transform .18s,box-shadow .18s,border-color .18s;}
+.codex-card:hover{transform:translateY(-2px);border-color:var(--gold)!important;box-shadow:0 6px 18px rgba(201,162,39,0.2);}
+.codex-art{transition:transform .3s ease;}
+.codex-card:hover .codex-art{transform:scale(1.06);}
+.codex-card-locked{transition:opacity .18s;}
+.codex-card-locked:hover{opacity:0.75!important;}
 .gacha-banner-card{position:relative;border-radius:12px;overflow:hidden;cursor:pointer;text-align:left;
   border:2px solid;transition:transform .22s,box-shadow .22s;}
 .gacha-banner-card:hover{transform:translateY(-3px) scale(1.015);box-shadow:0 10px 30px rgba(0,0,0,0.55),0 0 20px var(--tema);}
@@ -862,20 +868,20 @@ function animMs(ms){return Math.max(60,Math.round(ms/(COMBAT_SPEED.mult||1)));}
 // A tela aparece 1x automaticamente quando o jogador abre uma versão nova,
 // e fica sempre acessível pelo botão de novidades no menu.
 const PATCH_NOTES={
-  versaoAtual:'3.25',      // versão atual (bate com a exibida no menu)
-  ciclo:'v3.12 → v3.25',   // rótulo do ciclo mostrado no topo
-  titulo:'Coliseu & Tier Lists',
+  versaoAtual:'3.40',      // versão atual (bate com a exibida no menu)
+  ciclo:'v3.25 → v3.40',   // rótulo do ciclo mostrado no topo
+  titulo:'Novas Mecânicas & Grande Repaginação',
   itens:[
-    {icon:'🏛️',titulo:'Coliseu — PvP entre Mestres',texto:'Registre um time de defesa (3 Servos + 5 bênçãos) e desafie os times de outros jogadores! Batalhas com arena visual, onde os Servos lutam com suas artes, barras de HP individuais e golpes animados.'},
-    {icon:'⚔️',titulo:'Apostas e Ranking ELO',texto:'Aposte SQ ou QP nas batalhas do Coliseu (dobra ou perde) e suba no ranking ELO. Vença adversários mais fortes para ganhar mais pontos.'},
-    {icon:'🏆',titulo:'Tier Lists de Servos',texto:'Nova aba no Feed! Monte rankings dos 300+ Servos em faixas editáveis (SS/S/A, tipo TierMaker) ou numéricas. Adicione extras com imagem própria, salve na nuvem e veja as listas da comunidade.'},
-    {icon:'🎖️',titulo:'Bênçãos por Patrono com arte',texto:'No Coliseu, as bênçãos aparecem organizadas por Patrono, cada uma com a foto do Patrono, o ícone da bênção e o tipo (Ataque, Defesa, NP, Skill, Utilidade).'},
-    {icon:'📷',titulo:'Upload de imagens sem complicação',texto:'O envio de fotos (perfil, feed, suporte) agora usa uma configuração compartilhada — os amigos só precisam estar logados. Imagens em maior resolução e com compressão inteligente.'},
-    {icon:'☁️',titulo:'Sincronização entre aparelhos',texto:'Correção importante: sua conta agora sincroniza avatar, lista de suporte e todo o progresso entre dispositivos assim que o jogo abre, não só ao visitar o Perfil.'},
-    {icon:'✦',titulo:'Lista de Suporte alinhada',texto:'A vitrine de Servos ganhou um layout em grade fixa (estilo FGO), com todos os 10 slots alinhados e os vazios discretos.'},
-    {icon:'🗼',titulo:'Torre mais enxuta',texto:'A lista de andares da Torre agora é recolhível — a tela fica limpa e você expande só quando quer conferir a dificuldade.'},
-    {icon:'👥',titulo:'Contagem de Servos corrigida',texto:'O perfil dos amigos agora conta e exibe corretamente os Servos (base + gacha), sem divergências entre as telas.'},
-    {icon:'✨',titulo:'Ajustes e polimento',texto:'Combate do Coliseu rebalanceado (sem mais Servo entrando "morto"), tier lists maiores e mais legíveis, seleção fixa no topo para posicionar Servos com facilidade, e vários ajustes finos.'},
+    {icon:'💥',titulo:'Barra de Postura (Break)',texto:'Bosses agora têm uma barra de Postura. Concentre dano para quebrá-la: o boss fica atordoado por 2 turnos e recebe +50% de dano na janela. Recompensa quem sabe a hora de despejar os NPs!'},
+    {icon:'🌍',titulo:'Estados de Campo',texto:'Combates podem ter condições ambientais que afetam os dois lados: Terra Amaldiçoada (+veneno), Névoa (−crítico), Fluxo de Leylines (+NP), Terra Sagrada (+cura) e Campo de Carnificina (+ATK/−DEF). Cada luta fica única.'},
+    {icon:'🐍',titulo:'4 novos Servos jogáveis',texto:'Medusa (Rider) chega ao Noite de Expurgo; Oda Nobunaga (Maou) Avenger ao Gudaguda; e Yang Guifei (Foreigner) + Typhon Ephemeros (Pretender) ao Expurgo. Cada uma com kit canônico completo e NP temático.'},
+    {icon:'🎴',titulo:'Perfil repaginado',texto:'Seu cartão de Mestre ganhou banner de fundo com sua arte, insígnia de rank que evolui (Aprendiz → Grande Mago), Resumo de Carreira, Conquistas em Destaque e seus Servos mais fortes. O perfil dos amigos ficou igualmente rico.'},
+    {icon:'⛩️',titulo:'Invocação mais épica',texto:'A tela do gacha foi redesenhada: banners com brilho e efeito de luz, raios girando durante o giro, e aura de raridade pulsante no resultado (dourada 5★, roxa 4★, prata 3★) com estrelas.'},
+    {icon:'🏆',titulo:'Tier List aprimorada',texto:'Cards maiores e mais legíveis, opção de adicionar extras com imagem própria, e uma barra fixa no topo para posicionar Servos com um toque — sem precisar arrastar pela tela cheia de Servos.'},
+    {icon:'📖',titulo:'Álbum, Feed e Codex renovados',texto:'Cabeçalhos temáticos, abas em estilo segmentado, cards com brilho e movimento no hover. Toda a parte social e o compêndio ganharam a identidade visual dark-ink dourada/carmesim.'},
+    {icon:'👥',titulo:'Amigos e Suporte com mais vida',texto:'Cards de amigo com estatísticas em pílulas coloridas, e a lista de suporte com destaque e zoom no hover. Visitar um amigo agora mostra um cartão tão elaborado quanto o seu.'},
+    {icon:'🧭',titulo:'Navegação consistente',texto:'Botão "Subir ao topo" em todas as telas, e botão de voltar no topo em todas as abas — incluindo as telas de seleção de Campanha e Torre.'},
+    {icon:'✨',titulo:'Ajustes e polimento',texto:'Correções na Torre (novos Servos agora aparecem corretamente na seleção e no perfil), banner Noite de Expurgo aprimorado, e dezenas de refinamentos visuais pelo jogo todo.'},
   ],
 };
 const PATCH_VISTO_KEY='fate_patch_visto_v1';
@@ -6088,6 +6094,88 @@ GACHA_SERVOS.yang_guifei={
 };
 PLAYABLE_SERVOS.yang_guifei=GACHA_SERVOS.yang_guifei;
 
+// ═══ TYPHON EPHEMEROS (Pretender) — 5★, banner Noite de Expurgo ═══
+// A cria fugaz do monstro primordial Tifão, manifestada em forma humana efêmera.
+// Pretender AoE top tier: seu NP dilacera a defesa de todos os inimigos enquanto
+// os esmaga com poder ctônico. Fiel ao FGO.
+GACHA_SERVOS.typhon_ephemeros={
+  id:'typhon_ephemeros',name:'Typhon Ephemeros',className:'Pretender',
+  rarity:5,banner:'expurgo',
+  getAtk:lvl=>Math.round(linear(lvl,1868,12089)),
+  getHp:lvl=>Math.round(linear(lvl,1922,13108)),
+  attributes:{
+    strength:{rank:'A',points:rankToPoints('A')},
+    agility:{rank:'C',points:rankToPoints('C')},
+    luck:{rank:'D',points:rankToPoints('D')},
+    endurance:{rank:'A',points:rankToPoints('A')},
+    mana:{rank:'B',points:rankToPoints('B'),gainPercent:manaGain('B')},
+    np:{rank:'A',points:rankToPoints('A')},
+  },
+  // ── PASSIVAS ──
+  passiveSkills:[
+    {id:'magicres',name:'Resistência Mágica C',effect:{type:'debuff_res',value:12}},
+    {id:'itemconstruct',name:'Pseudo-Servo (Efêmero) A',effect:{type:'atk_passive',value:18}},
+    {id:'divinity',name:'Divindade A',effect:{type:'crit_passive',value:15}},
+  ],
+  // ── SKILLS ATIVAS ── as 3 do FGO (Typhon Ephemeros)
+  activeSkills:[
+    // Sopro Primordial: enorme buff de ATK e dano de NP
+    {id:'primordial',name:'Sopro do Caos Primordial',rank:'A',
+      desc:'Aumenta muito o próprio Ataque e o dano do Fantasma Nobre por 3 turnos',
+      effectType:'buff_atk_npdmg',
+      getEffect:lvl=>({atkUp:linear(lvl,20,40),npDmgUp:linear(lvl,25,45),dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Prole dos Titãs: reduz a defesa dos inimigos e carrega NP
+    {id:'titanspawn',name:'Prole dos Titãs',rank:'B',
+      desc:'Reduz a Defesa dos inimigos (sela o NP) e carrega a própria Barra de NP',
+      effectType:'enemyseal_npcharge',
+      getEffect:lvl=>({sealChance:linear(lvl,45,75),sealDur:1,npGain:linear(lvl,15,25)}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Forma Efêmera: crítico e guts (resistência ctônica)
+    {id:'ephemeral',name:'Existência Efêmera EX',rank:'EX',
+      desc:'Grande aumento de Crítico por 3 turnos e ganha Guts (resiste a um golpe fatal)',
+      effectType:'buff_atk_fear_guts',
+      getEffect:lvl=>({atkUp:linear(lvl,15,30),gutsHeal:linear(lvl,2000,5000),dur:3}),
+      getCD:lvl=>stdCD(lvl,9,8,7)},
+  ],
+  // ── NP: Ephialtes Typhoeus — AoE dano + redução de defesa ──
+  np:{
+    name:'Ephialtes Typhoeus',type:'Anti-Army',isAoE:true,effectType:'dmg_defdown',sureHit:false,
+    defDownDur:3,
+    levels:{
+      1:{dmgPct:550,defDown:20,defDownTurns:3},
+      2:{dmgPct:700,defDown:20,defDownTurns:3},
+      3:{dmgPct:775,defDown:25,defDownTurns:3},
+      4:{dmgPct:812,defDown:25,defDownTurns:3},
+      5:{dmgPct:850,defDown:30,defDownTurns:3},
+    },
+  },
+  dialogue:{
+    summon:'Pretender... Typhon Ephemeros. Sou apenas um fragmento fugaz do grande Tifão. Esta forma não durará muito... mas enquanto durar, é toda sua.',
+    battle:'O caos primordial desperta...',
+    lose:'Ah... a forma efêmera... se desfaz...',
+    win:'Vocês jamais poderiam conter o que veio antes dos deuses.',
+    np:'Tremam diante daquilo que precede toda a criação... Que o caos os devore! Ephialtes Typhoeus!',
+    skill:'O sopro dos titãs ecoa em mim.',
+    mapDone:'Enquanto esta forma existir, seguirei ao seu lado, Mestre.',
+  },
+  assets:{
+    default:'assets/servos/typhon_ephemeros/typhon_ephemeros_profile.png',
+    battle:'assets/servos/typhon_ephemeros/typhon_ephemeros_profile.png',
+    combat:'assets/servos/typhon_ephemeros/typhon_ephemeros_combat.png',
+    np:'assets/servos/typhon_ephemeros/typhon_ephemeros_combat.png',
+    full:'assets/servos/typhon_ephemeros/typhon_ephemeros_full.png',
+  },
+  // ── SPRITES ANIMADOS DE COMBATE (GIFs) ──
+  sprites:{
+    idle:'assets/servos/typhon_ephemeros/typhon_ephemeros_espera.gif',
+    attack:'assets/servos/typhon_ephemeros/typhon_ephemeros_ataque.gif',
+    np:'assets/servos/typhon_ephemeros/typhon_ephemeros_np.gif',
+    flip:true,
+  },
+};
+PLAYABLE_SERVOS.typhon_ephemeros=GACHA_SERVOS.typhon_ephemeros;
+
 // Os 4 banners. `pool` = ids de GACHA_SERVOS que aparecem no banner.
 // `rateUp` (opcional) = id com chance aumentada (usado no "Especial").
 const GACHA_BANNERS=[
@@ -9261,7 +9349,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.36</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.40</p>
       </div>
     </div>
   );
@@ -10052,22 +10140,34 @@ function CodexScreen({onNavigate,profile}){
   const[cat,setCat]=useState('servo');
   const[sel,setSel]=useState(null);
   const[abaDetalhe,setAbaDetalhe]=useState('perfil'); // 'perfil' | 'dialogos'
-  const cats=[['servo','Servos'],['mestre','Mestres'],['npc','NPCs'],['patrono','Patronos']];
+  const cats=[['servo','Servos','✦'],['mestre','Mestres','👑'],['npc','NPCs','🎭'],['patrono','Patronos','⛩️']];
   const list=cat==='patrono'?[]:CODEX.filter(c=>c.cat===cat);
 
   return(
     <div className="screen" style={{padding:'20px 12px'}}>
-      <div className="panel" style={{maxWidth:640}}>
-        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:12}}>📖 INFORMAÇÕES</h2>
+      <div className="panel" style={{maxWidth:640,padding:0,overflow:'hidden'}}>
+        {/* Cabeçalho temático */}
+        <div style={{position:'relative',padding:'20px 16px 14px',
+          background:'radial-gradient(ellipse at top,rgba(201,162,39,0.25),transparent 70%),linear-gradient(180deg,rgba(35,22,30,0.6),rgba(15,10,18,0.3))',
+          borderBottom:'1px solid var(--gold-dim)'}}>
+          <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,transparent,var(--gold),#fff3b0,var(--gold),transparent)'}}/>
+          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:5,fontSize:'1.35rem',textShadow:'0 2px 14px rgba(201,162,39,0.35)'}}>📖 INFORMAÇÕES</h2>
+          <p style={{fontSize:'.7rem',color:'var(--parchment-dark)',margin:0,fontStyle:'italic'}}>
+            O compêndio de tudo que você descobriu em sua jornada.
+          </p>
+        </div>
 
+        <div style={{padding:'14px 16px 18px'}}>
         {/* Abas de categoria */}
-        <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
-          {cats.map(([id,label])=>(
+        <div style={{display:'flex',gap:5,marginBottom:16,background:'rgba(0,0,0,0.25)',padding:5,borderRadius:12,border:'1px solid var(--gold-dim)'}}>
+          {cats.map(([id,label,ic])=>(
             <button key={id} onClick={()=>{setCat(id);setSel(null);}}
-              className="btn btn-sm" style={{flex:'1 1 40%',minWidth:110,
-                background:cat===id?'var(--gold-dim)':'rgba(0,0,0,0.3)',
-                color:cat===id?'#1a1005':'var(--parchment-dark)'}}>
-              {label}
+              style={{flex:1,padding:'8px 3px',borderRadius:9,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.68rem',
+                display:'flex',flexDirection:'column',alignItems:'center',gap:2,transition:'all .2s',
+                border:`1px solid ${cat===id?'var(--gold)':'transparent'}`,background:cat===id?'rgba(201,162,39,0.22)':'transparent',
+                color:cat===id?'var(--gold)':'var(--parchment-dark)',boxShadow:cat===id?'0 2px 8px rgba(0,0,0,0.3)':'none'}}>
+              <span style={{fontSize:'1rem'}}>{ic}</span>
+              <span>{label}</span>
             </button>
           ))}
         </div>
@@ -10260,12 +10360,15 @@ function CodexScreen({onNavigate,profile}){
               const known=c.reveal(profile);
               return(
                 <button key={c.id} onClick={()=>{setSel(c.id);setAbaDetalhe('perfil');}}
-                  style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',
-                    background:'rgba(0,0,0,0.25)',border:'1px solid var(--gold-dim)',borderRadius:3,
-                    cursor:'pointer',textAlign:'left',opacity:known?1:0.6}}>
+                  className={known?'codex-card':'codex-card-locked'}
+                  style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',position:'relative',overflow:'hidden',
+                    background:known?'linear-gradient(150deg,rgba(30,18,26,0.7),rgba(15,10,18,0.6))':'rgba(0,0,0,0.25)',
+                    border:'1px solid var(--gold-dim)',borderRadius:10,
+                    cursor:'pointer',textAlign:'left',opacity:known?1:0.55}}>
+                  {known&&<div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,transparent,var(--gold),transparent)',opacity:0.6}}/>}
                   {known&&c.art
-                    ?<img src={c.art} alt="" style={{width:42,height:42,objectFit:'cover',objectPosition:'center 20%',borderRadius:3}} onError={e=>{e.target.style.display='none';}}/>
-                    :<div style={{width:42,height:42,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.5rem',color:'var(--parchment-dark)',background:'rgba(0,0,0,0.3)',borderRadius:3}}>?</div>}
+                    ?<img src={c.art} alt="" className="codex-art" style={{width:46,height:46,objectFit:'cover',objectPosition:'center 20%',borderRadius:8,border:'1px solid var(--gold-dim)'}} onError={e=>{e.target.style.display='none';}}/>
+                    :<div style={{width:46,height:46,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.5rem',color:'var(--parchment-dark)',background:'rgba(0,0,0,0.3)',borderRadius:8,border:'1px solid rgba(120,120,120,0.2)'}}>?</div>}
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:'.8rem',color:known?'var(--gold)':'var(--parchment-dark)',fontFamily:'Cinzel,serif',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{known?c.name:'???'}</div>
                     <div style={{fontSize:'.65rem',color:'var(--parchment-dark)'}}>{known?c.classe:'—'}</div>
@@ -10277,6 +10380,7 @@ function CodexScreen({onNavigate,profile}){
         )}
 
         {!sel&&<button className="btn btn-full" style={{marginTop:16}} onClick={()=>onNavigate('menu')}>← Voltar</button>}
+        </div>
       </div>
     </div>
   );
@@ -10390,7 +10494,11 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
         );
       })()}
       <div className="panel" style={{maxWidth:640}}>
-        <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,marginBottom:4}}>🗼 TORRE DE DESAFIOS</h2>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+          <button className="btn btn-sm" onClick={()=>onNavigate('menu')}>← Menu</button>
+          <h2 className="cinzel" style={{color:'var(--red-bright)',letterSpacing:3,flex:1,textAlign:'center'}}>🗼 TORRE DE DESAFIOS</h2>
+          <div style={{width:56}}/>
+        </div>
         <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:16}}>
           O verdadeiro teste: 20 fases por andar, inimigos reforçados. Monte uma party de até 3 Servos — eles lutam juntos, e você troca quem fica na frente.
         </p>
@@ -12468,32 +12576,53 @@ function AmigosScreen({onNavigate,profile,setProfile}){
     return(
       <div className="screen" style={{padding:'20px 12px'}}>
         <div className="panel" style={{maxWidth:640}}>
-          <button className="btn" style={{marginBottom:14}} onClick={()=>setVerPerfil(null)}>← Voltar</button>
-          {/* Cabeçalho do Mestre */}
-          <div style={{textAlign:'center',marginBottom:20,padding:'20px',borderRadius:14,
-            background:'radial-gradient(circle at 50% 0%,rgba(201,162,39,0.15),transparent 70%),linear-gradient(160deg,#1a1018,#120a14)',border:'1px solid var(--gold-dim)'}}>
-            <div style={{width:88,height:88,margin:'0 auto 10px',borderRadius:'50%',overflow:'hidden',border:'2px solid var(--gold)',background:'rgba(0,0,0,0.3)'}}>
-              {p.avatar
-                ?<RessonanciaRetrato art={p.avatar} size={88}/>
-                :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2rem'}}>👤</div>}
+          <button className="btn btn-sm" style={{marginBottom:14}} onClick={()=>setVerPerfil(null)}>← Voltar</button>
+          {/* Cabeçalho do Mestre — com banner de avatar e insígnia de rank */}
+          <div className="mestre-card" style={{marginBottom:20}}>
+            {(() => {
+              const bannerArt=p.avatar&&/^https?:\/\//.test(p.avatar)?p.avatar
+                :(p.avatar?resolveRetratoUrl(p.avatar):null);
+              return bannerArt?<div className="mestre-banner" style={{backgroundImage:`url("${bannerArt}")`}}/>:null;
+            })()}
+            <div style={{position:'relative',padding:'24px 20px 20px',textAlign:'center'}}>
+              {(() => {
+                const rank=magusRank(p.nivel||1);
+                return(
+                  <div className="mestre-rank-badge" style={{borderColor:rank.cor,color:rank.cor2,background:`linear-gradient(135deg,${rank.cor}33,rgba(0,0,0,0.4))`}}>
+                    <span style={{fontSize:'.85rem'}}>{rank.icon}</span>
+                    <div style={{display:'flex',flexDirection:'column',lineHeight:1}}>
+                      <span style={{fontSize:'.62rem',fontFamily:'Cinzel,serif',letterSpacing:1}}>{rank.nome}</span>
+                      <span style={{fontSize:'.5rem',color:rank.cor,letterSpacing:2}}>RANK {rank.faixa}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+              <div style={{width:96,height:96,margin:'0 auto 12px',borderRadius:'50%',overflow:'hidden',border:'3px solid var(--gold)',background:'rgba(0,0,0,0.3)',boxShadow:'0 0 20px rgba(201,162,39,0.35)'}}>
+                {p.avatar
+                  ?<RessonanciaRetrato art={p.avatar} size={96}/>
+                  :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2.2rem'}}>👤</div>}
+              </div>
+              <div style={{fontSize:'.56rem',color:'var(--gold-dim)',letterSpacing:4,marginBottom:4,fontFamily:'Cinzel,serif'}}>◈ MESTRE DO CALDEIRÃO ◈</div>
+              <h2 className="cinzel" style={{color:'var(--parchment)',fontSize:'1.4rem',letterSpacing:1,
+                background:'linear-gradient(90deg,#fff3b0,#c9a227)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',textShadow:'0 2px 12px rgba(201,162,39,0.3)'}}>{p.nome}</h2>
+              <div style={{fontSize:'.72rem',color:'#e6c34c',marginTop:4,fontFamily:'Cinzel,serif'}}>👑 Nível {p.nivel}</div>
             </div>
-            <h2 className="cinzel" style={{color:'var(--gold)',fontSize:'1.3rem',letterSpacing:1}}>{p.nome}</h2>
-            <div style={{fontSize:'.78rem',color:'var(--parchment-dark)',marginTop:2}}>Mestre Nível {p.nivel}</div>
           </div>
           {/* Estatísticas */}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:20}}>
             {[
-              {icon:'⚔️',label:'Runs',val:(p.stats&&p.stats.runs)||0},
-              {icon:'💀',label:'Inimigos',val:(p.stats&&p.stats.enemiesDefeated)||0},
-              {icon:'🏆',label:'Conquistas',val:p.conquistas||0},
-              {icon:'💥',label:'Maior dano',val:((p.stats&&p.stats.highestDamage)||0).toLocaleString()},
-              {icon:'💎',label:'SQ',val:(p.sq||0).toLocaleString()},
-              {icon:'✦',label:'Servos',val:servos.length},
+              {icon:'⚔️',label:'Runs',val:(p.stats&&p.stats.runs)||0,cor:'#4fc3f7'},
+              {icon:'💀',label:'Inimigos',val:(p.stats&&p.stats.enemiesDefeated)||0,cor:'#e05a4a'},
+              {icon:'🏆',label:'Conquistas',val:p.conquistas||0,cor:'#7ee08a'},
+              {icon:'💥',label:'Maior dano',val:((p.stats&&p.stats.highestDamage)||0).toLocaleString(),cor:'#e6c34c'},
+              {icon:'💎',label:'SQ',val:(p.sq||0).toLocaleString(),cor:'#c77dff'},
+              {icon:'✦',label:'Servos',val:servos.length,cor:'#c9a227'},
             ].map((s,i)=>(
-              <div key={i} style={{background:'rgba(0,0,0,0.3)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'10px',textAlign:'center'}}>
-                <div style={{fontSize:'1.1rem'}}>{s.icon}</div>
-                <div style={{fontSize:'.9rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{s.val}</div>
-                <div style={{fontSize:'.56rem',color:'var(--parchment-dark)'}}>{s.label}</div>
+              <div key={i} className="perfil-stat-card" style={{borderColor:s.cor+'55'}}>
+                <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${s.cor},transparent)`}}/>
+                <div style={{fontSize:'1.2rem',marginBottom:2}}>{s.icon}</div>
+                <div className="cinzel" style={{fontSize:'1rem',color:s.cor,lineHeight:1,marginBottom:2,textShadow:`0 0 10px ${s.cor}44`}}>{s.val}</div>
+                <div style={{fontSize:'.54rem',color:'var(--parchment-dark)',textAlign:'center'}}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -14128,7 +14257,11 @@ function ServoSelectScreen({onNavigate,onStartCampaign,profile}){
   return(
     <div className="screen">
       <div className="panel" style={{maxWidth:560}}>
-        <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,marginBottom:8}}>✦ INVOCAR SERVO ✦</h2>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+          <button className="btn btn-sm" onClick={()=>onNavigate('menu')}>← Menu</button>
+          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,flex:1,textAlign:'center'}}>✦ INVOCAR SERVO ✦</h2>
+          <div style={{width:56}}/>
+        </div>
         <p style={{color:'var(--parchment-dark)',fontSize:'.8rem',marginBottom:16,fontStyle:'italic'}}>{selInfo.name} — {selInfo.phases} fases</p>
         <div style={{display:'flex',gap:16,alignItems:'flex-start',border:'1px solid var(--gold-dim)',borderRadius:3,padding:16,marginBottom:16}}>
           <Portrait src={IBARAKI.assets.default} alt="Ibaraki Douji" style={{width:90,height:120}}/>
@@ -14957,7 +15090,7 @@ const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,arche
   meltryllis:GACHA_SERVOS.meltryllis_summer,nobunaga:GACHA_SERVOS.nobunaga_archer,
   nobunaga_zerker:GACHA_SERVOS.nobunaga_berserker,daikokuten:GACHA_SERVOS.daikokuten,
   medusa_rider:GACHA_SERVOS.medusa_rider,nobunaga_maou:GACHA_SERVOS.nobunaga_maou,
-  yang_guifei:GACHA_SERVOS.yang_guifei};
+  yang_guifei:GACHA_SERVOS.yang_guifei,typhon_ephemeros:GACHA_SERVOS.typhon_ephemeros};
 const TOWER_SERVO_LISTA=[
   {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',unlock:null},
   {id:'qin',name:'Qin Liangyu',classe:'Lancer',unlock:'defeat_qin'},
@@ -14976,6 +15109,7 @@ const TOWER_SERVO_LISTA=[
   {id:'medusa_rider',name:'Medusa',classe:'Rider',unlock:'gacha',gachaId:'medusa_rider',lockText:'Banner Pull'},
   {id:'nobunaga_maou',name:'Oda Nobunaga (Maou)',classe:'Avenger',unlock:'gacha',gachaId:'nobunaga_maou',lockText:'Banner Pull'},
   {id:'yang_guifei',name:'Yang Guifei',classe:'Foreigner',unlock:'gacha',gachaId:'yang_guifei',lockText:'Banner Pull'},
+  {id:'typhon_ephemeros',name:'Typhon Ephemeros',classe:'Pretender',unlock:'gacha',gachaId:'typhon_ephemeros',lockText:'Banner Pull'},
 ];
 // O jogador tem acesso a este servo?
 function servoLiberado(s,profile){
@@ -18602,6 +18736,36 @@ function EventScreen({camp,evento,onFinish,setProfile,onCombat,onGraca,onInvocar
 // ══════════════════════════════════════════════════════
 // COMBATE
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// ESTADOS DE CAMPO — condições ambientais que afetam TODO o combate.
+// Cada combate tem chance de ter um campo ativo (sorteado no início).
+// Os efeitos são lidos pelo motor via getCampoEffects(campo).
+const ESTADOS_CAMPO=[
+  {id:'nenhum',nome:'',icon:'',desc:'',cor:'#888',peso:52}, // sem campo (maioria dos combates)
+  {id:'terra_amaldicoada',nome:'Terra Amaldiçoada',icon:'☠️',cor:'#9575cd',peso:8,
+   desc:'A maldição fervilha no solo — dano de veneno/maldição +50% para todos.',
+   eff:{curseAmp:50}},
+  {id:'nevoa',nome:'Névoa Densa',icon:'🌫️',cor:'#9db4c0',peso:8,
+   desc:'A visão falha — chance de crítico reduzida para todos (−15%).',
+   eff:{critDown:15}},
+  {id:'leylines',nome:'Fluxo de Leylines',icon:'🌀',cor:'#4fc3f7',peso:8,
+   desc:'Mana flui em abundância — geração de NP aumentada para todos (+50%).',
+   eff:{npGainAmp:50}},
+  {id:'terra_sagrada',nome:'Terra Sagrada',icon:'✨',cor:'#e6c34c',peso:8,
+   desc:'Uma bênção paira no ar — cura e regeneração +50% para todos.',
+   eff:{healAmp:50}},
+  {id:'campo_carnificina',nome:'Campo de Carnificina',icon:'🩸',cor:'#e05a4a',peso:8,
+   desc:'A sede de sangue domina — ATK +20%, mas DEF −20% para todos.',
+   eff:{atkAll:20,defAll:-20}},
+];
+function sortearCampo(){
+  const total=ESTADOS_CAMPO.reduce((a,c)=>a+c.peso,0);
+  let r=Math.random()*total;
+  for(const c of ESTADOS_CAMPO){if((r-=c.peso)<0)return c;}
+  return ESTADOS_CAMPO[0];
+}
+function getCampoEffects(campo){return (campo&&campo.eff)||{};}
+
 function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfile,fixedEnemies,banditPoison}){
   // Perks passivas EQUIPADAS do Mestre — carregadas do profile uma vez por combate
   const perkEffects=getPerkEffects(profile);
@@ -18626,11 +18790,17 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const am=ameacaAtual(camp,profile);
     const hpM=(camp.towerHpMult||1)*(am.bossHp||1), atkM=(camp.towerAtkMult||1)*(am.bossAtk||1);
     // Aplica os multiplicadores da Torre ao boss recém-criado
-    const T=(b)=>({...b,
-      maxHp:Math.round(b.maxHp*hpM),currentHp:Math.round(b.currentHp*hpM),
-      atkScaled:Math.round(b.atkScaled*atkM),
-      damage:Math.round((b.damage||0)*atkM),
-    });
+    const T=(b)=>{
+      const maxHp=Math.round(b.maxHp*hpM);
+      // Postura (break bar): 45% do HP máximo. Quebrar abre uma janela de dano.
+      const poiseMax=Math.round(maxHp*0.45);
+      return {...b,
+        maxHp,currentHp:Math.round(b.currentHp*hpM),
+        atkScaled:Math.round(b.atkScaled*atkM),
+        damage:Math.round((b.damage||0)*atkM),
+        poiseMax,poise:poiseMax,breakTurns:0,
+      };
+    };
     if(mid==='kurikara_city'){ // Go-Sanjo Falso (mapa 5)
       return T({
         ...GOSANJO,instanceId:'gosanjo_boss',
@@ -18855,6 +19025,14 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
   const[party,setParty]=useState(initialParty);
   const[activeIdx,setActiveIdx]=useState(0);
+  // Estado de campo do combate — sorteado uma vez. Bosses têm chance maior de campo.
+  const[campo]=useState(()=>{
+    const c=sortearCampo();
+    // Boss: se saiu "nenhum", tenta de novo uma vez (bosses são mais épicos com campo)
+    if(isBoss&&c.id==='nenhum'&&Math.random()<0.5)return sortearCampo();
+    return c;
+  });
+  const campoEff=getCampoEffects(campo);
   // Skills do Mestre (Mana Buster, Transf. Mana, Veneno, Tormento, Ossos, Ukiyo-e,
   // Fundir Ossos): recarga ÚNICA e compartilhada por TODO o grupo — usar numa servo
   // trava a skill pros outros também, até a recarga acabar.
@@ -19116,6 +19294,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(camp.saberBuff)atkUp+=SABER_NP.atkUp;
     // Skill da Torre — Carisma: +ATK passivo permanente
     if(towerAtkUp>0)atkUp+=towerAtkUp;
+    // Estado de Campo — Campo de Carnificina: +ATK para todos
+    if(campoEff.atkAll)atkUp+=campoEff.atkAll;
     // Casa de Chá — Chá da Revolta: +20% ATK enquanto durar (contado por encontros)
     if(camp.chaBuffs?.atkUp&&(camp.chaBuffs.atkUp.encounters||0)>0)atkUp+=camp.chaBuffs.atkUp.value;
     // Graça — Embriaguez de Sangue (Shuten Douji): +ATK ao custo de HP por turno
@@ -19197,6 +19377,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       spawnFx(e.instanceId,'ESQUIVOU','miss');
       return e;
     }
+    // Bônus de BREAK: inimigo com postura quebrada recebe +50% de dano.
+    if(e.isBoss&&e.breakTurns>0){dmg=Math.round(dmg*1.5);}
     spawnFx(e.instanceId,String(dmg),fxKind);
     // Efeito de impacto: NP mostra anéis; crítico mostra estrela; golpe comum, corte.
     spawnImpact(e.instanceId,fxKind==='np'?'np':fxKind==='crit'?'crit':'hit');
@@ -19204,6 +19386,25 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     runStats.current.danoCausado+=Math.max(0,Math.min(dmg,e.currentHp));
     if(e.currentHp>0&&e.currentHp-dmg<=0)runStats.current.inimigosDerrotados+=1;
     let out={...e,currentHp:Math.max(0,e.currentHp-dmg)};
+    // ── BARRA DE POSTURA (BREAK) ── só para bosses. Acumular dano reduz a postura;
+    // ao zerar, o boss entra em BREAK: atordoado e recebe dano aumentado por 2 turnos.
+    // A postura só existe se o boss foi inicializado com poiseMax (ver initBossPoise).
+    if(out.isBoss&&out.poiseMax&&out.currentHp>0&&dmg>0){
+      if(out.breakTurns>0){
+        // já está em break — não reprocessa (o dano bônus é aplicado no cálculo)
+      }else{
+        const novaPostura=Math.max(0,(out.poise!=null?out.poise:out.poiseMax)-dmg);
+        out.poise=novaPostura;
+        if(novaPostura<=0){
+          out.breakTurns=2;                 // atordoado por 2 turnos
+          out.poise=out.poiseMax;           // recarrega a postura para depois do break
+          out.stunned=(out.stunned||0)+2;   // reaproveita o sistema de stun existente
+          addLog(`💥 POSTURA QUEBRADA! ${out.name} está vulnerável — recebe +50% de dano por 2 turnos!`,'np');
+          spawnFx(out.instanceId,'💥 BREAK!','crit');
+          spawnImpact(out.instanceId,'np');
+        }
+      }
+    }
     // Afixo Coroa de Espinhos: parte do dano recebido volta para o Servo ativo.
     if(e.thorns&&dmg>0){
       const refl=Math.max(1,Math.round(dmg*e.thorns/100));
@@ -19431,6 +19632,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       cooldowns:e.cooldowns?Object.fromEntries(Object.entries(e.cooldowns).map(([k,v])=>[k,Math.max(0,v-1)])):e.cooldowns,
       evadeTurns:Math.max(0,(e.evadeTurns||0)-1), // Evade da Archer expira após 1 turno
       npSealed:Math.max(0,(e.npSealed||0)-1), // Selo de NP (Sucessora Abençoada da Sith)
+      breakTurns:Math.max(0,(e.breakTurns||0)-1), // janela de BREAK (postura quebrada) expira
       gutsState:newGuts,
     };
   }
@@ -19529,7 +19731,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     if(!tgt||tgt.currentHp<=0){setNotif('Selecione um inimigo vivo!');return;}
     playSpriteAnim(activeIdx,'attack',1200); // sprite animado de ataque
     // Ação de ataque gera NP mesmo se o alvo esquivar (a ação foi executada)
-    const newServo={...servo,npBar:clamp(servo.npBar+servo.attributes.mana.gainPercent,0,100)};
+    const npBaseGain=servo.attributes.mana.gainPercent*(1+((campoEff.npGainAmp||0)/100));
+    const newServo={...servo,npBar:clamp(servo.npBar+npBaseGain,0,100)};
     // Boss pode esquivar (Agility): 5% base + metade da diferença de Agility
     if(tgt.isBoss){
       const dodge=5+Math.max(0,(tgt.agility-servo.attributes.agility.points))/2;
@@ -19548,6 +19751,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     // Chance de crítico = Sorte + bônus de buffs ativos (crit_up)
     let critBonus=(GE.critChanceUp||0);
     for(const b of servo.activeBuffs||[]){if(b.type==='crit_up')critBonus+=b.value;}
+    // Estado de Campo — Névoa Densa: crítico reduzido para todos
+    if(campoEff.critDown)critBonus-=campoEff.critDown;
     // Passiva de crítico (ex.: Manifestação Independente da Kiara)
     for(const p of servo.passiveSkills||[]){if(p.effect.type==='crit_passive')critBonus+=p.effect.value;}
     // Graça — Esfinge Imperial (Ozymandias): mais dano com o HP cheio
@@ -21234,6 +21439,18 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
 
         {/* Conteúdo principal do combate */}
         <div style={{flex:1,minWidth:0}}>
+        {/* Estado de Campo ativo — condição ambiental que afeta todos */}
+        {campo&&campo.id!=='nenhum'&&(
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,padding:'7px 12px',borderRadius:10,
+            background:`linear-gradient(90deg, ${campo.cor}22, rgba(0,0,0,0.4))`,border:`1px solid ${campo.cor}66`,
+            boxShadow:`0 0 12px ${campo.cor}22`}}>
+            <span style={{fontSize:'1.3rem'}}>{campo.icon}</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:'.74rem',color:campo.cor,fontFamily:'Cinzel,serif',letterSpacing:1}}>{campo.nome}</div>
+              <div style={{fontSize:'.58rem',color:'var(--parchment-dark)',lineHeight:1.3}}>{campo.desc}</div>
+            </div>
+          </div>
+        )}
         {/* ═══════════ ARENA ABERTA — sprites livres, ancorados no chão ═══════════ */}
         <div className="battle-arena" style={{height:isParty?400:400,display:'flex',alignItems:'flex-end',justifyContent:'space-between',padding:'0 2% 10px'}}>
           <div className="arena-ground"/>
@@ -21354,6 +21571,19 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
                       <div style={{width:`${clamp((e.currentHp/e.maxHp)*100,0,100)}%`}}/>
                     </div>
                     <div className="status-num">{Math.max(0,e.currentHp)}</div>
+                    {/* Barra de POSTURA (só bosses) — quebrar abre janela de dano */}
+                    {e.isBoss&&e.poiseMax&&e.currentHp>0&&(
+                      e.breakTurns>0?(
+                        <div style={{fontSize:'.48rem',color:'#ffd54f',textAlign:'center',fontFamily:'Cinzel,serif',marginTop:2,animation:'subirFade .3s ease'}}>💥 BREAK! ({e.breakTurns}t · +50% dano)</div>
+                      ):(
+                        <div style={{marginTop:3}} title="Postura — quebre para atordoar e amplificar o dano">
+                          <div style={{height:4,borderRadius:3,background:'rgba(0,0,0,0.5)',overflow:'hidden',border:'1px solid rgba(120,180,255,0.3)'}}>
+                            <div style={{height:'100%',width:`${clamp(((e.poise!=null?e.poise:e.poiseMax)/e.poiseMax)*100,0,100)}%`,background:'linear-gradient(90deg,#3a6ea5,#6fb3ff,#a0d8ff)',transition:'width .3s'}}/>
+                          </div>
+                          <div style={{fontSize:'.42rem',color:'#8fbfff',textAlign:'center',letterSpacing:1,marginTop:1}}>POSTURA</div>
+                        </div>
+                      )
+                    )}
                     {(e.stunned||0)>0&&<div style={{fontSize:'.48rem',color:'#c9a0ff',textAlign:'center'}}>💫 ATORD.</div>}
                     {e.isBoss&&e.gutsState?.active&&<div style={{fontSize:'.48rem',color:'#ffd080',textAlign:'center'}}>GUTS ×{e.gutsState.charges}</div>}
                     {(e.activeDebuffs||[]).slice(0,2).map((d,j)=>(<span key={j} style={{fontSize:'.48rem',color:'#ff8080',display:'block',textAlign:'center'}}>{d.type==='attack_down'?'ATK':'DEF'}-{d.value}%</span>))}
