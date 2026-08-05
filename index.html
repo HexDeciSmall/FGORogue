@@ -874,20 +874,18 @@ function animMs(ms){return Math.max(60,Math.round(ms/(COMBAT_SPEED.mult||1)));}
 // A tela aparece 1x automaticamente quando o jogador abre uma versão nova,
 // e fica sempre acessível pelo botão de novidades no menu.
 const PATCH_NOTES={
-  versaoAtual:'3.40',      // versão atual (bate com a exibida no menu)
-  ciclo:'v3.25 → v3.40',   // rótulo do ciclo mostrado no topo
-  titulo:'Novas Mecânicas & Grande Repaginação',
+  versaoAtual:'3.52',      // versão atual (bate com a exibida no menu)
+  ciclo:'v3.40 → v3.52',   // rótulo do ciclo mostrado no topo
+  titulo:'Fidelidade Canônica & Novidades',
   itens:[
-    {icon:'💥',titulo:'Barra de Postura (Break)',texto:'Bosses agora têm uma barra de Postura. Concentre dano para quebrá-la: o boss fica atordoado por 2 turnos e recebe +50% de dano na janela. Recompensa quem sabe a hora de despejar os NPs!'},
-    {icon:'🌍',titulo:'Estados de Campo',texto:'Combates podem ter condições ambientais que afetam os dois lados: Terra Amaldiçoada (+veneno), Névoa (−crítico), Fluxo de Leylines (+NP), Terra Sagrada (+cura) e Campo de Carnificina (+ATK/−DEF). Cada luta fica única.'},
-    {icon:'🐍',titulo:'4 novos Servos jogáveis',texto:'Medusa (Rider) chega ao Noite de Expurgo; Oda Nobunaga (Maou) Avenger ao Gudaguda; e Yang Guifei (Foreigner) + Typhon Ephemeros (Pretender) ao Expurgo. Cada uma com kit canônico completo e NP temático.'},
-    {icon:'🎴',titulo:'Perfil repaginado',texto:'Seu cartão de Mestre ganhou banner de fundo com sua arte, insígnia de rank que evolui (Aprendiz → Grande Mago), Resumo de Carreira, Conquistas em Destaque e seus Servos mais fortes. O perfil dos amigos ficou igualmente rico.'},
-    {icon:'⛩️',titulo:'Invocação mais épica',texto:'A tela do gacha foi redesenhada: banners com brilho e efeito de luz, raios girando durante o giro, e aura de raridade pulsante no resultado (dourada 5★, roxa 4★, prata 3★) com estrelas.'},
-    {icon:'🏆',titulo:'Tier List aprimorada',texto:'Cards maiores e mais legíveis, opção de adicionar extras com imagem própria, e uma barra fixa no topo para posicionar Servos com um toque — sem precisar arrastar pela tela cheia de Servos.'},
-    {icon:'📖',titulo:'Álbum, Feed e Codex renovados',texto:'Cabeçalhos temáticos, abas em estilo segmentado, cards com brilho e movimento no hover. Toda a parte social e o compêndio ganharam a identidade visual dark-ink dourada/carmesim.'},
-    {icon:'👥',titulo:'Amigos e Suporte com mais vida',texto:'Cards de amigo com estatísticas em pílulas coloridas, e a lista de suporte com destaque e zoom no hover. Visitar um amigo agora mostra um cartão tão elaborado quanto o seu.'},
-    {icon:'🧭',titulo:'Navegação consistente',texto:'Botão "Subir ao topo" em todas as telas, e botão de voltar no topo em todas as abas — incluindo as telas de seleção de Campanha e Torre.'},
-    {icon:'✨',titulo:'Ajustes e polimento',texto:'Correções na Torre (novos Servos agora aparecem corretamente na seleção e no perfil), banner Noite de Expurgo aprimorado, e dezenas de refinamentos visuais pelo jogo todo.'},
+    {icon:'✨',titulo:'Grande revisão canônica dos Servos',texto:'Revisamos TODOS os Servos com base no Atlas Academy: skills, Fantasmas Nobres, classes e passivas agora são fiéis ao FGO. Corrigimos NPs que estavam com alvo trocado (single-target/área), além de efeitos e nomes de habilidades.'},
+    {icon:'✦',titulo:'Novo item: Arcturo',texto:'Invocar um Servo que você já possui agora rende Arcturo — uma essência que varia pela raridade (5★ rende mais). Aparece no resultado da invocação e no seu perfil. Ainda sem uso, guardando para novidades futuras.'},
+    {icon:'📚',titulo:'Biblioteca com 3 categorias',texto:'O Álbum de Tradução virou uma Biblioteca com Comics, Doujinshi e +18 (com aviso de idade). Cada categoria tem seu próprio acervo e envio.'},
+    {icon:'🏷️',titulo:'Vitrine de recrutamento no Gacha',texto:'Cada banner agora mostra todos os Servos disponíveis, com raridade e destaque. Toque em qualquer um para ver stats, skills e Fantasma Nobre antes de invocar.'},
+    {icon:'⚔️',titulo:'Skills e Perks no jogo',texto:'A Loja de Perks e as Skills de Mestre saíram do perfil e agora ficam na preparação da Campanha e da Torre — mecânicas de jogo acessíveis onde fazem sentido.'},
+    {icon:'🕐',titulo:'Data nas conversas e posts',texto:'Feed, Chat, comentários e traduções agora mostram data + hora de forma inteligente: hoje só a hora, ontem "ontem HH:MM", e mais antigo a data completa.'},
+    {icon:'🧭',titulo:'Navegação refinada',texto:'Botão de voltar no topo também na seleção de Campanha e Torre, e ajustes nos rótulos de tempo do Feed.'},
+    {icon:'🎖️',titulo:'Ajustes de raridade e banners',texto:'Meltryllis, Nobunaga Archer e Nobunaga Berserker agora são 4★ corretamente, e a Nobunaga Berserker aparece nos banners Summer e Gudaguda.'},
   ],
 };
 const PATCH_VISTO_KEY='fate_patch_visto_v1';
