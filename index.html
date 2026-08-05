@@ -4180,8 +4180,8 @@ const IBARAKI={
     np:{rank:'C',points:rankToPoints('C')},
   },
   passiveSkills:[
-    {id:'mad_enhance',name:'Aprimoramento de Loucura B',effect:{type:'phys_atk',value:8}},
-    {id:'anti_saber',name:'Anti-Saber',effect:{type:'vs_class',cls:'Saber',value:50}},
+    {id:'mad_enhance',name:'Aprimoramento de Loucura E',effect:{type:'phys_atk',value:8}},
+    {id:'oni',name:'Oni C',effect:{type:'atk_passive',value:8}},
   ],
   activeSkills:[
     {id:'natureza',name:'Natureza Demoníaca',rank:'A',
@@ -4928,7 +4928,7 @@ const QIN_PLAYABLE={
   // ── SKILLS DE CLASSE (PASSIVAS) ──
   passiveSkills:[
     // Resistência Mágica C: resiste a debuffs
-    {id:'magic_res',name:'Resistência Mágica C',effect:{type:'debuff_res',value:20}},
+    {id:'magic_res',name:'Resistência Mágica B',effect:{type:'debuff_res',value:20}},
     // Continuação da Batalha C+: Guts — revive 1x com 30% de HP ao ser derrotada
     {id:'battle_cont',name:'Continuação da Batalha C+',effect:{type:'guts',revivePct:30}},
   ],
@@ -5015,7 +5015,7 @@ const DEON_PLAYABLE={
   // ── SKILLS DE CLASSE (PASSIVAS) ──
   passiveSkills:[
     // Resistência Mágica C: resiste a debuffs
-    {id:'magic_res',name:'Resistência Mágica C',effect:{type:'debuff_res',value:20}},
+    {id:'magic_res',name:'Resistência Mágica B',effect:{type:'debuff_res',value:20}},
     // Montaria B: velocidade — esquiva passiva
     {id:'riding',name:'Montaria B',effect:{type:'evade_passive',value:10}},
   ],
@@ -5100,6 +5100,8 @@ const SITH_PLAYABLE={
   },
   // ── SKILLS DE CLASSE (PASSIVAS) ──
   passiveSkills:[
+    // Resistência Mágica EX: a resistência extraordinária de Tam Lin Tristan
+    {id:'magic_res',name:'Resistência Mágica EX',effect:{type:'debuff_res',value:25}},
     // Montaria A: impulsiona a própria terra — esquiva passiva alta
     {id:'riding',name:'Montaria A',effect:{type:'evade_passive',value:15}},
     // Criação de Território A: proficiente em oficinas — regenera NP por turno
@@ -5187,6 +5189,7 @@ const OKUNI_PLAYABLE={
   passiveSkills:[
     {id:'territory_kagura',name:'Criação de Território (Kagura) C',effect:{type:'np_regen',value:4}},
     {id:'item_mech',name:'Construção de Itens (Mecânica) C',effect:{type:'defense_passive',value:8}},
+    {id:'divinity',name:'Divindade B',effect:{type:'atk_passive',value:10}},
   ],
   activeSkills:[
     {id:'novo_kabuki',name:'Novo Okuni Kabuki',rank:'EX',
@@ -5365,8 +5368,8 @@ GACHA_SERVOS.skadi_summer={
   },
   // ── PASSIVAS ──
   passiveSkills:[
-    {id:'magicres',name:'Resistência Mágica A',effect:{type:'debuff_res',value:25}},
-    {id:'itemconstruct',name:'Construção de Item A',effect:{type:'atk_passive',value:10}},
+    {id:'magicres',name:'Resistência Mágica EX',effect:{type:'debuff_res',value:30}},
+    {id:'goddesscore',name:'Núcleo de Deusa EX',effect:{type:'debuff_res',value:20}},
     {id:'territory',name:'Criação de Território A',effect:{type:'np_regen',value:3}},
   ],
   // ── SKILLS ATIVAS ── adaptadas das 3 do FGO (suporte→auto-buff no nosso motor)
@@ -5523,8 +5526,6 @@ GACHA_SERVOS.okita_saber={
   // ── PASSIVAS ──
   passiveSkills:[
     {id:'magicres',name:'Resistência Mágica E',effect:{type:'debuff_res',value:10}},
-    {id:'riding',name:'Montaria A',effect:{type:'evade_passive',value:12}},
-    {id:'crit',name:'Instinto de Espadachim',effect:{type:'crit_passive',value:15}},
   ],
   // ── SKILLS ATIVAS ── as 3 do FGO
   activeSkills:[
@@ -5603,8 +5604,7 @@ GACHA_SERVOS.okita_alter={
   // ── PASSIVAS ──
   passiveSkills:[
     {id:'magicres',name:'Resistência Mágica B',effect:{type:'debuff_res',value:17}},
-    {id:'crit',name:'Espada Demoníaca',effect:{type:'crit_passive',value:15}},
-    {id:'atk',name:'Majin (Deus Humano)',effect:{type:'atk_passive',value:15}},
+    {id:'indaction',name:'Ação Independente B',effect:{type:'crit_passive',value:10}},
   ],
   // Alter Ego: vantagem contra a "cavalaria" (adaptado: Lancers no nosso motor)
   // ── SKILLS ATIVAS ── as 3 do FGO (foco em dano + carga + invencibilidade)
@@ -5679,8 +5679,8 @@ GACHA_SERVOS.nobunaga_berserker={
   },
   passiveSkills:[
     {id:'madness',name:'Aprimoramento da Loucura E',effect:{type:'atk_passive',value:8}},
-    {id:'tenka',name:'Tenka Fubu (Verão)',effect:{type:'atk_passive',value:15}},
-    {id:'crit',name:'Rei Demônio Escaldante',effect:{type:'crit_passive',value:12}},
+    {id:'oni',name:'Oni B',effect:{type:'atk_passive',value:12}},
+    {id:'divinity',name:'Divindade E',effect:{type:'crit_passive',value:8}},
   ],
   activeSkills:[
     // Atsumori Beat A: gera estrelas por vários turnos e cura a party (o "beat" do rock)
@@ -5837,7 +5837,6 @@ GACHA_SERVOS.nobunaga_archer={
   passiveSkills:[
     {id:'magicres',name:'Resistência Mágica D',effect:{type:'debuff_res',value:10}},
     {id:'indep',name:'Ação Independente A',effect:{type:'crit_passive',value:15}},
-    {id:'tenka',name:'Tenka Fubu',effect:{type:'atk_passive',value:12}},
   ],
   activeSkills:[
     // The Demonic King (Rei Demônio do Sexto Céu) EX: crítico + absorção de estrelas
@@ -5989,7 +5988,8 @@ GACHA_SERVOS.medusa_rider={
   passiveSkills:[
     {id:'magicres',name:'Resistência Mágica B',effect:{type:'debuff_res',value:17}},
     {id:'riding',name:'Montaria A+',effect:{type:'evade_passive',value:14}},
-    {id:'divinity',name:'Divindade E',effect:{type:'crit_passive',value:8}},
+    {id:'indaction',name:'Ação Independente C',effect:{type:'crit_passive',value:6}},
+    {id:'divinity',name:'Divindade E-',effect:{type:'atk_passive',value:5}},
   ],
   // ── SKILLS ATIVAS ── as 3 do FGO (Medusa Rider)
   activeSkills:[
@@ -6150,7 +6150,7 @@ GACHA_SERVOS.typhon_ephemeros={
   // ── PASSIVAS ──
   passiveSkills:[
     {id:'magicres',name:'Resistência Mágica C',effect:{type:'debuff_res',value:12}},
-    {id:'itemconstruct',name:'Pseudo-Servo (Efêmero) A',effect:{type:'atk_passive',value:18}},
+    {id:'dragonkind',name:'Espécie Dragão A',effect:{type:'atk_passive',value:18}},
     {id:'divinity',name:'Divindade A',effect:{type:'crit_passive',value:15}},
   ],
   // ── SKILLS ATIVAS ── as 3 do FGO (Typhon Ephemeros)
@@ -6167,8 +6167,8 @@ GACHA_SERVOS.typhon_ephemeros={
       effectType:'enemyseal_npcharge',
       getEffect:lvl=>({sealChance:linear(lvl,45,75),sealDur:1,npGain:linear(lvl,15,25)}),
       getCD:lvl=>stdCD(lvl,8,7,6)},
-    // Espécie Dragão: crítico e guts (a natureza de dragão primordial)
-    {id:'ephemeral',name:'Espécie Dragão A',rank:'A',
+    // Maré do Caos: crítico e guts (a Chaos Tide que compõe seu corpo)
+    {id:'ephemeral',name:'Maré do Caos EX',rank:'EX',
       desc:'Grande aumento de Crítico por 3 turnos e ganha Guts (resiste a um golpe fatal)',
       effectType:'buff_atk_fear_guts',
       getEffect:lvl=>({atkUp:linear(lvl,15,30),gutsHeal:linear(lvl,2000,5000),dur:3}),
@@ -9623,7 +9623,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.51</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.52</p>
       </div>
     </div>
   );
