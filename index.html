@@ -9626,7 +9626,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.54</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.55</p>
       </div>
     </div>
   );
@@ -12217,13 +12217,15 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
   },[tl]);
 
   const servosDisponiveis=useMemo(()=>{
-    // combina servos da ressonância + extras personalizados, tira os já colocados
-    const todos=[...RESSONANCIA_SERVOS,...(tl.extras||[])];
+    // combina servos da ressonância + extras personalizados, tira os já colocados.
+    // Se a tier é "só extras", oculta os 300+ Servos padrão.
+    const base=tl.soExtras?[]:RESSONANCIA_SERVOS;
+    const todos=[...base,...(tl.extras||[])];
     let arr=todos.filter(s=>!colocados.has(s.id));
     if(classeFiltro)arr=arr.filter(s=>s.classe===classeFiltro);
     if(busca.trim()){const q=busca.trim().toLowerCase();arr=arr.filter(s=>s.nome.toLowerCase().includes(q));}
     return arr;
-  },[colocados,classeFiltro,busca,tl.extras]);
+  },[colocados,classeFiltro,busca,tl.extras,tl.soExtras]);
 
   const classes=useMemo(()=>[...new Set(RESSONANCIA_SERVOS.map(s=>s.classe))].sort(),[]);
 
@@ -12386,7 +12388,14 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
           <button key={c} onClick={()=>setClasseFiltro(c)} style={{fontSize:'.6rem',padding:'3px 9px',borderRadius:8,cursor:'pointer',border:`1px solid ${classeFiltro===c?'var(--gold)':'var(--gold-dim)'}`,background:classeFiltro===c?'rgba(201,162,39,0.2)':'transparent',color:'var(--parchment)'}}>{c}</button>
         ))}
       </div>
-      <div style={{display:'flex',flexWrap:'wrap',gap:4,maxHeight:280,overflowY:'auto',padding:'4px',background:'rgba(0,0,0,0.2)',borderRadius:8}}>
+      <div style={{display:'flex',flexWrap:'wrap',gap:4,maxHeight:280,overflowY:'auto',padding:'4px',background:'rgba(0,0,0,0.2)',borderRadius:8,minHeight:64}}>
+        {servosDisponiveis.length===0&&(
+          <div style={{width:'100%',textAlign:'center',padding:'18px 8px',fontSize:'.7rem',color:'var(--parchment-dark)',fontStyle:'italic'}}>
+            {tl.soExtras
+              ?'Esta é uma tier de fotos próprias. Toque em "＋ Extra" acima para adicionar suas imagens.'
+              :(busca||classeFiltro)?'Nenhum servo encontrado com esse filtro.':'Todos os servos já foram posicionados!'}
+          </div>
+        )}
         {servosDisponiveis.map(s=>(
           <div key={s.id} draggable
             onDragStart={e=>onDragStart(e,s.id)}
@@ -12447,7 +12456,7 @@ function ServoLightbox({servo,onFechar,nota}){
   );
 }
 
-function TierListVisual({tl,onVoltar,podeEditar,onEditar}){
+function TierListVisual({tl,onVoltar,podeEditar,onEditar,onImportar}){
   const acharServo=(id)=>RESSONANCIA_SERVOS.find(s=>s.id===id)||(tl.extras||[]).find(e=>e.id===id)||null;
   const[ampliado,setAmpliado]=useState(null); // servo em lightbox
   return(
@@ -12461,6 +12470,11 @@ function TierListVisual({tl,onVoltar,podeEditar,onEditar}){
         </div>
         {podeEditar&&<button className="btn btn-sm" onClick={onEditar}>✏️ Editar</button>}
       </div>
+      {onImportar&&(
+        <button className="btn btn-full" style={{marginBottom:12,fontSize:'.76rem'}} onClick={onImportar}>
+          🖼️ Fazer a minha versão com as {(tl.extras||[]).length} fotos próprias desta lista
+        </button>
+      )}
 
       {tl.faixas.map(f=>{
         const servos=(tl.itens[f.id]||[]).map(id=>acharServo(id)).filter(Boolean);
@@ -12497,8 +12511,14 @@ function TierListVisual({tl,onVoltar,podeEditar,onEditar}){
 // Drag & drop com suporte a toque. Salva na nuvem, amigos veem.
 
 const TIER_CORES=['#e04a4a','#e0873a','#e0c85a','#7ee08a','#5aa0e0','#9575cd','#c77dff','#888'];
-function tierListNova(tipo,uid,nome,avatar){
-  const base={id:null,uid,nome,avatar:avatar||null,titulo:'Minha Tier List',tipo,itens:{pool:[]}};
+function tierListNova(tipo,uid,nome,avatar,opcoes){
+  opcoes=opcoes||{};
+  const base={id:null,uid,nome,avatar:avatar||null,titulo:'Minha Tier List',tipo,itens:{pool:[]},
+    soExtras:!!opcoes.soExtras, // se true, esconde os 300+ Servos padrão — só fotos próprias
+    extras:opcoes.extrasIniciais?JSON.parse(JSON.stringify(opcoes.extrasIniciais)):[]};
+  if(opcoes.soExtras)base.titulo='Minha Tier List (fotos próprias)';
+  // os extras importados começam no pool, prontos para posicionar
+  if(base.extras.length)base.itens.pool=base.extras.map(e=>e.id);
   if(tipo==='faixas'){
     base.faixas=[
       {id:'f_ss',label:'SS',cor:'#e04a4a'},
@@ -12533,13 +12553,23 @@ function TierListAba({profile,meuUid,meuNome,logado}){
   }
   useEffect(()=>{recarregar();},[meuUid]);
 
+  function importarExtras(tlOrigem){
+    const extras=(tlOrigem.extras||[]);
+    if(!extras.length){alert('Esta tier list não tem fotos próprias (extras) para importar.');return;}
+    if(!meuUid){alert('Entre na sua conta para criar uma tier list.');return;}
+    const nova=tierListNova('faixas',meuUid,meuNome,profile.avatar,{soExtras:true,extrasIniciais:extras});
+    nova.titulo=`Minha versão (${extras.length} fotos de ${tlOrigem.nome||'Mestre'})`;
+    setEditando(nova);setModo('editor');
+  }
+
   if(modo==='editor'){
     return <TierListEditor inicial={editando} meuUid={meuUid} meuNome={meuNome} avatar={profile.avatar}
       onSair={()=>{setModo('lista');setEditando(null);recarregar();}}/>;
   }
   if(modo==='ver'&&vendo){
     return <TierListVisual tl={vendo} onVoltar={()=>{setModo('lista');setVendo(null);}}
-      podeEditar={vendo.uid===meuUid} onEditar={()=>{setEditando(vendo);setModo('editor');}}/>;
+      podeEditar={vendo.uid===meuUid} onEditar={()=>{setEditando(vendo);setModo('editor');}}
+      onImportar={(logado&&vendo.uid!==meuUid&&(vendo.extras||[]).length>0)?()=>importarExtras(vendo):null}/>;
   }
 
   return(
@@ -12549,12 +12579,17 @@ function TierListAba({profile,meuUid,meuNome,logado}){
           Entre na sua conta (no Perfil) para criar tier lists.
         </div>
       ):(
-        <div style={{display:'flex',gap:8,marginBottom:16}}>
-          <button className="btn btn-full" onClick={()=>{setEditando(tierListNova('faixas',meuUid,meuNome,profile.avatar));setModo('editor');}}>
-            🏆 Nova (SS/S/A)
-          </button>
-          <button className="btn btn-full" onClick={()=>{setEditando(tierListNova('numerica',meuUid,meuNome,profile.avatar));setModo('editor');}}>
-            🔢 Nova (1,2,3)
+        <div style={{marginBottom:16}}>
+          <div style={{display:'flex',gap:8,marginBottom:8}}>
+            <button className="btn btn-full" onClick={()=>{setEditando(tierListNova('faixas',meuUid,meuNome,profile.avatar));setModo('editor');}}>
+              🏆 Nova (SS/S/A)
+            </button>
+            <button className="btn btn-full" onClick={()=>{setEditando(tierListNova('numerica',meuUid,meuNome,profile.avatar));setModo('editor');}}>
+              🔢 Nova (1,2,3)
+            </button>
+          </div>
+          <button className="btn btn-full" style={{fontSize:'.8rem'}} onClick={()=>{setEditando(tierListNova('faixas',meuUid,meuNome,profile.avatar,{soExtras:true}));setModo('editor');}}>
+            🖼️ Nova só com fotos próprias (vazia)
           </button>
         </div>
       )}
@@ -12573,7 +12608,7 @@ function TierListAba({profile,meuUid,meuNome,logado}){
           <div className="divider"><span className="divider-text">DA COMUNIDADE</span></div>
           {comunidade.length===0?(
             <p style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px',fontSize:'.8rem'}}>Nenhuma tier list da comunidade ainda. Seja o primeiro!</p>
-          ):comunidade.map(tl=><TierListCard key={tl.id} tl={tl} onAbrir={()=>{setVendo(tl);setModo('ver');}} ehMinha={false}/>)}
+          ):comunidade.map(tl=><TierListCard key={tl.id} tl={tl} onAbrir={()=>{setVendo(tl);setModo('ver');}} ehMinha={false} onImportar={logado?()=>importarExtras(tl):null}/>)}
         </>
       )}
     </div>
@@ -12581,8 +12616,9 @@ function TierListAba({profile,meuUid,meuNome,logado}){
 }
 
 // Card resumido de uma tier list na listagem.
-function TierListCard({tl,onAbrir,onApagar,ehMinha}){
+function TierListCard({tl,onAbrir,onApagar,ehMinha,onImportar}){
   const totalServos=Object.values(tl.itens||{}).reduce((acc,arr)=>acc+(arr?arr.length:0),0)-((tl.itens&&tl.itens.pool)?tl.itens.pool.length:0);
+  const nExtras=(tl.extras||[]).length;
   return(
     <div style={{background:'rgba(20,10,20,0.6)',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'12px',marginBottom:10}}>
       <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -12605,6 +12641,11 @@ function TierListCard({tl,onAbrir,onApagar,ehMinha}){
           return <span key={f.id} style={{fontSize:'.56rem',padding:'2px 7px',borderRadius:6,background:f.cor,color:'#1a0e0e',fontFamily:'Cinzel,serif',fontWeight:700}}>{f.label} · {qtd}</span>;
         })}
       </div>
+      {onImportar&&nExtras>0&&(
+        <button onClick={onImportar} className="btn btn-sm" style={{marginTop:10,width:'100%',fontSize:'.72rem'}}>
+          🖼️ Usar as {nExtras} foto{nExtras!==1?'s':''} próprias desta lista
+        </button>
+      )}
     </div>
   );
 }
