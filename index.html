@@ -5428,7 +5428,7 @@ PLAYABLE_SERVOS.skadi_summer=GACHA_SERVOS.skadi_summer;
 // Alter Ego/Lancer de verão: rainha do palco que rouba os holofotes. Kit fiel ao FGO:
 // evasão, roubo de buffs (charme), e dano crítico devastador. Elegante e cruel.
 GACHA_SERVOS.meltryllis_summer={
-  id:'meltryllis_summer',name:'Mysterious Alter Ego Λ',className:'Alter Ego',
+  id:'meltryllis_summer',name:'Mysterious Alter Ego Λ',className:'Lancer',
   rarity:4,banner:'summer',
   getAtk:lvl=>Math.round(linear(lvl,1786,11562)),
   getHp:lvl=>Math.round(linear(lvl,1980,13500)),
@@ -5443,37 +5443,40 @@ GACHA_SERVOS.meltryllis_summer={
   // ── PASSIVAS ──
   passiveSkills:[
     {id:'magicres',name:'Resistência Mágica B',effect:{type:'debuff_res',value:17}},
-    {id:'altered',name:'Anti-Herói (Verão)',effect:{type:'atk_passive',value:12}},
-    {id:'coreego',name:'Núcleo do Espírito Distorcido',effect:{type:'crit_passive',value:10}},
+    {id:'itemconstruct',name:'Manifestação Independente B',effect:{type:'atk_passive',value:12}},
+    {id:'coreego',name:'Alma Distorcida A',effect:{type:'crit_passive',value:10}},
   ],
-  // ── SKILLS ATIVAS ── adaptadas das 3 do FGO
+  // ── SKILLS ATIVAS ── as 3 canônicas do FGO (Mysterious Alter Ego Λ)
   activeSkills:[
-    // Estética do Bishonen (Verão): auto-evasão + grande crit up
-    {id:'bishonen',name:'Estética do Bishōnen (Verão)',rank:'A',
-      desc:'Concede Evasão por 1 turno e grande aumento de Crítico por 3 turnos',
-      effectType:'evade_critup',
-      getEffect:lvl=>({evadeTurns:1,critUp:linear(lvl,30,50),critDur:3}),
+    // Swan Lake A: Arts Up (5t). Sem sistema de cartas, adaptado como dano de NP.
+    {id:'swanlake',name:'Swan Lake A',rank:'A',
+      desc:'Aumenta o dano do Fantasma Nobre (Arts) por 5 turnos',
+      effectType:'buff_npdmg_long',
+      getEffect:lvl=>({npDmgUp:linear(lvl,20,30),dur:5}),
       getCD:lvl=>stdCD(lvl,8,7,6)},
-    // Corrida de Verão: buff de ATK + carga de NP (a velocista)
-    {id:'corrida',name:'Corrida Mortal de Verão',rank:'B',
-      desc:'Aumenta o Ataque e carrega a Barra de NP',
-      effectType:'npcharge_crit_atk',
-      getEffect:lvl=>({npGain:linear(lvl,20,30),atkUp:linear(lvl,20,35),critUp:0,dur:3}),
+    // Complete Fluidity B: Invencibilidade (1t) + Res. a debuff (1t) + ativa campo Praia (3t)
+    {id:'fluidity',name:'Complete Fluidity B',rank:'B',
+      desc:'Concede Invencibilidade e Resistência a debuff por 1 turno e transforma o campo em uma Praia',
+      effectType:'invuln_res_field',
+      getEffect:lvl=>({invulnTurns:1,debuffRes:linear(lvl,50,100),resDur:1}),
       getCD:lvl=>stdCD(lvl,8,7,6)},
-    // Beleza Cativante: charme/rouba o foco — cura leve e reduz o ataque inimigo
-    {id:'cativante',name:'Beleza Radiante e Cruel',rank:'A+',
-      desc:'Recupera HP e reduz o Ataque de todos os inimigos por 3 turnos',
-      effectType:'heal_enemyatkdown',
-      getEffect:lvl=>({healPct:linear(lvl,10,20),enemyAtkDown:linear(lvl,20,30),dur:3}),
-      getCD:lvl=>stdCD(lvl,9,8,7)},
+    // Melt Envy EX: absorve NP dos aliados + Crit Rate + ATK (1t)
+    {id:'meltenvy',name:'Melt Envy EX',rank:'EX',
+      desc:'Absorve carga de NP dos aliados e aumenta o próprio Crítico e Ataque por 1 turno',
+      effectType:'npabsorb_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,20,30),critUp:linear(lvl,10,20),atkUp:linear(lvl,15,30),dur:1}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
   ],
-  // ── NP: Æsthetic of the Last Spurt (single-target, dano brutal + auto-buff crit) ──
+  // ── NP: Blue Summer Palladion — AoE Quick, dano + redução de defesa ──
   np:{
-    name:'Æsthetic of the Last Spurt',type:'Anti-Unit',isAoE:false,effectType:'dmg_selfbuff_crit',
-    selfBuffDur:3,
+    name:'Blue Summer Palladion',type:'Anti-Army',isAoE:true,effectType:'dmg_defdown',
+    defDownDur:3,
     levels:{
-      1:{dmgPct:900,atkUp:20,critUp:30},2:{dmgPct:1200,atkUp:25,critUp:40},3:{dmgPct:1350,atkUp:28,critUp:45},
-      4:{dmgPct:1425,atkUp:29,critUp:48},5:{dmgPct:1500,atkUp:30,critUp:50},
+      1:{dmgPct:450,defDown:20,defDownTurns:3},
+      2:{dmgPct:600,defDown:20,defDownTurns:3},
+      3:{dmgPct:675,defDown:25,defDownTurns:3},
+      4:{dmgPct:712,defDown:25,defDownTurns:3},
+      5:{dmgPct:750,defDown:30,defDownTurns:3},
     },
   },
   dialogue:{
@@ -5481,7 +5484,7 @@ GACHA_SERVOS.meltryllis_summer={
     battle:'Vão sujar a areia da minha praia? Que audácia.',
     lose:'Impossível... eu, perdendo... que deselegante...',
     win:'Viram? Elegância e crueldade caminham juntas. Aprendam.',
-    np:'Sintam o peso do meu desprezo. Corram, corram até não restar nada... Æsthetic of the Last Spurt!',
+    np:'Sintam o peso do meu desprezo. Afundem no azul do verão... Blue Summer Palladion!',
     skill:'Observe bem. É assim que se faz.',
     mapDone:'O palco é meu, do começo ao fim. Vamos, Mestre — o verão nos espera.',
   },
@@ -9612,7 +9615,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.45</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.49</p>
       </div>
     </div>
   );
@@ -10895,6 +10898,11 @@ function TowerSelectScreen({onNavigate,onStart,profile,setProfile,onOpenShop}){
         </div>
 
         <button className="btn btn-full btn-red" style={{marginBottom:8}} onClick={onOpenShop}>🏪 &nbsp; Loja da Torre</button>
+        <div className="divider"><span className="divider-text">✦ MESTRE ✦</span></div>
+        <div style={{display:'flex',gap:10,marginBottom:8}}>
+          <button className="btn" style={{flex:1,fontSize:'.78rem'}} onClick={()=>onNavigate('shopTower')}>🏪 Loja de Perks</button>
+          <button className="btn" style={{flex:1,fontSize:'.78rem'}} onClick={()=>onNavigate('skillsTower')}>🎴 Skills de Mestre</button>
+        </div>
         <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar</button>
       </div>
     </div>
@@ -13656,32 +13664,8 @@ function ProfileScreen({onNavigate,profile,setProfile}){
           </button>
         </div>
 
-        {/* Loja de Perks + Skills do Mestre (lado a lado) */}
-        <div style={{display:'flex',gap:12,marginBottom:12}}>
-          <button className="mestre-shortcut" onClick={()=>onNavigate('shop')}>
-            <span className="ico">🏪</span>
-            <div style={{textAlign:'left',flex:1}}>
-              <div className="cinzel" style={{color:'var(--gold)',fontSize:'.88rem'}}>Loja de Perks</div>
-              <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>Melhorias permanentes</div>
-            </div>
-          </button>
-          {(() => {
-            const gosanjoOk=!!(profile.achievements&&profile.achievements.defeat_gosanjo);
-            const desbloqueadas=skillDefs.filter(({adv,gosanjo})=>!((adv&&!profile.advSkillsUnlocked)||(gosanjo&&!gosanjoOk)));
-            const melhoraveis=desbloqueadas.filter(({key})=>{
-              const lvl=profile.skills[key]||1;const maxLvl=key==='fundir'?5:10;return lvl<maxLvl;
-            }).length;
-            return(
-              <button className="mestre-shortcut" onClick={()=>setSkillsPanelAberto(true)}>
-                <span className="ico">🎴</span>
-                <div style={{textAlign:'left',flex:1}}>
-                  <div className="cinzel" style={{color:'var(--gold)',fontSize:'.88rem'}}>Skills do Mestre</div>
-                  <div style={{fontSize:'.6rem',color:'var(--parchment-dark)'}}>{melhoraveis>0?`${melhoraveis} podem subir`:'Todas no máximo'}</div>
-                </div>
-              </button>
-            );
-          })()}
-        </div>
+        {/* Loja de Perks e Skills do Mestre agora ficam na Campanha e na Torre
+            (mecânicas de jogo acessíveis no jogo). Removidos daqui do perfil. */}
 
         {/* Conquistas (largura total) */}
         <div style={{marginBottom:12}}>
@@ -14200,9 +14184,101 @@ function ServoTrainScreen({servoId,onBack,profile,setProfile}){
 }
 
 // ══════════════════════════════════════════════════════
+// SKILLS DE MESTRE — tela própria (acessível pela Campanha e Torre)
+// ══════════════════════════════════════════════════════
+function MasterSkillsScreen({onNavigate,profile,setProfile,voltarPara='menu'}){
+  const[notif,setNotif]=useState('');
+  const[sq,setSq]=useState(profile.sq||0);
+  const gosanjoOk=!!(profile.achievements&&profile.achievements.defeat_gosanjo);
+
+  function skillCostFor(key,lvl){
+    if(key==='ukiyoe')return ukiyoeCost(lvl);
+    if(key==='fundir')return fundirCost(lvl);
+    return ADV_SKILLS.includes(key)?advSkillCost(lvl):sqCost(lvl);
+  }
+  function skillMaxLevel(key){return key==='fundir'?5:10;}
+  function upgrade(key){
+    const fresh=loadProfile();
+    const cur=(fresh.skills&&fresh.skills[key])||1;
+    if(cur>=skillMaxLevel(key))return;
+    const cost=skillCostFor(key,cur);
+    if((fresh.sq||0)<cost){setNotif(`SQ insuficiente! Precisa de ${cost} SQ.`);return;}
+    const p={...fresh,sq:fresh.sq-cost,skills:{...fresh.skills,[key]:cur+1}};
+    saveProfile(p);setProfile(p);setSq(p.sq);
+    setNotif(`Skill evoluída para Nv.${cur+1}!`);
+  }
+  const skillDefs=[
+    {key:'manaBuster',name:'Mana Buster',
+     desc:lvl=>`Ataque +${linear(lvl,5,50)}% por 1 turno · Recarga ${stdCD(lvl)}t`},
+    {key:'transf',name:'Transferência de Mana',
+     desc:lvl=>`+${linear(lvl,5,50)}% Barra de NP · Recarga ${stdCD(lvl)}t`},
+    {key:'veneno',name:'Veneno de Brasilisco',
+     desc:lvl=>`Atordoar ${linear(lvl,20,100)}% chance · Recarga ${stdCD(lvl)}t`},
+    {key:'tormento',name:'Tormento',adv:true,
+     desc:lvl=>`Causa ${(5+2.5*(lvl-1)).toFixed(1)}% do HP do inimigo · Recarga ${tormentoCD(lvl)}t`},
+    {key:'ossos',name:'Ossos que não são meus',adv:true,
+     desc:lvl=>`+${10+5*(lvl-1)}% Defesa por 3t + limpa 1 debuff · Recarga ${ossosCD(lvl)}t`},
+    {key:'ukiyoe',name:'Ukiyo-e',gosanjo:true,
+     desc:lvl=>`Cura ${2000+500*(lvl-1)} HP + ${30+2*(lvl-1)}% NP + Evade 2t · Recarga ${ukiyoeCD(lvl)}t`},
+    {key:'fundir',name:'Fundir Ossos',gosanjo:true,
+     desc:lvl=>`AoE: tira ${20+5*(lvl-1)}% do HP de todos os inimigos · Recarga 10t`},
+  ];
+
+  return(
+    <div className="screen" style={{padding:'20px 12px'}}>
+      {notif&&<Notif message={notif} onDone={()=>setNotif('')}/>}
+      <div className="panel" style={{maxWidth:560}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+          <button className="btn btn-sm" onClick={()=>onNavigate(voltarPara)}>← Voltar</button>
+          <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:2,flex:1,textAlign:'center',fontSize:'1.1rem'}}>🎴 SKILLS DO MESTRE</h2>
+          <div style={{width:56}}/>
+        </div>
+        <p style={{fontSize:'.72rem',color:'var(--parchment-dark)',marginBottom:8,textAlign:'center'}}>
+          Habilidades que o Mestre usa em combate como ações livres. Gaste Saint Quartz para elevar o nível.
+        </p>
+        <div style={{textAlign:'right',marginBottom:14,color:'var(--gold)',fontSize:'.85rem',fontFamily:'Cinzel,serif'}}>
+          💎 {(sq||0).toLocaleString()} SQ
+        </div>
+
+        {skillDefs.map(({key,name,desc,adv,gosanjo})=>{
+          const lvl=profile.skills[key]||1;
+          const locked=(adv&&!profile.advSkillsUnlocked)||(gosanjo&&!gosanjoOk);
+          const maxLvl=key==='fundir'?5:10;
+          const lockMsg=gosanjo?'Desbloqueada ao derrotar o Go-Sanjo em Kurikara...':'Desbloqueada ao avançar pelo Caminho Tortuoso...';
+          return(
+            <div key={key} className="skill-row" style={locked?{opacity:.5}:{}}>
+              {!locked&&<SkillIcon nome={name} size={40} style={{marginRight:10}}/>}
+              <div className="skill-info">
+                <div className="skill-name">{locked?'🔒 ':''}{name} {!locked&&<span style={{color:'var(--parchment-dark)'}}>Nv.{lvl}</span>}</div>
+                <div className="skill-desc">{locked?lockMsg:desc(lvl)}</div>
+                {!locked&&(
+                  <div className="skill-level-pips">
+                    {Array.from({length:maxLvl},(_,i)=>(
+                      <div key={i} className={`pip${i<lvl?' filled':''}`}/>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {locked
+                ?<span style={{color:'var(--parchment-dark)',fontSize:'.7rem'}}>🔒</span>
+                :lvl<maxLvl
+                ?<button className="btn btn-sm" onClick={()=>upgrade(key)}>↑ {skillCostFor(key,lvl)} SQ</button>
+                :<span style={{color:'var(--gold)',fontSize:'.7rem',fontFamily:'Cinzel,serif'}}>MAX</span>
+              }
+            </div>
+          );
+        })}
+
+        <button className="btn btn-full" style={{marginTop:16}} onClick={()=>onNavigate(voltarPara)}>← Voltar</button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════
 // LOJA DE PERKS
 // ══════════════════════════════════════════════════════
-function ShopScreen({onNavigate,profile,setProfile}){
+function ShopScreen({onNavigate,profile,setProfile,voltarPara='profile'}){
   const[notif,setNotif]=useState('');
   const perks=profile.perks||{};
   const equipped=(profile.equippedPerks||DEFAULT_EQUIPPED).filter(id=>(perks[id]||0)>0||DEFAULT_EQUIPPED.includes(id));
@@ -14436,7 +14512,7 @@ function ShopScreen({onNavigate,profile,setProfile}){
           <div>🏆 Run Completa: <strong style={{color:'#4fc3f7'}}>+500 QP</strong></div>
         </div>
 
-        <button className="btn btn-full" onClick={()=>onNavigate('profile')}>← Voltar ao Perfil</button>
+        <button className="btn btn-full" onClick={()=>onNavigate(voltarPara)}>← Voltar</button>
       </div>
     </div>
   );
@@ -14603,6 +14679,11 @@ function ServoSelectScreen({onNavigate,onStartCampaign,profile}){
           </div>
         )}
 
+        <div className="divider"><span className="divider-text">✦ PREPARAÇÃO ✦</span></div>
+        <div style={{display:'flex',gap:10,marginBottom:14}}>
+          <button className="btn" style={{flex:1,fontSize:'.78rem'}} onClick={()=>onNavigate('shopCampaign')}>🏪 Loja de Perks</button>
+          <button className="btn" style={{flex:1,fontSize:'.78rem'}} onClick={()=>onNavigate('skillsCampaign')}>🎴 Skills de Mestre</button>
+        </div>
         <button className="btn btn-full" onClick={()=>onStartCampaign(IBARAKI,selMap,ascAtivo)}>⚔️ &nbsp; Invocar e Partir{ascAtivo>0?` · Ascensão ${ascAtivo}`:''}</button>
         <button className="btn btn-full" onClick={()=>onNavigate('menu')}>← Voltar</button>
       </div>
@@ -17556,11 +17637,15 @@ const SKILL_ART_BASE=(()=>{
     skill_charm:['Beijo da Serpente','Uraeus Astrape'],
     skill_hand:['Juízo do Arqueiro'],
     // ── Fantasmas Nobres (44x44) ──
-    np_buster:['Rashōmon Daiengi','Zekken Mukyusandan'],
+    np_buster:['Rashōmon Daiengi','Zekken Mukyusandan',
+      'Ephialtes Typhoeus','Tenka Fubu — Nobunaga Fest!','Three Line Formation',
+      'Pāpīyas Reborn, Demon King of the Sixth Heaven'],
     np_arts:['Canção da Lealdade Abnegada','Fleur de Lis',"Nirmāṇarati Heaven's Foam",
-      'Kuchiyose, Ibukidaimyoujin-Engi'],
+      'Kuchiyose, Ibukidaimyoujin-Engi',
+      'Xuanshi Yulou, Yuzhi Chentang','Blue Summer Palladion'],
     np_quick:['Fetch Failnaught','Okuni Repertoire: Kabuki of the Izumo Wild God',
-      'Gate of Aegir','Mumyou Sandanzuki'],
+      'Gate of Aegir','Mumyou Sandanzuki',
+      'Nezumi Jyōdo: Pure Land of Mice'],
   };
   const map={};
   for(const file in groups)for(const nome of groups[file])map[nome]=file;
@@ -17615,6 +17700,16 @@ const SKILL_ART_BASE=(()=>{
   return map;
 })();
 function artFor(nome){return nome?(SKILL_ART_BASE[nome]?SKILL_ART_DIR+SKILL_ART_BASE[nome]+'.png':null):null;}
+// Override de arte de NP por SERVO (id do gacha). Útil quando o NP compartilha
+// nome com outro item (ex.: a Graça "Bellerophon" mantém skill_break, mas o NP
+// da Medusa jogável usa np_quick). A chave é o id do servo → grupo de arte.
+const NP_ART_OVERRIDE_POR_SERVO={
+  medusa_rider:'np_quick',
+};
+function npArtGroupParaServo(servoId,npNome){
+  if(servoId&&NP_ART_OVERRIDE_POR_SERVO[servoId])return NP_ART_OVERRIDE_POR_SERVO[servoId];
+  return npNome?SKILL_ART_BASE[npNome]:null;
+}
 // Os botões do combate usam rótulos curtos; aqui está o nome completo de cada
 // Skill de Mestre, que é a chave usada para achar a arte.
 const MASTER_SKILL_NOME={
@@ -17623,11 +17718,15 @@ const MASTER_SKILL_NOME={
 };
 
 // Ícone de skill/perk/graça/NP: usa a arte quando existe, senão mostra o emoji antigo.
-function SkillIcon({nome,emoji,size=26,style}){
-  const cands=artCandidates(nome);
+// artGroup: sobrescreve o grupo de arte derivado do nome (ex.: NP da Medusa → np_quick),
+// útil quando o nome colide com outro item que deve manter arte diferente.
+function SkillIcon({nome,emoji,size=26,style,artGroup}){
+  const cands=artGroup
+    ?SKILL_ART_DIRS.flatMap(d=>SKILL_ART_EXTS.map(e=>d+artGroup+e))
+    :artCandidates(nome);
   const[i,setI]=useState(0);
   // Reinicia a tentativa se a skill mudar (o mesmo componente é reusado na lista)
-  useEffect(()=>{setI(0);},[nome]);
+  useEffect(()=>{setI(0);},[nome,artGroup]);
   if(!cands.length||i>=cands.length)
     return emoji?<span style={{fontSize:size*0.8,lineHeight:1,...style}}>{emoji}</span>:null;
   return <img src={cands[i]} alt="" width={size} height={size}
@@ -19016,6 +19115,11 @@ const ESTADOS_CAMPO=[
   {id:'campo_carnificina',nome:'Campo de Carnificina',icon:'🩸',cor:'#e05a4a',peso:8,
    desc:'A sede de sangue domina — ATK +20%, mas DEF −20% para todos.',
    eff:{atkAll:20,defAll:-20}},
+  // Campo "Praia" (Field Shore) — NÃO é sorteado (peso 0); só é ativado por skills
+  // como a Complete Fluidity da Meltryllis. Terreno litorâneo: mana e reflexos fluem.
+  {id:'praia',nome:'Praia (Field Shore)',icon:'🏖️',cor:'#3aa0c0',peso:0,
+   desc:'O campo vira uma orla ensolarada — geração de NP +30% e Crítico +15% para todos.',
+   eff:{npGainAmp:30,critDown:-15}}, // critDown negativo = crit UP para todos
 ];
 function sortearCampo(){
   const total=ESTADOS_CAMPO.reduce((a,c)=>a+c.peso,0);
@@ -19285,7 +19389,7 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   const[party,setParty]=useState(initialParty);
   const[activeIdx,setActiveIdx]=useState(0);
   // Estado de campo do combate — sorteado uma vez. Bosses têm chance maior de campo.
-  const[campo]=useState(()=>{
+  const[campo,setCampo]=useState(()=>{
     const c=sortearCampo();
     // Boss: se saiu "nenhum", tenta de novo uma vez (bosses são mais épicos com campo)
     if(isBoss&&c.id==='nenhum'&&Math.random()<0.5)return sortearCampo();
@@ -20282,6 +20386,26 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
       newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'attack_up',value:eff.atkUp,turns:eff.atkDur,id:'kouga_atk'}];
       addLog(`${skillDef.name}: Evasão por ${eff.evadeTurns}t · Ataque +${eff.atkUp}% por ${eff.atkDur}t · +${eff.npCharge}% de NP`,'player');
       spawnFx('servo','🌀 KOUGA-RYUU','buff');
+    } else if(et==='buff_npdmg_long'){ // Meltryllis: Swan Lake — Arts Up adaptado como dano de NP (5t)
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),
+        {type:'np_damage_up',value:eff.npDmgUp,turns:eff.dur,id:'swan_np'}];
+      addLog(`${skillDef.name}: dano do Fantasma Nobre +${eff.npDmgUp}% por ${eff.dur}t (Arts)`,'player');
+      spawnFx('servo',`+${eff.npDmgUp}% NP`,'buff');
+    } else if(et==='invuln_res_field'){ // Meltryllis: Complete Fluidity — invenc. + res. debuff + campo Praia
+      newServo.evadeTurns=(newServo.evadeTurns||0)+eff.invulnTurns; // invencibilidade = esquiva total
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),{type:'debuff_res',value:eff.debuffRes,turns:eff.resDur,id:'fluid_res'}];
+      // ativa o Estado de Campo "Praia" (Field Shore) para todo o combate
+      const praia=ESTADOS_CAMPO.find(c=>c.id==='praia');
+      if(praia)setCampo(praia);
+      addLog(`${skillDef.name}: Invencibilidade por ${eff.invulnTurns}t, Resistência a debuff +${eff.debuffRes}% e o campo vira uma Praia! 🏖️`,'player');
+      spawnFx('servo','🏖️ FIELD SHORE','buff');
+    } else if(et==='npabsorb_crit_atk'){ // Meltryllis: Melt Envy — "absorve" NP + Crit + ATK
+      newServo.npBar=clamp(newServo.npBar+eff.npGain,0,100);
+      newServo.activeBuffs=[...(newServo.activeBuffs||[]),
+        {type:'crit_up',value:eff.critUp,turns:eff.dur,id:'melt_crit'},
+        {type:'attack_up',value:eff.atkUp,turns:eff.dur,id:'melt_atk'}];
+      addLog(`${skillDef.name}: absorve ${eff.npGain}% de NP dos aliados · Crítico +${eff.critUp}% · Ataque +${eff.atkUp}% por ${eff.dur}t`,'player');
+      spawnFx('servo',`+${eff.npGain}% NP`,'buff');
     }
     setServo(newServo);setEnemies(newEnemies);
     if(checkWin(newEnemies)){endCombat(true,newServo,newEnemies);return;}
@@ -23302,6 +23426,7 @@ function BotaoSubirTopo(){
 function App(){
   const[screen,setScreen]=useState('menu');
   const[albumCat,setAlbumCat]=useState(null); // categoria do álbum aberta (null = hub)
+  const[masterSkillsVoltar,setMasterSkillsVoltar]=useState('menu'); // pra onde a tela de skills volta
   const[profile,setProfile]=useState(loadProfile());
   // Sincronização com a nuvem em nível GLOBAL — roda assim que o jogo carrega,
   // independente da tela aberta. Antes ficava só na tela de Perfil, então quem
@@ -23334,12 +23459,22 @@ function App(){
     document.addEventListener('click',onClick,true);
     return ()=>document.removeEventListener('click',onClick,true);
   },[]);
-  function navigate(s){if(s!=='comics')setAlbumCat(null);setScreen(s);}
+  function navigate(s){
+    if(s!=='comics')setAlbumCat(null);
+    // Atalhos de Loja de Perks / Skills de Mestre a partir da Campanha ou Torre:
+    // guardam de onde vieram para o botão "Voltar" retornar ao lugar certo.
+    if(s==='shopCampaign'){setMasterSkillsVoltar('campaign');setScreen('shop');return;}
+    if(s==='skillsCampaign'){setMasterSkillsVoltar('campaign');setScreen('masterSkills');return;}
+    if(s==='shopTower'){setMasterSkillsVoltar('tower');setScreen('shop');return;}
+    if(s==='skillsTower'){setMasterSkillsVoltar('tower');setScreen('masterSkills');return;}
+    setScreen(s);
+  }
   let tela=null;
   if(screen==='menu')tela=<MenuScreen onNavigate={navigate} profile={profile}/>;
   else if(screen==='profile')tela=<ProfileScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   else if(screen==='ressonancia')tela=<RessonanciaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
-  else if(screen==='shop')tela=<ShopScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
+  else if(screen==='shop')tela=<ShopScreen onNavigate={navigate} profile={profile} setProfile={setProfile} voltarPara={masterSkillsVoltar}/>;
+  else if(screen==='masterSkills')tela=<MasterSkillsScreen onNavigate={navigate} profile={profile} setProfile={setProfile} voltarPara={masterSkillsVoltar}/>;
   else if(screen==='gacha')tela=<GachaScreen onNavigate={navigate} profile={profile} setProfile={setProfile}/>;
   else if(screen==='comics')tela=albumCat
     ?<ComicAlbumScreen onNavigate={navigate} profile={profile} categoria={albumCat} onVoltarHub={()=>setAlbumCat(null)}/>
