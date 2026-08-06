@@ -742,6 +742,9 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .gacha-pool-art{transition:transform .3s ease;}
 .gacha-pool-card:hover .gacha-pool-art{transform:scale(1.08);}
 .tier-foto{transition:transform .15s,box-shadow .15s;}
+.mb-badge{position:absolute;top:-3px;right:-6px;width:9px;height:9px;border-radius:50%;
+  background:#ff4d3d;border:1.5px solid #1a0e0e;box-shadow:0 0 6px rgba(255,77,61,0.8);animation:badgePulse 1.6s ease-in-out infinite;}
+@keyframes badgePulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.25);opacity:0.7;}}
 .tier-foto:hover{transform:scale(1.12);box-shadow:0 4px 12px rgba(201,162,39,0.4);position:relative;z-index:3;}
 .tier-lupa{opacity:0;transition:opacity .15s;}
 .tier-foto-edit:hover .tier-lupa{opacity:1;}
@@ -8000,6 +8003,7 @@ function BlackjackScreen({onNavigate,profile,setProfile}){
 // em tempo real (Firestore), usando nome e foto do perfil do jogador.
 function ChatScreen({onNavigate,profile}){
   const[canal,setCanal]=useState(null); // canal aberto (objeto) ou null = lista
+  useEffect(()=>{marcarSecaoVista('chat');},[]);
   const[msgs,setMsgs]=useState([]);
   const[texto,setTexto]=useState('');
   const[enviando,setEnviando]=useState(false);
@@ -8726,6 +8730,7 @@ function EditarPostModal({post,onFechar,onSalvo}){
 // O +18 exige confirmação de idade antes de abrir.
 function ComicHubScreen({onNavigate,onAbrir}){
   const [avisoIdade,setAvisoIdade]=useState(false); // modal de confirmação +18
+  useEffect(()=>{marcarSecaoVista('comics');},[]);
   const CATS=[
     {id:'comics',nome:'Comics',icon:'📖',cor:'#c9a227',
      desc:'Traduções de comics oficiais da franquia, feitas pela comunidade.'},
@@ -9522,8 +9527,67 @@ function PatchNotesModal({onFechar}){
   );
 }
 
+// ─── NOTIFICAÇÕES DE NOVIDADE (feed, chat, álbum) ───
+// Guarda no localStorage o timestamp da última vez que o jogador abriu cada seção.
+// Se houver conteúdo mais novo no Firestore, mostra um selo de novidade no menu.
+function marcarSecaoVista(secao){
+  try{localStorage.setItem('fate_visto_'+secao,String(Date.now()));}catch{}
+}
+function ultimaVistaSecao(secao){
+  try{return parseInt(localStorage.getItem('fate_visto_'+secao)||'0',10)||0;}catch{return 0;}
+}
+// Busca o timestamp (ms) do item mais recente de cada coleção. Retorna 0 se vazio/erro.
+async function ultimoTsColecao(colecao,campoTs='ts'){
+  try{
+    if(!fbDb)return 0;
+    const snap=await fbDb.collection(colecao).orderBy(campoTs,'desc').limit(1).get();
+    if(snap.empty)return 0;
+    const d=snap.docs[0].data();
+    const ts=d[campoTs];
+    if(ts&&typeof ts.toMillis==='function')return ts.toMillis();
+    if(ts&&typeof ts.seconds==='number')return ts.seconds*1000;
+    return 0;
+  }catch{return 0;}
+}
+
+// Igual, mas para subcoleções (ex.: chat/<canal>/msgs).
+async function ultimoTsSubcolecao(colecao,docId,subcolecao,campoTs='ts'){
+  try{
+    if(!fbDb)return 0;
+    const snap=await fbDb.collection(colecao).doc(docId).collection(subcolecao).orderBy(campoTs,'desc').limit(1).get();
+    if(snap.empty)return 0;
+    const d=snap.docs[0].data();
+    const ts=d[campoTs];
+    if(ts&&typeof ts.toMillis==='function')return ts.toMillis();
+    if(ts&&typeof ts.seconds==='number')return ts.seconds*1000;
+    return 0;
+  }catch{return 0;}
+}
+
 function MenuScreen({onNavigate,profile}){
   const[patchAberto,setPatchAberto]=useState(false);
+  // Selos de novidade por seção: {feed:true, chat:true, comics:true}
+  const[novidades,setNovidades]=useState({});
+  useEffect(()=>{
+    let vivo=true;
+    (async()=>{
+      // Chat: verifica todos os canais (subcoleções chat/<canal>/msgs)
+      const chatChecks=CHAT_CANAIS.map(c=>ultimoTsSubcolecao('chat',c.id,'msgs'));
+      const[feedTs,comicsTs,...chatTss]=await Promise.all([
+        ultimoTsColecao('feed_posts'),
+        ultimoTsColecao('album_posts'),
+        ...chatChecks,
+      ]);
+      if(!vivo)return;
+      const chatTs=Math.max(0,...chatTss);
+      setNovidades({
+        feed:feedTs>ultimaVistaSecao('feed'),
+        chat:chatTs>ultimaVistaSecao('chat'),
+        comics:comicsTs>ultimaVistaSecao('comics'),
+      });
+    })();
+    return ()=>{vivo=false;};
+  },[]);
   // mostra as novidades automaticamente 1x quando o jogador abre uma versão nova
   useEffect(()=>{
     if(!patchJaVisto()){setPatchAberto(true);marcarPatchVisto();}
@@ -9620,13 +9684,20 @@ function MenuScreen({onNavigate,profile}){
           </div>
         )}
         {items.map(([nav,icon,label,variant])=>(
-          <button key={nav} className={`menu-btn ${variant}`} onClick={()=>onNavigate(nav)}>
-            <span className="mb-icon">{icon}</span>
-            <span className="mb-label">{label}</span>
+          <button key={nav} className={`menu-btn ${variant}`}
+            onClick={()=>{
+              if(novidades[nav]){marcarSecaoVista(nav);setNovidades(n=>({...n,[nav]:false}));}
+              onNavigate(nav);
+            }}>
+            <span className="mb-icon" style={{position:'relative'}}>
+              {icon}
+              {novidades[nav]&&<span className="mb-badge" title="Novidade!"/>}
+            </span>
+            <span className="mb-label">{label}{novidades[nav]&&<span style={{marginLeft:6,fontSize:'.55rem',color:'#ff6b5a',fontFamily:'Cinzel,serif',verticalAlign:'middle'}}>● novo</span>}</span>
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.56</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.57</p>
       </div>
     </div>
   );
@@ -12656,6 +12727,7 @@ function TierListCard({tl,onAbrir,onApagar,ehMinha,onImportar}){
 
 function FeedScreen({onNavigate,profile}){
   const logado=fbAuth&&fbAuth.currentUser;
+  useEffect(()=>{marcarSecaoVista('feed');},[]);
   const meuUid=logado?fbAuth.currentUser.uid:null;
   const[aba,setAba]=useState('feed'); // 'feed' | 'diario'
   const[posts,setPosts]=useState([]);
