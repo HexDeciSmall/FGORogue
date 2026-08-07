@@ -744,6 +744,9 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .tier-foto{transition:transform .15s,box-shadow .15s;}
 .mb-badge{position:absolute;top:-3px;right:-6px;width:9px;height:9px;border-radius:50%;
   background:#ff4d3d;border:1.5px solid #1a0e0e;box-shadow:0 0 6px rgba(255,77,61,0.8);animation:badgePulse 1.6s ease-in-out infinite;}
+.tier-insert{opacity:0.25;transition:opacity .15s;border-radius:4px;}
+.tier-insert:hover{opacity:1;background:rgba(201,162,39,0.12);}
+.tier-insert:hover .tier-insert-line{color:var(--gold)!important;}
 @keyframes badgePulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.25);opacity:0.7;}}
 .tier-foto:hover{transform:scale(1.12);box-shadow:0 4px 12px rgba(201,162,39,0.4);position:relative;z-index:3;}
 .tier-lupa{opacity:0;transition:opacity .15s;}
@@ -9697,7 +9700,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.57</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.58</p>
       </div>
     </div>
   );
@@ -12337,6 +12340,28 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
       return novo;
     });
   }
+  // Move uma faixa para cima (-1) ou para baixo (+1), trocando com a vizinha.
+  function moverFaixa(fid,dir){
+    setTl(prev=>{
+      const i=prev.faixas.findIndex(f=>f.id===fid);
+      const j=i+dir;
+      if(i<0||j<0||j>=prev.faixas.length)return prev;
+      const faixas=[...prev.faixas];
+      [faixas[i],faixas[j]]=[faixas[j],faixas[i]];
+      return {...prev,faixas};
+    });
+  }
+  // Insere uma nova faixa numa posição específica (indice = onde entra).
+  function inserirFaixa(indice){
+    setTl(prev=>{
+      const fid='f_'+Date.now();
+      const cor=TIER_CORES[prev.faixas.length%TIER_CORES.length];
+      const label=prev.tipo==='numerica'?String(prev.faixas.length+1):'?';
+      const faixas=[...prev.faixas];
+      faixas.splice(indice,0,{id:fid,label,cor});
+      return {...prev,faixas,itens:{...prev.itens,[fid]:[]}};
+    });
+  }
   async function salvar(){
     setSalvando(true);
     const dados={...tl,uid:meuUid,nome:meuNome||'Mestre',avatar:avatar||null};
@@ -12387,10 +12412,16 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
       })()}
 
       <div style={{marginBottom:14}}>
-        {tl.faixas.map(f=>{
+        {tl.faixas.map((f,idx)=>{
           const servos=(tl.itens[f.id]||[]).map(id=>acharServo(id)).filter(Boolean);
           return(
-            <div key={f.id}
+            <div key={f.id}>
+            {/* botão de inserir camada ACIMA desta */}
+            <div className="tier-insert" onClick={()=>inserirFaixa(idx)} title="Inserir camada aqui"
+              style={{height:14,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',margin:'1px 0'}}>
+              <span className="tier-insert-line" style={{fontSize:'.6rem',color:'var(--gold-dim)',fontFamily:'Cinzel,serif'}}>＋ inserir aqui</span>
+            </div>
+            <div
               onDragOver={e=>{e.preventDefault();setSobreFaixa(f.id);}}
               onDragLeave={()=>setSobreFaixa(null)}
               onDrop={e=>onDropFaixa(e,f.id)}
@@ -12408,7 +12439,11 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
                 ):(
                   <span style={{color:'#1a0e0e',fontFamily:'Cinzel,serif',fontWeight:700,fontSize:'1.1rem'}}>{f.label}</span>
                 )}
-                <div style={{display:'flex',gap:2}}>
+                <div style={{display:'flex',gap:2,flexWrap:'wrap',justifyContent:'center'}}>
+                  <button onClick={e=>{e.stopPropagation();moverFaixa(f.id,-1);}} disabled={idx===0} title="Subir camada"
+                    style={{background:'rgba(0,0,0,0.25)',border:'none',borderRadius:3,cursor:idx===0?'default':'pointer',fontSize:'.5rem',padding:'1px 3px',opacity:idx===0?0.3:1,color:'#1a0e0e'}}>▲</button>
+                  <button onClick={e=>{e.stopPropagation();moverFaixa(f.id,1);}} disabled={idx===tl.faixas.length-1} title="Descer camada"
+                    style={{background:'rgba(0,0,0,0.25)',border:'none',borderRadius:3,cursor:idx===tl.faixas.length-1?'default':'pointer',fontSize:'.5rem',padding:'1px 3px',opacity:idx===tl.faixas.length-1?0.3:1,color:'#1a0e0e'}}>▼</button>
                   <button onClick={e=>{e.stopPropagation();mudarCorFaixa(f.id);}} title="Cor" style={{background:'rgba(0,0,0,0.25)',border:'none',borderRadius:3,cursor:'pointer',fontSize:'.5rem',padding:'1px 3px'}}>🎨</button>
                   {tl.faixas.length>1&&<button onClick={e=>{e.stopPropagation();removerFaixa(f.id);}} title="Remover faixa" style={{background:'rgba(0,0,0,0.25)',border:'none',borderRadius:3,cursor:'pointer',fontSize:'.5rem',padding:'1px 3px',color:'#1a0e0e'}}>✕</button>}
                 </div>
@@ -12437,6 +12472,14 @@ function TierListEditor({inicial,meuUid,meuNome,avatar,onSair}){
                   </div>
                 ))}
               </div>
+            </div>
+            {/* botão de inserir camada ABAIXO da última */}
+            {idx===tl.faixas.length-1&&(
+              <div className="tier-insert" onClick={()=>inserirFaixa(idx+1)} title="Inserir camada aqui"
+                style={{height:14,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',margin:'1px 0'}}>
+                <span className="tier-insert-line" style={{fontSize:'.6rem',color:'var(--gold-dim)',fontFamily:'Cinzel,serif'}}>＋ inserir aqui</span>
+              </div>
+            )}
             </div>
           );
         })}
