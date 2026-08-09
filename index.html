@@ -774,6 +774,10 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 .tier-insert{opacity:0.25;transition:opacity .15s;border-radius:4px;}
 .tier-insert:hover{opacity:1;background:rgba(201,162,39,0.12);}
 .tier-insert:hover .tier-insert-line{color:var(--gold)!important;}
+.t10-card{transition:transform .15s,box-shadow .15s,border-color .15s;}
+.t10-card:hover{transform:translateY(-2px);border-color:rgba(230,135,58,0.5)!important;box-shadow:0 6px 22px rgba(230,135,58,0.18)!important;}
+.t10-row{transition:transform .15s,box-shadow .15s;}
+.t10-row:hover{transform:translateX(2px);}
 @keyframes badgePulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.25);opacity:0.7;}}
 .tier-foto:hover{transform:scale(1.12);box-shadow:0 4px 12px rgba(201,162,39,0.4);position:relative;z-index:3;}
 .tier-lupa{opacity:0;transition:opacity .15s;}
@@ -9795,7 +9799,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.62</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.63</p>
       </div>
     </div>
   );
@@ -12819,27 +12823,33 @@ function Top10Card({t10,onAbrir,onApagar,ehMeu}){
   const preenchidos=(t10.itens||[]).filter(i=>i.nome||i.img);
   const totReacoes=Object.values(t10.reacoes||{}).reduce((a,l)=>a+(l?l.length:0),0);
   return(
-    <div style={{background:'rgba(20,10,20,0.6)',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'12px',marginBottom:10}}>
-      <div style={{display:'flex',alignItems:'center',gap:10}}>
-        <div style={{width:36,height:36,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
-          {t10.avatar?<RessonanciaRetrato art={t10.avatar} size={36}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>👤</div>}
+    <div className="t10-card" onClick={onAbrir}
+      style={{background:'linear-gradient(120deg,rgba(24,28,38,0.95),rgba(16,18,26,0.92))',
+        border:'1px solid rgba(120,130,150,0.18)',borderRadius:12,padding:'12px',marginBottom:12,cursor:'pointer',
+        boxShadow:'0 3px 14px rgba(0,0,0,0.4)'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+        <div style={{width:34,height:34,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+          {t10.avatar?<RessonanciaRetrato art={t10.avatar} size={34}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>👤</div>}
         </div>
-        <div style={{flex:1,minWidth:0,cursor:'pointer'}} onClick={onAbrir}>
-          <div style={{fontSize:'.84rem',color:'#f0a860',fontFamily:'Cinzel,serif'}}>🔟 {t10.titulo||'Top 10'}</div>
-          <div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>por {t10.nome||'Mestre'} · {preenchidos.length}/10{totReacoes>0?` · ${totReacoes} reações`:''}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:'.92rem',color:'#f0f2f8',fontWeight:600,lineHeight:1.2,fontFamily:'system-ui,-apple-system,sans-serif',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t10.titulo||'Top 10'}</div>
+          <div style={{fontSize:'.64rem',color:'#8b95a8'}}>por {t10.nome||'Mestre'} · {preenchidos.length}/10{totReacoes>0?` · ${totReacoes} 🔥`:''}</div>
         </div>
-        <button className="btn btn-sm" onClick={onAbrir}>Ver</button>
-        {ehMeu&&onApagar&&<button onClick={onApagar} style={{background:'none',border:'none',color:'var(--parchment-dark)',cursor:'pointer',fontSize:'.9rem'}}>🗑️</button>}
+        {ehMeu&&onApagar&&<button onClick={e=>{e.stopPropagation();onApagar();}} style={{background:'none',border:'none',color:'#8b95a8',cursor:'pointer',fontSize:'.9rem'}}>🗑️</button>}
       </div>
-      {/* mini-preview: top 5 */}
-      <div style={{display:'flex',gap:6,marginTop:10}}>
+      {/* mini-preview: pôsteres do top 5 */}
+      <div style={{display:'flex',gap:5}}>
         {preenchidos.slice(0,5).map((it,i)=>(
-          <div key={i} style={{flex:1,textAlign:'center',minWidth:0}}>
-            <div style={{width:'100%',aspectRatio:'1',borderRadius:6,overflow:'hidden',border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',position:'relative'}}>
-              {it.img?<img src={it.img} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.7rem',color:'var(--parchment-dark)'}}>—</div>}
-              <span style={{position:'absolute',top:1,left:2,fontSize:'.6rem',color:'#e6c34c',fontFamily:'Cinzel,serif',textShadow:'0 1px 2px #000'}}>{i+1}</span>
-            </div>
+          <div key={i} style={{flex:1,aspectRatio:'3/4',borderRadius:6,overflow:'hidden',position:'relative',
+            border:i===0?'1px solid rgba(255,215,0,0.5)':'1px solid rgba(120,130,150,0.2)',
+            background:'linear-gradient(160deg,rgba(40,44,58,0.8),rgba(20,22,30,0.8))'}}>
+            {it.img?<img src={it.img} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.7rem',color:'rgba(139,149,168,0.4)'}}>🎬</div>}
+            <div style={{position:'absolute',bottom:0,left:0,right:0,height:'40%',background:'linear-gradient(to top,rgba(0,0,0,0.8),transparent)'}}/>
+            <span style={{position:'absolute',bottom:1,left:3,fontSize:'.72rem',fontWeight:700,color:i===0?'#ffd700':i===1?'#d8d8e0':i===2?'#cd7f32':'#e8ecf4',fontFamily:'Cinzel,serif',textShadow:'0 1px 3px #000'}}>{i+1}</span>
           </div>
+        ))}
+        {Array.from({length:Math.max(0,5-preenchidos.length)}).map((_,i)=>(
+          <div key={'e'+i} style={{flex:1,aspectRatio:'3/4',borderRadius:6,border:'1px dashed rgba(120,130,150,0.2)',background:'rgba(0,0,0,0.2)'}}/>
         ))}
       </div>
     </div>
@@ -12935,31 +12945,59 @@ function Top10Visual({t10,onVoltar,podeEditar,onEditar,meuUid,meuNome,avatar}){
           {ampliado.desc&&<div style={{color:'var(--parchment)',marginTop:6,fontSize:'.8rem',maxWidth:420,textAlign:'center',fontStyle:'italic'}}>"{ampliado.desc}"</div>}
         </div>
       )}
-      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
         <button className="btn btn-sm" onClick={onVoltar}>← Voltar</button>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:'.92rem',color:'#f0a860',fontFamily:'Cinzel,serif'}}>🔟 {dados.titulo||'Top 10'}</div>
-          <div style={{fontSize:'.62rem',color:'var(--parchment-dark)'}}>por {dados.nome||'Mestre'}</div>
+        {podeEditar&&<button className="btn btn-sm" style={{marginLeft:'auto'}} onClick={onEditar}>✏️ Editar</button>}
+      </div>
+      {/* Banner do título estilo AniList */}
+      <div style={{position:'relative',borderRadius:14,overflow:'hidden',marginBottom:16,
+        background:'linear-gradient(120deg,rgba(230,135,58,0.22),rgba(155,90,200,0.18),rgba(24,28,38,0.9))',
+        border:'1px solid rgba(230,135,58,0.3)',padding:'18px 18px'}}>
+        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#e6873a,#c77dff,#e6873a)'}}/>
+        <div style={{fontSize:'.6rem',letterSpacing:2,color:'#e6873a',fontFamily:'Cinzel,serif',marginBottom:4}}>🔟 TOP 10</div>
+        <div style={{fontSize:'1.35rem',color:'#f0f2f8',fontWeight:700,lineHeight:1.2,fontFamily:'system-ui,-apple-system,sans-serif',marginBottom:6}}>{dados.titulo||'Top 10'}</div>
+        <div style={{display:'flex',alignItems:'center',gap:7}}>
+          <div style={{width:22,height:22,borderRadius:'50%',overflow:'hidden',border:'1px solid var(--gold-dim)',flexShrink:0}}>
+            {dados.avatar?<RessonanciaRetrato art={dados.avatar} size={22}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.6rem'}}>👤</div>}
+          </div>
+          <span style={{fontSize:'.72rem',color:'#a8b2c4'}}>por {dados.nome||'Mestre'}</span>
         </div>
-        {podeEditar&&<button className="btn btn-sm" onClick={onEditar}>✏️ Editar</button>}
       </div>
 
-      {/* Lista de posições */}
+      {/* Lista de posições — estilo AniList */}
       {itens.map((it,idx)=>{
         const pos=(dados.itens||[]).indexOf(it);
+        const medalha=pos===0?'#ffd700':pos===1?'#d8d8e0':pos===2?'#cd7f32':null;
+        const corNum=medalha||'#8b95a8';
         return(
-          <div key={idx} style={{display:'flex',gap:12,marginBottom:8,padding:'12px',borderRadius:10,
-            background:pos<3?'linear-gradient(135deg,rgba(230,195,60,0.1),rgba(0,0,0,0.3))':'rgba(0,0,0,0.25)',
-            border:`1px solid ${pos<3?'rgba(230,195,60,0.4)':'var(--gold-dim)'}`}}>
-            <div className="cinzel" style={{fontSize:'1.8rem',color:pos===0?'#ffd700':pos===1?'#c0c0c0':pos===2?'#cd7f32':'#e6873a',lineHeight:1,fontWeight:700,alignSelf:'flex-start',minWidth:28,textAlign:'center'}}>{pos+1}</div>
-            {it.img&&(
-              <div onClick={()=>setAmpliado(it)} style={{width:72,flexShrink:0,aspectRatio:'1',borderRadius:8,overflow:'hidden',border:'1px solid var(--gold-dim)',cursor:'zoom-in',alignSelf:'flex-start'}}>
-                <img src={it.img} alt={it.nome} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+          <div key={idx} className="t10-row"
+            style={{display:'flex',gap:0,marginBottom:12,borderRadius:12,overflow:'hidden',position:'relative',
+              background:'linear-gradient(100deg,rgba(24,28,38,0.95),rgba(16,18,26,0.9))',
+              border:`1px solid ${medalha?medalha+'55':'rgba(120,130,150,0.18)'}`,
+              boxShadow:pos<3?`0 4px 20px ${medalha}22`:'0 3px 12px rgba(0,0,0,0.4)'}}>
+            {/* Capa pôster à esquerda */}
+            <div onClick={()=>it.img&&setAmpliado(it)}
+              style={{width:92,flexShrink:0,aspectRatio:'3/4',position:'relative',overflow:'hidden',cursor:it.img?'zoom-in':'default',
+                background:'linear-gradient(160deg,rgba(40,44,58,0.9),rgba(20,22,30,0.9))'}}>
+              {it.img
+                ?<img src={it.img} alt={it.nome} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.6rem',color:'rgba(139,149,168,0.4)'}}>🎬</div>}
+              {/* Número de ranking sobreposto no canto inferior */}
+              <div style={{position:'absolute',bottom:0,left:0,right:0,height:'50%',
+                background:'linear-gradient(to top,rgba(0,0,0,0.85),transparent)',pointerEvents:'none'}}/>
+              <div style={{position:'absolute',bottom:3,left:6,fontFamily:'Cinzel,serif',fontWeight:700,
+                fontSize:pos<9?'1.9rem':'1.5rem',lineHeight:1,color:corNum,
+                textShadow:medalha?`0 0 12px ${medalha}88,0 2px 4px #000`:'0 2px 4px #000'}}>
+                {pos+1}
               </div>
-            )}
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:'.9rem',color:'var(--gold)',fontFamily:'Cinzel,serif',marginBottom:it.desc?4:0}}>{it.nome||'—'}</div>
-              {it.desc&&<div style={{fontSize:'.72rem',color:'var(--parchment)',lineHeight:1.5}}>{it.desc}</div>}
+              {pos<3&&<div style={{position:'absolute',top:5,right:5,fontSize:'.85rem',filter:'drop-shadow(0 1px 2px #000)'}}>{pos===0?'👑':pos===1?'🥈':'🥉'}</div>}
+            </div>
+            {/* Conteúdo à direita */}
+            <div style={{flex:1,minWidth:0,padding:'10px 12px',display:'flex',flexDirection:'column',justifyContent:'center'}}>
+              <div style={{fontSize:'.98rem',color:'#e8ecf4',fontWeight:600,lineHeight:1.25,marginBottom:it.desc?6:0,
+                fontFamily:'system-ui,-apple-system,sans-serif'}}>{it.nome||'—'}</div>
+              {it.desc&&<div style={{fontSize:'.74rem',color:'#a8b2c4',lineHeight:1.5,
+                display:'-webkit-box',WebkitLineClamp:4,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{it.desc}</div>}
             </div>
           </div>
         );
