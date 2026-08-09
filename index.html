@@ -6685,6 +6685,74 @@ async function tierListRecentes(limite=30){
 }
 
 // ══════════════════════════════════════════════════════
+// TOP 10 — rankings de 10 posições (foto+nome+descrição por item), com
+// reações e comentários. Coleção: top10_lists/<id>.
+async function top10Salvar(t10){
+  if(!fbDb)return {ok:false,erro:'Firebase indisponível'};
+  try{
+    const id=t10.id||fbDb.collection('top10_lists').doc().id;
+    const dados={...t10,id,atualizadoEm:firebase.firestore.FieldValue.serverTimestamp()};
+    if(!t10.id)dados.reacoes={};
+    await fbDb.collection('top10_lists').doc(id).set(dados,{merge:true});
+    return {ok:true,id};
+  }catch(e){return {ok:false,erro:e.message};}
+}
+async function top10Apagar(id){
+  if(!fbDb)return {ok:false};
+  try{await fbDb.collection('top10_lists').doc(id).delete();return {ok:true};}
+  catch(e){return {ok:false,erro:e.message};}
+}
+async function top10DoJogador(uid){
+  if(!fbDb||!uid)return [];
+  try{
+    const snap=await fbDb.collection('top10_lists').where('uid','==',uid).get();
+    const arr=snap.docs.map(d=>d.data());
+    arr.sort((a,b)=>{const ta=a.atualizadoEm&&a.atualizadoEm.seconds||0,tb=b.atualizadoEm&&b.atualizadoEm.seconds||0;return tb-ta;});
+    return arr;
+  }catch(e){console.error('top10 do jogador',e);return [];}
+}
+async function top10Recentes(limite=30){
+  if(!fbDb)return [];
+  try{
+    const snap=await fbDb.collection('top10_lists').orderBy('atualizadoEm','desc').limit(limite).get();
+    return snap.docs.map(d=>d.data());
+  }catch(e){console.error('top10 recentes',e);return [];}
+}
+// Reação (emoji) — toggle por uid. reacoes = {emoji: [uids]}
+async function top10Reagir(id,emoji,uid){
+  if(!fbDb||!uid)return;
+  try{
+    const ref=fbDb.collection('top10_lists').doc(id);
+    const doc=await ref.get();
+    if(!doc.exists)return;
+    const reacoes=doc.data().reacoes||{};
+    const lista=reacoes[emoji]||[];
+    reacoes[emoji]=lista.includes(uid)?lista.filter(u=>u!==uid):[...lista,uid];
+    if(reacoes[emoji].length===0)delete reacoes[emoji];
+    await ref.update({reacoes});
+  }catch(e){console.error('top10 reagir',e);}
+}
+function top10Watch(id,cb){
+  if(!fbDb){cb(null);return ()=>{};}
+  return fbDb.collection('top10_lists').doc(id).onSnapshot(d=>cb(d.exists?d.data():null),e=>{console.error('top10 watch',e);cb(null);});
+}
+// Comentários (subcoleção)
+async function top10Comentar(id,coment){
+  if(!fbDb)return;
+  try{
+    await fbDb.collection('top10_lists').doc(id).collection('comentarios').add({
+      ...coment,ts:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  }catch(e){console.error('top10 comentar',e);}
+}
+function top10ComentariosWatch(id,cb){
+  if(!fbDb){cb([]);return ()=>{};}
+  return fbDb.collection('top10_lists').doc(id).collection('comentarios').orderBy('ts','asc').onSnapshot(snap=>{
+    cb(snap.docs.map(d=>({id:d.id,...d.data()})));
+  },e=>{console.error('top10 coments',e);cb([]);});
+}
+
+// ══════════════════════════════════════════════════════
 // COLISEU (PvP assíncrono) — cada jogador registra um TIME DE DEFESA (3 servos +
 // 5 bênçãos). Outros o enfrentam contra a IA. Apostas (dobra ou perde) e ranking ELO.
 // Coleção: coliseu_times/<uid> → {uid,nome,avatar,servos:[{id,lvl}],gracas:[ids],elo,vitorias,derrotas,atualizadoEm}
@@ -9727,7 +9795,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.61</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.62</p>
       </div>
     </div>
   );
@@ -12682,6 +12750,262 @@ function tierListNova(tipo,uid,nome,avatar,opcoes){
   return base;
 }
 
+// ══════════════════════════════════════════════════════
+// TOP 10 — aba, editor e visualizador
+function novoTop10(uid,nome,avatar){
+  return {id:null,uid,nome,avatar:avatar||null,titulo:'Meu Top 10',
+    itens:Array.from({length:10},()=>({nome:'',img:null,desc:''})),reacoes:{}};
+}
+const TOP10_EMOJIS=['🔥','👏','❤️','😮','👎'];
+
+function Top10Aba({profile,meuUid,meuNome,logado}){
+  const[modo,setModo]=useState('lista'); // lista | editor | ver
+  const[editando,setEditando]=useState(null);
+  const[vendo,setVendo]=useState(null);
+  const[minhas,setMinhas]=useState([]);
+  const[comunidade,setComunidade]=useState([]);
+  const[carregando,setCarregando]=useState(true);
+
+  async function recarregar(){
+    setCarregando(true);
+    const[m,c]=await Promise.all([meuUid?top10DoJogador(meuUid):[],top10Recentes(30)]);
+    setMinhas(m);setComunidade(c.filter(t=>t.uid!==meuUid));setCarregando(false);
+  }
+  useEffect(()=>{recarregar();},[]);
+
+  if(modo==='editor'&&editando){
+    return <Top10Editor inicial={editando} meuUid={meuUid} meuNome={meuNome} avatar={profile.avatar}
+      onSair={()=>{setModo('lista');setEditando(null);recarregar();}}/>;
+  }
+  if(modo==='ver'&&vendo){
+    return <Top10Visual t10={vendo} meuUid={meuUid} meuNome={meuNome} avatar={profile.avatar}
+      onVoltar={()=>{setModo('lista');setVendo(null);}}
+      podeEditar={vendo.uid===meuUid} onEditar={()=>{setEditando(vendo);setModo('editor');}}/>;
+  }
+
+  return(
+    <div>
+      {!logado?(
+        <div style={{background:'rgba(201,162,39,0.08)',border:'1px solid var(--gold-dim)',borderRadius:8,padding:'12px',marginBottom:16,textAlign:'center',fontSize:'.75rem',color:'var(--parchment-dark)'}}>
+          Entre na sua conta (no Perfil) para criar Top 10.
+        </div>
+      ):(
+        <button className="btn btn-full" style={{marginBottom:16}} onClick={()=>{setEditando(novoTop10(meuUid,meuNome,profile.avatar));setModo('editor');}}>
+          🔟 Novo Top 10
+        </button>
+      )}
+      {carregando?(
+        <p style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px'}}>Carregando...</p>
+      ):(
+        <>
+          {minhas.length>0&&(
+            <>
+              <div className="divider"><span className="divider-text">MEUS TOP 10</span></div>
+              {minhas.map(t=><Top10Card key={t.id} t10={t} onAbrir={()=>{setVendo(t);setModo('ver');}}
+                onApagar={async()=>{if(confirm('Apagar este Top 10?')){await top10Apagar(t.id);recarregar();}}} ehMeu={true}/>)}
+            </>
+          )}
+          <div className="divider"><span className="divider-text">DA COMUNIDADE</span></div>
+          {comunidade.length===0?(
+            <p style={{textAlign:'center',color:'var(--parchment-dark)',padding:'20px',fontSize:'.8rem'}}>Nenhum Top 10 da comunidade ainda. Seja o primeiro!</p>
+          ):comunidade.map(t=><Top10Card key={t.id} t10={t} onAbrir={()=>{setVendo(t);setModo('ver');}} ehMeu={false}/>)}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Top10Card({t10,onAbrir,onApagar,ehMeu}){
+  const preenchidos=(t10.itens||[]).filter(i=>i.nome||i.img);
+  const totReacoes=Object.values(t10.reacoes||{}).reduce((a,l)=>a+(l?l.length:0),0);
+  return(
+    <div style={{background:'rgba(20,10,20,0.6)',border:'1px solid var(--gold-dim)',borderRadius:10,padding:'12px',marginBottom:10}}>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <div style={{width:36,height:36,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)'}}>
+          {t10.avatar?<RessonanciaRetrato art={t10.avatar} size={36}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>👤</div>}
+        </div>
+        <div style={{flex:1,minWidth:0,cursor:'pointer'}} onClick={onAbrir}>
+          <div style={{fontSize:'.84rem',color:'#f0a860',fontFamily:'Cinzel,serif'}}>🔟 {t10.titulo||'Top 10'}</div>
+          <div style={{fontSize:'.64rem',color:'var(--parchment-dark)'}}>por {t10.nome||'Mestre'} · {preenchidos.length}/10{totReacoes>0?` · ${totReacoes} reações`:''}</div>
+        </div>
+        <button className="btn btn-sm" onClick={onAbrir}>Ver</button>
+        {ehMeu&&onApagar&&<button onClick={onApagar} style={{background:'none',border:'none',color:'var(--parchment-dark)',cursor:'pointer',fontSize:'.9rem'}}>🗑️</button>}
+      </div>
+      {/* mini-preview: top 5 */}
+      <div style={{display:'flex',gap:6,marginTop:10}}>
+        {preenchidos.slice(0,5).map((it,i)=>(
+          <div key={i} style={{flex:1,textAlign:'center',minWidth:0}}>
+            <div style={{width:'100%',aspectRatio:'1',borderRadius:6,overflow:'hidden',border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',position:'relative'}}>
+              {it.img?<img src={it.img} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.7rem',color:'var(--parchment-dark)'}}>—</div>}
+              <span style={{position:'absolute',top:1,left:2,fontSize:'.6rem',color:'#e6c34c',fontFamily:'Cinzel,serif',textShadow:'0 1px 2px #000'}}>{i+1}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Top10Editor({inicial,meuUid,meuNome,avatar,onSair}){
+  const[t10,setT10]=useState(inicial);
+  const[salvando,setSalvando]=useState(false);
+  const[enviandoIdx,setEnviandoIdx]=useState(-1);
+  const setItem=(idx,campo,val)=>setT10(prev=>({...prev,itens:prev.itens.map((it,i)=>i===idx?{...it,[campo]:val}:it)}));
+
+  async function enviarFoto(idx,file){
+    if(!file)return;
+    if(!fbAuth||!fbAuth.currentUser){alert('Entre na sua conta para enviar imagens.');return;}
+    setEnviandoIdx(idx);
+    try{
+      const otimizada=await comprimirImagem(file,600,0.85);
+      const url=await uploadImagemCompartilhado('top10',otimizada);
+      setItem(idx,'img',url);
+    }catch(e){alert('Erro ao enviar imagem: '+(e.message||'tente novamente'));}
+    setEnviandoIdx(-1);
+  }
+  async function salvar(){
+    if(!t10.titulo.trim()){alert('Dê um título ao seu Top 10.');return;}
+    setSalvando(true);
+    const r=await top10Salvar({...t10,uid:meuUid,nome:meuNome,avatar:avatar||null,titulo:t10.titulo.trim().slice(0,60)});
+    setSalvando(false);
+    if(r.ok)onSair();else alert('Erro ao salvar: '+(r.erro||''));
+  }
+  const INP={width:'100%',padding:'7px 9px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.78rem',fontFamily:'inherit'};
+
+  return(
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+        <button className="btn btn-sm" onClick={onSair}>← Voltar</button>
+        <span style={{flex:1,fontSize:'.9rem',color:'#f0a860',fontFamily:'Cinzel,serif'}}>🔟 Editor</span>
+        <button className="btn btn-sm" onClick={salvar} disabled={salvando}>{salvando?'Salvando...':'💾 Salvar'}</button>
+      </div>
+      <input value={t10.titulo} onChange={e=>setT10({...t10,titulo:e.target.value.slice(0,60)})}
+        placeholder="Título do Top 10 (ex: Melhores animes de 2024)"
+        style={{...INP,fontFamily:'Cinzel,serif',fontSize:'.9rem',marginBottom:14,color:'#f0a860'}}/>
+
+      {t10.itens.map((it,idx)=>(
+        <div key={idx} style={{display:'flex',gap:10,marginBottom:10,padding:'10px',borderRadius:10,
+          background:idx<3?'linear-gradient(135deg,rgba(230,195,60,0.08),rgba(0,0,0,0.3))':'rgba(0,0,0,0.25)',
+          border:`1px solid ${idx<3?'rgba(230,195,60,0.35)':'var(--gold-dim)'}`}}>
+          {/* Número + foto */}
+          <div style={{flexShrink:0,textAlign:'center'}}>
+            <div className="cinzel" style={{fontSize:'1.4rem',color:idx===0?'#ffd700':idx===1?'#c0c0c0':idx===2?'#cd7f32':'#e6873a',lineHeight:1,marginBottom:4,fontWeight:700}}>{idx+1}</div>
+            <label style={{display:'block',width:64,height:64,borderRadius:8,overflow:'hidden',border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.4)',cursor:'pointer',position:'relative'}}>
+              {it.img
+                ?<img src={it.img} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.2rem',color:'var(--parchment-dark)'}}>{enviandoIdx===idx?'⏳':'📷'}</div>}
+              <input type="file" accept="image/*" style={{display:'none'}} onChange={e=>{const f=e.target.files[0];if(f)enviarFoto(idx,f);e.target.value='';}}/>
+            </label>
+          </div>
+          {/* Nome + descrição */}
+          <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:6}}>
+            <input value={it.nome} onChange={e=>setItem(idx,'nome',e.target.value.slice(0,60))} placeholder={`Nome do #${idx+1}`} style={INP}/>
+            <textarea value={it.desc} onChange={e=>setItem(idx,'desc',e.target.value.slice(0,300))} placeholder="Por que está no Top 10? (opcional)"
+              rows={2} style={{...INP,resize:'vertical',minHeight:38,fontSize:'.72rem'}}/>
+          </div>
+        </div>
+      ))}
+      <button className="btn btn-full" onClick={salvar} disabled={salvando} style={{marginTop:6}}>{salvando?'Salvando...':'💾 Salvar Top 10'}</button>
+    </div>
+  );
+}
+
+function Top10Visual({t10,onVoltar,podeEditar,onEditar,meuUid,meuNome,avatar}){
+  const[dados,setDados]=useState(t10);
+  const[comentarios,setComentarios]=useState([]);
+  const[novoComent,setNovoComent]=useState('');
+  const[ampliado,setAmpliado]=useState(null);
+  useEffect(()=>{const un=top10Watch(t10.id,d=>{if(d)setDados(d);});return ()=>un&&un();},[t10.id]);
+  useEffect(()=>{const un=top10ComentariosWatch(t10.id,setComentarios);return ()=>un&&un();},[t10.id]);
+
+  async function reagir(emoji){if(meuUid)await top10Reagir(t10.id,emoji,meuUid);}
+  async function comentar(){
+    if(!novoComent.trim()||!meuUid)return;
+    await top10Comentar(t10.id,{uid:meuUid,nome:meuNome||'Mestre',avatar:avatar||null,texto:novoComent.trim().slice(0,300)});
+    setNovoComent('');
+  }
+  const itens=(dados.itens||[]).filter(i=>i.nome||i.img);
+
+  return(
+    <div>
+      {ampliado&&(
+        <div onClick={()=>setAmpliado(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.9)',zIndex:500,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:20}}>
+          <img src={ampliado.img} alt={ampliado.nome} style={{maxWidth:'90vw',maxHeight:'70vh',borderRadius:12,border:'2px solid var(--gold)'}}/>
+          <div className="cinzel" style={{color:'var(--gold)',marginTop:12,fontSize:'1.1rem'}}>{ampliado.nome}</div>
+          {ampliado.desc&&<div style={{color:'var(--parchment)',marginTop:6,fontSize:'.8rem',maxWidth:420,textAlign:'center',fontStyle:'italic'}}>"{ampliado.desc}"</div>}
+        </div>
+      )}
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+        <button className="btn btn-sm" onClick={onVoltar}>← Voltar</button>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:'.92rem',color:'#f0a860',fontFamily:'Cinzel,serif'}}>🔟 {dados.titulo||'Top 10'}</div>
+          <div style={{fontSize:'.62rem',color:'var(--parchment-dark)'}}>por {dados.nome||'Mestre'}</div>
+        </div>
+        {podeEditar&&<button className="btn btn-sm" onClick={onEditar}>✏️ Editar</button>}
+      </div>
+
+      {/* Lista de posições */}
+      {itens.map((it,idx)=>{
+        const pos=(dados.itens||[]).indexOf(it);
+        return(
+          <div key={idx} style={{display:'flex',gap:12,marginBottom:8,padding:'12px',borderRadius:10,
+            background:pos<3?'linear-gradient(135deg,rgba(230,195,60,0.1),rgba(0,0,0,0.3))':'rgba(0,0,0,0.25)',
+            border:`1px solid ${pos<3?'rgba(230,195,60,0.4)':'var(--gold-dim)'}`}}>
+            <div className="cinzel" style={{fontSize:'1.8rem',color:pos===0?'#ffd700':pos===1?'#c0c0c0':pos===2?'#cd7f32':'#e6873a',lineHeight:1,fontWeight:700,alignSelf:'flex-start',minWidth:28,textAlign:'center'}}>{pos+1}</div>
+            {it.img&&(
+              <div onClick={()=>setAmpliado(it)} style={{width:72,flexShrink:0,aspectRatio:'1',borderRadius:8,overflow:'hidden',border:'1px solid var(--gold-dim)',cursor:'zoom-in',alignSelf:'flex-start'}}>
+                <img src={it.img} alt={it.nome} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+              </div>
+            )}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:'.9rem',color:'var(--gold)',fontFamily:'Cinzel,serif',marginBottom:it.desc?4:0}}>{it.nome||'—'}</div>
+              {it.desc&&<div style={{fontSize:'.72rem',color:'var(--parchment)',lineHeight:1.5}}>{it.desc}</div>}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Reações */}
+      <div style={{display:'flex',gap:6,margin:'14px 0',flexWrap:'wrap',justifyContent:'center'}}>
+        {TOP10_EMOJIS.map(em=>{
+          const lista=(dados.reacoes||{})[em]||[];
+          const eu=meuUid&&lista.includes(meuUid);
+          return(
+            <button key={em} onClick={()=>reagir(em)} disabled={!meuUid}
+              style={{padding:'6px 12px',borderRadius:20,cursor:meuUid?'pointer':'default',fontSize:'.85rem',display:'flex',alignItems:'center',gap:5,
+                border:`1px solid ${eu?'var(--gold)':'var(--gold-dim)'}`,background:eu?'rgba(201,162,39,0.2)':'rgba(0,0,0,0.25)'}}>
+              <span>{em}</span>{lista.length>0&&<span style={{fontSize:'.7rem',color:'var(--parchment)'}}>{lista.length}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Comentários */}
+      <div className="divider"><span className="divider-text">COMENTÁRIOS ({comentarios.length})</span></div>
+      {meuUid&&(
+        <div style={{display:'flex',gap:6,marginBottom:12}}>
+          <input value={novoComent} onChange={e=>setNovoComent(e.target.value)} placeholder="Comente..." maxLength={300}
+            onKeyDown={e=>{if(e.key==='Enter')comentar();}}
+            style={{flex:1,padding:'8px 10px',borderRadius:6,border:'1px solid var(--gold-dim)',background:'rgba(0,0,0,0.3)',color:'var(--parchment)',fontSize:'.78rem'}}/>
+          <button className="btn btn-sm" onClick={comentar}>Enviar</button>
+        </div>
+      )}
+      {comentarios.map(c=>(
+        <div key={c.id} style={{display:'flex',gap:8,marginBottom:8,padding:'8px 10px',borderRadius:8,background:'rgba(0,0,0,0.2)'}}>
+          <div style={{width:28,height:28,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1px solid var(--gold-dim)'}}>
+            {c.avatar?<RessonanciaRetrato art={c.avatar} size={28}/>:<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.7rem'}}>👤</div>}
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:'.7rem',color:'var(--gold)',fontFamily:'Cinzel,serif'}}>{c.nome||'Mestre'} <span style={{color:'var(--parchment-dark)',fontFamily:'inherit',fontSize:'.6rem'}}>· {fmtDataHora(c.ts,'agora')}</span></div>
+            <div style={{fontSize:'.76rem',color:'var(--parchment)',lineHeight:1.4}}>{c.texto}</div>
+          </div>
+        </div>
+      ))}
+      {comentarios.length===0&&<p style={{textAlign:'center',color:'var(--parchment-dark)',fontSize:'.72rem',padding:'10px'}}>Nenhum comentário ainda.</p>}
+    </div>
+  );
+}
+
 function TierListAba({profile,meuUid,meuNome,logado}){
   const[modo,setModo]=useState('lista'); // 'lista' | 'editor' | 'ver'
   const[editando,setEditando]=useState(null);
@@ -12859,7 +13183,8 @@ function FeedScreen({onNavigate,profile}){
         <div style={{display:'flex',gap:6,marginBottom:16,background:'rgba(0,0,0,0.25)',padding:5,borderRadius:12,border:'1px solid var(--gold-dim)'}}>
           {[['feed','🌐','Feed','var(--gold)','rgba(201,162,39,0.22)'],
             ['diario','📓','Diário','var(--crimson-soft)','rgba(224,90,74,0.2)'],
-            ['tierlist','🏆','Tier List','var(--gold)','rgba(201,162,39,0.22)']].map(([k,ic,label,cor,bg])=>(
+            ['tierlist','🏆','Tier List','var(--gold)','rgba(201,162,39,0.22)'],
+            ['top10','🔟','Top 10','#e6873a','rgba(230,135,58,0.2)']].map(([k,ic,label,cor,bg])=>(
             <button key={k} onClick={()=>setAba(k)} style={{flex:1,padding:'9px 4px',borderRadius:9,cursor:'pointer',fontFamily:'Cinzel,serif',fontSize:'.74rem',
               display:'flex',flexDirection:'column',alignItems:'center',gap:2,transition:'all .2s',
               border:`1px solid ${aba===k?cor:'transparent'}`,background:aba===k?bg:'transparent',
@@ -12873,6 +13198,8 @@ function FeedScreen({onNavigate,profile}){
         {/* Aba Tier List */}
         {aba==='tierlist'?(
           <TierListAba profile={profile} meuUid={meuUid} meuNome={meuNome} logado={logado}/>
+        ):aba==='top10'?(
+          <Top10Aba profile={profile} meuUid={meuUid} meuNome={meuNome} logado={logado}/>
         ):(<>
         {/* Botão de publicar */}
         {logado&&meuNome?(
