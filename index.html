@@ -916,18 +916,18 @@ function animMs(ms){return Math.max(60,Math.round(ms/(COMBAT_SPEED.mult||1)));}
 // A tela aparece 1x automaticamente quando o jogador abre uma versão nova,
 // e fica sempre acessível pelo botão de novidades no menu.
 const PATCH_NOTES={
-  versaoAtual:'3.52',      // versão atual (bate com a exibida no menu)
-  ciclo:'v3.40 → v3.52',   // rótulo do ciclo mostrado no topo
-  titulo:'Fidelidade Canônica & Novidades',
+  versaoAtual:'3.65',      // versão atual (bate com a exibida no menu)
+  ciclo:'v3.52 → v3.65',   // rótulo do ciclo mostrado no topo
+  titulo:'Top 10, Reviews & Novos Servos',
   itens:[
-    {icon:'✨',titulo:'Grande revisão canônica dos Servos',texto:'Revisamos TODOS os Servos com base no Atlas Academy: skills, Fantasmas Nobres, classes e passivas agora são fiéis ao FGO. Corrigimos NPs que estavam com alvo trocado (single-target/área), além de efeitos e nomes de habilidades.'},
-    {icon:'✦',titulo:'Novo item: Arcturo',texto:'Invocar um Servo que você já possui agora rende Arcturo — uma essência que varia pela raridade (5★ rende mais). Aparece no resultado da invocação e no seu perfil. Ainda sem uso, guardando para novidades futuras.'},
-    {icon:'📚',titulo:'Biblioteca com 3 categorias',texto:'O Álbum de Tradução virou uma Biblioteca com Comics, Doujinshi e +18 (com aviso de idade). Cada categoria tem seu próprio acervo e envio.'},
-    {icon:'🏷️',titulo:'Vitrine de recrutamento no Gacha',texto:'Cada banner agora mostra todos os Servos disponíveis, com raridade e destaque. Toque em qualquer um para ver stats, skills e Fantasma Nobre antes de invocar.'},
-    {icon:'⚔️',titulo:'Skills e Perks no jogo',texto:'A Loja de Perks e as Skills de Mestre saíram do perfil e agora ficam na preparação da Campanha e da Torre — mecânicas de jogo acessíveis onde fazem sentido.'},
-    {icon:'🕐',titulo:'Data nas conversas e posts',texto:'Feed, Chat, comentários e traduções agora mostram data + hora de forma inteligente: hoje só a hora, ontem "ontem HH:MM", e mais antigo a data completa.'},
-    {icon:'🧭',titulo:'Navegação refinada',texto:'Botão de voltar no topo também na seleção de Campanha e Torre, e ajustes nos rótulos de tempo do Feed.'},
-    {icon:'🎖️',titulo:'Ajustes de raridade e banners',texto:'Meltryllis, Nobunaga Archer e Nobunaga Berserker agora são 4★ corretamente, e a Nobunaga Berserker aparece nos banners Summer e Gudaguda.'},
+    {icon:'🔟',titulo:'Novo: Top 10',texto:'Ao lado das Tier Lists, agora você monta seu Top 10 de qualquer coisa — 10 posições com foto, nome e descrição, no visual estilo AniList. Com reações e comentários da comunidade.'},
+    {icon:'⭐',titulo:'Publicação de Review no Feed',texto:'Novo tipo de post: avalie uma obra com capa, nome, tipo (anime/mangá/etc), episódios, nota de 0 a 10 e seu comentário. Outros podem reagir e comentar.'},
+    {icon:'👑',titulo:'Nova Serva: Zenobia',texto:'A Rainha de Palmira (Archer 4★) chega ao banner Noite de Expurgo e à Torre, com skills e Fantasma Nobre fiéis ao Atlas Academy.'},
+    {icon:'🏮',titulo:'Nova Serva: Xu Fu',texto:'A mística taoista (Alter Ego 3★) entra no banner Noite de Expurgo e na Torre — suporte de Arts com o "elixir da vida eterna" (que é mentira).'},
+    {icon:'🏆',titulo:'Tier Lists muito melhores',texto:'Toque nas fotos para ampliar, adicione nome e descrição a cada item, reordene camadas (↑/↓) e insira novas em qualquer posição. Rótulos aceitam frases inteiras.'},
+    {icon:'🖼️',titulo:'Tier só com fotos próprias',texto:'Crie uma tier vazia (sem os Servos) para ranquear qualquer coisa, ou importe as fotos que outro jogador adicionou e monte a sua própria versão.'},
+    {icon:'🔔',titulo:'Notificações de novidade',texto:'O menu agora avisa com um selo quando há mensagem nova no Chat, post novo no Feed ou tradução nova no Álbum.'},
+    {icon:'📱',titulo:'Melhorias no mobile',texto:'Tier Lists e o app em geral ficaram mais confortáveis no celular — mais espaço, fotos ajustadas e menos aperto.'},
   ],
 };
 const PATCH_VISTO_KEY='fate_patch_visto_v1';
@@ -6252,6 +6252,171 @@ GACHA_SERVOS.typhon_ephemeros={
 };
 PLAYABLE_SERVOS.typhon_ephemeros=GACHA_SERVOS.typhon_ephemeros;
 
+// ═══ ZENOBIA (Archer) — 4★, banner Noite de Expurgo ═══
+// A Rainha de Palmira, que desafiou o Império Romano. Archer AoE Arts com forte
+// dano sustentado por crítico. Fiel ao FGO / Atlas Academy (Collection No. 325).
+// Kit: Augusta Assumption (Arts/NP gain/estrelas), Aurelianus's Siege (Guts +
+// estrelas) e Glory to Palmyra (buff de Ataque à party). NP: Authentic Triumph.
+GACHA_SERVOS.zenobia={
+  id:'zenobia',name:'Zenobia',className:'Archer',
+  rarity:4,banner:'expurgo',
+  getAtk:lvl=>Math.round(linear(lvl,1636,9831)),
+  getHp:lvl=>Math.round(linear(lvl,1795,11695)),
+  attributes:{
+    strength:{rank:'C',points:rankToPoints('C')},
+    agility:{rank:'B',points:rankToPoints('B')},
+    luck:{rank:'A',points:rankToPoints('A')},
+    endurance:{rank:'C',points:rankToPoints('C')},
+    mana:{rank:'B',points:rankToPoints('B'),gainPercent:manaGain('B')},
+    np:{rank:'B',points:rankToPoints('B')},
+  },
+  // ── PASSIVAS ── (Archer padrão)
+  passiveSkills:[
+    {id:'magicres',name:'Resistência Mágica C',effect:{type:'debuff_res',value:12}},
+    {id:'indaction',name:'Ação Independente B',effect:{type:'crit_passive',value:10}},
+  ],
+  // ── SKILLS ATIVAS ── as 3 canônicas do FGO
+  activeSkills:[
+    // Augusta Assumption B: Arts up + carrega NP por turno + estrelas por turno (3t)
+    {id:'augusta',name:'Suposição de Augusta B',rank:'B',
+      desc:'Aumenta a própria geração e dano de NP e carrega a Barra de NP a cada turno (3 turnos)',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,20,30),critUp:linear(lvl,15,25),atkUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Aurelianus's Siege (Resist) A: Guts (1x, 3t) + estrelas + star gather
+    {id:'siege',name:'Cerco de Aureliano (Resistir) A',rank:'A',
+      desc:'Concede Guts (revive uma vez) por 3 turnos e recupera HP por turno',
+      effectType:'regen_guts_npdmg',
+      getEffect:lvl=>({gutsRevivePct:linear(lvl,30,50),regen:linear(lvl,500,1000),regenDur:3,npDmgUp:0}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Glory to Palmyra A: aumenta o Ataque de toda a party (3t)
+    {id:'palmyra',name:'Glória a Palmira A',rank:'A',
+      desc:'Aumenta o Ataque de toda a party por 3 turnos',
+      effectType:'buff_atk_np',
+      getEffect:lvl=>({atkUp:linear(lvl,15,25),npUp:0,dur:3,party:true}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+  ],
+  // ── NP: Authentic Triumph (Shatter, Golden Chains and Humiliation) ──
+  // AoE Arts — dano + aumenta o próprio Crítico por 3 turnos (efeito de overcharge).
+  np:{
+    name:'Authentic Triumph',type:'Anti-Army',isAoE:true,effectType:'dmg_selfbuff_crit',
+    selfBuffDur:3,
+    levels:{
+      1:{dmgPct:450,atkUp:0,critUp:20},
+      2:{dmgPct:600,atkUp:0,critUp:25},
+      3:{dmgPct:675,atkUp:0,critUp:30},
+      4:{dmgPct:712,atkUp:0,critUp:33},
+      5:{dmgPct:750,atkUp:0,critUp:35},
+    },
+  },
+  dialogue:{
+    summon:'Servo, Archer. Sou Zenobia, a Rainha de Palmira. Não se deixe enganar por estas correntes — meu orgulho jamais será acorrentado.',
+    battle:'Uma rainha não recua.',
+    lose:'Então... a humilhação me alcança de novo...',
+    win:'Curvem-se diante da Rainha do Oriente.',
+    np:'Que estas correntes douradas se despedacem! Contemplem meu triunfo! Authentic Triumph!',
+    skill:'Pela glória de Palmira!',
+    mapDone:'Avançamos, Mestre. Palmira nunca se rende.',
+  },
+  assets:{
+    default:'assets/servos/zenobia/zenobia_profile.png',
+    battle:'assets/servos/zenobia/zenobia_profile.png',
+    combat:'assets/servos/zenobia/zenobia_combat.png',
+    np:'assets/servos/zenobia/zenobia_combat.png',
+    full:'assets/servos/zenobia/zenobia_full.png',
+  },
+  sprites:{
+    idle:'assets/servos/zenobia/zenobia_espera.gif',
+    attack:'assets/servos/zenobia/zenobia_ataque.gif',
+    np:'assets/servos/zenobia/zenobia_np.gif',
+    flip:true,
+  },
+};
+PLAYABLE_SERVOS.zenobia=GACHA_SERVOS.zenobia;
+
+// ═══ XU FU (Alter Ego) — 3★, banner Noite de Expurgo ═══
+// A mística taoista da dinastia Qin que buscou o elixir da imortalidade. Alter Ego
+// de SUPORTE Arts: fortalece a party (geração de NP, Arts e crítico) e o NP dela
+// "simula" o elixir — cura e gera estrelas em vez de causar dano alto.
+// Fiel ao FGO / Atlas Academy (Collection No. 352). Apaixonada por Yu Mei-ren.
+GACHA_SERVOS.xu_fu={
+  id:'xu_fu',name:'Xu Fu',className:'Alter Ego',
+  rarity:3,banner:'expurgo',
+  getAtk:lvl=>Math.round(linear(lvl,1354,7318)),
+  getHp:lvl=>Math.round(linear(lvl,1676,9310)),
+  attributes:{
+    strength:{rank:'D',points:rankToPoints('D')},
+    agility:{rank:'C',points:rankToPoints('C')},
+    luck:{rank:'B',points:rankToPoints('B')},
+    endurance:{rank:'D',points:rankToPoints('D')},
+    mana:{rank:'A',points:rankToPoints('A'),gainPercent:manaGain('A')},
+    np:{rank:'B',points:rankToPoints('B')},
+  },
+  // ── PASSIVAS ── (Alter Ego padrão)
+  passiveSkills:[
+    {id:'magicres',name:'Resistência Mágica B',effect:{type:'debuff_res',value:17}},
+    {id:'indaction',name:'Ação Independente A',effect:{type:'crit_passive',value:15}},
+  ],
+  // ── SKILLS ATIVAS ── as 3 canônicas do FGO
+  activeSkills:[
+    // Farming Veneration B (Elogio dos Cinco Grãos): cura a party, remove debuff e sobe NP gain
+    {id:'veneration',name:'Veneração da Colheita B',rank:'B',
+      desc:'Recupera HP e aumenta o Ataque de toda a party por 3 turnos (bênção da colheita)',
+      effectType:'buff_atk_heal',
+      getEffect:lvl=>({healPct:linear(lvl,10,20),atkUp:linear(lvl,10,20),dur:3,party:true}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // Taoist Technique (Foreign) A: Arts up + Crit damage up para a party
+    {id:'taoist',name:'Técnica Taoista (Externa) A',rank:'A',
+      desc:'Aumenta o Ataque e o Crítico de toda a party por 3 turnos',
+      effectType:'buff_atk_np',
+      getEffect:lvl=>({atkUp:linear(lvl,15,25),npUp:linear(lvl,15,25),dur:3,party:true}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+    // The Legend of Xu Fu C: carrega a Barra de NP e reforça (foco em um aliado)
+    {id:'legend',name:'Lenda de Xu Fu C',rank:'C',
+      desc:'Carrega bastante a Barra de NP e aumenta a Resistência a debuff',
+      effectType:'npcharge_crit_atk',
+      getEffect:lvl=>({npGain:linear(lvl,30,50),critUp:0,atkUp:0,dur:3}),
+      getCD:lvl=>stdCD(lvl,8,7,6)},
+  ],
+  // ── NP: This Is The Elixir Of Eternal Life <Lie> ──
+  // Anti-Unit — o "elixir" simulado: dano modesto e a própria Xu Fu se cura.
+  // Fiel ao FGO: um dos NPs de menor dano, focado em utilidade/suporte.
+  np:{
+    name:'This Is The Elixir Of Eternal Life',type:'Anti-Unit',isAoE:false,effectType:'dmg_selfbuff',
+    selfBuffDur:3,
+    levels:{
+      1:{dmgPct:400,atkUp:20},
+      2:{dmgPct:550,atkUp:25},
+      3:{dmgPct:625,atkUp:28},
+      4:{dmgPct:662,atkUp:29},
+      5:{dmgPct:700,atkUp:30},
+    },
+  },
+  dialogue:{
+    summon:'Alter Ego... Xu Fu. Servi ao Primeiro Imperador buscando o elixir da imortalidade. Ah... você conhece a Yu Mei-ren? Não? Que pena.',
+    battle:'Vamos logo com isso.',
+    lose:'Nem o elixir... me salvaria agora...',
+    win:'Viu? Eu disse que daria conta.',
+    np:'Aqui está. O elixir da vida eterna... é mentira, claro. This Is The Elixir Of Eternal Life!',
+    skill:'Artes taoistas.',
+    mapDone:'Seguindo em frente. Não me faça andar rápido demais.',
+  },
+  assets:{
+    default:'assets/servos/xu_fu/xu_fu_profile.png',
+    battle:'assets/servos/xu_fu/xu_fu_profile.png',
+    combat:'assets/servos/xu_fu/xu_fu_combat.png',
+    np:'assets/servos/xu_fu/xu_fu_combat.png',
+    full:'assets/servos/xu_fu/xu_fu_full.png',
+  },
+  sprites:{
+    idle:'assets/servos/xu_fu/xu_fu_espera.gif',
+    attack:'assets/servos/xu_fu/xu_fu_ataque.gif',
+    np:'assets/servos/xu_fu/xu_fu_np.gif',
+    flip:true,
+  },
+};
+PLAYABLE_SERVOS.xu_fu=GACHA_SERVOS.xu_fu;
+
 // Os 4 banners. `pool` = ids de GACHA_SERVOS que aparecem no banner.
 // `rateUp` (opcional) = id com chance aumentada (usado no "Especial").
 const GACHA_BANNERS=[
@@ -9799,7 +9964,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.63</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.65</p>
       </div>
     </div>
   );
@@ -16158,7 +16323,8 @@ const TOWER_SERVO_OBJ={ibaraki:IBARAKI,qin:QIN_PLAYABLE,deon:DEON_PLAYABLE,arche
   meltryllis:GACHA_SERVOS.meltryllis_summer,nobunaga:GACHA_SERVOS.nobunaga_archer,
   nobunaga_zerker:GACHA_SERVOS.nobunaga_berserker,daikokuten:GACHA_SERVOS.daikokuten,
   medusa_rider:GACHA_SERVOS.medusa_rider,nobunaga_maou:GACHA_SERVOS.nobunaga_maou,
-  yang_guifei:GACHA_SERVOS.yang_guifei,typhon_ephemeros:GACHA_SERVOS.typhon_ephemeros};
+  yang_guifei:GACHA_SERVOS.yang_guifei,typhon_ephemeros:GACHA_SERVOS.typhon_ephemeros,
+  zenobia:GACHA_SERVOS.zenobia,xu_fu:GACHA_SERVOS.xu_fu};
 const TOWER_SERVO_LISTA=[
   {id:'ibaraki',name:'Ibaraki Douji',classe:'Berserker',unlock:null},
   {id:'qin',name:'Qin Liangyu',classe:'Lancer',unlock:'defeat_qin'},
@@ -16170,7 +16336,7 @@ const TOWER_SERVO_LISTA=[
   {id:'skadi',name:'Scáthach-Skadi',classe:'Ruler',unlock:'gacha',gachaId:'skadi_summer',lockText:'Banner Pull'},
   {id:'okita',name:'Okita Souji',classe:'Saber',unlock:'gacha',gachaId:'okita_saber',lockText:'Banner Pull'},
   {id:'okita_alter',name:'Okita Souji Alter',classe:'Alter Ego',unlock:'gacha',gachaId:'okita_alter',lockText:'Banner Pull'},
-  {id:'meltryllis',name:'Mysterious Alter Ego Λ',classe:'Alter Ego',unlock:'gacha',gachaId:'meltryllis_summer',lockText:'Banner Pull'},
+  {id:'meltryllis',name:'Mysterious Alter Ego Λ',classe:'Lancer',unlock:'gacha',gachaId:'meltryllis_summer',lockText:'Banner Pull'},
   {id:'nobunaga',name:'Oda Nobunaga',classe:'Archer',unlock:'gacha',gachaId:'nobunaga_archer',lockText:'Banner Pull'},
   {id:'nobunaga_zerker',name:'Oda Nobunaga (Berserker)',classe:'Berserker',unlock:'gacha',gachaId:'nobunaga_berserker',lockText:'Banner Pull'},
   {id:'daikokuten',name:'Daikokuten',classe:'Caster',unlock:'gacha',gachaId:'daikokuten',lockText:'🎁 Crie uma conta'},
@@ -16178,6 +16344,8 @@ const TOWER_SERVO_LISTA=[
   {id:'nobunaga_maou',name:'Oda Nobunaga (Maou)',classe:'Avenger',unlock:'gacha',gachaId:'nobunaga_maou',lockText:'Banner Pull'},
   {id:'yang_guifei',name:'Yang Guifei',classe:'Foreigner',unlock:'gacha',gachaId:'yang_guifei',lockText:'Banner Pull'},
   {id:'typhon_ephemeros',name:'Typhon Ephemeros',classe:'Pretender',unlock:'gacha',gachaId:'typhon_ephemeros',lockText:'Banner Pull'},
+  {id:'zenobia',name:'Zenobia',classe:'Archer',unlock:'gacha',gachaId:'zenobia',lockText:'Banner Pull'},
+  {id:'xu_fu',name:'Xu Fu',classe:'Alter Ego',unlock:'gacha',gachaId:'xu_fu',lockText:'Banner Pull'},
 ];
 // O jogador tem acesso a este servo?
 function servoLiberado(s,profile){
