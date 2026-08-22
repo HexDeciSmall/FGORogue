@@ -26,6 +26,7 @@
   --panel-a:rgba(14,10,11,0.94);--panel-b:rgba(7,6,7,0.97);
   --edge:rgba(192,57,43,0.28);--edge-soft:rgba(192,57,43,0.14);
 }
+html{scrollbar-gutter:stable}
 body{background:var(--smoke);color:var(--white);font-family:'Crimson Text',serif;min-height:100vh;overflow-x:hidden}
 /* Fundo geral: preto profundo com um leve halo carmesim no topo, em todas as telas */
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
@@ -9964,7 +9965,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.68</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.70</p>
       </div>
     </div>
   );
@@ -13444,17 +13445,15 @@ function FeedCard({post,meuUid,meuNome,tempoRel,comentariosAbertos,onToggleComen
   const[comentarios,setComentarios]=useState([]);
   const[novoComentario,setNovoComentario]=useState('');
   const[imgZoom,setImgZoom]=useState(null);
-  // Trava a rolagem do fundo enquanto o lightbox está aberto (evita o "tremor"
-  // causado pela barra de rolagem sumindo e o scroll vazando pro fundo).
+  // Trava a rolagem do fundo enquanto o lightbox está aberto. A barra de rolagem
+  // é reservada permanentemente no <html> (scrollbar-gutter), então travar aqui
+  // não muda a largura da página — evitando o tremor da grade de imagens.
   useEffect(()=>{
     if(!imgZoom)return;
-    const y=window.scrollY;
-    const sbw=window.innerWidth-document.documentElement.clientWidth; // largura da barra
     const b=document.body.style;
-    const prev={overflow:b.overflow,paddingRight:b.paddingRight};
+    const prevOverflow=b.overflow;
     b.overflow='hidden';
-    if(sbw>0)b.paddingRight=sbw+'px'; // compensa a barra pra a página não pular
-    return ()=>{b.overflow=prev.overflow;b.paddingRight=prev.paddingRight;window.scrollTo(0,y);};
+    return ()=>{b.overflow=prevOverflow;};
   },[imgZoom]);
   const curtidas=post.curtidas||[];
   const euCurti=meuUid&&curtidas.includes(meuUid);
@@ -13535,22 +13534,23 @@ function FeedCard({post,meuUid,meuNome,tempoRel,comentariosAbertos,onToggleComen
         // grade: 2 imgs → 2 col; 4 imgs → 2 col; 3 e 5+ → 3 col
         const cols=(imgs.length===2||imgs.length===4)?2:3;
         return(
-          <div style={{display:'grid',gridTemplateColumns:`repeat(${cols},1fr)`,gap:4,marginBottom:12,borderRadius:8,overflow:'hidden'}}>
+          <div style={{display:'grid',gridTemplateColumns:`repeat(${cols},1fr)`,gridAutoRows:'1fr',gap:4,marginBottom:12,borderRadius:8,overflow:'hidden'}}>
             {imgs.map((src,idx)=>(
-              <div key={idx} style={{aspectRatio:'1',overflow:'hidden',border:'1px solid var(--gold-dim)',borderRadius:6,cursor:'zoom-in',
+              <div key={idx} style={{position:'relative',aspectRatio:'1',overflow:'hidden',border:'1px solid var(--gold-dim)',borderRadius:6,cursor:'zoom-in',background:'rgba(0,0,0,0.4)',
                 gridColumn:imgs.length===3&&idx===0?'span 2':'auto'}} onClick={()=>setImgZoom(src)}>
-                <img src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} onError={e=>{e.target.parentElement.style.display='none';}}/>
+                <img src={src} alt="" loading="lazy" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain',display:'block'}} onError={e=>{e.target.parentElement.style.display='none';}}/>
               </div>
             ))}
           </div>
         );
       })()}
-      {imgZoom&&(
-        <div onClick={()=>setImgZoom(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.92)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:16,
+      {imgZoom&&ReactDOM.createPortal(
+        <div onClick={()=>setImgZoom(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.94)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',padding:16,
           touchAction:'none',overscrollBehavior:'contain',WebkitTapHighlightColor:'transparent'}}>
-          <img src={imgZoom} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:'96vw',maxHeight:'92vh',borderRadius:10,border:'2px solid var(--gold)',userSelect:'none'}}/>
-          <button onClick={()=>setImgZoom(null)} style={{position:'absolute',top:14,right:14,width:38,height:38,borderRadius:'50%',background:'rgba(0,0,0,0.6)',border:'1px solid var(--gold)',color:'var(--gold)',cursor:'pointer',fontSize:'1.1rem'}}>✕</button>
-        </div>
+          <img src={imgZoom} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:'100vw',maxHeight:'100vh',objectFit:'contain',borderRadius:8,userSelect:'none'}}/>
+          <button onClick={()=>setImgZoom(null)} style={{position:'absolute',top:14,right:14,width:40,height:40,borderRadius:'50%',background:'rgba(0,0,0,0.6)',border:'1px solid var(--gold)',color:'var(--gold)',cursor:'pointer',fontSize:'1.2rem',zIndex:1}}>✕</button>
+        </div>,
+        document.body
       )}
 
       {/* Ações: curtir + comentar */}
