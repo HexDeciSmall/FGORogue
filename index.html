@@ -9964,7 +9964,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.67</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.68</p>
       </div>
     </div>
   );
@@ -13444,6 +13444,18 @@ function FeedCard({post,meuUid,meuNome,tempoRel,comentariosAbertos,onToggleComen
   const[comentarios,setComentarios]=useState([]);
   const[novoComentario,setNovoComentario]=useState('');
   const[imgZoom,setImgZoom]=useState(null);
+  // Trava a rolagem do fundo enquanto o lightbox está aberto (evita o "tremor"
+  // causado pela barra de rolagem sumindo e o scroll vazando pro fundo).
+  useEffect(()=>{
+    if(!imgZoom)return;
+    const y=window.scrollY;
+    const sbw=window.innerWidth-document.documentElement.clientWidth; // largura da barra
+    const b=document.body.style;
+    const prev={overflow:b.overflow,paddingRight:b.paddingRight};
+    b.overflow='hidden';
+    if(sbw>0)b.paddingRight=sbw+'px'; // compensa a barra pra a página não pular
+    return ()=>{b.overflow=prev.overflow;b.paddingRight=prev.paddingRight;window.scrollTo(0,y);};
+  },[imgZoom]);
   const curtidas=post.curtidas||[];
   const euCurti=meuUid&&curtidas.includes(meuUid);
   const souDono=meuUid&&post.uid===meuUid;
@@ -13534,8 +13546,10 @@ function FeedCard({post,meuUid,meuNome,tempoRel,comentariosAbertos,onToggleComen
         );
       })()}
       {imgZoom&&(
-        <div onClick={()=>setImgZoom(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.92)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
-          <img src={imgZoom} alt="" style={{maxWidth:'96vw',maxHeight:'92vh',borderRadius:10,border:'2px solid var(--gold)'}}/>
+        <div onClick={()=>setImgZoom(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.92)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:16,
+          touchAction:'none',overscrollBehavior:'contain',WebkitTapHighlightColor:'transparent'}}>
+          <img src={imgZoom} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:'96vw',maxHeight:'92vh',borderRadius:10,border:'2px solid var(--gold)',userSelect:'none'}}/>
+          <button onClick={()=>setImgZoom(null)} style={{position:'absolute',top:14,right:14,width:38,height:38,borderRadius:'50%',background:'rgba(0,0,0,0.6)',border:'1px solid var(--gold)',color:'var(--gold)',cursor:'pointer',fontSize:'1.1rem'}}>✕</button>
         </div>
       )}
 
