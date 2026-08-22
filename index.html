@@ -9964,7 +9964,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.66</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.67</p>
       </div>
     </div>
   );
@@ -13520,8 +13520,10 @@ function FeedCard({post,meuUid,meuNome,tempoRel,comentariosAbertos,onToggleComen
             </div>
           );
         }
+        // grade: 2 imgs → 2 col; 4 imgs → 2 col; 3 e 5+ → 3 col
+        const cols=(imgs.length===2||imgs.length===4)?2:3;
         return(
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginBottom:12,borderRadius:8,overflow:'hidden'}}>
+          <div style={{display:'grid',gridTemplateColumns:`repeat(${cols},1fr)`,gap:4,marginBottom:12,borderRadius:8,overflow:'hidden'}}>
             {imgs.map((src,idx)=>(
               <div key={idx} style={{aspectRatio:'1',overflow:'hidden',border:'1px solid var(--gold-dim)',borderRadius:6,cursor:'zoom-in',
                 gridColumn:imgs.length===3&&idx===0?'span 2':'auto'}} onClick={()=>setImgZoom(src)}>
@@ -13589,7 +13591,7 @@ function FeedComporModal({profile,meuUid,meuNome,onFechar}){
   const[revEps,setRevEps]=useState('');
   const[revTipoObra,setRevTipoObra]=useState('Anime');
 
-  const MAX_IMGS=4;
+  const MAX_IMGS=10;
   function escolherArquivo(e){ // usado pela Review (capa única)
     const f=e.target.files&&e.target.files[0];
     if(!f)return;
@@ -13727,7 +13729,7 @@ function FeedComporModal({profile,meuUid,meuNome,onFechar}){
         ):(
           <>
             {previews.length>0&&(
-              <div style={{display:'grid',gridTemplateColumns:previews.length===1?'1fr':'1fr 1fr',gap:6,marginBottom:10}}>
+              <div style={{display:'grid',gridTemplateColumns:previews.length===1?'1fr':previews.length===2?'1fr 1fr':'1fr 1fr 1fr',gap:6,marginBottom:10}}>
                 {previews.map((src,idx)=>(
                   <div key={idx} style={{position:'relative',aspectRatio:previews.length===1?'auto':'1',borderRadius:8,overflow:'hidden',border:'1px solid var(--gold-dim)'}}>
                     <img src={src} alt="" style={{width:'100%',height:previews.length===1?'auto':'100%',objectFit:'cover',display:'block'}}/>
