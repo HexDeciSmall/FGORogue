@@ -9964,7 +9964,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.65</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.66</p>
       </div>
     </div>
   );
@@ -13443,6 +13443,7 @@ function FeedScreen({onNavigate,profile}){
 function FeedCard({post,meuUid,meuNome,tempoRel,comentariosAbertos,onToggleComentarios}){
   const[comentarios,setComentarios]=useState([]);
   const[novoComentario,setNovoComentario]=useState('');
+  const[imgZoom,setImgZoom]=useState(null);
   const curtidas=post.curtidas||[];
   const euCurti=meuUid&&curtidas.includes(meuUid);
   const souDono=meuUid&&post.uid===meuUid;
@@ -13508,10 +13509,31 @@ function FeedCard({post,meuUid,meuNome,tempoRel,comentariosAbertos,onToggleComen
       {/* Texto */}
       {post.texto&&<p style={{fontSize:'.85rem',color:'var(--parchment)',lineHeight:1.6,marginBottom:(post.imagem&&post.tipo!=='review')?10:12,whiteSpace:'pre-wrap'}}>{post.texto}</p>}
 
-      {/* Imagem (posts normais — na review a imagem já aparece no bloco acima) */}
-      {post.imagem&&post.tipo!=='review'&&(
-        <div style={{borderRadius:8,overflow:'hidden',marginBottom:12,border:'1px solid var(--gold-dim)'}}>
-          <img src={post.imagem} alt="" style={{width:'100%',display:'block'}} onError={e=>{e.target.parentElement.style.display='none';}}/>
+      {/* Imagens (posts normais — na review a capa já aparece no bloco acima) */}
+      {post.tipo!=='review'&&(()=>{
+        const imgs=(post.imagens&&post.imagens.length)?post.imagens:(post.imagem?[post.imagem]:[]);
+        if(!imgs.length)return null;
+        if(imgs.length===1){
+          return(
+            <div style={{borderRadius:8,overflow:'hidden',marginBottom:12,border:'1px solid var(--gold-dim)',cursor:'zoom-in'}} onClick={()=>setImgZoom(imgs[0])}>
+              <img src={imgs[0]} alt="" style={{width:'100%',display:'block'}} onError={e=>{e.target.parentElement.style.display='none';}}/>
+            </div>
+          );
+        }
+        return(
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginBottom:12,borderRadius:8,overflow:'hidden'}}>
+            {imgs.map((src,idx)=>(
+              <div key={idx} style={{aspectRatio:'1',overflow:'hidden',border:'1px solid var(--gold-dim)',borderRadius:6,cursor:'zoom-in',
+                gridColumn:imgs.length===3&&idx===0?'span 2':'auto'}} onClick={()=>setImgZoom(src)}>
+                <img src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} onError={e=>{e.target.parentElement.style.display='none';}}/>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+      {imgZoom&&(
+        <div onClick={()=>setImgZoom(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.92)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
+          <img src={imgZoom} alt="" style={{maxWidth:'96vw',maxHeight:'92vh',borderRadius:10,border:'2px solid var(--gold)'}}/>
         </div>
       )}
 
@@ -13554,7 +13576,9 @@ function FeedCard({post,meuUid,meuNome,tempoRel,comentariosAbertos,onToggleComen
 function FeedComporModal({profile,meuUid,meuNome,onFechar}){
   const[texto,setTexto]=useState('');
   const[tipo,setTipo]=useState('geral');
-  const[arquivo,setArquivo]=useState(null);
+  const[arquivos,setArquivos]=useState([]); // múltiplas imagens (posts normais)
+  const[previews,setPreviews]=useState([]);
+  const[arquivo,setArquivo]=useState(null); // imagem única (usada na capa da Review)
   const[previewUrl,setPreviewUrl]=useState(null);
   const[enviando,setEnviando]=useState(false);
   const[erro,setErro]=useState('');
@@ -13565,35 +13589,64 @@ function FeedComporModal({profile,meuUid,meuNome,onFechar}){
   const[revEps,setRevEps]=useState('');
   const[revTipoObra,setRevTipoObra]=useState('Anime');
 
-  function escolherArquivo(e){
+  const MAX_IMGS=4;
+  function escolherArquivo(e){ // usado pela Review (capa única)
     const f=e.target.files&&e.target.files[0];
     if(!f)return;
     setArquivo(f);
     const r=new FileReader();r.onload=()=>setPreviewUrl(r.result);r.readAsDataURL(f);
   }
+  function escolherArquivosFeed(e){ // posts normais: várias imagens
+    const files=Array.from(e.target.files||[]);
+    if(!files.length)return;
+    setArquivos(prev=>{
+      const combinado=[...prev,...files].slice(0,MAX_IMGS);
+      // gera previews na mesma ordem
+      Promise.all(combinado.map(f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);})))
+        .then(setPreviews);
+      return combinado;
+    });
+    e.target.value='';
+  }
+  function removerImagem(idx){
+    setArquivos(prev=>prev.filter((_,i)=>i!==idx));
+    setPreviews(prev=>prev.filter((_,i)=>i!==idx));
+  }
 
   async function publicar(){
     setErro('');
+    const temImagens=tipo==='review'?!!arquivo:arquivos.length>0;
     if(tipo==='review'){
       if(!revObra.trim()){setErro('Dê o nome da obra que você está avaliando.');return;}
       if(!revNota){setErro('Dê uma nota (toque nas estrelas).');return;}
-    }else if(!texto.trim()&&!arquivo){setErro('Escreva algo ou adicione uma imagem.');return;}
+    }else if(!texto.trim()&&!temImagens){setErro('Escreva algo ou adicione uma imagem.');return;}
     setEnviando(true);
-    let imagemUrl=null;
+    let imagemUrl=null;      // compatibilidade / capa da review
+    let imagensUrls=[];      // galeria de posts normais
     try{
-      // se há imagem, sobe pro Firebase Storage (sem token, só precisa estar logado)
-      if(arquivo){
+      if(temImagens){
         if(!fbAuth||!fbAuth.currentUser){setErro('Você precisa estar logado para enviar imagens.');setEnviando(false);return;}
-        setProgresso('Otimizando imagem...');
-        const otimizada=await comprimirImagem(arquivo,1600,0.9);
-        setProgresso('Enviando imagem...');
-        imagemUrl=await uploadImagemCompartilhado('feed',otimizada);
+        if(tipo==='review'){
+          setProgresso('Enviando capa...');
+          const otimizada=await comprimirImagem(arquivo,1600,0.9);
+          imagemUrl=await uploadImagemCompartilhado('feed',otimizada);
+        }else{
+          // sobe cada imagem da galeria
+          for(let k=0;k<arquivos.length;k++){
+            setProgresso(`Enviando imagem ${k+1}/${arquivos.length}...`);
+            const otimizada=await comprimirImagem(arquivos[k],1600,0.9);
+            const url=await uploadImagemCompartilhado('feed',otimizada);
+            imagensUrls.push(url);
+          }
+          imagemUrl=imagensUrls[0]||null; // 1ª imagem também em `imagem` (compat.)
+        }
       }
       setProgresso('Publicando...');
       const post={
         uid:meuUid,nome:meuNome||'Mestre',avatar:profile.avatar||null,
         texto:texto.trim().slice(0,1000),imagem:imagemUrl,tipo,
       };
+      if(imagensUrls.length>1)post.imagens=imagensUrls; // galeria só quando há mais de uma
       if(tipo==='review'){
         post.review={
           obra:revObra.trim().slice(0,80),
@@ -13657,17 +13710,42 @@ function FeedComporModal({profile,meuUid,meuNome,onFechar}){
           maxLength={1000} style={{...INP,minHeight:100,resize:'vertical',fontFamily:'inherit'}}/>
         <div style={{fontSize:'.6rem',color:'var(--parchment-dark)',textAlign:'right',marginBottom:10}}>{texto.length}/1000</div>
 
-        {/* Imagem */}
-        {previewUrl&&(
-          <div style={{position:'relative',marginBottom:10}}>
-            <img src={previewUrl} alt="" style={{width:'100%',borderRadius:8,border:'1px solid var(--gold-dim)'}}/>
-            <button onClick={()=>{setArquivo(null);setPreviewUrl(null);}} style={{position:'absolute',top:6,right:6,background:'rgba(0,0,0,0.7)',border:'1px solid var(--crimson)',borderRadius:'50%',width:28,height:28,color:'#fff',cursor:'pointer'}}>✕</button>
-          </div>
+        {/* Imagens */}
+        {tipo==='review'?(
+          <>
+            {previewUrl&&(
+              <div style={{position:'relative',marginBottom:10}}>
+                <img src={previewUrl} alt="" style={{width:'100%',borderRadius:8,border:'1px solid var(--gold-dim)'}}/>
+                <button onClick={()=>{setArquivo(null);setPreviewUrl(null);}} style={{position:'absolute',top:6,right:6,background:'rgba(0,0,0,0.7)',border:'1px solid var(--crimson)',borderRadius:'50%',width:28,height:28,color:'#fff',cursor:'pointer'}}>✕</button>
+              </div>
+            )}
+            <label className="btn btn-full btn-sm" style={{marginBottom:10,cursor:'pointer',display:'block',textAlign:'center'}}>
+              🖼️ {arquivo?'Trocar capa':'Adicionar capa/foto da obra'}
+              <input type="file" accept="image/*" onChange={escolherArquivo} style={{display:'none'}}/>
+            </label>
+          </>
+        ):(
+          <>
+            {previews.length>0&&(
+              <div style={{display:'grid',gridTemplateColumns:previews.length===1?'1fr':'1fr 1fr',gap:6,marginBottom:10}}>
+                {previews.map((src,idx)=>(
+                  <div key={idx} style={{position:'relative',aspectRatio:previews.length===1?'auto':'1',borderRadius:8,overflow:'hidden',border:'1px solid var(--gold-dim)'}}>
+                    <img src={src} alt="" style={{width:'100%',height:previews.length===1?'auto':'100%',objectFit:'cover',display:'block'}}/>
+                    <button onClick={()=>removerImagem(idx)} style={{position:'absolute',top:4,right:4,background:'rgba(0,0,0,0.7)',border:'1px solid var(--crimson)',borderRadius:'50%',width:24,height:24,color:'#fff',cursor:'pointer',fontSize:'.7rem'}}>✕</button>
+                    <span style={{position:'absolute',bottom:2,left:4,fontSize:'.55rem',color:'#fff',textShadow:'0 1px 2px #000'}}>{idx+1}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {arquivos.length<MAX_IMGS&&(
+              <label className="btn btn-full btn-sm" style={{marginBottom:10,cursor:'pointer',display:'block',textAlign:'center'}}>
+                🖼️ {arquivos.length>0?`Adicionar mais (${arquivos.length}/${MAX_IMGS})`:'Adicionar imagem(ns)'}
+                <input type="file" accept="image/*" multiple onChange={escolherArquivosFeed} style={{display:'none'}}/>
+              </label>
+            )}
+            {arquivos.length>=MAX_IMGS&&<div style={{fontSize:'.62rem',color:'var(--parchment-dark)',textAlign:'center',marginBottom:10}}>Máximo de {MAX_IMGS} imagens.</div>}
+          </>
         )}
-        <label className="btn btn-full btn-sm" style={{marginBottom:10,cursor:'pointer',display:'block',textAlign:'center'}}>
-          🖼️ {arquivo?'Trocar imagem':(tipo==='review'?'Adicionar capa/foto da obra':'Adicionar imagem')}
-          <input type="file" accept="image/*" onChange={escolherArquivo} style={{display:'none'}}/>
-        </label>
 
         {erro&&<div style={{fontSize:'.72rem',color:'#ff9090',marginBottom:8}}>{erro}</div>}
         {progresso&&<div style={{fontSize:'.72rem',color:'var(--gold)',marginBottom:8}}>{progresso}</div>}
