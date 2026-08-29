@@ -9973,7 +9973,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.72</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.73</p>
       </div>
     </div>
   );
@@ -15607,8 +15607,9 @@ function ServoSelectScreen({onNavigate,onStartCampaign,profile}){
   const selInfo=CAMPAIGN_CHECKPOINTS.find(c=>c.mapId===selMap)||CAMPAIGN_CHECKPOINTS[0];
   return(
     <div className="screen">
-      <div className="panel" style={{maxWidth:560}}>
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+      <div className="panel" style={{maxWidth:560,overflow:'hidden'}}>
+        <AmbienteParticulas tipo={ATMOSFERA_POR_MAPA[selMap]||'folha'} style={{opacity:0.5,zIndex:0}}/>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,position:'relative',zIndex:2}}>
           <button className="btn btn-sm" onClick={()=>onNavigate('menu')}>← Menu</button>
           <h2 className="cinzel" style={{color:'var(--gold)',letterSpacing:3,flex:1,textAlign:'center'}}>✦ INVOCAR SERVO ✦</h2>
           <div style={{width:56}}/>
@@ -20148,6 +20149,92 @@ function sortearCampo(){
 }
 function getCampoEffects(campo){return (campo&&campo.eff)||{};}
 
+// ═══════════════════════════════════════════════════════════
+// ATMOSFERA DE AMBIENTE — partículas leves de fundo, com "assinatura" por mapa.
+// Tipos: sakura (pétalas), brasa (fagulhas subindo), neve, folha, poeira, névoa.
+const ATMOSFERA_POR_MAPA={
+  bosque:'folha',
+  tennobara:'poeira',
+  tortuoso:'sakura',
+  kurikara:'brasa',
+  kurikara_city:'brasa',
+  kurikara2:'brasa',
+  shinohara:'folha',
+  shinohara_city:'poeira',
+  shinohara_battle:'brasa',
+  sucessao_prelude:'sakura',
+  pensamentos_restantes:'neve',
+};
+const ATMOSFERA_CFG={
+  sakura:{cor:['#f7c6d9','#f4a6c0','#e88bad'],n:22,tam:[4,8],vy:[0.3,0.9],vx:[-0.5,0.5],sway:true,sobe:false,forma:'petala'},
+  brasa:{cor:['#ff8a3a','#ffb54a','#ff6b3a','#ffd76a'],n:26,tam:[1.5,3.5],vy:[0.5,1.4],vx:[-0.3,0.3],sway:true,sobe:true,forma:'circulo',glow:true},
+  neve:{cor:['#dfeaff','#ffffff','#cdd8f0'],n:26,tam:[2,4.5],vy:[0.25,0.7],vx:[-0.4,0.4],sway:true,sobe:false,forma:'circulo'},
+  folha:{cor:['#8fae5a','#c9a24a','#a3853a','#6f9a4a'],n:16,tam:[4,8],vy:[0.3,0.8],vx:[-0.6,0.6],sway:true,sobe:false,forma:'petala'},
+  poeira:{cor:['#d8c9a0','#c9b487','#e0d6b8'],n:20,tam:[1,2.5],vy:[0.1,0.4],vx:[-0.3,0.3],sway:true,sobe:false,forma:'circulo',glow:true},
+};
+function AmbienteParticulas({tipo,className,style}){
+  const ref=useRef(null);
+  const raf=useRef(null);
+  const parts=useRef([]);
+  useEffect(()=>{
+    const cfg=ATMOSFERA_CFG[tipo];
+    const cv=ref.current;
+    if(!cfg||!cv){return;}
+    let w,h;
+    const rand=(a,b)=>a+Math.random()*(b-a);
+    const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
+    function resize(){const r=cv.getBoundingClientRect();w=cv.width=r.width;h=cv.height=r.height;}
+    resize();
+    function novaParticula(inicial){
+      const sobe=cfg.sobe;
+      return{
+        x:rand(0,w),
+        y:sobe?(inicial?rand(0,h):h+10):(inicial?rand(0,h):-10),
+        vx:rand(cfg.vx[0],cfg.vx[1]),
+        vy:rand(cfg.vy[0],cfg.vy[1])*(sobe?-1:1),
+        size:rand(cfg.tam[0],cfg.tam[1]),
+        cor:pick(cfg.cor),
+        rot:rand(0,Math.PI*2),
+        vrot:rand(-0.04,0.04),
+        swayA:rand(0,Math.PI*2),
+        swayS:rand(0.01,0.03),
+        op:rand(0.4,0.9),
+      };
+    }
+    parts.current=Array.from({length:cfg.n},()=>novaParticula(true));
+    const ctx=cv.getContext('2d');
+    function frame(){
+      ctx.clearRect(0,0,w,h);
+      for(const p of parts.current){
+        if(cfg.sway){p.swayA+=p.swayS;p.x+=Math.sin(p.swayA)*0.4;}
+        p.x+=p.vx;p.y+=p.vy;p.rot+=p.vrot;
+        // recicla ao sair da tela
+        if(cfg.sobe?p.y<-10:p.y>h+10){Object.assign(p,novaParticula(false));}
+        if(p.x<-10)p.x=w+10;if(p.x>w+10)p.x=-10;
+        ctx.save();
+        ctx.globalAlpha=p.op;
+        ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+        ctx.fillStyle=p.cor;
+        if(cfg.glow){ctx.shadowColor=p.cor;ctx.shadowBlur=p.size*2.5;}
+        if(cfg.forma==='petala'){
+          ctx.beginPath();
+          ctx.ellipse(0,0,p.size,p.size*0.55,0,0,Math.PI*2);
+          ctx.fill();
+        }else{
+          ctx.beginPath();ctx.arc(0,0,p.size,0,Math.PI*2);ctx.fill();
+        }
+        ctx.restore();
+      }
+      raf.current=requestAnimationFrame(frame);
+    }
+    frame();
+    window.addEventListener('resize',resize);
+    return ()=>{window.removeEventListener('resize',resize);if(raf.current)cancelAnimationFrame(raf.current);};
+  },[tipo]);
+  if(!ATMOSFERA_CFG[tipo])return null;
+  return <canvas ref={ref} className={className} style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:1,...style}}/>;
+}
+
 function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfile,fixedEnemies,banditPoison}){
   // Perks passivas EQUIPADAS do Mestre — carregadas do profile uma vez por combate
   const perkEffects=getPerkEffects(profile);
@@ -22946,7 +23033,8 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
         <div className={`battle-arena${shake?' arena-shake':''}`} style={{height:isParty?400:400,display:'flex',alignItems:'flex-end',justifyContent:'space-between',padding:'0 2% 10px','--shake':`${shake}px`}}>
           <div className="arena-ground"/>
           <div className="arena-fog"/>
-          {/* Canvas de partículas (impactos, NP) — cobre a arena, não intercepta cliques */}
+          {/* Atmosfera ambiental por mapa (pétalas, brasas, folhas...) */}
+          <AmbienteParticulas tipo={ATMOSFERA_POR_MAPA[camp.mapId]||'folha'}/>
           <canvas ref={particlesRef} style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:20}}/>
           {/* Clarão de tela (hit/crit/NP) */}
           {flash&&<div style={{position:'absolute',inset:0,background:flash.cor,pointerEvents:'none',zIndex:21,animation:'flashFade .18s ease-out'}}/>}
