@@ -620,13 +620,21 @@ h1,h2,h3,.cinzel{font-family:'Cinzel',serif}
 @keyframes sc2Flash{0%,40%{opacity:0}50%{opacity:.95}58%{opacity:.2}66%{opacity:.85}100%{opacity:0}}
 /* Névoa de veneno roxo (combate especial dos ladrões, Fase 9 mapa 4) */
 /* ═══════ ARENA DE COMBATE ABERTA (sprites livres) ═══════ */
-.battle-arena{position:relative;border-radius:12px;overflow:hidden;margin-bottom:10px;
-  background:
+.battle-arena{position:relative;border-radius:12px;overflow:hidden;margin-bottom:10px;  background:
     radial-gradient(ellipse 70% 50% at 30% 78%, rgba(190,90,50,.20), transparent 60%),
     radial-gradient(ellipse 60% 45% at 78% 82%, rgba(201,162,39,.16), transparent 62%),
     linear-gradient(180deg,#150b10 0%,#22111a 38%,#33191f 58%,#1d1015 100%);
   border:1px solid rgba(201,162,39,.28);
   box-shadow:inset 0 0 70px rgba(0,0,0,.8), 0 2px 14px rgba(0,0,0,.5)}
+/* Game juice: tremor de tela e clarão de impacto */
+.arena-shake{animation:arenaShake .26s cubic-bezier(.36,.07,.19,.97) both}
+@keyframes arenaShake{
+  10%,90%{transform:translate3d(calc(var(--shake,4px)*-0.3),0,0)}
+  20%,80%{transform:translate3d(calc(var(--shake,4px)*0.5),0,0)}
+  30%,50%,70%{transform:translate3d(calc(var(--shake,4px)*-1),calc(var(--shake,4px)*0.4),0)}
+  40%,60%{transform:translate3d(calc(var(--shake,4px)*1),calc(var(--shake,4px)*-0.3),0)}
+}
+@keyframes flashFade{from{opacity:1}to{opacity:0}}
 /* chão em perspectiva com linha de horizonte suave */
 .arena-ground{position:absolute;left:0;right:0;bottom:0;height:42%;
   background:linear-gradient(180deg,rgba(120,70,80,.10) 0%,rgba(50,24,36,.42) 45%,rgba(20,10,18,.72) 100%)}
@@ -9965,7 +9973,7 @@ function MenuScreen({onNavigate,profile}){
             <span className="mb-arrow">➜</span>
           </button>
         ))}
-        <p className="menu-version">FATE・ROGUELIKE ✦ v3.71</p>
+        <p className="menu-version">FATE・ROGUELIKE ✦ v3.72</p>
       </div>
     </div>
   );
@@ -20489,6 +20497,11 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
   // ── Efeitos visuais flutuantes (dano/cura/buff/esquiva) ──
   const[fx,setFx]=useState([]);
   const[impacts,setImpacts]=useState([]); // efeitos visuais sobre o alvo/atacante
+  const[shake,setShake]=useState(0);      // intensidade do tremor de tela (0=nenhum)
+  const[flash,setFlash]=useState(null);   // clarão de tela {cor,op}
+  const particlesRef=useRef(null);        // canvas de partículas
+  const particlesData=useRef([]);         // partículas vivas
+  const rafRef=useRef(null);
   // ── SPRITES ANIMADOS: estado de animação por servo da party ──
   // Guarda qual GIF cada servo exibe agora: 'idle' (padrão), 'attack' ou 'np'.
   // Ao disparar uma ação, troca para o GIF correspondente e volta ao idle depois.
@@ -20580,6 +20593,12 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     const left=22+Math.random()*50; // posição horizontal variada p/ números não se sobreporem
     setFx(prev=>[...prev,{id,targetId,text,kind,left}]);
     setTimeout(()=>setFx(prev=>prev.filter(f=>f.id!==id)),950);
+    // Feedback tátil quando o SERVO do jogador leva dano (número puro, não status)
+    if(targetId==='servo'&&/^\d+$/.test(String(text))){
+      triggerShake(kind==='np'?12:7,220);
+      if(kind==='np')triggerFlash('rgba(224,90,74,0.22)',160);
+      emitParticles(0.22,0.55,{n:kind==='np'?24:10,cor:'#e05a4a',speed:kind==='np'?1.5:1});
+    }
   }
   // Efeito de impacto sobre um alvo. tipo: 'hit'|'crit'|'np'|'skill'. cor = aura da skill.
   function spawnImpact(targetId,tipo='hit',cor){
@@ -20587,6 +20606,69 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     setImpacts(prev=>[...prev,{id,targetId,tipo,cor}]);
     setTimeout(()=>setImpacts(prev=>prev.filter(f=>f.id!==id)),720);
   }
+
+  // Posição horizontal relativa (0..1) de um inimigo, para emitir partículas nele.
+  function idxAlvoRel(e){
+    const lista=enemies||[];
+    const i=lista.findIndex(x=>x.instanceId===e.instanceId);
+    if(i<0||lista.length<=1)return 0.5;
+    return (i+0.5)/lista.length;
+  }
+
+  // ─── GAME JUICE: tremor de tela, clarão e partículas ───
+  function triggerShake(intensidade=8,dur=260){
+    setShake(intensidade);
+    setTimeout(()=>setShake(0),dur);
+  }
+  function triggerFlash(cor='rgba(255,255,255,0.5)',dur=180){
+    setFlash({cor});
+    setTimeout(()=>setFlash(null),dur);
+  }
+  // Emite um punhado de partículas a partir de um ponto relativo (0..1) da arena.
+  function emitParticles(xRel,yRel,opts={}){
+    const cv=particlesRef.current;if(!cv)return;
+    const w=cv.width,h=cv.height;
+    const n=opts.n||18;
+    const cor=opts.cor||'#ffcf5a';
+    const speed=opts.speed||1;
+    for(let i=0;i<n;i++){
+      const ang=Math.random()*Math.PI*2;
+      const vel=(1+Math.random()*3.2)*speed;
+      particlesData.current.push({
+        x:xRel*w,y:yRel*h,
+        vx:Math.cos(ang)*vel,vy:Math.sin(ang)*vel-1.2,
+        life:1,decay:0.012+Math.random()*0.02,
+        size:2+Math.random()*3.5,cor,
+        grav:opts.grav!==undefined?opts.grav:0.06,
+      });
+    }
+    if(!rafRef.current)loopParticles();
+  }
+  function loopParticles(){
+    const cv=particlesRef.current;
+    if(!cv){rafRef.current=null;return;}
+    const ctx=cv.getContext('2d');
+    ctx.clearRect(0,0,cv.width,cv.height);
+    const arr=particlesData.current;
+    for(let i=arr.length-1;i>=0;i--){
+      const p=arr[i];
+      p.x+=p.vx;p.y+=p.vy;p.vy+=p.grav;p.life-=p.decay;
+      if(p.life<=0){arr.splice(i,1);continue;}
+      ctx.globalAlpha=Math.max(0,p.life);
+      ctx.fillStyle=p.cor;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    if(arr.length>0){rafRef.current=requestAnimationFrame(loopParticles);}
+    else rafRef.current=null;
+  }
+  // Mantém o canvas no tamanho da arena
+  useEffect(()=>{
+    const cv=particlesRef.current;if(!cv)return;
+    const resize=()=>{const r=cv.getBoundingClientRect();cv.width=r.width;cv.height=r.height;};
+    resize();window.addEventListener('resize',resize);
+    return ()=>{window.removeEventListener('resize',resize);if(rafRef.current)cancelAnimationFrame(rafRef.current);};
+  },[]);
 
   const sv=profileSkillValues(profile.skills);
   const logRef=useRef();
@@ -20756,6 +20838,21 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
     spawnFx(e.instanceId,String(dmg),fxKind);
     // Efeito de impacto: NP mostra anéis; crítico mostra estrela; golpe comum, corte.
     spawnImpact(e.instanceId,fxKind==='np'?'np':fxKind==='crit'?'crit':'hit');
+    // ── GAME JUICE: tremor + clarão + partículas conforme a força do golpe ──
+    {
+      const cores={np:'#ffcf5a',crit:'#ff6b4a',dmg:'#ff9a5a',poison:'#8ce65a'};
+      const cor=cores[fxKind]||'#ff9a5a';
+      if(fxKind==='np'){
+        triggerShake(16,420);triggerFlash('rgba(255,207,90,0.28)',220);
+        emitParticles(0.5+((idxAlvoRel(e)-0.5)*0.5),0.45,{n:46,cor,speed:1.8,grav:0.04});
+      }else if(fxKind==='crit'){
+        triggerShake(11,300);triggerFlash('rgba(255,107,74,0.18)',150);
+        emitParticles(0.5+((idxAlvoRel(e)-0.5)*0.5),0.45,{n:26,cor,speed:1.4});
+      }else{
+        triggerShake(6,200);
+        emitParticles(0.5+((idxAlvoRel(e)-0.5)*0.5),0.5,{n:14,cor,speed:1});
+      }
+    }
     // acumula estatísticas para o resumo pós-combate
     runStats.current.danoCausado+=Math.max(0,Math.min(dmg,e.currentHp));
     if(e.currentHp>0&&e.currentHp-dmg<=0)runStats.current.inimigosDerrotados+=1;
@@ -22846,9 +22943,13 @@ function CombatScreen({camp,isBoss,onWin,onLose,onFlee,setCamp,profile,setProfil
           </div>
         )}
         {/* ═══════════ ARENA ABERTA — sprites livres, ancorados no chão ═══════════ */}
-        <div className="battle-arena" style={{height:isParty?400:400,display:'flex',alignItems:'flex-end',justifyContent:'space-between',padding:'0 2% 10px'}}>
+        <div className={`battle-arena${shake?' arena-shake':''}`} style={{height:isParty?400:400,display:'flex',alignItems:'flex-end',justifyContent:'space-between',padding:'0 2% 10px','--shake':`${shake}px`}}>
           <div className="arena-ground"/>
           <div className="arena-fog"/>
+          {/* Canvas de partículas (impactos, NP) — cobre a arena, não intercepta cliques */}
+          <canvas ref={particlesRef} style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:20}}/>
+          {/* Clarão de tela (hit/crit/NP) */}
+          {flash&&<div style={{position:'absolute',inset:0,background:flash.cor,pointerEvents:'none',zIndex:21,animation:'flashFade .18s ease-out'}}/>}
 
           {/* ─── GRUPO DOS SERVOS (ESQUERDA, primeiro plano) ─── */}
           {/* A arte da Ibaraki olha para a DIREITA: aqui à esquerda ela já encara
